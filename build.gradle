@@ -18,14 +18,14 @@
 // lives in its own gradle/<plugin>.gradle file.
 plugins {
     id 'eclipse'
-    // Rec 21 CycloneDX plugin removed Sprint 7: cyclonedx-gradle-plugin
-    // 1.10.0 NPEs on Ghidra's flat-dir deps (`:AXMLPrinter2:` and
-    // friends) because they have no Maven coordinates for it to derive
-    // a PackageURL from. Re-implementation tracked as Sprint 8 work.
-    // The upstream SBOM generator at gradle/support/sbom.gradle (used
-    // via gradle/root/distribution.gradle) still produces an SBOM
-    // bundled inside the release zip — that path is unaffected.
-    // id 'org.cyclonedx.bom' version '1.10.0'           // Rec 21
+    // Rec 21 CycloneDX. Sprint 8 re-implementation: bumped from 1.10.0
+    // → 3.2.4. The 1.10.0 release introduced a strict PURL-construction
+    // path that NPE'd on Ghidra's flat-dir deps (issue #500, fixed by
+    // PR #532, shipped 2.0.0+). 3.x uses Configuration.getIncoming() +
+    // lenient artifactView which handles unresolvable-POM deps cleanly.
+    // See gradle/sbom.gradle for task config; docs/release/SBOM.md for
+    // the design.
+    id 'org.cyclonedx.bom' version '3.2.4'              // Rec 21
     // Rec 26 ErrorProne. Sprint 8 re-enabled — the original 8.5 timing
     // issue (the `errorprone` dependency configuration wasn't ready
     // when `dependencies { errorprone ... }` ran) is now worked around
@@ -38,10 +38,9 @@ plugins {
 apply from: 'gradle/root/eclipse.gradle'
 apply from: "gradle/support/loadApplicationProperties.gradle"
 
-// CycloneDX SBOM (Rec 21) deferred to Sprint 8 — see plugin-removal
-// comment in plugins {} block above. Upstream SBOM remains bundled
-// in the release zip via gradle/support/sbom.gradle (unchanged).
-// apply from: 'gradle/sbom.gradle'
+// CycloneDX SBOM generation. See docs/release/SBOM.md (Rec 21).
+// Sprint 8 re-impl uses cyclonedx-gradle-plugin 3.2.4 (declared above).
+apply from: 'gradle/sbom.gradle'
 
 // ErrorProne static analysis. See docs/testing/ERRORPRONE.md (Rec 26).
 apply from: 'gradle/errorprone.gradle'

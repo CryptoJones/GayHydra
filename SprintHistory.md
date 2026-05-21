@@ -9,6 +9,49 @@ For why decisions were made the way they were, see
 
 ---
 
+## Sprint 8 — Rebrand + Rec 19/25/26 ratchets + SBOM re-impl (delivered 2026-05-21)
+
+**Goal:** Land Sprint 8's user-facing rebrand at the right scope, knock down the carried Rec 19/25/26 items, and set up the foundation for the deferred datatest audit + SBOM re-implementation.
+
+**Delivered visual + textual rebrand (Tier 1 + Tier 2):**
+
+- Top-level rebrand of project name references in user-facing surfaces: README marketing paragraph + Security Warning + Install/Build/Develop/Contribute sections ([PR #223](https://github.com/CryptoJones/GayHydra/pull/223)). Upstream attribution, file paths, Gradle task names, Eclipse plugin and run-config names, build-artifact filename pattern, and launcher script names preserved as documented in the new README addendum.
+- README image swap from upstream Ghidra logo to [`GayHydra.png`](GayHydra.png) ([PR #222](https://github.com/CryptoJones/GayHydra/pull/222)).
+- Program icons under `Ghidra/` rebranded (Aaron explicitly approved the merge-conflict cost on these binaries): 8x `GhidraIcon{16,24,32,40,48,64,128,256}.png`, `GHIDRA_Splash.png` (500x500), `GHIDRA_1/2/3.png`, multi-size `ghidra.ico` ([PR #224](https://github.com/CryptoJones/GayHydra/pull/224)).
+- `SECURITY.md` rebrand of generic project-name refs ([PR #226](https://github.com/CryptoJones/GayHydra/pull/226)); "upstream Ghidra" attribution + "Ghidra server" proper-noun preserved.
+- `DevGuide.md` fork-addendum quote block at top (same pattern as `CONTRIBUTING.md`) — 61 mentions are >95% technical references that apply unchanged ([PR #227](https://github.com/CryptoJones/GayHydra/pull/227)).
+- Tier 2: rebrand of 4 user-visible `gradle tasks` task descriptions (`prepDev`, `createGhidraStubsWheel`, `buildSourcesArchive`, `buildGhidra`) ([PR #238](https://github.com/CryptoJones/GayHydra/pull/238)). Task names preserved.
+
+**Delivered Rec 19/25/26 ratchets:**
+
+- **Rec 19 #19-2 first migration** — install reject-all `ObjectInputFilter` on `ItemDeserializer`'s `ObjectInputStream` ([PR #235](https://github.com/CryptoJones/GayHydra/pull/235)). Wire format preserved (matching `ItemSerializer` uses `ObjectOutputStream`'s 6-byte magic prefix), so `DataInputStream` wasn't an option. `CodeUnitInfo`'s `readObject` is commented out, so its #19-2 entry was a no-op.
+- **Rec 25 Stage 2** — widen `-Xlint` default from `deprecation,unchecked` → `deprecation,unchecked,rawtypes,cast` ([PR #240](https://github.com/CryptoJones/GayHydra/pull/240)). Non-blocking; per-subproject `lintOpts` opt-out preserved.
+- **Rec 26 ErrorProne re-enable** ([PR #236](https://github.com/CryptoJones/GayHydra/pull/236)). The Gradle-8.5 timing bug (the `errorprone` configuration registered AFTER the `subprojects { plugins.withId('java-library') { ... } }` body ran) is worked around by deferring the `dependencies { errorprone ... }` add inside `pluginManager.withPlugin`. The follow-up [PR #242](https://github.com/CryptoJones/GayHydra/pull/242) moved the matching `options.errorprone { ... }` block inside the same defer after the first attempt hit "No signature of method: CompileOptions.errorprone()" on Windows CI.
+- **Rec 26 Stage 2** — flip `JavaUtilDate` + `JdkObsolete` ErrorProne checks from `OFF` → `WARN` ([PR #239](https://github.com/CryptoJones/GayHydra/pull/239)). Non-blocking; surfaces the backlog for Stage 3 pre-clean.
+
+**Delivered audit + SBOM foundations:**
+
+- Audit-datatests workflow ([PR #229](https://github.com/CryptoJones/GayHydra/pull/229)) — `workflow_dispatch` trigger that runs `decomp_test_dbg datatests` per XML file under `decompile/datatests/`, captures full output per file, uploads as artifact, generates `SUMMARY.md` with pass/fail counts. Foundation for issue #215.
+- Partial Rec 21 SBOM re-impl: extract upstream-NSA-generated `support/sbom/bom.json` out of the release zip post-build, Cosign-sign it (keyless OIDC), upload as standalone signed release asset ([PR #230](https://github.com/CryptoJones/GayHydra/pull/230)). The ≥10-component sanity gate that was lost when the cyclonedxBom plugin was reverted in Sprint 7's #220 is re-added at the workflow level via Python `jq`-style component counting ([PR #233](https://github.com/CryptoJones/GayHydra/pull/233)).
+- `docs/release/SBOM.md` updated to describe both the in-zip and standalone signed paths + the Sprint-8-options decision matrix ([PR #234](https://github.com/CryptoJones/GayHydra/pull/234)).
+
+**Delivered decision records:**
+
+- DD-019 captures the Rec 21 SBOM revert + the partial bundled-extract re-impl decision and alternatives considered ([PR #231](https://github.com/CryptoJones/GayHydra/pull/231)).
+- DD-011 flipped from "Codeberg mirror deferred" → "shipped" (same PR).
+
+**v26.1.6 release artifacts (Sprint 7 close):** the v26.1.6 release workflow ran successfully — first ever signed release on this fork. Three signed assets attached: `ghidra_26.1.6_GayHydra-26.1.6_20260521_linux_x86_64.zip` (568 MB), `.zip.sig`, `.zip.crt`. Verified via `cosign verify-blob` with OIDC identity at `github.com/CryptoJones/GayHydra/`.
+
+**Carried to Sprint 9:**
+
+- **PR #241** in flight: cyclonedx-gradle-plugin bump `1.10.0` → `3.2.4`, the proper strict-CycloneDX re-impl using the post-PR-#532 rewrite. Branch built against the new 3.x DSL (`jsonOutput`/`xmlOutput` properties, no `outputFormat`). CI signal pending on merge into master.
+- Audit the 189 decompiler datatest failures (issue #215). Workflow_dispatch run in flight; categorization is Sprint 9 work.
+- Re-enable datatests in `decompiler-cpp-tests.yml` once the audit is done.
+- Rec 13/14 OSS-Fuzz external submission to google/oss-fuzz.
+- Rec 25/26 Stage 3 — pre-clean ≥50-warning subprojects + promote ratcheted checks to `ERROR` + `-Werror`.
+
+---
+
 ## Sprint 7 — Codeberg mirror + local Win11 VM + CI green tree-wide (delivered 2026-05-21)
 
 **Goal:** Mirror the repo to Codeberg per Aaron's dual-remote convention; stand up a local QEMU Win11 VM for .NET testing; bring all three CI workflows green after Sprint 6's cascade revealed deeper layer-by-layer breakage.
