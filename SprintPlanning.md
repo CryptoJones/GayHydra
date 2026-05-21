@@ -10,32 +10,6 @@ For the *why* behind individual choices, see
 
 ---
 
-## Sprint 7 — Codeberg mirror + local Win11 VM + finish CI green (in progress)
-
-**Goals:** Mirror the repo to Codeberg per Aaron's dual-remote convention; stand up a local QEMU Win11 VM for .NET testing; bring CI green tree-wide after Sprint 6's cascade of fixes.
-
-**Done:**
-
-- ✅ Codeberg mirror at <https://codeberg.org/CryptoJones/GayHydra> — master, all `sprint-1`..`sprint-6` branches, all `v26.1.x` tags pushed.
-- ✅ Per-sprint git tags `v26.1`..`v26.1.5` at each sprint's close commit, with matching `sprint-N` branches.
-- ✅ GitHub Releases entries for `v26.1` through `v26.1.5` with per-sprint highlights.
-- ✅ QEMU Win11 VM scaffolding under `~/qemu-win11/` — `launch.sh`, `start-tpm.sh`, `autounattend.xml` + ISO, `post-install.ps1`, README. SSH-ready poller running.
-- ✅ PR #206 — IP headers on `ToggleTypeCastsAction.java` (from upstream port) + `GhidraSerialFilterDefaultTest.java` (Rec 20).
-- ✅ Release cadence saved to memory: minor `26.1.x` per sprint, major `26.x` every 10 sprints.
-
-**In flight:**
-
-- 🟡 Win11 VM first-boot install (kicked off; ~20–30 min wall). VNC at `127.0.0.1:5900`, SSH at `ssh win11-ci` once ready.
-- 🟡 CI runs catching up at each fix-PR.
-
-**Carried to Sprint 8:**
-
-- Bring all 3 CI platforms green (each iteration so far has revealed the next blocker — should be the last one or two).
-- Re-wire ErrorProne cleanly (works locally on Gradle 9.5+, fails on 8.5).
-- Sprint 5's still-open items (Rec 13/14 OSS-Fuzz, Rec 19 #19-2 SafeObjectInput migration, Rec 25/26 Stage 2).
-
----
-
 ## Sprint 8 — Rebrand + finish-line cleanup
 
 **Top priority — Rebrand: Ghidra → GayHydra (user-facing only).** Aaron's constraint: **leave the `Ghidra/` directory, Java packages (`ghidra.*`), and class files alone** — upstream-merge cost would be permanent. So the rebrand stays at the user-facing surface.
