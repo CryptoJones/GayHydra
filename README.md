@@ -54,7 +54,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **19. Audit Java deserialization sites end-to-end.** 20+ files use raw `ObjectInputStream.readObject()` (FileSystem item storage, RepositoryItem, Version, etc.). Recent GP-6719 added an RMI filter — extend the same allowlist discipline to the non-RMI sites. There should be exactly one approved deserialization helper. — [JAVA_DESERIALIZATION_AUDIT.md](docs/security/JAVA_DESERIALIZATION_AUDIT.md)
 
-- [ ] **20. Document and ship a `serial.filter` for the desktop client by default.** Recent work added it (`Framework/FileSystem/data/client.rmi.serial.filter`); make sure it's on by default and that the allowlist is regression-tested when classes are renamed.
+- [x] **20. Document and ship a `serial.filter` for the desktop client by default.** Recent work added it (`Framework/FileSystem/data/client.rmi.serial.filter`); make sure it's on by default and that the allowlist is regression-tested when classes are renamed. — [launch.properties](Ghidra/RuntimeScripts/Common/support/launch.properties), [GhidraSerialFilterDefaultTest.java](Ghidra/Framework/FileSystem/src/test/java/ghidra/framework/remote/GhidraSerialFilterDefaultTest.java)
 
 - [ ] **21. Add SBOM generation to release.** Gradle dependency locking is in place — good. But there's no published SBOM. Generate CycloneDX or SPDX as part of `buildGhidra` and attach it to releases. Enterprise consumers increasingly require this.
 
