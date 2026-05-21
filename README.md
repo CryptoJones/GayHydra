@@ -106,7 +106,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **41. Establish a processor-maintenance policy.** Each `Ghidra/Processors/<arch>/` should have a named maintainer (community is fine), a test corpus, and an "orphaned after N years inactive" marker so users know what to trust. Right now everything looks equally maintained from the README, and that's not true. — [Processors/MAINTAINERS.md](Ghidra/Processors/MAINTAINERS.md)
 
-- [ ] **42. Modernize the build's Python story.** Jython is deprecated in favor of PyGhidra but still ships in `Extensions/Jython`. Pick a date, announce, remove. Two Python paths is worse than either one alone, and the test suite for PyGhidra is correspondingly thin (recurring Debugger PR cluster — #8978 etc — is partly Python-stack churn).
+- [x] **42. Modernize the build's Python story.** Jython is deprecated in favor of PyGhidra but still ships in `Extensions/Jython`. Pick a date, announce, remove. Two Python paths is worse than either one alone, and the test suite for PyGhidra is correspondingly thin (recurring Debugger PR cluster — #8978 etc — is partly Python-stack churn). — [decision 0003](docs/decisions/0003-jython-deprecation.md)
 
 ---
 
