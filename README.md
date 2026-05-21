@@ -62,7 +62,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 ## III. Testing & CI — *the embarrassing gap*
 
-- [ ] **22. Run tests in CI.** The single CI workflow (`build-ghidra.yml`) calls `./gradlew buildGhidra` and exits. No `test`, no `integrationTest`, no decompiler unit tests. For a project this size and reach, this is the most surprising finding in the audit. JaCoCo is wired up locally and the coverage data never reaches a dashboard.
+- [x] **22. Run tests in CI.** The single CI workflow (`build-ghidra.yml`) calls `./gradlew buildGhidra` and exits. No `test`, no `integrationTest`, no decompiler unit tests. For a project this size and reach, this is the most surprising finding in the audit. JaCoCo is wired up locally and the coverage data never reaches a dashboard. — [build-ghidra.yml](.github/workflows/build-ghidra.yml)
 
 - [ ] **23. Multi-OS CI matrix.** Decompiler builds on Linux, macOS, and Windows; CI only tests Linux. Native bugs on Windows/macOS are caught by users, not maintainers. Run at minimum a build+smoke matrix on all three.
 
