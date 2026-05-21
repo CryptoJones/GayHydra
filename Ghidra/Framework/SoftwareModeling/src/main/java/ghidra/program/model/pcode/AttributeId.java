@@ -254,6 +254,8 @@ public record AttributeId(String name, int id) {
 	public static final AttributeId ATTRIB_AFTER_STORAGE = new AttributeId("afterstorage", 157);
 	public static final AttributeId ATTRIB_FILL_ALTERNATE = new AttributeId("fillalternate", 158);
 
-	public static final AttributeId ATTRIB_UNKNOWN = new AttributeId("XMLunknown", 159);
+	// edge
+	public static final AttributeId ATTRIB_EDGE_LABEL = new AttributeId("edgelabel", 159);
 
+	public static final AttributeId ATTRIB_UNKNOWN = new AttributeId("XMLunknown", 160);
 }
