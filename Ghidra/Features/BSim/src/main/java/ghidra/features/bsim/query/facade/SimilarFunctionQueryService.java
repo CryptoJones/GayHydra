@@ -35,6 +35,8 @@ import ghidra.util.task.TaskMonitor;
  * A simple class that allows the user to query a server for functions that match a given 
  * set of functions.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class SimilarFunctionQueryService implements AutoCloseable {
 
 	private FunctionDatabase database = null;

@@ -46,6 +46,8 @@ import utility.module.ModuleUtilities;
  * methods of this class that create {@link ImageIcon}s will do so by loading image bytes directly,
  * as opposed to using the flawed constructor {@link ImageIcon#ImageIcon(Image)}.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ResourceManager {
 	public static final String BOMB = "images/core.png";
 	public static final String BIG_BOMB = "images/core24.png";

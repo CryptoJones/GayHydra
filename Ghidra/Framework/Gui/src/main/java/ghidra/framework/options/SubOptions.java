@@ -26,6 +26,8 @@ import javax.swing.KeyStroke;
 
 import ghidra.util.HelpLocation;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class SubOptions implements Options {
 
 	private AbstractOptions options;

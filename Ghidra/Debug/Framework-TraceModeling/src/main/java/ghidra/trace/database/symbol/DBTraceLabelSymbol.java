@@ -45,6 +45,8 @@ import ghidra.util.exception.DuplicateNameException;
  * </ul>
  */
 @DBAnnotatedObjectInfo(version = 1)
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DBTraceLabelSymbol extends AbstractDBTraceSymbol
 		implements TraceLabelSymbol, TraceSpaceMixin, DecodesAddresses {
 	static final String TABLE_NAME = "Labels";

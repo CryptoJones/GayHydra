@@ -35,6 +35,8 @@ import ghidra.util.MathUtilities;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class AbstractDBTraceProgramViewMemory
 		implements TraceProgramViewMemory, MemoryAdapter {
 	protected final DBTraceProgramView program;

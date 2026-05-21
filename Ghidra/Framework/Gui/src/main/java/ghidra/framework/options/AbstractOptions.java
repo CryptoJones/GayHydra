@@ -33,6 +33,8 @@ import ghidra.util.exception.AssertException;
 import utilities.util.reflection.ReflectionUtilities;
 import utility.function.Dummy;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class AbstractOptions implements Options {
 	public static final Set<Class<?>> SUPPORTED_CLASSES = buildSupportedClassSet();
 

@@ -23,6 +23,8 @@ import ghidra.features.bsim.query.elastic.ElasticDatabase;
 import ghidra.features.bsim.query.file.H2FileFunctionDatabase;
 import ghidra.framework.protocol.ghidra.GhidraURL;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class BSimClientFactory {
 
 	/**

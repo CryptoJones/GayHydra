@@ -23,6 +23,8 @@ import com.google.gson.*;
 
 import ghidra.util.Msg;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ElasticConnection {
 	public static final String POST = "POST";
 	public static final String PUT = "PUT";

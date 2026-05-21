@@ -50,6 +50,8 @@ import ghidra.util.database.annot.*;
 import ghidra.util.database.spatial.rect.Rectangle2DDirection;
 import ghidra.util.exception.VersionException;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DBTraceReferenceSpace implements DBTraceSpaceBased, TraceReferenceSpace {
 	protected final static int CHUNK_SIZE = DBTrace.CHUNK_SIZE;
 

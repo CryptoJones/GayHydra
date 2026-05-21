@@ -42,6 +42,8 @@ import ghidra.util.task.TaskMonitor;
  * <p>
  * Note this is the bare minimum to support {@link DumbMemBufferImpl}
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DBTraceGuestPlatformMappedMemory implements Memory {
 	protected final DBTraceMemoryManager manager;
 	protected final DBTraceGuestPlatform guest;

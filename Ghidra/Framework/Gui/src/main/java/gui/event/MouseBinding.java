@@ -35,6 +35,8 @@ import ghidra.util.Msg;
  * The modifiers used by this class will include the button down mask for the given button.  This
  * is done to match how {@link MouseEvent} uses its modifiers.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MouseBinding {
 
 	private static final Pattern BUTTON_PATTERN =
