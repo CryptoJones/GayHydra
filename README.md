@@ -46,7 +46,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **15. Build ASAN/UBSAN CI variants of the decompiler.** Makefile has the flags *commented out* (`decompile/cpp/Makefile:256`). Enable them in a nightly CI job. With ~2,700 raw allocations, this will surface real bugs immediately. — [Makefile target `test_san`](Ghidra/Features/Decompiler/src/decompile/cpp/Makefile), [workflow](.github/workflows/decompiler-sanitizers.yml), [doc](docs/decompiler/asan-ubsan-ci.md)
 
-- [ ] **16. Ship an explicit script sandbox option.** `GhidraScript` (Java) and `PyGhidraScriptProvider` (Python) run with full JVM privileges including reflection and arbitrary classloading. There is no opt-in sandbox mode. Headless mode + a malicious script in a shared directory = full code execution. At minimum, add a "trusted scripts only" mode that refuses to run scripts outside a signed/configured allowlist.
+- [x] **16. Ship an explicit script sandbox option.** `GhidraScript` (Java) and `PyGhidraScriptProvider` (Python) run with full JVM privileges including reflection and arbitrary classloading. There is no opt-in sandbox mode. Headless mode + a malicious script in a shared directory = full code execution. At minimum, add a "trusted scripts only" mode that refuses to run scripts outside a signed/configured allowlist. — [SCRIPT_SANDBOX.md](docs/security/SCRIPT_SANDBOX.md)
 
 - [ ] **17. Sign released decompiler binaries and update the doc.** The decompiler ships as a native executable; binary distribution integrity is a real supply-chain question. Document the verification path.
 
