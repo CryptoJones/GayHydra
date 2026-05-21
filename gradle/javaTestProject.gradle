@@ -25,6 +25,12 @@
 
 test { t ->
 
+	// Rec 29 Stage 2: route tests through the JUnit 5 Platform.
+	// The Vintage engine (testRuntimeOnly in javaProject.gradle)
+	// runs the existing JUnit 4 tests through the Platform without
+	// any code change. New JUnit 5 tests pick up automatically.
+	useJUnitPlatform()
+
 	forkEvery = 1
 	initTestJVM(t, rootProject.ext.testRootDirName)
 
@@ -53,10 +59,13 @@ test { t ->
 
 task integrationTest (type: Test) { t ->
 	group = "test"
-	dependsOn { project(":FunctionID").unpackFidDatabases }	
+	dependsOn { project(":FunctionID").unpackFidDatabases }
 	testClassesDirs = files sourceSets.integrationTest.output.classesDirs
 
 	classpath = sourceSets.integrationTest.runtimeClasspath
+
+	// Rec 29 Stage 2: same Platform routing as the `test` task above.
+	useJUnitPlatform()
 
 	// Do not include suite classes; they trigger the tests in the suite to get run twice
 	// (once by normal jUnit and again when the suite runs).
