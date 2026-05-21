@@ -1,0 +1,115 @@
+name: Audit Decompiler Datatests
+
+# Sprint 8 audit tooling — see issue #215.
+#
+# Runs `decomp_test_dbg datatests` against every XML test file under
+# Ghidra/Features/Decompiler/src/decompile/datatests/ and captures the
+# full decompiler output per file as a workflow artifact. The artifact
+# lets us read the actual vs expected output without re-running the
+# binary locally for each failure.
+#
+# Triggered manually (workflow_dispatch). Don't wire to push/PR — the
+# build + sleigh-compile + N test runs takes 30-60 min and the goal is
+# audit, not gate.
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Optional grep pattern to limit which XML files are run (e.g. "heap|stack"). Empty = all.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Capture decompiler output per datatest file
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
+
+      - name: Read Ghidra JDK version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Compile SLEIGH language files (.sla)
+        run: gradle allSleighCompile --parallel
+
+      - name: Build decomp_test_dbg
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
+        run: make -j$(getconf _NPROCESSORS_ONLN) decomp_test_dbg
+
+      - name: Run datatests, one XML file at a time, capture output
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
+        env:
+          FILTER: ${{ github.event.inputs.filter }}
+        run: |
+          set +e   # let individual tests fail without aborting the loop
+          mkdir -p ../datatest-audit
+          files=$(ls ../datatests/*.xml | xargs -n1 basename | sort)
+          if [ -n "$FILTER" ]; then
+            files=$(echo "$files" | grep -E "$FILTER" || true)
+            test -n "$files" || { echo "filter '$FILTER' matched no files"; exit 1; }
+          fi
+          # decomp_test_dbg's default sleighpath is relative to the CWD, so
+          # we stay in cpp/ for every invocation. -path points at a tmpdir
+          # holding a single XML so only that file's tests run.
+          for f in $files; do
+            name="${f%.xml}"
+            echo "::group::$name"
+            tmpd=$(mktemp -d)
+            cp "../datatests/$f" "$tmpd/"
+            ./decomp_test_dbg -path "$tmpd" datatests > "../datatest-audit/${name}.out" 2>&1
+            rc=$?
+            echo "exit=$rc" >> "../datatest-audit/${name}.out"
+            rm -rf "$tmpd"
+            echo "::endgroup::"
+            echo "$name: exit=$rc, $(grep -c '^Success' "../datatest-audit/${name}.out" || echo 0) pass, $(grep -c '^FAIL' "../datatest-audit/${name}.out" || echo 0) fail"
+          done
+
+      - name: Summarize
+        working-directory: Ghidra/Features/Decompiler/src/decompile
+        run: |
+          echo "## Datatest audit summary" > datatest-audit/SUMMARY.md
+          echo >> datatest-audit/SUMMARY.md
+          echo "| File | Pass | Fail | Notes |" >> datatest-audit/SUMMARY.md
+          echo "|---|---|---|---|" >> datatest-audit/SUMMARY.md
+          for out in datatest-audit/*.out; do
+            name=$(basename "$out" .out)
+            pass=$(grep -c '^Success' "$out" || echo 0)
+            fail=$(grep -c '^FAIL' "$out" || echo 0)
+            notes=""
+            grep -q 'Could not find .sla file' "$out" && notes="missing .sla"
+            grep -q 'Segmentation fault' "$out" && notes="segfault"
+            echo "| $name | $pass | $fail | $notes |" >> datatest-audit/SUMMARY.md
+          done
+          cat datatest-audit/SUMMARY.md
+
+      - name: Upload audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: datatest-audit-${{ github.run_id }}
+          path: Ghidra/Features/Decompiler/src/decompile/datatest-audit/
+          retention-days: 30
