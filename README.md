@@ -20,7 +20,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **5. Create a separate lane for decompiler *correctness* fixes.** PRs like #6718 (shifted struct-offset loop bug) age the same as 13k-line processor submissions. Correctness regressions in the crown jewel should have an expedited path. — [DECOMPILER_CORRECTNESS_LANE.md](docs/governance/lanes/DECOMPILER_CORRECTNESS_LANE.md)
 
-- [ ] **6. Adopt an RFC process for mega-PRs.** #4103 (WebAssembly, 4.2yr, +15,387 LOC) and #5778 (RISC-V vector/crypto, 2.7yr, +6,676) cannot be reviewed line-by-line against a closed-development model. Require a design RFC *first*, then merge in small landings. Today these PRs are humanitarian disasters for the contributors who wrote them.
+- [x] **6. Adopt an RFC process for mega-PRs.** #4103 (WebAssembly, 4.2yr, +15,387 LOC) and #5778 (RISC-V vector/crypto, 2.7yr, +6,676) cannot be reviewed line-by-line against a closed-development model. Require a design RFC *first*, then merge in small landings. Today these PRs are humanitarian disasters for the contributors who wrote them. — [RFC_PROCESS.md](docs/governance/RFC_PROCESS.md), [template](docs/rfcs/0000-template.md)
 
 - [ ] **7. Publish the bus factor.** Comment analysis shows maintainer engagement concentrates on ~9 logins (`ryanmkurtz`, `ghidra1`, `emteere`, `dragonmacher`, `pjsoberoi`, `mumbel`, `GhidorahRex`, `Sleigh-InSPECtor`, `nsadeveloper789`). Make that explicit. Community contributors (`jobermayr`, `astrelsky`, `LukeSerne`, `nneonneo`) are doing unpaid triage with no recognition or commit bit — formalize this.
 
