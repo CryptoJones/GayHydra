@@ -20,34 +20,93 @@
  *   `cyclonedxDirectBom` (per-project) task; the aggregate
  *   `cyclonedxBom` walks every config by default.
  * - `destination = file(...)` → `jsonOutput.set(...)` / `xmlOutput.set(...)`.
+ * - `schemaVersion` is now an `org.cyclonedx.Version` enum (was String);
+ *   valid values VERSION_10..VERSION_16.
+ *
+ * Three problems we ran into loading the `org.cyclonedx.Version` enum
+ * for `schemaVersion = Version.VERSION_16`:
+ *
+ * 1. `import org.cyclonedx.Version` at script-top fails at compile time
+ *    with "unable to resolve class" — the cyclonedx-core-java JAR isn't
+ *    on the apply-from script's compile classpath.
+ *
+ * 2. Inline `org.cyclonedx.Version.VERSION_16` inside the
+ *    `cyclonedxBom { ... }` closure fails with "Could not get unknown
+ *    property 'org'" — Groovy resolves bare identifiers against the
+ *    task delegate first.
+ *
+ * 3. `Class.forName('org.cyclonedx.Version')` at script-top fails with
+ *    ClassNotFoundException — the apply-from script's classloader
+ *    doesn't include the plugin's transitive deps. Gradle isolates
+ *    each plugin's classpath in a child loader.
+ *
+ * Walk through the plugin instance's classloader to find Version. That
+ * classloader is the one with cyclonedx-core-java loaded.
+ *
+ * Note on the `hasPlugin` guard: the gradle/actions/dependency-submission
+ * action runs Gradle in a stripped-down mode that doesn't apply the
+ * `org.cyclonedx.bom` plugin. Skip the cyclonedxBom + sbomSanityCheck
+ * wiring entirely when the plugin isn't present; the dep-submission
+ * action only needs the dependency graph, not the SBOM task.
  *
  * Plugin declared in the root build.gradle's plugins {} block.
  * This file just configures the task + sanity-gate.
  */
 
-cyclonedxBom {
-    schemaVersion = '1.6'        // Latest CycloneDX spec as of plugin 3.2.4.
-    projectType = 'application'
+if (plugins.hasPlugin('org.cyclonedx.bom')) {
+    // Look up both enum values via the plugin's classloader. Both
+    // schemaVersion (org.cyclonedx.Version) and projectType
+    // (org.cyclonedx.model.Component$Type) became enums in plugin 3.x.
+    def cdxClassLoader = plugins.getPlugin('org.cyclonedx.bom').class.classLoader
+    def cdxVersionEnum = cdxClassLoader.loadClass('org.cyclonedx.Version').enumConstants
+            .find { it.name() == 'VERSION_16' }
+    def cdxProjectTypeApp = cdxClassLoader.loadClass('org.cyclonedx.model.Component$Type').enumConstants
+            .find { it.name() == 'APPLICATION' }
 
-    // Both formats — downstream tools differ on JSON vs XML preference.
-    jsonOutput = layout.buildDirectory.file('reports/sbom/bom.json')
-    xmlOutput  = layout.buildDirectory.file('reports/sbom/bom.xml')
+    cyclonedxBom {
+        schemaVersion = cdxVersionEnum       // CycloneDX 1.6 (latest as of plugin 3.2.4).
+        projectType = cdxProjectTypeApp      // Application (root project type for the SBOM metadata).
 
-    includeBomSerialNumber = true
-    includeBuildSystem = true
-    includeLicenseText = false   // Keep the SBOM small; licenses are linked, not embedded.
-}
+        // Both formats — downstream tools differ on JSON vs XML preference.
+        jsonOutput = layout.buildDirectory.file('reports/sbom/bom.json')
+        xmlOutput  = layout.buildDirectory.file('reports/sbom/bom.xml')
 
-// Hook the SBOM into the distribution flow. The release task
-// (buildGhidra) depends on cyclonedxBom so the SBOM exists before
-// the zip is assembled. cyclonedxBom in turn must produce a
-// non-trivial SBOM (sanity gate).
-afterEvaluate {
-    tasks.matching { it.name == 'buildGhidra' }.configureEach {
-        dependsOn 'cyclonedxBom'
+        includeBomSerialNumber = true
+        includeBuildSystem = true
+        includeLicenseText = false   // Keep the SBOM small; licenses are linked, not embedded.
     }
-    tasks.matching { it.name == 'cyclonedxBom' }.configureEach {
-        finalizedBy 'sbomSanityCheck'
+
+    // Hook the SBOM into the distribution flow. The release task
+    // (buildGhidra) depends on cyclonedxBom so the SBOM exists before
+    // the zip is assembled. cyclonedxBom in turn must produce a
+    // non-trivial SBOM (sanity gate).
+    afterEvaluate {
+        tasks.matching { it.name == 'buildGhidra' }.configureEach {
+            dependsOn 'cyclonedxBom'
+        }
+        tasks.matching { it.name == 'cyclonedxBom' }.configureEach {
+            finalizedBy 'sbomSanityCheck'
+        }
+    }
+
+    // Plugin 3.x auto-registers a per-subproject `cyclonedxDirectBom`
+    // task on every project that applies `java-library`. Each
+    // per-project task writes its SBOM into the subproject's
+    // `build/reports/sbom/` directory — which Gradle 8.5+ then flags
+    // as an undeclared input to `:assembleDistribution`, breaking the
+    // build with "Task ':assembleDistribution' uses this output of
+    // task ':decompile:cyclonedxDirectBom' without declaring an
+    // explicit or implicit dependency."
+    //
+    // We don't want or use the per-subproject SBOMs — the aggregate
+    // `cyclonedxBom` at the root produces a single SBOM with all
+    // resolved deps, which is what release.yml extracts and signs.
+    // Disable the per-subproject tasks so they don't write into the
+    // tree-walked dist directories at all.
+    subprojects {
+        tasks.matching { it.name == 'cyclonedxDirectBom' }.configureEach {
+            enabled = false
+        }
     }
 }
 
