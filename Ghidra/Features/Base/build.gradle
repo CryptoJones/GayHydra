@@ -134,9 +134,18 @@ task buildJavacc {
 		// `package` line, imports, then exactly ONE top-level declaration.
 		// Pattern: optional modifier words (public/abstract/final/static),
 		// then `class|interface|enum`, then the identifier.
+		//
+		// Skip files that already carry an `@SuppressWarnings` annotation at
+		// some level (PreProcessor.java and CParserTokenManager.java do) —
+		// Java's `@SuppressWarnings` isn't @Repeatable, so a second one
+		// fails compilation.
 		def classDeclPattern = ~/^(?:public\s+|abstract\s+|final\s+|static\s+)*(?:class|interface|enum)\s+\w/
+		def existingAnnotPattern = ~/^\s*@SuppressWarnings\b/
 		fileTree(dir: "build/generated-src/javacc", include: "**/*.java").each { f ->
 			def lines = f.readLines()
+			if (lines.any { existingAnnotPattern.matcher(it).find() }) {
+				return  // file already has @SuppressWarnings somewhere; skip.
+			}
 			def patched = []
 			boolean done = false
 			lines.each { line ->
