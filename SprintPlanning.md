@@ -14,21 +14,24 @@ For the *why* behind individual choices, see
 
 **Top priority — Rebrand: Ghidra → GayHydra (user-facing only).** Aaron's constraint: **leave the `Ghidra/` directory, Java packages (`ghidra.*`), and class files alone** — upstream-merge cost would be permanent. So the rebrand stays at the user-facing surface.
 
-- [ ] **Tier 1 (cheap):** README, top-level docs (DevGuide, MAINTAINERS, SECURITY, CHANGELOG, DesignDecisions, Sprint*), app display name in the About dialog, splash image, window titles. User-facing strings only. One PR, no merge-conflict risk.
+- [x] **Tier 1 (cheap):** README, top-level docs (DevGuide, MAINTAINERS, SECURITY, CHANGELOG, DesignDecisions, Sprint*), app display name in the About dialog, splash image, window titles. Shipped: PRs #222 (image), #223 (README rebrand), #224 (icons under `Ghidra/` — Aaron approved overriding for icons specifically), #226 (SECURITY.md), #227 (DevGuide addendum).
 - [ ] **Tier 2 (medium):** non-code surfaces outside `Ghidra/` — top-level filenames containing `Ghidra` if any survive, build-script task display names (the `:Ghidra<X>` task IDs stay; only their `description = ` strings get retitled), certification.manifest titles. Each rename touches one file at a time; merge cost stays at zero.
 - **Out of scope (per Aaron):** Java package rename `ghidra.*`, class/file names containing `Ghidra` under `Ghidra/`, the directory itself. Upstream NSA merges must stay clean.
 
 **Followup from Sprint 7's CI cascade (filed as issues):**
 
-- [ ] Re-implement Rec 21 SBOM with proper flat-dir dep handling — cyclonedx-gradle-plugin NPEs on `:AXMLPrinter2:` and the other ad-hoc deps. Either upgrade past 1.10.0, switch plugins, or feed dummy coords. Currently gated/disabled (#217 set placeholder coords; downstream NPE remains).
-- [ ] Audit the 189 decompiler datatest failures — see issue #215. Cosmetic regex updates vs. real regressions; batch the former, file individual bugs for the latter (consider upstream give-back PRs).
+- [ ] Re-implement Rec 21 SBOM with full CycloneDX-shape XML output — partial re-impl shipped in #230/#233 (extract bundled SBOM as separate signed asset + sanity-gate ≥10 components). Three options for the strict-CycloneDX layer in [`docs/release/SBOM.md`](docs/release/SBOM.md).
+- [ ] Audit the 189 decompiler datatest failures — see issue #215. Audit-tooling workflow shipped in #229 (`audit-datatests.yml`, workflow_dispatch trigger). Triggered run 26233860200 in flight.
 - [ ] Re-enable datatests in `decompiler-cpp-tests.yml` once the audit is done.
 
 **Carried from Sprint 7:**
 
-- Bring all 3 CI platforms green (each iteration so far has revealed the next blocker — should be the last one or two).
-- Re-wire ErrorProne cleanly (works locally on Gradle 9.5+, fails on 8.5).
-- Sprint 5's still-open items (Rec 13/14 OSS-Fuzz, Rec 19 #19-2 SafeObjectInput migration, Rec 25/26 Stage 2).
+- [x] Bring all 3 CI platforms green — shipped in Sprint 7 close (v26.1.6). See `SprintHistory.md`.
+- [x] Re-wire ErrorProne cleanly — shipped in #236 (defer dependency-add inside `pluginManager.withPlugin` so the Gradle 8.5 timing bug is worked around).
+- Sprint 5's still-open items:
+    - [ ] Rec 13/14 OSS-Fuzz submission (external — submit `.github/oss-fuzz/` to `google/oss-fuzz` as `projects/ghidra-decompiler/`).
+    - [x] Rec 19 #19-2 first SafeObjectInput migration — shipped in #235 (ItemDeserializer reject-all `ObjectInputFilter`; CodeUnitInfo's readObject is commented out so its #19-2 entry was a no-op).
+    - [ ] Rec 25/26 Stage 2 — widen `-Xlint` to `deprecation,unchecked,rawtypes,cast` (Rec 25); enable `JavaUtilDate`/`JdkObsolete` ErrorProne checks at WARNING (Rec 26). Requires pre-cleaning subprojects ≥50 warnings.
 
 ---
 
