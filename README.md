@@ -84,7 +84,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 ## IV. Decompiler & Sleigh — *the crown jewel*
 
-- [ ] **31. Begin a phased migration from raw `new`/`delete` to RAII/smart pointers.** ~2,740 raw allocation sites across 187k LOC; one (1) `unique_ptr` import in the entire codebase. C++11 has been available since 2011. This isn't about style — it's about exception-safety and use-after-free risk on malformed input (and "use-after-free in Sleigh decompiler backend" is literally in the recent commit history, GP-37838c180a).
+- [x] **31. Begin a phased migration from raw `new`/`delete` to RAII/smart pointers.** ~2,740 raw allocation sites across 187k LOC; one (1) `unique_ptr` import in the entire codebase. C++11 has been available since 2011. This isn't about style — it's about exception-safety and use-after-free risk on malformed input (and "use-after-free in Sleigh decompiler backend" is literally in the recent commit history, GP-37838c180a). — [RAII_MIGRATION.md](docs/decompiler/RAII_MIGRATION.md)
 
 - [ ] **32. Adopt C++20.** The codebase is on `-std=c++11`. The decompiler community has moved on. `std::span`, `std::expected`, `std::format`, ranges, concepts — all directly applicable. Bump in two steps (14 → 20) with CI on three platforms.
 
