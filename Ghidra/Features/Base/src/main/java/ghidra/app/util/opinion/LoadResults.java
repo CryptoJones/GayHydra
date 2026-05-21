@@ -32,6 +32,8 @@ import ghidra.util.task.TaskMonitor;
  * 
  * @param <T> The type of {@link DomainObject}s that were loaded
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>, AutoCloseable {
 
 	private final List<Loaded<T>> loadedList;

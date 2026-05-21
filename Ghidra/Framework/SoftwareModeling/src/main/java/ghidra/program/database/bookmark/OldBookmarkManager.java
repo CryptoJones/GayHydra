@@ -31,6 +31,8 @@ import db.DBRecord;
 /**
  * Interface to manage bookmarks on a program.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class OldBookmarkManager {
 
 	public static final String OLD_BOOKMARK_PROPERTY = "Bookmarks";

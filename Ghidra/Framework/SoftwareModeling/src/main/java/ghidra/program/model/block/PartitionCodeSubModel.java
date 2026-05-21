@@ -47,6 +47,11 @@ import ghidra.util.task.TaskMonitor;
  *
  * Created February 7, 2002.
  */
+// Sprint 10 Stage-3 pre-clean: uses the @Deprecated
+// ghidra.util.graph.{DirectedGraph,Vertex,Edge,GraphIterator} for its
+// internal block-partitioning logic. Migration to GraphFactory is a
+// separate refactor; suppress here so the Stage-3 -Werror flip can land.
+@SuppressWarnings({"deprecation", "removal"})
 public class PartitionCodeSubModel implements SubroutineBlockModel {
 
 	public static final String NAME = "Partitioned Code";

@@ -30,6 +30,8 @@ import ghidra.util.task.TaskMonitor;
 /**
  * Adapter to access the Function Signature Definition database table.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 abstract class FunctionDefinitionDBAdapter implements DBRecordAdapter {
 
 	static final String FUNCTION_DEF_TABLE_NAME = "Function Definitions";

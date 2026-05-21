@@ -31,6 +31,8 @@ import ghidra.program.model.symbol.Symbol;
 import ghidra.util.SystemUtilities;
 import ghidra.util.exception.InvalidInputException;
 
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 abstract class VariableImpl implements Variable {
 
 	private String name;

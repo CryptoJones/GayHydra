@@ -32,6 +32,8 @@ import ghidra.program.model.reloc.Relocation.Status;
 import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
 
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 abstract class RelocationDBAdapter {
 
 	// History:

@@ -41,6 +41,8 @@ import ghidra.util.exception.AssertException;
 import ghidra.util.exception.DuplicateNameException;
 
 
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class VarnodeContext implements ProcessorContext {
 
 	// trace stack for the saved states during forks of execution flow

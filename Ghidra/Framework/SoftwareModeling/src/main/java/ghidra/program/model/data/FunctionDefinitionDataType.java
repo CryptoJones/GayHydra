@@ -29,6 +29,8 @@ import ghidra.util.exception.InvalidInputException;
 /**
  * Definition of a function for things like function pointers.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class FunctionDefinitionDataType extends GenericDataType implements FunctionDefinition {
 
 	private DataType returnType = DataType.DEFAULT;

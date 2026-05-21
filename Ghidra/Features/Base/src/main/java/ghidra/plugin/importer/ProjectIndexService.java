@@ -28,6 +28,8 @@ import ghidra.util.datastruct.ListenerSet;
 /**
  * An in-memory index of FSRL-to-domainfiles.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ProjectIndexService implements DomainFolderChangeListener, AutoCloseable {
 
 	public static final ProjectIndexService DUMMY = new ProjectIndexService(null);

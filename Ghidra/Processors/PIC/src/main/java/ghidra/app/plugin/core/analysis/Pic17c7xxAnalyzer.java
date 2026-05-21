@@ -31,6 +31,11 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.graph.*;
 import ghidra.util.task.TaskMonitor;
 
+// Sprint 10 Stage-3 pre-clean: the ghidra.util.graph.{DirectedGraph,Vertex,Edge}
+// triple is @Deprecated (forRemoval on Vertex). Wholesale migration to
+// GraphFactory is its own analyzer-refactor PR; suppress here to clear
+// the Stage-3 warning floor for this subproject so -Werror can land.
+@SuppressWarnings({"deprecation", "removal"})
 public class Pic17c7xxAnalyzer extends AbstractAnalyzer {
 	private static final String NAME = "PIC-17C7xx";
 	private static final String DESCRIPTION = "Analyzes PIC-17 instructions.";

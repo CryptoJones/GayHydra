@@ -39,6 +39,8 @@ import ghidra.util.task.TaskMonitor;
 /**
  * Table model for memory search results.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MemoryMatchTableModel extends AddressBasedTableModel<MemoryMatch<SearchData>> {
 	private Color CHANGED_COLOR = Tables.ERROR_UNSELECTED;
 	private Color CHANGED_SELECTED_COLOR = Tables.ERROR_SELECTED;

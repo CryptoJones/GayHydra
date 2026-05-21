@@ -35,6 +35,8 @@ import ghidra.util.UniversalID;
 import ghidra.util.exception.AssertException;
 import ghidra.util.exception.InvalidInputException;
 
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class FunctionDefinitionDB extends DataTypeDB implements FunctionDefinition {
 
 	private FunctionDefinitionDBAdapter funDefAdapter;

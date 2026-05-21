@@ -47,8 +47,14 @@ import ghidra.util.map.ObjectValueMap;
  * are made to that programs address map (e.g., removing or renaming overlay spaces).
  */
 
+// Sprint 10 Stage-3 pre-clean: this map predates generics — it uses
+// the raw `ObjectValueMap` type internally. Genericizing is a deeper
+// API change (callers pass Object); suppress here to clear the
+// Stage-3 warning floor and revisit alongside the broader collection-
+// generification work.
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AddressObjectMap {
-    
+
     private AddressMapImpl addrMap = new AddressMapImpl();
     private ObjectValueMap objMarkers = new ObjectValueMap("AddressObjectMap");
     

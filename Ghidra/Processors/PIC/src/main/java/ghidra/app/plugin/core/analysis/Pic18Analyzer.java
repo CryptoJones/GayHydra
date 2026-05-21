@@ -31,6 +31,9 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.graph.*;
 import ghidra.util.task.TaskMonitor;
 
+// Sprint 10 Stage-3 pre-clean: see Pic17c7xxAnalyzer for the rationale.
+// Same DirectedGraph/Vertex/Edge usage pattern; same suppression scope.
+@SuppressWarnings({"deprecation", "removal"})
 public class Pic18Analyzer extends AbstractAnalyzer {
 	private static final String NAME = "PIC-18";
 	private static final String DESCRIPTION = "Analyzes PIC-18 instructions.";

@@ -67,6 +67,8 @@ import ghidra.util.task.TaskMonitor;
  * full benefit of the {@link #equivalenceCache} and {@link #resolveCache}.</li>
  * </ul>
  */
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal"})
 abstract public class DataTypeManagerDB implements DataTypeManager {
 
 	/**

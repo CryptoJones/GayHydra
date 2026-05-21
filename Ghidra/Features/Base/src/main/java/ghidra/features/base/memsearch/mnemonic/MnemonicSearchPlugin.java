@@ -53,6 +53,8 @@ import ghidra.util.Msg;
 	eventsConsumed = { ProgramSelectionPluginEvent.class }
 )
 //@formatter:on
+// Sprint 10 Stage-3 pre-clean: legacy API usage; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MnemonicSearchPlugin extends Plugin {
 
 	static final String MENU_PULLRIGHT = "For Matching Instructions";
