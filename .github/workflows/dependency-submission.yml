@@ -29,12 +29,7 @@ jobs:
       - name: Fetch Dependencies
         run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
 
-      - name: Generate dependency graph (upload only)
+      - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v6
         with:
           gradle-version: '9.4.0'
-          # Fork-level "Dependency graph" is off by default on GitHub
-          # and can't be toggled via API. Until Aaron enables it under
-          # Settings > Code security, skip the submission step and just
-          # generate + upload the snapshot as a workflow artifact.
-          dependency-graph: generate-and-upload
