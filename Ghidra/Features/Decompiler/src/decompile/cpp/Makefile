@@ -257,8 +257,23 @@ decomp_opt:	$(COMMANDLINE_OPT_OBJS)
 decomp_test_dbg:	$(TEST_DEBUG_OBJS)
 	$(CXX) $(DBG_CXXFLAGS) $(ARCH_TYPE) -o decomp_test_dbg $(TEST_DEBUG_OBJS) $(BFDLIB) $(LNK)
 
+# Sanitizer variant for the test runner. Run via `make test_san`. Uses
+# ASan + UBSan + libstdc++ assertions. Target-specific assignments
+# keep the flags off non-sanitizer builds. See
+# docs/decompiler/asan-ubsan-ci.md (Rec 15).
+SAN_FLAGS := -D_GLIBCXX_ASSERTIONS -fsanitize=address,undefined -fno-omit-frame-pointer
+decomp_test_san:	DBG_CXXFLAGS += $(SAN_FLAGS)
+decomp_test_san:	LNK += $(SAN_FLAGS)
+decomp_test_san:	$(TEST_DEBUG_OBJS)
+	$(CXX) $(DBG_CXXFLAGS) $(ARCH_TYPE) -o decomp_test_san $(TEST_DEBUG_OBJS) $(BFDLIB) $(LNK)
+
 test: decomp_test_dbg
 	./decomp_test_dbg
+
+test_san: decomp_test_san
+	ASAN_OPTIONS=detect_leaks=1:abort_on_error=1 \
+	UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+	./decomp_test_san
 
 ghidra_dbg:	$(GHIDRA_DBG_OBJS)
 	$(CXX) $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(MAKE_STATIC) $(ARCH_TYPE) -o ghidra_dbg $(GHIDRA_DBG_OBJS)
