@@ -33,18 +33,34 @@ import org.gradle.plugins.ide.eclipse.model.Library;
 
 apply plugin: 'java-library'
 
+// Rec 25: ratchet -Xlint back on.
+//
+// Was: -Xlint:none across compileJava + compileTestJava. That muted
+// every javac warning in the tree and hid genuine bugs (the audit
+// found dozens of obvious deprecation + unchecked-cast sites).
+//
+// Strategy: turn on -Xlint:deprecation,unchecked everywhere, but do
+// *not* fail the build on warnings yet. The first sweep is to make
+// warnings visible. -Werror is a follow-up once the warning floor
+// is at a manageable level.
+//
+// To opt a single subproject out (temporary, while fixing its
+// backlog), set `ext.lintOpts = ['none']` in that subproject's
+// build.gradle.
 compileJava {
-	options.compilerArgs << '-Xlint:none'
+	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked']
+	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
 	options.fork = true
-	options.warnings = false
+	options.warnings = true
 }
 
 compileTestJava {
-	options.compilerArgs << '-Xlint:none'
+	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked']
+	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
 	options.fork = true
-	options.warnings = false
+	options.warnings = true
 }
 
 processResources {

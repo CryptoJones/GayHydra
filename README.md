@@ -68,7 +68,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **24. Build and run the C++ decompiler unit tests in CI.** Seven `unittests/*.cc` files plus 84 XML data-driven tests exist and don't run in CI. Wire them in. — [decompiler-cpp-tests.yml](.github/workflows/decompiler-cpp-tests.yml)
 
-- [ ] **25. Re-enable `-Xlint`.** `gradle/javaProject.gradle` currently passes `-Xlint:none`, suppressing every javac warning across the codebase. This is hiding genuine bugs. Re-enable incrementally — start with `-Xlint:deprecation,unchecked` and ratchet.
+- [x] **25. Re-enable `-Xlint`.** `gradle/javaProject.gradle` currently passes `-Xlint:none`, suppressing every javac warning across the codebase. This is hiding genuine bugs. Re-enable incrementally — start with `-Xlint:deprecation,unchecked` and ratchet. — [javaProject.gradle](gradle/javaProject.gradle), [XLINT_RATCHET.md](docs/testing/XLINT_RATCHET.md)
 
 - [ ] **26. Add static analysis.** No SpotBugs, ErrorProne, Checkstyle, or Sonar configuration anywhere in the tree. ErrorProne is the cheapest win — it integrates as a javac plugin and catches a known class of mistakes (mutable-collection-as-key, missing override, etc).
 
