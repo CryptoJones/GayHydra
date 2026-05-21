@@ -4,10 +4,10 @@
 
 ## Scope
 
-Ghidra parses adversary-controlled binaries and ships a network server.
-That makes the project a security artifact, not just a tool. This
-document specifies how to report a vulnerability in this fork
-(GayHydra), how we will respond, and what gets a CVE.
+GayHydra (like its upstream Ghidra) parses adversary-controlled binaries
+and ships a network server. That makes the project a security artifact,
+not just a tool. This document specifies how to report a vulnerability
+in this fork (GayHydra), how we will respond, and what gets a CVE.
 
 The scope of this policy is the GayHydra fork. For upstream
 NSA/ghidra, follow [their advisories](https://github.com/NationalSecurityAgency/ghidra/security/advisories).
@@ -100,14 +100,15 @@ Reporters who responsibly disclose are credited in:
 
 ## The threat model in one paragraph
 
-Ghidra is run by a security-aware user against a binary the user does
-not trust. The user's environment (the host OS, the user's files, the
-user's network) is in scope to protect. The binary being analyzed is
-the *adversary*: anything that binary causes Ghidra to do — outside
-of "be disassembled, decompiled, and shown on screen" — is a
-vulnerability we want to know about. The Ghidra server, when run,
-exposes additional network-reachable surface; everything that crosses
-that boundary from an untrusted client is in scope.
+GayHydra is run by a security-aware user against a binary the user
+does not trust. The user's environment (the host OS, the user's files,
+the user's network) is in scope to protect. The binary being analyzed
+is the *adversary*: anything that binary causes GayHydra to do —
+outside of "be disassembled, decompiled, and shown on screen" — is a
+vulnerability we want to know about. The Ghidra server (the upstream
+networked-collaboration component, name preserved), when run, exposes
+additional network-reachable surface; everything that crosses that
+boundary from an untrusted client is in scope.
 
 ## What is in scope for "security"
 
@@ -125,17 +126,18 @@ that boundary from an untrusted client is in scope.
 
 - Slow performance on degenerate-but-honest input. File a perf bug, not
   an advisory.
-- "Ghidra disassembled my malware and now I have malware on my screen."
+- "GayHydra disassembled my malware and now I have malware on my screen."
   That is the tool working.
-- Behaviour reproducible only by modifying Ghidra itself. We are not in
-  the business of defending against ourselves; we are in the business
-  of defending the user from the binary the user is reverse engineering.
+- Behaviour reproducible only by modifying GayHydra itself. We are not
+  in the business of defending against ourselves; we are in the
+  business of defending the user from the binary the user is reverse
+  engineering.
 - User-authored scripts running outside sandbox mode. Scripts in
   `~/ghidra_scripts/` and the project script paths are trusted by
   design; if a user runs a malicious script, that is the same as
   running any other untrusted program on their machine.
-- Vulnerabilities in third-party Ghidra extensions distributed
-  outside this repo. Report those to the extension's maintainer.
+- Vulnerabilities in third-party extensions distributed outside
+  this repo. Report those to the extension's maintainer.
 
 ## Related
 
