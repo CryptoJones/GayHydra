@@ -44,7 +44,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **14. Land fuzz harnesses for file-format loaders.** ELF, PE, Mach-O, DEX, PDB, DWARF, COFF — every loader parses attacker-controlled input. No public fuzzing exists for any of them. Start with the most-used three. — [LOADER_FUZZING.md](docs/security/LOADER_FUZZING.md), [harnesses](Ghidra/Features/Base/src/test.fuzz/java/ghidra/app/util/bin/format/fuzz/)
 
-- [ ] **15. Build ASAN/UBSAN CI variants of the decompiler.** Makefile has the flags *commented out* (`decompile/cpp/Makefile:256`). Enable them in a nightly CI job. With ~2,700 raw allocations, this will surface real bugs immediately.
+- [x] **15. Build ASAN/UBSAN CI variants of the decompiler.** Makefile has the flags *commented out* (`decompile/cpp/Makefile:256`). Enable them in a nightly CI job. With ~2,700 raw allocations, this will surface real bugs immediately. — [Makefile target `test_san`](Ghidra/Features/Decompiler/src/decompile/cpp/Makefile), [workflow](.github/workflows/decompiler-sanitizers.yml), [doc](docs/decompiler/asan-ubsan-ci.md)
 
 - [ ] **16. Ship an explicit script sandbox option.** `GhidraScript` (Java) and `PyGhidraScriptProvider` (Python) run with full JVM privileges including reflection and arbitrary classloading. There is no opt-in sandbox mode. Headless mode + a malicious script in a shared directory = full code execution. At minimum, add a "trusted scripts only" mode that refuses to run scripts outside a signed/configured allowlist.
 
