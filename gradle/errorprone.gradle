@@ -56,10 +56,15 @@ subprojects {
                     '-Xep:EqualsHashCode:WARN',
                     '-Xep:EqualsIncompatibleType:WARN',
                     '-Xep:StringSplitter:WARN',
-                    // Deferred to a later ratchet stage; too many
-                    // in-tree instances and the fix is non-mechanical.
-                    '-Xep:JavaUtilDate:OFF',
-                    '-Xep:JdkObsolete:OFF',
+                    // Rec 26 Stage 2 (Sprint 8): flip these from OFF
+                    // to WARN. allErrorsAsWarnings=true above keeps
+                    // them non-blocking; this just surfaces the
+                    // existing backlog in the build log so we can
+                    // measure the per-subproject count before
+                    // pre-cleaning ≥50-warning subprojects toward
+                    // Stage 3 (`ERROR` promotion).
+                    '-Xep:JavaUtilDate:WARN',
+                    '-Xep:JdkObsolete:WARN',
                 ])
             }
         }
