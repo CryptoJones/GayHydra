@@ -1,5 +1,39 @@
 # Developer's Guide
 
+> **GayHydra fork addendum — start here.**
+>
+> This fork (`CryptoJones/GayHydra`) uses upstream NSA/ghidra's developer guide
+> for the technical build/dev instructions below, since most of them apply
+> unchanged: Java packages, the `Ghidra/` source tree, Gradle task names
+> (`buildGhidra`, `prepPyGhidra`, etc.), file paths, and the `GhidraDev` Eclipse
+> plugin name are all preserved by design. The fork's `Ghidra/` source tree,
+> Java packages, and class names are deliberately not renamed so upstream
+> merges stay clean — see [`DesignDecisions.md`](DesignDecisions.md).
+>
+> Fork-specific differences from this guide:
+>
+> - **Source repository** — canonical is Codeberg
+>   ([`codeberg.org/CryptoJones/GayHydra`](https://codeberg.org/CryptoJones/GayHydra)),
+>   mirrored to GitHub for CI and security tooling. Both forges carry the
+>   same commits; clone whichever you prefer.
+> - **CI surface** — see `.github/workflows/build-ghidra.yml`,
+>   `decompiler-cpp-tests.yml`, `decompiler-sanitizers.yml`,
+>   `dependency-submission.yml`. Decompiler unit tests run on every push; data
+>   tests are currently scoped out pending the Sprint 8 audit
+>   ([issue #215](https://codeberg.org/CryptoJones/GayHydra/issues/215)).
+> - **PR governance** — see [`CONTRIBUTING.md`](CONTRIBUTING.md)'s fork
+>   addendum and the lanes under [`docs/governance/`](docs/governance/).
+> - **Versioning** — `26.1.x` per sprint, `26.x` major every 10 sprints. See
+>   [`SprintPlanning.md`](SprintPlanning.md).
+> - **Where references to "Ghidra" appear below** — read them as "the
+>   underlying codebase, which behaves the same in this fork unless the
+>   surrounding context says otherwise."
+>
+> The rest of this document is upstream NSA/ghidra's `DevGuide.md`
+> preserved unchanged.
+
+---
+
 ## Environment
 * Primary Language: [Java][java]
 * Secondary Languages: [C++][cpp], [Sleigh][sleigh], [Python 3][python] [Jython 2.7][jython]
