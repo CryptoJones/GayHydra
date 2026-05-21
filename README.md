@@ -72,7 +72,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **26. Add static analysis.** No SpotBugs, ErrorProne, Checkstyle, or Sonar configuration anywhere in the tree. ErrorProne is the cheapest win — it integrates as a javac plugin and catches a known class of mistakes (mutable-collection-as-key, missing override, etc). — [errorprone.gradle](gradle/errorprone.gradle), [ERRORPRONE.md](docs/testing/ERRORPRONE.md)
 
-- [ ] **27. Adopt Mockito (or an equivalent).** Tests rely entirely on JUnit 4 + Hamcrest with no mocking framework. Result: test setup is heavyweight (real Swing, real programs) — and modules with hard dependencies (Project: 404 src files / 21 tests, SoftwareModeling: 1631 / 128) go untested because mocking is too painful.
+- [x] **27. Adopt Mockito (or an equivalent).** Tests rely entirely on JUnit 4 + Hamcrest with no mocking framework. Result: test setup is heavyweight (real Swing, real programs) — and modules with hard dependencies (Project: 404 src files / 21 tests, SoftwareModeling: 1631 / 128) go untested because mocking is too painful. — [javaProject.gradle](gradle/javaProject.gradle), [MOCKITO_ADOPTION.md](docs/testing/MOCKITO_ADOPTION.md)
 
 - [ ] **28. Triage `@Ignore` debt.** Ignored tests in `x86AssemblyTest`, `dsPIC30FAssemblyTest`, `ARMAssemblyTest`, `x64AssemblyTest`, `SymbolPathParserTest`, `CharsetInfoManagerTest`. Each ignored test is a frozen bug report. Either fix or delete.
 

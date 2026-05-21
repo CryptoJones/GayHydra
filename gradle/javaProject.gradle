@@ -181,6 +181,13 @@ dependencies {
 	testImplementation "junit:junit:4.13.2"
 	pcodeTestImplementation "junit:junit:4.13.2"
 	cspecTestImplementation "junit:junit:4.13.2"
+
+	// Rec 27: Mockito for the next generation of unit tests. New tests
+	// should prefer Mockito over heavyweight real-Swing/real-Program
+	// setup; existing tests are migrated opportunistically.
+	// See docs/testing/MOCKITO_ADOPTION.md.
+	testImplementation "org.mockito:mockito-core:5.12.0"
+	testImplementation "org.mockito:mockito-junit-jupiter:5.12.0"
 }
 
 // For Java 9, we must explicitly export references to the internal classes we are using.
