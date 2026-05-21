@@ -6,7 +6,7 @@
 [![Build Ghidra](https://github.com/CryptoJones/GayHydra/actions/workflows/build-ghidra.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/build-ghidra.yml)
 [![Decompiler C++ Tests](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml)
 [![Decompiler ASan/UBSan](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml)
-[![Release](https://img.shields.io/github/v/release/CryptoJones/GayHydra?include_prereleases&label=release&logo=github)](https://codeberg.org/CryptoJones/GayHydra/releases)
+[![Release](https://img.shields.io/github/v/release/CryptoJones/GayHydra?include_prereleases&label=release&logo=github)](https://github.com/CryptoJones/GayHydra/releases)
 [![Codeberg](https://img.shields.io/badge/Codeberg-CryptoJones%2FGayHydra-2185D0?logo=codeberg&logoColor=white)](https://codeberg.org/CryptoJones/GayHydra)
 [![GitHub](https://img.shields.io/badge/GitHub-CryptoJones%2FGayHydra-181717?logo=github&logoColor=white)](https://github.com/CryptoJones/GayHydra)
 
@@ -274,7 +274,7 @@ benefits too.
 [gettingstarted]: GhidraDocs/GettingStarted.md
 [known-issues]: DevGuide.md#known-issues
 [career]: https://www.intelligencecareers.gov/nsa
-[releases]: https://codeberg.org/CryptoJones/GayHydra/releases
+[releases]: https://github.com/CryptoJones/GayHydra/releases
 [jdk]: https://adoptium.net/temurin/releases
 [gradle]: https://gradle.org/releases/
 [python3]: https://www.python.org/downloads/
