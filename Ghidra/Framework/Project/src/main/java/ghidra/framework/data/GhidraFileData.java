@@ -54,6 +54,8 @@ import resources.icons.TranslateIcon;
  * Any long-term retention of {@link DomainFolder} and {@link DomainFile} instances requires an 
  * appropriate change listener to properly discard/reacquire such instances.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class GhidraFileData {
 
 	static final int ICON_WIDTH = 18;

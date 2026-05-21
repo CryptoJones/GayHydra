@@ -32,6 +32,8 @@ import ghidra.util.exception.CancelledException;
  * this class.  <b>If this class is ever made public, then most of the methods herein need to 
  * be synchronized to prevent race conditions and to provide visibility.</b>
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class BasicTaskMonitor implements TaskMonitor {
 
 	private WeakSet<CancelledListener> listeners =

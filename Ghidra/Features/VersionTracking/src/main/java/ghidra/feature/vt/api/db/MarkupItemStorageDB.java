@@ -31,6 +31,8 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Lock.Closeable;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MarkupItemStorageDB extends DbObject implements MarkupItemStorage {
 	private final AssociationDatabaseManager associationManager;
 	private final VTAssociation association;

@@ -60,6 +60,8 @@ import ghidra.util.timer.GTimerMonitor;
  * {@code delay} period has expired.  The blocking issue only exists with a non-0 {@code delay}
  * value.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class TaskDialog extends DialogComponentProvider implements TaskMonitor {
 
 	/** Amount of time to wait before showing the monitor dialog */

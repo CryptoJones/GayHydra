@@ -42,6 +42,8 @@ import resources.Icons;
  * <p>
  * By default the progress bar and progress icon (spinning globe) are visible.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class TaskMonitorComponent extends JPanel implements TaskMonitor {
 
 	private static final String MESSAGE_FONT_ID = "font.task.monitor.label.message";

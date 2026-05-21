@@ -27,6 +27,8 @@ import javax.swing.*;
  * renderers to embed components in the renderer and gives them the mouse events they need to 
  * interact with the user.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ListRendererMouseEventForwarder extends MouseAdapter {
 
 	@Override

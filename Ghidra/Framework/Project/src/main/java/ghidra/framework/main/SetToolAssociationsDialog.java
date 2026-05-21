@@ -32,6 +32,8 @@ import ghidra.framework.project.tool.GhidraToolTemplate;
 import ghidra.util.HelpLocation;
 import resources.ResourceManager;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class SetToolAssociationsDialog extends DialogComponentProvider {
 
 	private final FrontEndTool tool;

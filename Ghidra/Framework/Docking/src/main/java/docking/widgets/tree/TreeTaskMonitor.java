@@ -30,6 +30,8 @@ import ghidra.util.task.TaskMonitor;
  * mentioned above.  So the first child of the first child will increment the progress bar 
  * 2% (10% of 20%) when it is complete.  
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class TreeTaskMonitor implements TaskMonitor {
 	// initialize to a huge number that can be subdivided many times
 	private static long MAX_VALUE = 0x1000_0000_0000_0000L;

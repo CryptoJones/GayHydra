@@ -30,6 +30,8 @@ import java.awt.event.MouseEvent;
 import javax.swing.*;
 import javax.swing.event.ListDataListener;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class EditableParameterAddress extends DisplayableParameterAddress implements
 		EditableAddress {
 

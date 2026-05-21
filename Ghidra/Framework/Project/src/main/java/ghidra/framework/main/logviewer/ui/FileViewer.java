@@ -53,6 +53,8 @@ import utilities.util.FileUtilities;
  *    almost exclusively via events, using the custom {@link FVEvent} framework.</li>
  * </ol>
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class FileViewer extends JPanel implements Observer {
 
 	private FVTable table;

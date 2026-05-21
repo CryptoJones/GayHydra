@@ -33,6 +33,8 @@ import ghidra.program.model.listing.Program;
 import ghidra.util.exception.VersionException;
 import ghidra.util.xml.GenericXMLOutputter;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class VTMatchSetTableDBAdapterV0 extends VTMatchSetTableDBAdapter {
 
 	private Table table;

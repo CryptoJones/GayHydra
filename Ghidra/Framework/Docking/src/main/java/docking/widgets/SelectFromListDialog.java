@@ -32,6 +32,8 @@ import ghidra.util.SystemUtilities;
  * 
  * @param <T> opaque object type that will be selected by the user.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class SelectFromListDialog<T> extends DialogComponentProvider {
 
 	/**

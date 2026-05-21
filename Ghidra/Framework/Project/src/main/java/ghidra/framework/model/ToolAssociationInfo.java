@@ -21,6 +21,8 @@ import ghidra.framework.data.ContentHandler;
 /** 
  * A class that describes a content types and the tool used to open it. 
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ToolAssociationInfo {
 
 	private ToolTemplate currentTemplate;

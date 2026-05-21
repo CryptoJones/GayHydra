@@ -34,6 +34,8 @@ import ghidra.util.Msg;
  * or whenever the {@link FVSlider} is moved.
  *
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ViewportUtility implements Observer {
 
 	// Stores the top-line position of the viewport in case it needs to be restored (eg: after

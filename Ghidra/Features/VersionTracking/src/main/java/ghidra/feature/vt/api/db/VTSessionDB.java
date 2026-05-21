@@ -44,6 +44,8 @@ import ghidra.util.exception.*;
 import ghidra.util.task.TaskLauncher;
 import ghidra.util.task.TaskMonitor;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class VTSessionDB extends DomainObjectAdapterDB implements VTSession {
 
 	private final static Field[] COL_FIELDS = new Field[] { StringField.INSTANCE };

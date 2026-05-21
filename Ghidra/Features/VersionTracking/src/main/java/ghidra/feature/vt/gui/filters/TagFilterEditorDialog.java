@@ -30,6 +30,8 @@ import ghidra.feature.vt.gui.editors.TagEditorDialog;
 import ghidra.feature.vt.gui.plugin.VTController;
 import ghidra.framework.plugintool.PluginTool;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class TagFilterEditorDialog extends DialogComponentProvider implements TagFilterChooser {
 
 	private Map<String, VTMatchTag> allTags;

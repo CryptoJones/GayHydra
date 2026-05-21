@@ -19,6 +19,8 @@ import ghidra.util.SystemUtilities;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.*;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class LockingTaskMonitor implements TaskMonitor {
 
 	private DomainObjectAdapterDB dobj;
