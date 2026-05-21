@@ -14,7 +14,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **2. Adopt an explicit triage SLA.** Commit publicly to first-response-within-N-days. "First response" can be "rejected, here's why" — that is infinitely better than silence. The current implicit policy ("we'll get to it") is corroding contributor trust. — [TRIAGE_SLA.md](docs/governance/TRIAGE_SLA.md)
 
-- [ ] **3. Close the door on dead PRs.** ~76 PRs are >4yr old. Bulk-close with a respectful template ("we appreciate this work but cannot review it; please reopen if you'd like to rebase against current master and re-submit under [new lane X]"). A clean queue is honest; a 335-deep queue is theater.
+- [x] **3. Close the door on dead PRs.** ~76 PRs are >4yr old. Bulk-close with a respectful template ("we appreciate this work but cannot review it; please reopen if you'd like to rebase against current master and re-submit under [new lane X]"). A clean queue is honest; a 335-deep queue is theater. — [STALE_POLICY.md](docs/governance/STALE_POLICY.md), [stale.yml](.github/workflows/stale.yml)
 
 - [ ] **4. Create a "processor submission" fast-lane.** 54% of open PRs (180) are processor/Sleigh additions — this is a structurally distinct review (correctness against ISA docs, not architectural fit). It needs a dedicated reviewer rotation, an explicit checklist, and a separate queue. Mixing it with framework work is why both queues stall.
 

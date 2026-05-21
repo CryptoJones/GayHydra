@@ -1,0 +1,44 @@
+name: Stale PRs and Issues
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 335
+          days-before-close: 30
+          stale-pr-label: stale-warning
+          stale-issue-label: stale-warning
+          close-pr-label: closed-stale
+          close-issue-label: closed-stale
+          exempt-pr-labels: pinned,security-embargoed,needs-rfc
+          exempt-issue-labels: pinned,security-embargoed,needs-rfc
+          stale-pr-message: |
+            This PR has had no activity for 335 days. Per
+            [STALE_POLICY.md](../blob/master/docs/governance/STALE_POLICY.md),
+            it will be closed in 30 days unless a maintainer or the author
+            comments. One comment resets the clock.
+          stale-issue-message: |
+            This issue has had no activity for 335 days. Per
+            [STALE_POLICY.md](../blob/master/docs/governance/STALE_POLICY.md),
+            it will be closed in 30 days unless someone comments. One
+            comment resets the clock.
+          close-pr-message: |
+            Closing per [STALE_POLICY.md](../blob/master/docs/governance/STALE_POLICY.md).
+            Nothing is deleted; reopen with a rebase against current `master`
+            and a lane label (`docs/governance/PR_QUEUE_POLICY.md`) to
+            re-enter triage. We are sorry for the wait.
+          close-issue-message: |
+            Closing per [STALE_POLICY.md](../blob/master/docs/governance/STALE_POLICY.md).
+            Comment to reopen.
+          operations-per-run: 200
