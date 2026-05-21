@@ -74,7 +74,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **27. Adopt Mockito (or an equivalent).** Tests rely entirely on JUnit 4 + Hamcrest with no mocking framework. Result: test setup is heavyweight (real Swing, real programs) — and modules with hard dependencies (Project: 404 src files / 21 tests, SoftwareModeling: 1631 / 128) go untested because mocking is too painful. — [javaProject.gradle](gradle/javaProject.gradle), [MOCKITO_ADOPTION.md](docs/testing/MOCKITO_ADOPTION.md)
 
-- [ ] **28. Triage `@Ignore` debt.** Ignored tests in `x86AssemblyTest`, `dsPIC30FAssemblyTest`, `ARMAssemblyTest`, `x64AssemblyTest`, `SymbolPathParserTest`, `CharsetInfoManagerTest`. Each ignored test is a frozen bug report. Either fix or delete.
+- [x] **28. Triage `@Ignore` debt.** Ignored tests in `x86AssemblyTest`, `dsPIC30FAssemblyTest`, `ARMAssemblyTest`, `x64AssemblyTest`, `SymbolPathParserTest`, `CharsetInfoManagerTest`. Each ignored test is a frozen bug report. Either fix or delete. — [IGNORE_TEST_POLICY.md](docs/testing/IGNORE_TEST_POLICY.md)
 
 - [ ] **29. Migrate to JUnit 5.** 4.13.2 is fine but JUnit 5 unlocks parameterized tests, conditional execution, and parallel run modes that would meaningfully accelerate the integration suite.
 
