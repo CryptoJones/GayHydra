@@ -1,0 +1,65 @@
+name: Decompiler C++ Unit Tests
+
+# Rec 24: Build and run the C++ decompiler unit tests in CI.
+# Seven unittests/*.cc files + 84 XML data-driven tests existed in
+# the tree but were never wired into CI. This workflow runs them.
+#
+# Coordinates with Rec 15 (ASan/UBSan CI) — that workflow runs the
+# same test binary with sanitizers; this workflow runs it with the
+# default debug build for fast feedback on PRs.
+
+on:
+  push:
+  pull_request:
+    paths:
+      - 'Ghidra/Features/Decompiler/src/decompile/**'
+      - '.github/workflows/decompiler-cpp-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpp_unit_tests:
+    name: C++ unit tests
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+        # Windows is its own toolchain story (MSVC); land that as
+        # a follow-up workflow rather than overload this one.
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build deps (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex g++ make
+
+      - name: Install build deps (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install bison flex
+          # Homebrew bison/flex are keg-only — add to PATH.
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+
+      - name: Build & run unit tests
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
+        # `make test` builds decomp_test_dbg and runs it. The binary
+        # exercises the in-tree unittests/*.cc plus the
+        # data-driven XML tests under ../datatests/.
+        run: make -j$(getconf _NPROCESSORS_ONLN) test
+
+      - name: Upload test binary on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decomp-test-bin-${{ matrix.platform }}
+          path: |
+            Ghidra/Features/Decompiler/src/decompile/cpp/decomp_test_dbg
+          if-no-files-found: ignore
+          retention-days: 14

@@ -66,7 +66,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **23. Multi-OS CI matrix.** Decompiler builds on Linux, macOS, and Windows; CI only tests Linux. Native bugs on Windows/macOS are caught by users, not maintainers. Run at minimum a build+smoke matrix on all three. — [build-ghidra.yml](.github/workflows/build-ghidra.yml)
 
-- [ ] **24. Build and run the C++ decompiler unit tests in CI.** Seven `unittests/*.cc` files plus 84 XML data-driven tests exist and don't run in CI. Wire them in.
+- [x] **24. Build and run the C++ decompiler unit tests in CI.** Seven `unittests/*.cc` files plus 84 XML data-driven tests exist and don't run in CI. Wire them in. — [decompiler-cpp-tests.yml](.github/workflows/decompiler-cpp-tests.yml)
 
 - [ ] **25. Re-enable `-Xlint`.** `gradle/javaProject.gradle` currently passes `-Xlint:none`, suppressing every javac warning across the codebase. This is hiding genuine bugs. Re-enable incrementally — start with `-Xlint:deprecation,unchecked` and ratchet.
 
