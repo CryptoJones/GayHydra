@@ -21,6 +21,9 @@ apply from: "gradle/support/loadApplicationProperties.gradle"
 // CycloneDX SBOM generation. See docs/release/SBOM.md (Rec 21).
 apply from: 'gradle/sbom.gradle'
 
+// ErrorProne static analysis. See docs/testing/ERRORPRONE.md (Rec 26).
+apply from: 'gradle/errorprone.gradle'
+
 
 /***************************************************************************************
 * Print current Java and Gradle version and make sure the correct version of gradle is being used

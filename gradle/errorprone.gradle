@@ -1,0 +1,55 @@
+/* ###
+ * ErrorProne static analysis.
+ *
+ * Addresses Rec 26 of the 2026-05-21 audit. See
+ * docs/testing/ERRORPRONE.md for the full plan.
+ *
+ * Wires ErrorProne via the net.ltgt.errorprone Gradle plugin.
+ * ErrorProne is a javac plugin: zero runtime cost, catches a known
+ * set of mistakes at compile time. The intent for this rec is
+ * *signal-only* — every check is at WARNING, not ERROR — until the
+ * existing backlog is fixed (see ratchet in ERRORPRONE.md).
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/errorprone.gradle'
+ */
+
+plugins {
+    id 'net.ltgt.errorprone' version '4.0.1' apply false
+}
+
+subprojects {
+    plugins.withId('java-library') {
+        apply plugin: 'net.ltgt.errorprone'
+
+        dependencies {
+            errorprone 'com.google.errorprone:error_prone_core:2.27.0'
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.errorprone {
+                // Stage 1: signal-only. Every check at WARNING.
+                // No checks at ERROR. This intentionally avoids
+                // making the existing tree red.
+                allErrorsAsWarnings = true
+
+                // High-EV checks we want even at Stage 1.
+                check 'ImmutableEnumChecker', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'MissingOverride', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'MutableConstantField', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'MutableMethodReturnType', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'CollectionToArraySafeParameter', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'DefaultCharset', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'EqualsHashCode', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'EqualsIncompatibleType', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check 'StringSplitter', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+
+                // Checks we explicitly defer to a later stage of the
+                // ratchet because the existing codebase has hundreds
+                // of instances and the fix is non-mechanical.
+                disable 'JavaUtilDate'
+                disable 'JdkObsolete'
+            }
+        }
+    }
+}
