@@ -27,6 +27,29 @@ jobs:
             clang \
             libstdc++-12-dev \
             binutils-dev libiberty-dev
+
+      - name: Read Ghidra JDK version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Compile SLEIGH language files (.sla)
+        # decomp_test_san loads real processor specs at startup; see
+        # the matching step in decompiler-cpp-tests.yml.
+        run: gradle allSleighCompile --parallel
+
       - name: Build & run sanitized unit tests
         working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
         env:
