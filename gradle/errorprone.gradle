@@ -14,9 +14,10 @@
  *   apply from: 'gradle/errorprone.gradle'
  */
 
-// The plugins {} block lives in the root build.gradle (it's the only
-// place plugin DSL is legal). This file just applies the plugin to
-// every java-library subproject and configures it.
+// The plugins {} block lives in the root build.gradle. This file just
+// applies the plugin to every java-library subproject and configures
+// it. Imports must be at the top of the script.
+import net.ltgt.gradle.errorprone.CheckSeverity
 
 subprojects {
     plugins.withId('java-library') {
@@ -34,21 +35,21 @@ subprojects {
                 allErrorsAsWarnings = true
 
                 // High-EV checks we want even at Stage 1.
-                check 'ImmutableEnumChecker', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'MissingOverride', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'MutableConstantField', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'MutableMethodReturnType', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'CollectionToArraySafeParameter', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'DefaultCharset', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'EqualsHashCode', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'EqualsIncompatibleType', net.ltgt.gradle.errorprone.CheckSeverity.WARN
-                check 'StringSplitter', net.ltgt.gradle.errorprone.CheckSeverity.WARN
+                check('ImmutableEnumChecker', CheckSeverity.WARN)
+                check('MissingOverride', CheckSeverity.WARN)
+                check('MutableConstantField', CheckSeverity.WARN)
+                check('MutableMethodReturnType', CheckSeverity.WARN)
+                check('CollectionToArraySafeParameter', CheckSeverity.WARN)
+                check('DefaultCharset', CheckSeverity.WARN)
+                check('EqualsHashCode', CheckSeverity.WARN)
+                check('EqualsIncompatibleType', CheckSeverity.WARN)
+                check('StringSplitter', CheckSeverity.WARN)
 
                 // Checks we explicitly defer to a later stage of the
                 // ratchet because the existing codebase has hundreds
                 // of instances and the fix is non-mechanical.
-                disable 'JavaUtilDate'
-                disable 'JdkObsolete'
+                disable('JavaUtilDate')
+                disable('JdkObsolete')
             }
         }
     }
