@@ -40,11 +40,20 @@ jobs:
           distribution: 'temurin'
           java-version: '${{ env.JDK_VER }}'
 
+      # The Ghidra repo doesn't check in the Gradle wrapper jar, so
+      # ./gradlew fails with "install Gradle 8.5+ on your PATH". Use
+      # gradle/actions/setup-gradle to install a pinned Gradle and
+      # invoke it directly (no wrapper indirection).
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
       - name: Fetch Dependencies
-        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
 
       - name: Build Ghidra
-        run: ./gradlew buildGhidra --parallel
+        run: gradle buildGhidra --parallel
 
   # Rec 22: run the JVM unit-test suite. Was previously not run in CI.
   # Independent job so a flaky/slow test failure does not block the
@@ -71,21 +80,26 @@ jobs:
           distribution: 'temurin'
           java-version: '${{ env.JDK_VER }}'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
       - name: Fetch Dependencies
-        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
 
       - name: Compile (prepdev)
-        run: ./gradlew prepdev --parallel
+        run: gradle prepdev --parallel
 
       - name: Audit @Ignore annotations (Rec 28 #28-3, strict)
         # Tree-wide sweep completed in PR #194; flip to strict so
         # any future bare/uncategorized @Ignore fails CI.
-        run: ./gradlew ignoreAudit -PignoreAuditStrict=true
+        run: gradle ignoreAudit -PignoreAuditStrict=true
 
       - name: Run JVM unit tests
         # --continue: don't stop at the first failure; surface the
         # whole picture in one CI run.
-        run: ./gradlew test --parallel --continue
+        run: gradle test --parallel --continue
 
       - name: Upload test results on failure
         if: failure()

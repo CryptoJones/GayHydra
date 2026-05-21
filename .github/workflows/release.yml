@@ -46,11 +46,16 @@ jobs:
         with:
           cosign-release: 'v2.4.0'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
       - name: Fetch Dependencies
-        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
 
       - name: Build Ghidra (produces release zip + SBOM via Rec 21)
-        run: ./gradlew buildGhidra --parallel
+        run: gradle buildGhidra --parallel
 
       - name: Locate release artifacts
         id: artifacts
