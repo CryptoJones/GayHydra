@@ -9,6 +9,48 @@ For why decisions were made the way they were, see
 
 ---
 
+## Sprint 6 — @Ignore tree-wide sweep + CI rescue (delivered 2026-05-21)
+
+**Goal:** Complete the Rec 28 `@Ignore` cleanup across the whole tree
+so the audit can flip from warn-only to strict; then, once the
+audit was enforced, repair the long-broken CI workflows so a
+green build is reachable across all three platforms.
+
+**Delivered Rec 28 wrap-up (4 PRs):**
+
+- **#28-5 batch 1 — [PR #184](https://github.com/CryptoJones/GayHydra/pull/184):** Compliance-fix 23 sites across 9 clusters (LldbCommands EXC_BAD_ACCESS x4 / temp-var-$x x6, JavaMethods race x3, Debugger RMI bare-ignore x5, LldbConnectors TODO x5, JitJvm version-bound, JitMpInt dev-workstation, AbstractToyJitCodeGen x4). Files tracking issues #176–#183.
+- **ignoreAudit warn-only mode — [PRs #185](https://github.com/CryptoJones/GayHydra/pull/185) + [#186](https://github.com/CryptoJones/GayHydra/pull/186):** Stage 1 / Stage 2 split so the audit doesn't break CI mid-sweep.
+- **#28-6 batch 2 — [PR #194](https://github.com/CryptoJones/GayHydra/pull/194):** Sweep the remaining ~35 `@Ignore` sites in MDMang, Hexagon, Debug/Framework-TraceModeling, Debug-jpda, Debugger plugin tests, and Misc. Files tracking issues #187–#193.
+- **#28-7 strict flip — [PR #195](https://github.com/CryptoJones/GayHydra/pull/195):** Tree-wide sweep complete → flip ignoreAudit to `-PignoreAuditStrict=true` in CI. Future bare/uncategorized `@Ignore` additions now fail the build.
+
+**Delivered CI rescue (8 PRs):**
+
+When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been broken since the fork point — `./gradlew` failed because NSA never checked in the Gradle wrapper jar. Cascading fixes:
+
+- **[PR #196](https://github.com/CryptoJones/GayHydra/pull/196):** Replace `./gradlew` with `gradle/actions/setup-gradle@v4` + `gradle` across `build-ghidra.yml`, `release.yml`, `dependency-submission.yml`.
+- **[PR #197](https://github.com/CryptoJones/GayHydra/pull/197):** Decouple `application.version` (fork's 26.1) from `application.upstream.version` (the NSA/ghidra-data tag 12.2 that fetchDependencies uses). The v26.1 bump silently broke fetchDeps's URL construction.
+- **[PR #198](https://github.com/CryptoJones/GayHydra/pull/198):** Move `plugins {}` block from `gradle/sbom.gradle` + `gradle/errorprone.gradle` to root `build.gradle`. The plugin DSL is only legal at the top of Project/Settings scripts.
+- **[PR #199](https://github.com/CryptoJones/GayHydra/pull/199):** ErrorProne `CheckSeverity` import attempt (didn't fully fix; superseded).
+- **[PR #200](https://github.com/CryptoJones/GayHydra/pull/200):** ErrorProne raw `-Xep:` args (still failed under Gradle 8.5).
+- **[PR #201](https://github.com/CryptoJones/GayHydra/pull/201):** ARM `certification.manifest` — register `ARM8m_cp_be.slaspec` + `ARM8m_cp_le.slaspec` from PR #137.
+- **[PR #202](https://github.com/CryptoJones/GayHydra/pull/202):** Temporarily disable ErrorProne wiring (keep design, defer plumbing to a focused PR).
+- **[PR #203](https://github.com/CryptoJones/GayHydra/pull/203):** `* IP: GHIDRA` headers on the 5 fuzz-harness `.java`/`.cc` files + cert-manifest entries for the 3 supporting non-source files (README.md x2, Makefile.fuzz).
+
+**Verification:**
+
+- Aaron's mac mini (`172.16.28.199`, Apple Silicon, macOS 26.3) used as the canonical mac test environment — caught the ARM cert manifest hole and the missing `* IP: GHIDRA` headers that GH Actions also fails on.
+- Local QEMU+Win11+Puppet was considered but deferred: GH Actions ships a Windows runner already, and the Windows failures so far have been the same toolchain issues as the other platforms (per [DD-019](DesignDecisions.md) — not yet written).
+
+**Sprint 6 total: 12 PRs (4 Rec 28 wrap + 8 CI rescue) + 18 tracking issues filed (#176–#193).**
+
+**Carried into Sprint 7:**
+
+- Re-wire ErrorProne cleanly (move config into root `build.gradle` or use a different plugin-application pattern that works under Gradle 8.5).
+- Verify CI is fully green tree-wide after PR #203.
+- Sprint 5's still-open items: Rec 13/14 OSS-Fuzz upstream submissions, Rec 19 #19-2 SafeObjectInput migration, Rec 25 Stage 2 / Rec 26 Stage 2.
+
+---
+
 ## Sprint 5 — Sprint-1 implementation second tier + project polish (delivered 2026-05-21)
 
 **Goal:** Continue landing Sprint-1 implementation surface (SBOM gate, release notes, retroactive-CVE tracking, JUnit 5 deps) and clean up the project's contributor-onboarding edges (declarative labels, issue templates, fork addendum to CONTRIBUTING).
