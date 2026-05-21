@@ -129,3 +129,4 @@ src/main/resources/images/eliminateUnreachable.png||GHIDRA||||END|
 src/main/resources/images/readOnly.png||GHIDRA||||END|
 src/decompile/cpp/fuzz/README.md||GHIDRA||||END|
 src/decompile/cpp/fuzz/Makefile.fuzz||GHIDRA||||END|
+src/decompile/datatests/pic_branch_ge.xml||GHIDRA||||END|

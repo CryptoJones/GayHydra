@@ -62,3 +62,5 @@ src/test/resources/simple.input||GHIDRA||reviewed||END|
 src/test/resources/simple.output||GHIDRA||reviewed||END|
 src/test/resources/z_complex.input||GHIDRA||reviewed||END|
 src/test/resources/z_complex.output||GHIDRA||reviewed||END|
+src/test/resources/ifdef.input||GHIDRA||||END|
+src/test/resources/ifdef.output||GHIDRA||||END|
