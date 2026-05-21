@@ -30,6 +30,8 @@ import ghidra.app.util.viewer.proxy.ProxyObj;
  * Field responsible for drawing +/- symbols when over an aggregate datatype that
  * can be opened or closed.  Also adds extra spacing for each level of the sub-datatypes.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class IndentField implements ListingField {
 
 	private FieldFactory factory;

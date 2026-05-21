@@ -111,6 +111,8 @@ import utility.application.ApplicationLayout;
  * since hardcoded constants may not track future builds of a test binaries. An attempt is made to
  * initialize the stack pointer automatically based upon well known stack initialization symbols.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class ProcessorEmulatorTestAdapter extends TestCase implements ExecutionListener {
 
 	public final static String BATCH_MODE_OUTPUT_DIR =

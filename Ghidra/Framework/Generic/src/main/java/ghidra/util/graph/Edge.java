@@ -21,6 +21,8 @@ import ghidra.util.Msg;
  * The from and to vertex of an edge can not be changed.
  */
 @Deprecated(since = "10.2")
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public final class Edge implements KeyedObject, Comparable<Edge> {
 	private final long key;
 	private static final KeyedObjectFactory kof = KeyedObjectFactory.getInstance();

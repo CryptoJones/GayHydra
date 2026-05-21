@@ -28,6 +28,8 @@ import ghidra.program.model.address.AddressSpace;
  * in which case, this memory bank behaves as if it were initially filled with zeros.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MemoryPageOverlay extends MemoryPageBank {
 	
 	protected MemoryBank underlie;		// underlying memory object

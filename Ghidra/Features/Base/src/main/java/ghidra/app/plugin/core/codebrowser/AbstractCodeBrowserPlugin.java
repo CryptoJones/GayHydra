@@ -53,6 +53,8 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.program.util.ProgramSelection;
 import ghidra.util.*;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class AbstractCodeBrowserPlugin<P extends CodeViewerProvider> extends Plugin
 		implements CodeViewerService, CodeFormatService, OptionsChangeListener, FormatModelListener,
 		DomainObjectListener, CodeBrowserPluginInterface {

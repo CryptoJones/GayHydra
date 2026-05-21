@@ -25,6 +25,8 @@ import java.util.*;
  * 
  */
 @Deprecated(since = "10.2")
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DepthFirstSearch {
 	private DirectedGraph graph;
 	private List<Vertex> seedsUsed;

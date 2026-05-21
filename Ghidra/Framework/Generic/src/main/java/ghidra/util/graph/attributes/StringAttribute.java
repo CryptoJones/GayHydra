@@ -23,6 +23,8 @@ import ghidra.util.graph.KeyedObject;
 /** This class provides a storage mechanism for String-valued information about
 *  the elements of a KeyIndexableSet, e.g. the vertices of a DirectedGraph.
 */
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class StringAttribute<T extends KeyedObject> extends Attribute<T> {
 	//private String[] values;
 	private Map<Long, String> values;

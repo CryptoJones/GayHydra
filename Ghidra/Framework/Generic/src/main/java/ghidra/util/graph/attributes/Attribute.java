@@ -29,6 +29,8 @@ import ghidra.util.graph.KeyedObject;
  *
  *
  */
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class Attribute<T extends KeyedObject> {
 	private final KeyIndexableSet<T> owningSet;
 	private final String attributeName;

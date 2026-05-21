@@ -87,6 +87,8 @@ import ghidra.util.task.TaskMonitor;
 	servicesProvided = { DataTypeManagerService.class, DataTypeQueryService.class, DataTypeArchiveService.class }
 )
 //@formatter:on
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DataTypeManagerPlugin extends ProgramPlugin
 		implements DomainObjectListener, DataTypeManagerService, PopupActionProvider {
 

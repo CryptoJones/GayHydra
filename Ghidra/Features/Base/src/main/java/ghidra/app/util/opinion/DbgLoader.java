@@ -30,6 +30,8 @@ import ghidra.program.model.listing.Program;
  * An opinion service for processing Microsoft DBG files.
 
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DbgLoader extends AbstractPeDebugLoader {
 
 	/**

@@ -67,6 +67,8 @@ import resources.Icons;
  *
  *
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class ParseDialog extends ReusableDialogComponentProvider {
 	final static String PROFILE_DIR = "parserprofiles";
 

@@ -22,6 +22,8 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 
 @Deprecated(since = "12.1", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class CompositeLoadImage implements MemoryLoadImage {
 
 	private List<MemoryLoadImage> providers = new ArrayList<MemoryLoadImage>();

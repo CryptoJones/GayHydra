@@ -54,6 +54,8 @@ import ghidra.util.Msg;
  * 
  * @param <T> the type of variables in the emulator
  */
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ModifiedPcodeThread<T> extends DefaultPcodeThread<T> {
 
 	/**

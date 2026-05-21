@@ -76,6 +76,8 @@ import ghidra.util.task.TaskLauncher;
 		ProgramActivatedPluginEvent.class }
 )
 //@formatter:on
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ProgramManagerPlugin extends Plugin implements ProgramManager, OptionsChangeListener {
 	private final static String CACHE_DURATION_OPTION =
 		"Program Cache.Program Cache Time (minutes)";

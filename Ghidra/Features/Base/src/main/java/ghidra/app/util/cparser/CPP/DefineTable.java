@@ -23,6 +23,8 @@ import ghidra.app.util.cparser.CPP.PreProcessor.PPToken;
 import ghidra.program.model.data.*;
 import ghidra.util.Msg;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DefineTable {
 	private static final String VARARG_ELLIPSIS = "...";
 

@@ -65,6 +65,8 @@ import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
 import ghidra.util.task.*;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class EncodedStringsDialog extends DialogComponentProvider {
 
 	private static final Map<String, AbstractStringDataType> CHARSET_TO_DT_MAP = Map.ofEntries(

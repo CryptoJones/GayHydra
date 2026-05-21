@@ -38,6 +38,8 @@ import ghidra.app.plugin.core.datawindow.DataWindowPlugin.Coverage;
 import ghidra.util.HelpLocation;
 import ghidra.util.task.SwingUpdateManager;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class DataWindowFilterDialog extends DialogComponentProvider {
 
 	private JPanel mainPanel;

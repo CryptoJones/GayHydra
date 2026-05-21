@@ -54,6 +54,8 @@ import ghidra.util.task.TaskMonitor;
  */
 @Transitional
 @Deprecated(since = "12.1", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class AdaptedEmulator implements Emulator {
 	@Deprecated(since = "12.1", forRemoval = true)
 	class AdaptedPcodeEmulator extends PcodeEmulator {

@@ -49,6 +49,8 @@ import ghidra.util.task.TaskMonitor;
  * @deprecated Please use {@link PcodeEmulator} instead.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DefaultEmulator implements Emulator {
 
 	private final MemoryFaultHandler faultHandler;

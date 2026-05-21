@@ -121,6 +121,30 @@ task buildJavacc {
 	dependsOn buildCParser, buildCPPParser
 	group = rootProject.GHIDRA_GROUP
 	description = "  Compiles the JavaCC files\n"
+
+	// Sprint 10 Stage-3 pre-clean: javacc generates ~96 warnings worth of
+	// raw-type / unchecked / deprecation noise in the per-token-manager
+	// scaffold it emits. We can't edit the generated files (they're
+	// regenerated each build); we also can't reach them via per-file
+	// @SuppressWarnings annotations. Inject `@SuppressWarnings("all")` at
+	// the class declaration of every generated .java AFTER javacc runs.
+	doLast {
+		fileTree(dir: "build/generated-src/javacc", include: "**/*.java").each { f ->
+			def lines = f.readLines()
+			def patched = []
+			boolean done = false
+			lines.each { line ->
+				if (!done && (line =~ /^(public|abstract|class|interface|enum)\s/ || line =~ /^public\s+(class|interface|enum)\s/)) {
+					patched << '@SuppressWarnings("all") // javacc-generated; Sprint 10 Stage 3'
+					done = true
+				}
+				patched << line
+			}
+			if (done) {
+				f.text = patched.join('\n') + '\n'
+			}
+		}
+	}
 }
 
 // Note: this must happen before the standard buildModuleHelp for Base

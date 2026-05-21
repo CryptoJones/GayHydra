@@ -26,6 +26,8 @@ import java.util.Comparator;
 /** This class provides a storage mechanism for integer-valued information about
  *  the elements of a KeyIndexableSet, e.g. the vertices of a DirectedGraph.
  */
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class IntegerAttribute<T extends KeyedObject> extends Attribute<T> {
 	private ghidra.util.datastruct.LongIntHashtable values;
 	private static String attributeType = AttributeManager.INTEGER_TYPE;

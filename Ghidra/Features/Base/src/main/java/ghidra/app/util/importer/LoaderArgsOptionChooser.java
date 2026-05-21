@@ -29,6 +29,8 @@ import ghidra.util.Msg;
  * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
  */
 @Deprecated(since = "12.0", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class LoaderArgsOptionChooser implements OptionChooser {
 
 	private List<Pair<String, String>> loaderArgs;

@@ -58,6 +58,8 @@ import ghidra.util.exception.NotFoundException;
 	servicesProvided = { BlockModelService.class }
 )
 //@formatter:on
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class BlockModelServicePlugin extends ProgramPlugin
 		implements BlockModelService, OptionsChangeListener {
 

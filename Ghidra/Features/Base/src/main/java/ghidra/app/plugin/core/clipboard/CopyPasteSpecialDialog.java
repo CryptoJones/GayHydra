@@ -27,6 +27,8 @@ import docking.widgets.list.ListPanel;
 import ghidra.app.util.ClipboardType;
 import ghidra.util.HelpLocation;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class CopyPasteSpecialDialog extends DialogComponentProvider {
 
 	private ListPanel listPanel;

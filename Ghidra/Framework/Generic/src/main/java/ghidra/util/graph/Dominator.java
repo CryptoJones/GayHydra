@@ -31,6 +31,8 @@ import ghidra.util.graph.attributes.*;
  *
  */
 @Deprecated(forRemoval = true, since = "10.2") // This class is no longer used or tested.  Use GraphAlgorithms 
+// Sprint 10 Stage-3 pre-clean: legacy graph API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class Dominator extends DirectedGraph //implements Weighted
 {
 	private IntegerAttribute<Vertex> vertexColor;

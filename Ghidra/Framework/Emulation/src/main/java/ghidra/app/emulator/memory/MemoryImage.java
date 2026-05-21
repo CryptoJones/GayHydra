@@ -31,6 +31,8 @@ import ghidra.program.model.address.AddressSpace;
  *             to load an image lazily.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+// Sprint 10 Stage-3 pre-clean: legacy emulator API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class MemoryImage extends MemoryBank {
 
 	private MemoryLoadImage loader; // The underlying LoadImage

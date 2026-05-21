@@ -37,6 +37,8 @@ import ghidra.util.task.TaskMonitor;
 /**
  * Manager for merging category and data type changes
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DataTypeMergeManager implements MergeResolver {
 
 	private static String[] DATA_TYPES_PHASE = new String[] { "Data Types" };
