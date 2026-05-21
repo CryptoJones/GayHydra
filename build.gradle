@@ -26,14 +26,13 @@ plugins {
     // via gradle/root/distribution.gradle) still produces an SBOM
     // bundled inside the release zip — that path is unaffected.
     // id 'org.cyclonedx.bom' version '1.10.0'           // Rec 21
-    // Rec 26 ErrorProne plugin declaration is intentionally commented
-    // out. The plugin's `errorprone` dependency configuration isn't
-    // registered in time for the `dependencies { errorprone ... }`
-    // block in gradle/errorprone.gradle to resolve under Gradle 8.5
-    // (works under 9.5+ but our CI is pinned at 8.5 for now). The
-    // ratchet doc + wiring scaffold remain; re-enabling is its own
-    // focused PR. See docs/testing/ERRORPRONE.md.
-    // id 'net.ltgt.errorprone' version '4.0.1' apply false  // Rec 26
+    // Rec 26 ErrorProne. Sprint 8 re-enabled — the original 8.5 timing
+    // issue (the `errorprone` dependency configuration wasn't ready
+    // when `dependencies { errorprone ... }` ran) is now worked around
+    // by deferring the dependency-add inside `pluginManager.withPlugin`
+    // in gradle/errorprone.gradle. Works on both Gradle 8.5 (our pin)
+    // and 9.5+.
+    id 'net.ltgt.errorprone' version '4.0.1' apply false  // Rec 26
 }
 
 apply from: 'gradle/root/eclipse.gradle'
@@ -44,8 +43,8 @@ apply from: "gradle/support/loadApplicationProperties.gradle"
 // in the release zip via gradle/support/sbom.gradle (unchanged).
 // apply from: 'gradle/sbom.gradle'
 
-// ErrorProne static analysis: deferred. See ERRORPRONE.md for the design.
-// apply from: 'gradle/errorprone.gradle'
+// ErrorProne static analysis. See docs/testing/ERRORPRONE.md (Rec 26).
+apply from: 'gradle/errorprone.gradle'
 
 // @Ignore audit. See docs/testing/IGNORE_TEST_POLICY.md (Rec 28 #28-3).
 apply from: 'gradle/ignoreAudit.gradle'

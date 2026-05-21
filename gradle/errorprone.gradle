@@ -25,8 +25,18 @@ subprojects {
     plugins.withId('java-library') {
         apply plugin: 'net.ltgt.errorprone'
 
-        dependencies {
-            errorprone 'com.google.errorprone:error_prone_core:2.27.0'
+        // Gradle 8.5 registers the `errorprone` configuration eagerly
+        // during the apply-plugin step, but the registration appears
+        // to complete AFTER this block's synchronous body runs — so
+        // a direct `dependencies { errorprone ... }` here used to NPE
+        // with "configuration 'errorprone' not found". Gradle 9.5+
+        // moved the registration earlier and masked the bug. Defer
+        // via `pluginManager.withPlugin` so the dependency-add runs
+        // after the plugin is fully applied on both Gradle versions.
+        pluginManager.withPlugin('net.ltgt.errorprone') {
+            dependencies {
+                errorprone 'com.google.errorprone:error_prone_core:2.27.0'
+            }
         }
 
         tasks.withType(JavaCompile).configureEach {
