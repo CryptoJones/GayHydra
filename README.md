@@ -98,7 +98,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **37. Improve C++ / vtable handling as a coordinated roadmap, not point fixes.** #516 (49 👍), #992, related issues — community is loudly asking for first-class C++ analysis. IDA/Hex-Rays has it. This is a strategic, not tactical, gap. Spec a C++ frontend RFC. — [RFC 0001](docs/rfcs/0001-cpp-frontend.md)
 
-- [ ] **38. Tackle variable-naming-across-scopes (#975, 53 👍).** The single most-upvoted open issue. Touches the symbol/scope model end to end; needs design, not a patch. Worth principal-architect time.
+- [x] **38. Tackle variable-naming-across-scopes (#975, 53 👍).** The single most-upvoted open issue. Touches the symbol/scope model end to end; needs design, not a patch. Worth principal-architect time. — [RFC 0002](docs/rfcs/0002-variable-naming-across-scopes.md)
 
 - [ ] **39. Detect typical `for` loops and inline functions (#644, #2376, #4461).** Decompiler output that hides the loop induction variable behind a `while + counter` is the single most common "this looks worse than IDA" complaint. Inline-aware analysis (#2376, #4461) is the same complaint one level deeper.
 
