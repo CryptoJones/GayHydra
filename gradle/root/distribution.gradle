@@ -238,7 +238,7 @@ task createPythonTypeStubs(type: Javadoc, description: 'Generate pyi stubs for a
 
 task createGhidraStubsWheel {
 	group = 'private'
-	description = "Creates the ghidra-stubs wheel for the Ghidra api.  [gradle/root/distribution.gradle]"
+	description = "Creates the ghidra-stubs wheel for the GayHydra api (wheel name kept as 'ghidra-stubs' for downstream-consumer compat).  [gradle/root/distribution.gradle]"
 
 	dependsOn("createPythonTypeStubs")
 
@@ -335,7 +335,7 @@ task zipJavadocs(type: Zip) {
 		into "api"
 	}
 	
-	description = "Zips javadocs for Ghidra api.  [gradle/root/distribution.gradle]"
+	description = "Zips javadocs for GayHydra api.  [gradle/root/distribution.gradle]"
 }
 
 
@@ -708,7 +708,7 @@ task createInstallationZip(type: Zip) { t ->
  *
  **********************************************************************************/
 task buildGhidra() {
-	description = "Builds Ghidra for the current platform. The resulting zip will be in build/dist"
+	description = "Builds GayHydra (task name kept as buildGhidra for upstream compatibility) for the current platform. The resulting zip will be in build/dist"
 
 	if (project.hasProperty("externalExtensions")) {
 		dependsOn createExternalExtensions

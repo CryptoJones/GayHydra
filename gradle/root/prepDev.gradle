@@ -21,7 +21,7 @@
 
 task prepDev {
 	group = rootProject.GHIDRA_GROUP
-	description=  "        Prepares a fresh clone of Ghidra for developing in eclipse.  [gradle/root/prepDev.gradle]\n"
+	description=  "        Prepares a fresh clone of GayHydra for developing in eclipse.  [gradle/root/prepDev.gradle]\n"
 		
 	// the GhidraLauncher depends on this file to build the classpath in dev mode
 	dependsOn { generateLibraryDependencyMapping }
