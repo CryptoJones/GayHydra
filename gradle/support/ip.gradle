@@ -152,6 +152,7 @@ def Map<String, List<String>> getIpForModule(Project p) {
 		exclude "**/.settings/**"
 		exclude "**/data/build.xml" // language build file (generated for dev only)
 		exclude "**/.vs/**"
+		exclude "**/.vscode/**"
 		exclude "**/*.vcxproj.user"
 		exclude '**/__pycache__'
 		exclude '**/*.egg-info'
