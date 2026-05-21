@@ -77,8 +77,10 @@ jobs:
       - name: Compile (prepdev)
         run: ./gradlew prepdev --parallel
 
-      - name: Audit @Ignore annotations (Rec 28 #28-3)
-        run: ./gradlew ignoreAudit
+      - name: Audit @Ignore annotations (Rec 28 #28-3, strict)
+        # Tree-wide sweep completed in PR #194; flip to strict so
+        # any future bare/uncategorized @Ignore fails CI.
+        run: ./gradlew ignoreAudit -PignoreAuditStrict=true
 
       - name: Run JVM unit tests
         # --continue: don't stop at the first failure; surface the

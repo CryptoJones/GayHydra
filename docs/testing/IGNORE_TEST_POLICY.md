@@ -99,14 +99,15 @@ The audit runs as a CI step in
 [`.github/workflows/build-ghidra.yml`](../../.github/workflows/build-ghidra.yml)
 before the unit tests.
 
-**Stage 1 (warning-only, current).** The audit logs violations as
-warnings but does not fail the build. This lets the existing in-tree
-`@Ignore` backlog get swept progressively (Rec 28 #28-5..#28-8)
-without blocking unrelated PRs.
+**Stage 2 (failing, current — flipped 2026-05-21).** The audit fails
+the build on any non-compliant `@Ignore` annotation. The CI step in
+`.github/workflows/build-ghidra.yml` passes
+`-PignoreAuditStrict=true`. Local opt-out for development:
+`./gradlew ignoreAudit -PignoreAuditStrict=false`.
 
-**Stage 2 (failing, future).** Once the warning count drops to zero,
-the audit flips to fail-on-violation. The mode is controlled by the
-Gradle property:
+**Stage 1 (warning-only, retired).** Was the policy from PR #185
+through PR #194 while the existing in-tree backlog was being swept.
+The mode is controlled by the Gradle property:
 
 ```
 ./gradlew ignoreAudit -PignoreAuditStrict=true
