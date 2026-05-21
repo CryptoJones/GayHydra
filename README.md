@@ -42,7 +42,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **13. Land an OSS-Fuzz integration for the C++ decompiler.** Zero public fuzz harness. 187k LOC of C++ parsing untrusted p-code/Sleigh input with 2,740 raw `new`/`delete` sites. This is the highest-EV security investment in the codebase. Google OSS-Fuzz is free. — [OSS_FUZZ.md](docs/security/OSS_FUZZ.md), [harnesses](Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/), [oss-fuzz project](.github/oss-fuzz/)
 
-- [ ] **14. Land fuzz harnesses for file-format loaders.** ELF, PE, Mach-O, DEX, PDB, DWARF, COFF — every loader parses attacker-controlled input. No public fuzzing exists for any of them. Start with the most-used three.
+- [x] **14. Land fuzz harnesses for file-format loaders.** ELF, PE, Mach-O, DEX, PDB, DWARF, COFF — every loader parses attacker-controlled input. No public fuzzing exists for any of them. Start with the most-used three. — [LOADER_FUZZING.md](docs/security/LOADER_FUZZING.md), [harnesses](Ghidra/Features/Base/src/test.fuzz/java/ghidra/app/util/bin/format/fuzz/)
 
 - [ ] **15. Build ASAN/UBSAN CI variants of the decompiler.** Makefile has the flags *commented out* (`decompile/cpp/Makefile:256`). Enable them in a nightly CI job. With ~2,700 raw allocations, this will surface real bugs immediately.
 
