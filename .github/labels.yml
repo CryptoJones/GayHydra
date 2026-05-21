@@ -1,0 +1,132 @@
+# Declarative GitHub label set for GayHydra.
+#
+# Source of truth for the labels declared in
+# docs/governance/LABEL_POLICY.md (Rec 08). Synced to the live
+# repo by .github/workflows/sync-labels.yml.
+#
+# Editing this file:
+#   - Add: append a new entry below.
+#   - Rename: update `name` and add `from_name` for one cycle, then
+#     remove `from_name` once the rename has propagated.
+#   - Delete: remove the entry and let the next sync's --delete pass
+#     remove the label from the repo.
+
+# ---------------------------------------------------------------------
+# Lane labels (auto-applied; one per PR; see PROCESSOR_LANE.md +
+# DECOMPILER_CORRECTNESS_LANE.md + LABEL_POLICY.md).
+# Highest-priority-first ordering matches the tie-breaker in LABEL_POLICY.
+
+- name: "lane:security"
+  description: "Security-relevant PR (highest priority lane)."
+  color: "b60205"
+
+- name: "lane:decomp-correctness"
+  description: "Wrong-output decompiler fix; 3-business-day SLA."
+  color: "d93f0b"
+
+- name: "lane:rfc"
+  description: "Diff under docs/rfcs/."
+  color: "5319e7"
+
+- name: "lane:processor"
+  description: "Diff under Ghidra/Processors/<arch>/. See PROCESSOR_LANE.md."
+  color: "fbca04"
+
+- name: "lane:debugger"
+  description: "Diff under Ghidra/Debug/."
+  color: "1d76db"
+
+- name: "lane:framework"
+  description: "Default lane: anything else."
+  color: "cccccc"
+
+# ---------------------------------------------------------------------
+# Triage state (one per item; applied by a human; SLA-bearing).
+
+- name: "triage:accepted-for-review"
+  description: "Maintainer accepted; in the active review queue."
+  color: "0e8a16"
+
+- name: "triage:needs-changes"
+  description: "Specific changes requested in-thread; author's turn."
+  color: "fbca04"
+
+- name: "triage:needs-info"
+  description: "Specific question pending an author answer; SLA paused."
+  color: "fbca04"
+
+- name: "triage:needs-rfc"
+  description: "Exceeds mega-PR threshold; RFC required before review."
+  color: "5319e7"
+
+- name: "triage:wont-do"
+  description: "Closed with a written reason."
+  color: "e6e6e6"
+
+- name: "triage:duplicate"
+  description: "Linked to canonical issue/PR; closed."
+  color: "cfd3d7"
+
+# ---------------------------------------------------------------------
+# Stale machinery (auto by .github/workflows/stale.yml).
+
+- name: "stale-warning"
+  description: "335 days no activity; 30-day grace before close."
+  color: "fef2c0"
+
+- name: "closed-stale"
+  description: "Closed by the stale workflow. Comment to reopen."
+  color: "cccccc"
+
+- name: "pinned"
+  description: "Manually pinned exempt from the stale workflow."
+  color: "1d76db"
+
+- name: "security-embargoed"
+  description: "Under an embargo per SECURITY.md; stale paused."
+  color: "b60205"
+
+# ---------------------------------------------------------------------
+# Severity (for issues).
+
+- name: "severity:wrong-output"
+  description: "Decompiler/analyzer produces incorrect result."
+  color: "b60205"
+
+- name: "severity:crash"
+  description: "Crashes Ghidra or a subprocess."
+  color: "d93f0b"
+
+- name: "severity:security"
+  description: "Reachable from adversary-controlled input."
+  color: "b60205"
+
+- name: "severity:perf"
+  description: "Unbounded time/memory on bounded input."
+  color: "fbca04"
+
+- name: "severity:papercut"
+  description: "UX/quality-of-life issue."
+  color: "c5def5"
+
+# ---------------------------------------------------------------------
+# Community.
+
+- name: "good-first-issue"
+  description: "Small, scoped, owned by no one else, with acceptance criteria."
+  color: "7057ff"
+
+- name: "help-wanted"
+  description: "Maintainers want this but lack bandwidth."
+  color: "008672"
+
+# ---------------------------------------------------------------------
+# Audit / planning.
+
+- name: "audit-2026-05"
+  description: "Originated in the 2026-05-21 principal-architect audit (Ghidra.MD)."
+  color: "0052cc"
+
+- name: "sla-breach"
+  description: "Item passed the Triage SLA without a first response. See TRIAGE_SLA.md."
+  color: "b60205"
