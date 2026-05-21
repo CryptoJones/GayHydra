@@ -34,7 +34,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 ## II. Security Posture
 
-- [ ] **11. Publish SECURITY.md.** None exists. For a tool that parses adversary-controlled binaries and ships a network server, this is below baseline. Document private disclosure address, embargo policy, and CVE assignment path. LLVM and binutils do this; Ghidra should too.
+- [x] **11. Publish SECURITY.md.** None exists. For a tool that parses adversary-controlled binaries and ships a network server, this is below baseline. Document private disclosure address, embargo policy, and CVE assignment path. LLVM and binutils do this; Ghidra should too. — [SECURITY.md](SECURITY.md)
 
 - [ ] **12. Issue public CVE IDs.** Internal `GP-*` tracker IDs (GP-6832, GP-6719, GP-258) hide security fixes from NVD. Downstream packagers and enterprise security teams cannot patch what they cannot see. Recent server-side hardening (path-traversal in username validation, race in writeUserList, RMI deserialization filter) deserved CVEs and didn't get them.
 
