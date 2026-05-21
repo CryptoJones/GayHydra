@@ -1,0 +1,38 @@
+name: Refresh upstream crossref report
+
+# Sprint 2 follow-up: keep docs/upstream-tracking/pr-issue-matches.md
+# in sync with upstream NSA/ghidra's open PR ↔ open issue closing
+# references. Runs nightly; commits any drift to master with the
+# github-actions[bot] identity.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # nightly, 06:17 UTC (off-peak)
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to push the refreshed report
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/upstream-crossref.py
+
+      - name: Commit any changes
+        run: |
+          if [[ -z $(git status --porcelain docs/upstream-tracking/pr-issue-matches.md) ]]; then
+            echo "No drift; nothing to commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/upstream-tracking/pr-issue-matches.md
+          git commit -m "$(printf 'chore: refresh upstream crossref report (%s)\n\nAutomated update by .github/workflows/upstream-crossref-refresh.yml.' "$(date -u +%Y-%m-%d)")"
+          git push origin master
