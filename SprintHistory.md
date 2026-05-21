@@ -9,7 +9,40 @@ For why decisions were made the way they were, see
 
 ---
 
-## Sprint 3 — Upstream Cherry-Picks, Wave 2 (in progress, started 2026-05-21)
+## Sprint 4 — Sprint-3 conflict-resolve + first Sprint-1 implementation tier (delivered 2026-05-21)
+
+**Goal:** Hand-resolve the 9 conflict-skipped cherry-picks from Sprint 3, hand-port the carried-over BSim PR, and start landing the implementation surface for the recs shipped as designs in Sprint 1.
+
+**Delivered (12 PRs):**
+
+- **6 hand-resolved cherry-picks** (PRs #150–#155 + #165):
+  - [PR #150](https://github.com/CryptoJones/GayHydra/pull/150) ports NSA#8270 (PIC18 RLNCF/RRNCF use rotate, closes #8269)
+  - [PR #151](https://github.com/CryptoJones/GayHydra/pull/151) ports NSA#2244 (exclude `.vscode/`, closes #2243)
+  - [PR #152](https://github.com/CryptoJones/GayHydra/pull/152) ports NSA#8635 (Decompiler: in-place C operations for STOREs, closes #8634)
+  - [PR #153](https://github.com/CryptoJones/GayHydra/pull/153) ports NSA#3687 (ARM exception-return `goto [pc]`→`return [pc]`, closes #3678)
+  - [PR #154](https://github.com/CryptoJones/GayHydra/pull/154) ports NSA#8815 (Linux syscall numbers, closes #8814)
+  - [PR #155](https://github.com/CryptoJones/GayHydra/pull/155) ports NSA#6390 (RISC-V WCH/QingKe XW extension, closes #6391)
+  - [PR #165](https://github.com/CryptoJones/GayHydra/pull/165) hand-ports NSA#6897 (BSim address-space id, 25 files, gson↔json-simple drift resolved, closes #6896)
+
+- **3 cherry-picks deferred** (structural drift too deep for a quick resolve): NSA#5593 (constant integer export — depends on `largetemp` infra missing in our master), NSA#3974 (Comments Set... — 5 file conflicts + missing file), NSA#3137 (cspec docs in build — 7 conflict points across build.gradle + docs).
+
+- **Sprint-1 implementation surface — first PRs landed:**
+  - **Rec 19 #19-1 — [PR #156](https://github.com/CryptoJones/GayHydra/pull/156):** `SafeObjectInput` helper class + 7 JUnit 4 tests. The sanctioned entry point for Java object deserialization.
+  - **Rec 28 #28-2 — [PR #157](https://github.com/CryptoJones/GayHydra/pull/157):** `@Ignore` test inventory document.
+  - **Rec 28 #28-3 — [PR #158](https://github.com/CryptoJones/GayHydra/pull/158):** `gradle ignoreAudit` task + CI step gating the policy.
+  - **Rec 28 #28-4 — [PR #163](https://github.com/CryptoJones/GayHydra/pull/163):** Filed tracking issues #159–#162 for the audit-named tests + rewrote each annotation in compliance with the policy + deleted commented-out `//@Ignore` noise.
+  - **Rec 17 #17-2 — [PR #164](https://github.com/CryptoJones/GayHydra/pull/164):** `.github/workflows/release.yml` — Cosign keyless signing of the release zip + SBOM on tag push.
+
+**Sprint 4 total: 12 PRs (7 upstream ports + 5 implementation-surface advances) + 4 tracking issues filed.**
+
+**Carried into Sprint 5:**
+
+- 3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137) — defer further, may not be worth porting.
+- More Sprint-1 implementation: Rec 11 follow-up (NSA#9202 review), Rec 12 (GHSA drafts — needs CVSS), Rec 13 (submit OSS-Fuzz project to google/oss-fuzz), Rec 21 SBOM sanity gate, Rec 25 Stage 2 (-Xlint widening — needs warning-floor cleanup), Rec 26 Stage 2 (ErrorProne tier 2).
+
+---
+
+## Sprint 3 — Upstream Cherry-Picks, Wave 2 (delivered earlier 2026-05-21)
 
 **Goal:** Continue mining the [crossref report](docs/upstream-tracking/pr-issue-matches.md) for cleanly-applying upstream PRs, prioritised by size (smallest first to maximize ports-per-effort).
 

@@ -10,29 +10,28 @@ For the *why* behind individual choices, see
 
 ---
 
-## Sprint 4 — Upstream Cherry-Picks Wave 3 + Sprint-1 Implementation Begin (next)
+## Sprint 5 — More Sprint-1 implementation + give-back PRs (next)
 
-**Upstream-port carry-overs from Sprint 3:**
+**Carried from Sprint 4:**
 
-- [ ] Hand-port [NSA#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) (BSim address-space id, 26 files) — see [DD-017](DesignDecisions.md#dd-017-defer-nsa6897-bsim-hand-port-2026-05-21-deferred).
-- [ ] Hand-resolve the 4 conflict-skipped ports from Sprint 3:
-  - NSA#8270 (PIC18 RLNCF/RRNCF rotate)
-  - NSA#2244 (VScode folder exclude)
-  - NSA#5593 (constant-integer-export detect)
-  - NSA#3974 (Comments Set... edit existing)
-- [ ] Mine the remaining ~13 untackled crossref matches (mostly multi-commit; use the patch-apply approach).
-- [ ] Open follow-up PRs back to NSA/ghidra for ports we have a clean fix on, where it makes sense to give back upstream (parallel to landing in our fork).
+- [ ] 3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137) — decide whether to invest the hand-port effort or just close as "won't backport".
 
-**Begin the v26.1 implementation surface:**
-
-The recs delivered in Sprint 1 shipped the *design* surface. Sprint 4
-starts the implementation. Pick three to begin:
+**Implementation surface — pick the cleanest next batch:**
 
 - [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
-- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`).
+- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork.
 - [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
-- [ ] **Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + unit tests. See [DD-005](DesignDecisions.md#dd-005-safeobjectinput-as-the-only-java-deser-entry-point-2026-05-21-planned).
-- [ ] **Rec 28 PR #28-2:** inventory the six audit-named `@Ignore` tests; file tracking issues.
+- [ ] **Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).
+- [ ] **Rec 17 #17-3:** add Cosign verification commands to release-notes template.
+- [ ] **Rec 19 #19-2:** first SafeObjectInput migration — `ItemDeserializer` + `CodeUnitInfo` (Class A sites — attacker-reachable).
+- [ ] **Rec 21:** SBOM build-sanity gate (≥10 components or fail).
+- [ ] **Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean any subproject ≥50 warnings.
+- [ ] **Rec 26 Stage 2:** `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.
+- [ ] **Rec 28 #28-5+:** broader `@Ignore` sweep across the ~25 other in-tree sites.
+
+**Give-back PRs to NSA/ghidra:**
+
+- [ ] Identify ports where our resolution is cleaner than the original (e.g. PRs that hand-resolved a conflict by deleting commented-out lines) and open follow-up PRs back to upstream NSA/ghidra.
 
 ---
 
