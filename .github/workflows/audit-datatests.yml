@@ -19,6 +19,13 @@ on:
         description: 'Optional grep pattern to limit which XML files are run (e.g. "heap|stack"). Empty = all.'
         required: false
         default: ''
+  # Sprint 10: weekly regression guard. The Sprint-9 #215 audit cleared
+  # all 189 inherited-from-upstream stringmatch-regex drift failures.
+  # A weekly run catches future decompiler-output changes that
+  # re-introduce drift even when no Decompiler-CPP-Tests PR triggers
+  # the unit-test workflow path.
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 06:00 UTC
 
 permissions:
   contents: read
