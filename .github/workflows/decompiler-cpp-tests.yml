@@ -79,12 +79,21 @@ jobs:
         working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
         run: make -j$(getconf _NPROCESSORS_ONLN) decomp_test_dbg
 
-      - name: Run unit tests (skip data-driven XML tests)
+      - name: Run unit tests
         working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
-        # `decomp_test_dbg unittests` runs only the C++ TEST() entries
-        # under ../unittests/, skipping the brittle datatests/*.xml.
-        # See test.cc::main argparse for the subcommand contract.
         run: ./decomp_test_dbg unittests
+
+      - name: Run data-driven XML tests (datatests/*.xml)
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
+        # Sprint 9 re-enabled (#215 audit + the five regex-fix batches
+        # in PRs #250, #251, #252, #253, #254). The previous comment said
+        # "the datatests are brittle, inherited-from-upstream"; the fork's
+        # post-Sprint-9 stringmatch regexes now accommodate the decompiler's
+        # current output formatting (L-suffix on int8 literals, space-
+        # after-comma in calls, sign simplification, etc.). See
+        # docs/testing/STAGE3_ENUMERATION.md for the broader Sprint-9
+        # narrative.
+        run: ./decomp_test_dbg datatests
 
       - name: Upload test binary on failure
         if: failure()
