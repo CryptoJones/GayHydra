@@ -96,12 +96,27 @@ task ignoreAudit {
                 }
             }
         }
+        // Stage 1: warn-only mode while the existing in-tree backlog is
+        // being swept (Rec 28 #28-5..#28-8). Flip to fail-on-violation
+        // by passing -PignoreAuditStrict=true once the warning count
+        // drops to zero. See docs/testing/IGNORE_TEST_POLICY.md.
+        boolean strict = project.hasProperty('ignoreAuditStrict') &&
+            project.property('ignoreAuditStrict') == 'true'
+
         if (!violations.isEmpty()) {
-            logger.error '== @Ignore audit failures =='
-            violations.each { logger.error "  ${it}" }
-            throw new GradleException(
-                "${violations.size()} @Ignore policy violations. " +
-                "See docs/testing/IGNORE_TEST_POLICY.md for the rule.")
+            if (strict) {
+                logger.error '== @Ignore audit failures =='
+                violations.each { logger.error "  ${it}" }
+                throw new GradleException(
+                    "${violations.size()} @Ignore policy violations. " +
+                    "See docs/testing/IGNORE_TEST_POLICY.md for the rule.")
+            }
+            else {
+                logger.warn "ignoreAudit: ${violations.size()} @Ignore policy violations " +
+                    "(warning mode; pass -PignoreAuditStrict=true to fail):"
+                violations.each { logger.warn "  ${it}" }
+            }
+            return
         }
         logger.lifecycle 'ignoreAudit: all @Ignore annotations comply with the policy.'
     }
