@@ -1,0 +1,31 @@
+name: "Feature request"
+description: A new feature, enhancement, or design direction.
+title: "[feature] <short description>"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Large features (>2,000 net LOC, cross-module interfaces, or security-boundary changes) require an [RFC](../../docs/governance/RFC_PROCESS.md) before implementation. Use this template for the original idea / discussion; a maintainer will tag `triage:needs-rfc` if appropriate.
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve? Who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed approach
+      description: High-level sketch. The RFC (if required) will get into the detailed design.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you think about? Why is the proposed approach better?

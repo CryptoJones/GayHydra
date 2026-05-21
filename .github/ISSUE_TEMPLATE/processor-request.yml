@@ -1,0 +1,40 @@
+name: "Processor / Sleigh request or bug"
+description: New architecture support, an existing-arch correctness issue, or a Sleigh runtime/compiler change.
+title: "[proc] <arch>: <short description>"
+labels: ["lane:processor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Processor PRs/issues live in their own review lane (see [PROCESSOR_LANE.md](../../docs/governance/lanes/PROCESSOR_LANE.md)). Please cite the architecture's reference manual where relevant.
+
+  - type: input
+    id: arch
+    attributes:
+      label: Architecture
+      placeholder: e.g. RISC-V RV64GC, ARM AArch64, PowerPC e200
+    validations:
+      required: true
+
+  - type: input
+    id: reference
+    attributes:
+      label: Architecture reference
+      description: Manual name, version, section/page.
+      placeholder: e.g. RISC-V Instruction Set Manual, Volume I, Unprivileged ISA, Version 20191213, §2.5
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What changes
+      description: A new architecture, a bug fix in an existing one, or a Sleigh runtime change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: testvectors
+    attributes:
+      label: Canonical test vectors
+      description: Pointers to existing test vectors (e.g. the riscv-tests repo). Required for new architectures; ≥20 instructions covering distinct encodings.

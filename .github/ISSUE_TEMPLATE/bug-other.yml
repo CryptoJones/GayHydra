@@ -1,0 +1,54 @@
+name: "Bug: other"
+description: Crash, perf issue, papercut, UX problem — anything that isn't a wrong-output decompiler bug or a security vulnerability.
+title: "[bug] <short description>"
+labels: ["lane:framework"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for crashes, perf issues, UX/quality-of-life papercuts, or anything else that isn't a wrong-output decompiler bug. For suspected security issues use the private GHSA path (see SECURITY.md), not this template.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "severity:crash"
+        - "severity:perf"
+        - "severity:papercut"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: GayHydra version
+      placeholder: e.g. v26.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else

@@ -1,0 +1,61 @@
+name: "Bug: decompiler produces wrong output"
+description: A function decompiles to something semantically incorrect (not just ugly).
+title: "[wrong-output] <short description>"
+labels: ["severity:wrong-output", "lane:decomp-correctness"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Wrong-output decompiler bugs are the highest-priority lane in this fork (3-business-day SLA — see [DECOMPILER_CORRECTNESS_LANE.md](../../docs/governance/lanes/DECOMPILER_CORRECTNESS_LANE.md)). The fix path requires a reproducer.
+
+  - type: input
+    id: arch
+    attributes:
+      label: Architecture
+      placeholder: e.g. x86-64, ARM, RISC-V
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: GayHydra version
+      placeholder: e.g. v26.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: Input
+      description: |
+        A minimal reproducer: an instruction sequence, a small
+        binary, or a pcode fragment that demonstrates the bug.
+      placeholder: |
+        e.g.
+        function foo() {
+            48 83 ec 18           sub rsp, 0x18
+            ...
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected decompilation
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual decompilation
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Linked upstream NSA/ghidra issue, related crossref entries, etc.
