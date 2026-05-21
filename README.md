@@ -102,7 +102,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **39. Detect typical `for` loops and inline functions (#644, #2376, #4461).** Decompiler output that hides the loop induction variable behind a `while + counter` is the single most common "this looks worse than IDA" complaint. Inline-aware analysis (#2376, #4461) is the same complaint one level deeper. — [FOR_LOOP_INLINE_DETECTION.md](docs/decompiler/FOR_LOOP_INLINE_DETECTION.md)
 
-- [ ] **40. Formalize Sleigh semantics; add a Sleigh fuzzer.** Sleigh has an HTML reference manual, no formal grammar, no semantic model, no fuzz harness. With 39 processor specs and 21k lines of `.slaspec`, silent codegen bugs in stale processors (PowerPC unchanged since 2019, 8051 since 2019, M8C since 2019) are inevitable and undetectable. Differential fuzzing against canonical ISA test vectors is the right answer.
+- [x] **40. Formalize Sleigh semantics; add a Sleigh fuzzer.** Sleigh has an HTML reference manual, no formal grammar, no semantic model, no fuzz harness. With 39 processor specs and 21k lines of `.slaspec`, silent codegen bugs in stale processors (PowerPC unchanged since 2019, 8051 since 2019, M8C since 2019) are inevitable and undetectable. Differential fuzzing against canonical ISA test vectors is the right answer. — [SLEIGH_FORMAL_AND_FUZZ.md](docs/sleigh/SLEIGH_FORMAL_AND_FUZZ.md)
 
 - [ ] **41. Establish a processor-maintenance policy.** Each `Ghidra/Processors/<arch>/` should have a named maintainer (community is fine), a test corpus, and an "orphaned after N years inactive" marker so users know what to trust. Right now everything looks equally maintained from the README, and that's not true.
 
