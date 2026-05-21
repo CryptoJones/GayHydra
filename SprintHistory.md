@@ -38,7 +38,7 @@ When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been br
 
 **Verification:**
 
-- Aaron's mac mini (`172.16.28.199`, Apple Silicon, macOS 26.3) used as the canonical mac test environment — caught the ARM cert manifest hole and the missing `* IP: GHIDRA` headers that GH Actions also fails on.
+- A local Apple Silicon mac mini (macOS 26.3) stood up as the canonical mac test environment — caught the ARM cert manifest hole and the missing `* IP: GHIDRA` headers that GH Actions also fails on.
 - Local QEMU+Win11+Puppet was considered but deferred: GH Actions ships a Windows runner already, and the Windows failures so far have been the same toolchain issues as the other platforms (per [DD-019](DesignDecisions.md) — not yet written).
 
 **Sprint 6 total: 12 PRs (4 Rec 28 wrap + 8 CI rescue) + 18 tracking issues filed (#176–#193).**
