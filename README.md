@@ -181,7 +181,6 @@ please refer to the [Getting Started][gettingstarted] document which can be foun
 Ghidra installation directory. 
 
 ## Build
-[![Build Ghidra][build-ghidra-badge]][build-ghidra-action]
 
 To create the latest development build for your platform from this source repository:
 
@@ -202,8 +201,8 @@ To create the latest development build for your platform from this source reposi
 unzip ghidra-master
 cd ghidra-master
 ```
-**NOTE:** Instead of downloading the compressed source, you may instead want to clone the GitHub 
-repository: `git clone https://github.com/NationalSecurityAgency/ghidra.git`
+**NOTE:** Instead of downloading the compressed source, you may instead want to clone the
+canonical Codeberg repository: `git clone https://codeberg.org/CryptoJones/GayHydra.git`
 
 ##### Download additional build dependencies into source repository:
 **NOTE:** If an Internet connection is available and you did not install Gradle, the 
@@ -268,22 +267,20 @@ If you would like to contribute bug fixes, improvements, and new features back t
 take a look at our [Contributor's Guide][contrib] to see how you can participate in this open 
 source project.
 
-[build-ghidra-action]: https://github.com/NationalSecurityAgency/ghidra/actions/workflows/build-ghidra.yml
-[build-ghidra-badge]: https://github.com/NationalSecurityAgency/ghidra/actions/workflows/build-ghidra.yml/badge.svg
 [nsa]: https://www.nsa.gov
 [contrib]: CONTRIBUTING.md
 [devguide]: DevGuide.md
 [gettingstarted]: GhidraDocs/GettingStarted.md
 [known-issues]: DevGuide.md#known-issues
 [career]: https://www.intelligencecareers.gov/nsa
-[releases]: https://github.com/NationalSecurityAgency/ghidra/releases
+[releases]: https://codeberg.org/CryptoJones/GayHydra/releases
 [jdk]: https://adoptium.net/temurin/releases
 [gradle]: https://gradle.org/releases/
 [python3]: https://www.python.org/downloads/
 [vs]: https://visualstudio.microsoft.com/vs/community/
 [vcbuildtools]: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 [eclipse]: https://www.eclipse.org/downloads/packages/
-[master]: https://github.com/NationalSecurityAgency/ghidra/archive/refs/heads/master.zip
-[security]: https://github.com/NationalSecurityAgency/ghidra/security/advisories
+[master]: https://codeberg.org/CryptoJones/GayHydra/archive/master.zip
+[security]: SECURITY.md
 [ghidradev]: GhidraBuild/EclipsePlugins/GhidraDev/GhidraDevPlugin/README.md
 [pyghidra]: Ghidra/Features/PyGhidra/README.md
