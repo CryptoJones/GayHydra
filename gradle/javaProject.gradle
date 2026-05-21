@@ -188,6 +188,15 @@ dependencies {
 	// See docs/testing/MOCKITO_ADOPTION.md.
 	testImplementation "org.mockito:mockito-core:5.12.0"
 	testImplementation "org.mockito:mockito-junit-jupiter:5.12.0"
+
+	// Rec 29 Stage 1: add JUnit 5 (Jupiter) + the Vintage engine that
+	// runs JUnit 4 tests through the JUnit Platform. The above JUnit 4
+	// dependencies stay; existing tests are unchanged. New tests may
+	// be written in JUnit 5 immediately. See
+	// docs/testing/JUNIT5_MIGRATION.md.
+	testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+	testRuntimeOnly "org.junit.vintage:junit-vintage-engine:5.10.2"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.10.2"
 }
 
 // For Java 9, we must explicitly export references to the internal classes we are using.
