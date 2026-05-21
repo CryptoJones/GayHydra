@@ -28,6 +28,7 @@ import ghidra.program.model.lang.Register;
 import ghidra.program.model.pcode.Varnode;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class TRICOREEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 	 Register FCX,PCXI,LCX,PSW,a10,a11,d8,a12,d12;
 	

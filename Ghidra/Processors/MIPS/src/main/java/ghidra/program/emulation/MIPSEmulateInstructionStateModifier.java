@@ -27,6 +27,7 @@ import ghidra.program.model.pcode.PcodeOp;
 //import ghidra.pcode.emulate.callother.SignalingNaNOpBehavior;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class MIPSEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 
 	private Register ismReg;

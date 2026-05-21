@@ -34,6 +34,7 @@ import ghidra.program.model.address.Address;
  */
 
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public interface BreakTable {
 
 	/**

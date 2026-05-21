@@ -23,6 +23,7 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.pcode.emulate.Emulate;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class RISCVEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 	
 	public RISCVEmulateInstructionStateModifier(Emulate emu) {

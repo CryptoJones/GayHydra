@@ -23,6 +23,7 @@ import ghidra.program.model.lang.Register;
 import ghidra.program.model.pcode.Varnode;
 
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public interface MemoryState {
 
 	/**

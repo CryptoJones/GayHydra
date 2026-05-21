@@ -36,6 +36,7 @@ import ghidra.program.model.pcode.Varnode;
  * @deprecated Use {@link PcodeUseropLibrary} or {@link AnnotatedPcodeUseropLibrary} instead
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public abstract class EmulateInstructionStateModifier {
 
 	protected final Emulate emu;

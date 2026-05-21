@@ -25,6 +25,7 @@ import ghidra.program.model.address.AddressSpace;
  * space.  The space is byte-addressable and paging is not supported.  
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class UniqueMemoryBank extends MemoryBank {
 
 	/**A map from {@link Long} offsets to byte values would require many lookups.

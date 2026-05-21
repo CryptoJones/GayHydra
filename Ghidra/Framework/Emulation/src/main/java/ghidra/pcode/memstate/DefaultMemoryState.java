@@ -29,6 +29,7 @@ import ghidra.program.model.lang.Language;
  * this form.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class DefaultMemoryState extends AbstractMemoryState {
 
 	VectorSTL<MemoryBank> memspace = new VectorSTL<MemoryBank>();

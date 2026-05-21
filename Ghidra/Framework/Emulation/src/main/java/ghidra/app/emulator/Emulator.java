@@ -31,6 +31,7 @@ import ghidra.util.task.TaskMonitor;
  *             and is also deprecated. Please use {@link PcodeEmulator} instead.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public interface Emulator {
 
 	/**

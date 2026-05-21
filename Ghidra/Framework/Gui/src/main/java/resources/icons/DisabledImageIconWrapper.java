@@ -28,6 +28,7 @@ import generic.util.image.ImageUtils;
  * extends {@link ImageIconWrapper} which has also been deprecated. 
  */
 @Deprecated(forRemoval = true, since = "11")
+@SuppressWarnings("removal")
 public class DisabledImageIconWrapper extends ImageIconWrapper {
 
 	/** 

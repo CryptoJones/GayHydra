@@ -28,6 +28,7 @@ import ghidra.program.model.lang.Register;
 import ghidra.program.model.pcode.Varnode;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class XtensaEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 
 	private Stack<RegisterStash> stashStack = new Stack<RegisterStash>();

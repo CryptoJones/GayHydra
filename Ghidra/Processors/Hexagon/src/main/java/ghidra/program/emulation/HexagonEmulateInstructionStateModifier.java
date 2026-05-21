@@ -28,6 +28,7 @@ import ghidra.pcode.utils.Utils;
 import ghidra.program.model.pcode.Varnode;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class HexagonEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 
 	private static final FloatFormat fp64Format = FloatFormatFactory.getFloatFormat(8);

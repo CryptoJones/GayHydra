@@ -23,6 +23,7 @@ import ghidra.pcodeCPort.error.LowlevelError;
 import ghidra.program.model.pcode.Varnode;
 
 @Deprecated(forRemoval = true, since = "12.1")
+@SuppressWarnings("removal")
 public class m68kEmulateInstructionStateModifier extends EmulateInstructionStateModifier {
 
 /*

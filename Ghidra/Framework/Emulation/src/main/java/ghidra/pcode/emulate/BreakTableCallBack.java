@@ -34,6 +34,7 @@ import ghidra.program.model.address.Address;
  * are implemented to search in these containers
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class BreakTableCallBack implements BreakTable {
 
 	public static final String DEFAULT_NAME = "*";

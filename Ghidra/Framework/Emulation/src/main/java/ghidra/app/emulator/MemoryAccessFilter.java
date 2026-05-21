@@ -31,6 +31,7 @@ import ghidra.program.model.address.AddressSpace;
  *             {@link PcodeEmulationCallbacks}
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public abstract class MemoryAccessFilter {
 
 	private MemoryAccessFilter prevFilter;

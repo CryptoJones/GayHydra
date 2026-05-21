@@ -38,6 +38,7 @@ import ghidra.program.model.address.Address;
  *  you can receive a callback in a {@link AnnotatedPcodeUseropLibrary}.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class BreakCallBack {
 	protected Emulate emulate;		// The emulator currently associated with this breakpoint
 

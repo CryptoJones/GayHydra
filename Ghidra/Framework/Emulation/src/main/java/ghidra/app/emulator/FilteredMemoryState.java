@@ -20,6 +20,7 @@ import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.lang.Language;
 
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 class FilteredMemoryState extends DefaultMemoryState {
 
 	private MemoryAccessFilter filter;

@@ -39,6 +39,7 @@ import ghidra.util.graph.attributes.*;
 //       be moved.
 // 
 @Deprecated(since = "10.2") // Use GraphFactory
+@SuppressWarnings("removal")
 public class DirectedGraph {
 	private final VertexSet vertices;
 	private final EdgeSet edges;

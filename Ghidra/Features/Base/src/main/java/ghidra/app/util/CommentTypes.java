@@ -25,6 +25,7 @@ import ghidra.program.model.listing.CommentType;
  * @deprecated the {@link CommentType enum should be used in place of integers}
  */
 @Deprecated(forRemoval = true, since = "11.4")
+@SuppressWarnings("removal")
 public class CommentTypes {
 
 	private static int[] COMMENT_TYPES;

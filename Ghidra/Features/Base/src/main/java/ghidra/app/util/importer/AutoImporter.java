@@ -38,6 +38,7 @@ import ghidra.util.task.TaskMonitor;
  * @deprecated Use {@link ProgramLoader}
  */
 @Deprecated(since = "12.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class AutoImporter {
 	private AutoImporter() {
 		// service class; cannot instantiate

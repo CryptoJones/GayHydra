@@ -43,6 +43,7 @@ import ghidra.util.task.TaskMonitor;
  * are additional methods for inspecting the pcode ops in the current instruction as a sequence.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class Emulate {
 
 	private MemoryState memstate; // the memory state of the emulator.

@@ -28,6 +28,7 @@ import ghidra.util.exception.NoValueException;
  * 
  */
 @Deprecated(since = "10.2")
+@SuppressWarnings("removal")
 class VertexSet implements KeyIndexableSet<Vertex> {
 	private final DirectedGraph parentGraph;
 	private long modificationNumber;

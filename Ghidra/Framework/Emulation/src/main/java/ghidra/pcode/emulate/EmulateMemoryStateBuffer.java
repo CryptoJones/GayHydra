@@ -27,6 +27,7 @@ import ghidra.program.model.mem.*;
  * memory offsets within the associated address space.
  */
 @Deprecated(since = "12.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class EmulateMemoryStateBuffer implements MemBuffer {
 
 	private final MemoryState memState;
