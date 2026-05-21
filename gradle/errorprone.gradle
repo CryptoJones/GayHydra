@@ -12,12 +12,14 @@
  *
  * Apply this from the root build.gradle:
  *   apply from: 'gradle/errorprone.gradle'
+ *
+ * The plugins {} block lives in the root build.gradle. This file just
+ * applies the plugin to every java-library subproject and configures
+ * it. We use raw -Xep:Name:SEVERITY javac args throughout rather than
+ * the typed CheckSeverity enum because this script is parsed without
+ * the plugin's classpath available (an `apply from:` constraint), so
+ * `import net.ltgt.gradle.errorprone.CheckSeverity` fails to resolve.
  */
-
-// The plugins {} block lives in the root build.gradle. This file just
-// applies the plugin to every java-library subproject and configures
-// it. Imports must be at the top of the script.
-import net.ltgt.gradle.errorprone.CheckSeverity
 
 subprojects {
     plugins.withId('java-library') {
@@ -29,27 +31,26 @@ subprojects {
 
         tasks.withType(JavaCompile).configureEach {
             options.errorprone {
-                // Stage 1: signal-only. Every check at WARNING.
-                // No checks at ERROR. This intentionally avoids
-                // making the existing tree red.
+                // Stage 1: signal-only. No checks at ERROR.
                 allErrorsAsWarnings = true
 
-                // High-EV checks we want even at Stage 1.
-                check('ImmutableEnumChecker', CheckSeverity.WARN)
-                check('MissingOverride', CheckSeverity.WARN)
-                check('MutableConstantField', CheckSeverity.WARN)
-                check('MutableMethodReturnType', CheckSeverity.WARN)
-                check('CollectionToArraySafeParameter', CheckSeverity.WARN)
-                check('DefaultCharset', CheckSeverity.WARN)
-                check('EqualsHashCode', CheckSeverity.WARN)
-                check('EqualsIncompatibleType', CheckSeverity.WARN)
-                check('StringSplitter', CheckSeverity.WARN)
-
-                // Checks we explicitly defer to a later stage of the
-                // ratchet because the existing codebase has hundreds
-                // of instances and the fix is non-mechanical.
-                disable('JavaUtilDate')
-                disable('JdkObsolete')
+                // High-EV checks at WARNING, expressed as raw javac args
+                // so we don't need to import CheckSeverity in this script.
+                errorproneArgs.addAll([
+                    '-Xep:ImmutableEnumChecker:WARN',
+                    '-Xep:MissingOverride:WARN',
+                    '-Xep:MutableConstantField:WARN',
+                    '-Xep:MutableMethodReturnType:WARN',
+                    '-Xep:CollectionToArraySafeParameter:WARN',
+                    '-Xep:DefaultCharset:WARN',
+                    '-Xep:EqualsHashCode:WARN',
+                    '-Xep:EqualsIncompatibleType:WARN',
+                    '-Xep:StringSplitter:WARN',
+                    // Deferred to a later ratchet stage; too many
+                    // in-tree instances and the fix is non-mechanical.
+                    '-Xep:JavaUtilDate:OFF',
+                    '-Xep:JdkObsolete:OFF',
+                ])
             }
         }
     }
