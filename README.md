@@ -194,10 +194,10 @@ To create the latest development build for your platform from this source reposi
   - C++ ATL
 
 ##### Download and extract the source:
-[Download from GitHub][master]
+[Download from Codeberg][master]
 ```
-unzip ghidra-master
-cd ghidra-master
+unzip master.zip
+cd gayhydra
 ```
 **NOTE:** Instead of downloading the compressed source, you may instead want to clone the
 canonical Codeberg repository: `git clone https://codeberg.org/CryptoJones/GayHydra.git`
