@@ -7,6 +7,8 @@ define endian=little;
 @define MXLEN_1 31
 @define MXLEN_2 30
 
+@define CONTEXTLEN 4
+
 @define ADDRSIZE "32"
 @define FPSIZE "32"
 
