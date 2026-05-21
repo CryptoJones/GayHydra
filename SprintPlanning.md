@@ -14,17 +14,17 @@ For the *why* behind individual choices, see
 
 **In flight (carried from Sprint 8):**
 
-- [ ] **Strict CycloneDX SBOM via plugin 3.2.4** — [PR #241](https://github.com/CryptoJones/GayHydra/pull/241) (`sprint8-sbom-bump-cyclonedx-v3`) bumps the plugin from 1.10.0 → 3.2.4 using the post-PR-#532 rewrite. DSL updated for 3.x (`jsonOutput` / `xmlOutput` Property<RegularFile>). CI signal pending on merge into master. If 3.2.4 still trips on flat-dir deps, fall back to cdxgen as a workflow step.
-- [ ] **189-datatest audit** ([issue #215](https://github.com/CryptoJones/GayHydra/issues/215)) — workflow_dispatch run in flight via `audit-datatests.yml`. Sprint 9 work: download artifact, categorize each failure as cosmetic-regex-drift vs. real decompiler regression, file individual bugs for the latter (consider upstream give-back PRs), batch regex updates as a single PR.
+- [ ] **Strict CycloneDX SBOM hotfix** — PR #243 rolled the CycloneDX 3.2.4 bump into the Sprint-8 close-out, but the bump shipped with two latent bugs that turned master Build-Ghidra red across all three OSes: `schemaVersion` and `projectType` both became enums in plugin 3.x (`org.cyclonedx.Version`, `org.cyclonedx.model.Component$Type`) and need to be loaded via the plugin's own classloader (the apply-from script's classloader doesn't include cyclonedx-core-java). [PR #245](https://github.com/CryptoJones/GayHydra/pull/245) carries the fix. PR #241 closed as superseded by #243+#245.
+- [ ] **189-datatest audit** ([issue #215](https://github.com/CryptoJones/GayHydra/issues/215)) — first run captured pass/fail per file but not actual decompiler output, so categorization (cosmetic-regex-drift vs. real decompiler regression) requires more data. [PR #244](https://github.com/CryptoJones/GayHydra/pull/244) adds `-dumpdir` to `decomp_test_dbg` + wires it into `audit-datatests.yml` so the next workflow_dispatch run captures actual output for every file. Categorization phase + regex-fix PRs queued after #244 merges.
 - [ ] **Re-enable datatests** in `decompiler-cpp-tests.yml` once the audit is done.
 
 **External:**
 
-- [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses).
+- [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses). Placeholder `primary_contact` / `auto_ccs` in `project.yaml` need real maintainer emails before the upstream PR.
 
 **Ratchet:**
 
-- [ ] **Rec 25/26 Stage 3** — pre-clean any subproject with ≥50 warnings (use the new Stage 2 build logs to enumerate). Then promote ratcheted checks to `ERROR` + add `-Werror` to javac. Per-subproject `lintOpts = ['none']` opt-out preserved for ones not yet cleaned.
+- [ ] **Rec 25/26 Stage 3** — multi-PR sequence documented in [docs/testing/STAGE3_ENUMERATION.md](docs/testing/STAGE3_ENUMERATION.md) ([PR #246](https://github.com/CryptoJones/GayHydra/pull/246), enumeration phase). Six subprojects at ≥50 warnings; tree-wide total 844. [PR #247](https://github.com/CryptoJones/GayHydra/pull/247) handles step 2 — `@SuppressWarnings("removal")` on 29 self-deprecated classes, expected to cut the total roughly in half. Steps 3–6 (per-subproject pre-clean + `-Werror` flip + ErrorProne WARN→ERROR) queued.
 
 ---
 
