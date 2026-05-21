@@ -94,7 +94,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **35. Bound decompilation time and memory.** Issue #5730 (huge-function UX) and #8429 (decompiler perf) and PR #9179 (bounded parallel decompiler) all converge on this. The decompiler should never hang the UI. Hard wall-clock + RSS budget per function with partial-result return. — [DECOMPILER_BUDGETS.md](docs/decompiler/DECOMPILER_BUDGETS.md)
 
-- [ ] **36. Stop flushing the decompiler cache on trivial edits (#1871).** 26 reactions, sitting open. The fix is plausibly small relative to its UX impact.
+- [x] **36. Stop flushing the decompiler cache on trivial edits (#1871).** 26 reactions, sitting open. The fix is plausibly small relative to its UX impact. — [CACHE_FLUSH_1871.md](docs/decompiler/CACHE_FLUSH_1871.md)
 
 - [ ] **37. Improve C++ / vtable handling as a coordinated roadmap, not point fixes.** #516 (49 👍), #992, related issues — community is loudly asking for first-class C++ analysis. IDA/Hex-Rays has it. This is a strategic, not tactical, gap. Spec a C++ frontend RFC.
 
