@@ -66,7 +66,7 @@ jobs:
           FILTER: ${{ github.event.inputs.filter }}
         run: |
           set +e   # let individual tests fail without aborting the loop
-          mkdir -p ../datatest-audit
+          mkdir -p ../datatest-audit ../datatest-audit/actual
           files=$(ls ../datatests/*.xml | xargs -n1 basename | sort)
           if [ -n "$FILTER" ]; then
             files=$(echo "$files" | grep -E "$FILTER" || true)
@@ -74,35 +74,42 @@ jobs:
           fi
           # decomp_test_dbg's default sleighpath is relative to the CWD, so
           # we stay in cpp/ for every invocation. -path points at a tmpdir
-          # holding a single XML so only that file's tests run.
+          # holding a single XML so only that file's tests run. -dumpdir
+          # writes the actual decompiler output to <dir>/<base>.actual for
+          # the categorization phase of issue #215.
           for f in $files; do
             name="${f%.xml}"
             echo "::group::$name"
             tmpd=$(mktemp -d)
             cp "../datatests/$f" "$tmpd/"
-            ./decomp_test_dbg -path "$tmpd" datatests > "../datatest-audit/${name}.out" 2>&1
+            ./decomp_test_dbg -path "$tmpd" -dumpdir ../datatest-audit/actual datatests > "../datatest-audit/${name}.out" 2>&1
             rc=$?
             echo "exit=$rc" >> "../datatest-audit/${name}.out"
             rm -rf "$tmpd"
             echo "::endgroup::"
-            echo "$name: exit=$rc, $(grep -c '^Success' "../datatest-audit/${name}.out" || echo 0) pass, $(grep -c '^FAIL' "../datatest-audit/${name}.out" || echo 0) fail"
+            pass=$(grep -c '^Success' "../datatest-audit/${name}.out" || true)
+            fail=$(grep -c '^FAIL' "../datatest-audit/${name}.out" || true)
+            echo "$name: exit=$rc, ${pass:-0} pass, ${fail:-0} fail"
           done
 
       - name: Summarize
         working-directory: Ghidra/Features/Decompiler/src/decompile
         run: |
+          # grep -c returns exit 1 when match count is 0, but still prints "0".
+          # The previous "|| echo 0" double-emitted "0\n0" on no-match. Use
+          # "|| true" + default-value parameter expansion so cells are clean.
           echo "## Datatest audit summary" > datatest-audit/SUMMARY.md
           echo >> datatest-audit/SUMMARY.md
           echo "| File | Pass | Fail | Notes |" >> datatest-audit/SUMMARY.md
           echo "|---|---|---|---|" >> datatest-audit/SUMMARY.md
           for out in datatest-audit/*.out; do
             name=$(basename "$out" .out)
-            pass=$(grep -c '^Success' "$out" || echo 0)
-            fail=$(grep -c '^FAIL' "$out" || echo 0)
+            pass=$(grep -c '^Success' "$out" || true)
+            fail=$(grep -c '^FAIL' "$out" || true)
             notes=""
             grep -q 'Could not find .sla file' "$out" && notes="missing .sla"
             grep -q 'Segmentation fault' "$out" && notes="segfault"
-            echo "| $name | $pass | $fail | $notes |" >> datatest-audit/SUMMARY.md
+            echo "| $name | ${pass:-0} | ${fail:-0} | $notes |" >> datatest-audit/SUMMARY.md
           done
           cat datatest-audit/SUMMARY.md
 
