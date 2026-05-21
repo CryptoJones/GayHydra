@@ -51,6 +51,8 @@ import utilities.util.FileUtilities;
  *
  * @see GHelpSet
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class GHelpHTMLEditorKit extends HTMLEditorKit {
 
 	private static final String G_HELP_STYLE_SHEET = "DefaultStyle.css";

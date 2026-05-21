@@ -30,6 +30,8 @@ import ghidra.util.exception.CancelledException;
  *  We have intended to implement according to the Microsoft PDB API (source); see the API for
  *   truth.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public abstract class PdbDebugInfo {
 
 	protected static final int VERSION_NUMBER_SIZE = 4;

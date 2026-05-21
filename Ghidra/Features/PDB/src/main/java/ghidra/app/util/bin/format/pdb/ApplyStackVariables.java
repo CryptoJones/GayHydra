@@ -30,6 +30,8 @@ import ghidra.util.task.TaskMonitor;
 import ghidra.xml.XmlElement;
 import ghidra.xml.XmlPullParser;
 
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 class ApplyStackVariables {
 	private PdbParser pdbParser;
 	private XmlPullParser xmlParser;

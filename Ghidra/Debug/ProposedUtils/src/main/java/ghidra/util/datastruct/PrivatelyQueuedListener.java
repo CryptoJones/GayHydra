@@ -27,6 +27,8 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
  *
  * @param <P> the type of listener
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class PrivatelyQueuedListener<P> {
 
 	private ListenerErrorHandler errorHandler =

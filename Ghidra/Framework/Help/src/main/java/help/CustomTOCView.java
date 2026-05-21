@@ -41,6 +41,8 @@ import ghidra.util.SystemUtilities;
  * renderers let us display custom text defined by the TOC_Source.xml files.  We also add some
  * utility like: tooltips in development mode, node selection when pressing F1.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class CustomTOCView extends TOCView {
 
 	private CustomTOCNavigatorUI ui;

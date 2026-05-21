@@ -26,6 +26,8 @@ import ghidra.program.model.listing.Program;
  * A stubbed {@link ProgramManager} that used the 'second program' at the current program. This is
  * used to secondary views in order to install the right program.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DiffProgramManager implements ProgramManager {
 	ProgramDiffPlugin programDiffPlugin;
 

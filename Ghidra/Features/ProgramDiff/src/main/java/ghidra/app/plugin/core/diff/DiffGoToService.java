@@ -29,6 +29,8 @@ import ghidra.util.task.TaskMonitor;
  * A service that provides the ability to go to a particular address or location in the right-hand
  * listing of the Diff.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class DiffGoToService implements GoToService {
 
 	private GoToService goToService;

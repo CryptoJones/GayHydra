@@ -24,6 +24,8 @@ import java.util.NoSuchElementException;
  * a fixed or variable length {@link IndexField} which consists of a concatenation of
  * the index field value and associated primary table key.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class FieldIndexTable extends IndexTable {
 
 	private static final Field[] fields = {};

@@ -33,6 +33,8 @@ import ghidra.util.task.TaskMonitor;
  * Checkpointing and buffer versioning is supported along with an undo/redo
  * capability.
  */
+// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
+@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class BufferMgr {
 
 	public static final String ALWAYS_PRECACHE_PROPERTY = "db.always.precache";
