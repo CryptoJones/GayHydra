@@ -129,12 +129,18 @@ task buildJavacc {
 	// @SuppressWarnings annotations. Inject `@SuppressWarnings("all")` at
 	// the class declaration of every generated .java AFTER javacc runs.
 	doLast {
+		// Match the first top-level class/interface/enum declaration line.
+		// javacc-generated files have a stable shape: license/comment header,
+		// `package` line, imports, then exactly ONE top-level declaration.
+		// Pattern: optional modifier words (public/abstract/final/static),
+		// then `class|interface|enum`, then the identifier.
+		def classDeclPattern = ~/^(?:public\s+|abstract\s+|final\s+|static\s+)*(?:class|interface|enum)\s+\w/
 		fileTree(dir: "build/generated-src/javacc", include: "**/*.java").each { f ->
 			def lines = f.readLines()
 			def patched = []
 			boolean done = false
 			lines.each { line ->
-				if (!done && (line =~ /^(public|abstract|class|interface|enum)\s/ || line =~ /^public\s+(class|interface|enum)\s/)) {
+				if (!done && classDeclPattern.matcher(line).find()) {
 					patched << '@SuppressWarnings("all") // javacc-generated; Sprint 10 Stage 3'
 					done = true
 				}
