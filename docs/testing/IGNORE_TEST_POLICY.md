@@ -97,7 +97,24 @@ the policy can land without depending on the GitHub API.
 
 The audit runs as a CI step in
 [`.github/workflows/build-ghidra.yml`](../../.github/workflows/build-ghidra.yml)
-before the unit tests. A red `ignoreAudit` blocks the PR.
+before the unit tests.
+
+**Stage 1 (warning-only, current).** The audit logs violations as
+warnings but does not fail the build. This lets the existing in-tree
+`@Ignore` backlog get swept progressively (Rec 28 #28-5..#28-8)
+without blocking unrelated PRs.
+
+**Stage 2 (failing, future).** Once the warning count drops to zero,
+the audit flips to fail-on-violation. The mode is controlled by the
+Gradle property:
+
+```
+./gradlew ignoreAudit -PignoreAuditStrict=true
+```
+
+Code review still enforces the rule for *new* `@Ignore` additions
+even during Stage 1 — the warning makes the violation visible in
+the PR's CI output.
 
 ## Sequencing
 
