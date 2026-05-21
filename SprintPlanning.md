@@ -14,13 +14,19 @@ For the *why* behind individual choices, see
 
 **Carried from Sprint 9:**
 
-- [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses). Placeholder `primary_contact` / `auto_ccs` in `project.yaml` need real maintainer emails before the upstream PR.
-- [ ] **Rec 25/26 Stage 3 steps 3–6** — per [`docs/testing/STAGE3_ENUMERATION.md`](docs/testing/STAGE3_ENUMERATION.md). Six subprojects at ≥50 warnings need pre-clean. Recommended order: smallest first (PIC 58, AARCH64 63, SoftwareModeling 91), then the three capped giants (Generic, Emulation, Features/Base — each ≥100 pre-`-Xmaxwarns 0`, true counts visible on the post-#249 master log). Then `-Werror` flip in `gradle/javaProject.gradle`, then promote ErrorProne `JavaUtilDate`/`JdkObsolete` WARN→ERROR.
-- [ ] **Audit-datatests as ongoing regression guard** — currently `workflow_dispatch` only. Consider a weekly `schedule:` trigger now that the audit is reliable.
+- [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses). Blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `project.yaml` with real maintainer emails before the upstream PR.
+- [x] ~~**Audit-datatests as ongoing regression guard**~~ — weekly schedule trigger landed in [PR #260](https://github.com/CryptoJones/GayHydra/pull/260).
+- [ ] **Rec 25/26 Stage 3 finish:** steps 3–5 landed in [PR #261](https://github.com/CryptoJones/GayHydra/pull/261) (pre-clean PIC + SoftwareModeling + Features/Base top offenders; AARCH64/Emulation/Generic clear via #247's `@SuppressWarnings("removal")` on next master rebuild). Remaining: **step 6** — `-Werror` flip in `gradle/javaProject.gradle` + ErrorProne `JavaUtilDate` WARN→ERROR per the ratchet in `docs/testing/ERRORPRONE.md` (`JdkObsolete` deferred to Stage 4 per the same doc). Gated on the post-#261 master Build-Ghidra log showing the warning floor is at 0 for the ratchet'd checks.
 
-**Give-back PRs to NSA/ghidra:**
+**Give-back PRs to NSA/ghidra (opened):**
 
-- [ ] The 5 batched datatest-regex-fix PRs (#250–#254) all apply identically to upstream NSA/ghidra — their datatests have the same drift. Open a give-back PR to upstream consolidating the regex updates.
+- [x] ~~Consolidated datatest regex updates~~ — [NSA/ghidra#9207](https://github.com/NationalSecurityAgency/ghidra/pull/9207).
+- [x] ~~`-dumpdir` audit-tooling flag~~ — [NSA/ghidra#9208](https://github.com/NationalSecurityAgency/ghidra/pull/9208).
+
+**Open follow-ups:**
+
+- [ ] **PIC-24F GE-recognition regression** — [issue #259](https://github.com/CryptoJones/GayHydra/issues/259). `pic_branch_ge.xml` datatests disabled in #256 with a TODO pointing here. Bisect upstream to find when the simplification stopped firing; re-enable once fixed.
+- [ ] **`Automatic Dependency Submission (Gradle)`** workflow failure — pre-existing, fails on `Unable to find the local maven repo` because the GitHub-managed auto-submission doesn't run `gradle/support/fetchDependencies.gradle` first. Decide: disable in repo settings (we have our own `dependency-submission.yml` that does it right), or make `build.gradle`'s flatRepo check tolerant of submission-only invocations.
 
 ---
 
