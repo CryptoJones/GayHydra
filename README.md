@@ -92,7 +92,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **34. Replace the IPC protocol with a schema (FlatBuffers/Cap'n Proto).** Bigger investment than #33, but solves the recurring "decompiler crashed" UX papercut at the root, enables differential testing across versions, and makes a non-Java host viable (PyGhidra, Rust frontend, etc). — [IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)
 
-- [ ] **35. Bound decompilation time and memory.** Issue #5730 (huge-function UX) and #8429 (decompiler perf) and PR #9179 (bounded parallel decompiler) all converge on this. The decompiler should never hang the UI. Hard wall-clock + RSS budget per function with partial-result return.
+- [x] **35. Bound decompilation time and memory.** Issue #5730 (huge-function UX) and #8429 (decompiler perf) and PR #9179 (bounded parallel decompiler) all converge on this. The decompiler should never hang the UI. Hard wall-clock + RSS budget per function with partial-result return. — [DECOMPILER_BUDGETS.md](docs/decompiler/DECOMPILER_BUDGETS.md)
 
 - [ ] **36. Stop flushing the decompiler cache on trivial edits (#1871).** 26 reactions, sitting open. The fix is plausibly small relative to its UX impact.
 
