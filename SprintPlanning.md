@@ -5,17 +5,34 @@ time-box. Sprints are *ordered*, not *scheduled* — they ship when
 they ship.
 
 For completed sprints, see [SprintHistory.md](SprintHistory.md).
+For the *why* behind individual choices, see
+[DesignDecisions.md](DesignDecisions.md).
 
 ---
 
-## Sprint 3 — Upstream Cherry-Picks, Wave 2 (next)
+## Sprint 4 — Upstream Cherry-Picks Wave 3 + Sprint-1 Implementation Begin (next)
 
-- [ ] Hand-port [NSA#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) (BSim address-space id, 26 files). Sprint 2 patch-apply hit two structural drifts:
-    1. `ElasticDatabase.java` content conflict (file diverged after PR was authored).
-    2. `BSimServerTest.java` moved/renamed in our master.
-  Needs hand-port against current state — not a simple cherry-pick.
-- [ ] Continue mining the [crossref report](docs/upstream-tracking/pr-issue-matches.md) — ~47 PR↔issue matches still untackled (mostly 0-upvote issues but real fixes). Triage and port the cleanly-applying ones in batches of 5–10.
-- [ ] Open follow-up PRs to upstream NSA/ghidra for fixes we have a clean port of, where it makes sense to give them back (separate from accepting their unmerged work into our fork).
+**Upstream-port carry-overs from Sprint 3:**
+
+- [ ] Hand-port [NSA#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) (BSim address-space id, 26 files) — see [DD-017](DesignDecisions.md#dd-017-defer-nsa6897-bsim-hand-port-2026-05-21-deferred).
+- [ ] Hand-resolve the 4 conflict-skipped ports from Sprint 3:
+  - NSA#8270 (PIC18 RLNCF/RRNCF rotate)
+  - NSA#2244 (VScode folder exclude)
+  - NSA#5593 (constant-integer-export detect)
+  - NSA#3974 (Comments Set... edit existing)
+- [ ] Mine the remaining ~13 untackled crossref matches (mostly multi-commit; use the patch-apply approach).
+- [ ] Open follow-up PRs back to NSA/ghidra for ports we have a clean fix on, where it makes sense to give back upstream (parallel to landing in our fork).
+
+**Begin the v26.1 implementation surface:**
+
+The recs delivered in Sprint 1 shipped the *design* surface. Sprint 4
+starts the implementation. Pick three to begin:
+
+- [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
+- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`).
+- [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
+- [ ] **Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + unit tests. See [DD-005](DesignDecisions.md#dd-005-safeobjectinput-as-the-only-java-deser-entry-point-2026-05-21-planned).
+- [ ] **Rec 28 PR #28-2:** inventory the six audit-named `@Ignore` tests; file tracking issues.
 
 ---
 

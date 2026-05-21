@@ -4,6 +4,33 @@ Past sprints. Each sprint is a logical batch of work, not a fixed
 time-box. Newest first.
 
 For upcoming work, see [SprintPlanning.md](SprintPlanning.md).
+For why decisions were made the way they were, see
+[DesignDecisions.md](DesignDecisions.md).
+
+---
+
+## Sprint 3 — Upstream Cherry-Picks, Wave 2 (in progress, started 2026-05-21)
+
+**Goal:** Continue mining the [crossref report](docs/upstream-tracking/pr-issue-matches.md) for cleanly-applying upstream PRs, prioritised by size (smallest first to maximize ports-per-effort).
+
+**Delivered (28 more upstream PR ports + Ghidra.MD add):**
+
+- **Tiny batch (PRs #114–#128, 15 ports landed, 2 cherry-pick conflicts skipped):**
+  CompareExecutablesScript Elastic-BSim fix (NSA#8947), invalid-char 127 (NSA#9172), RuleAddUnsigned extend (NSA#8628), batch-import FS select (NSA#7999), don't propagate types through call clobbers (NSA#4759), AArch64 S-bit decode (NSA#9082), BSim sig-file warning (NSA#8755), `__cdecl16far` 32-bit return (NSA#2633), ExecutableComparison missing-vectors skip (NSA#8949), x86 real-mode CS calc (NSA#8521), thumb-pointer ptrsubundo (NSA#8990), Z80 (HL) indirect addressing (NSA#9196), PE `SizeOfRawData` round-up (NSA#9175), msr apsr input register (NSA#6598), unbounded recursion in `Varnode::eraseDescend` (NSA#8626).
+  Skipped (conflict): PIC18 RLNCF/RRNCF (NSA#8270), VScode exclude (NSA#2244).
+
+- **Small batch (PRs #129–#141, 13 ports landed, 2 conflicts skipped):**
+  PointerToRawData round (NSA#9176), PIC24 OV/N pattern (NSA#8778), PE/COFF symbol-count limit (NSA#9174), Toggle-Type-Casts decompiler menu (NSA#5623), max symbol-name length (NSA#9173), SleighPreprocessor undefined directives (NSA#1835), x86 AF flag support (NSA#9071), x86 YMM FMA 128-bit truncation (NSA#9197), ARM v8M+coprocessor CDE-disable (NSA#8582), i8085 unofficial instructions (NSA#8843), V850 p-code emulation tests (NSA#8997), BSim `listdatabases` (NSA#8439), PyGhidra `from __main__ import` (NSA#9015).
+  Skipped (conflict): constant-integer-export detect (NSA#5593), Comments-Set-default-edit (NSA#3974).
+
+- **[Ghidra.MD now in tree (PR #142)](https://github.com/CryptoJones/GayHydra/pull/142):** the audit doc was sitting untracked since fork creation; README + CHANGELOG referenced it but the file itself wasn't on GitHub. Now committed.
+
+**Carried into Sprint 4:**
+
+- 4 conflict-skipped PRs from Sprint 3 (NSA#8270, NSA#2244, NSA#5593, NSA#3974) — hand-resolve.
+- NSA#6897 (BSim address-space id) — still deferred from Sprint 2 (see [DD-017](DesignDecisions.md#dd-017-defer-nsa6897-bsim-hand-port-2026-05-21-deferred)).
+- ~13 remaining untackled matches in the crossref report (mostly larger / multi-commit).
+- Begin Sprint 4 implementation surface for the 42-rec design docs from Sprint 1.
 
 ---
 
