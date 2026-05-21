@@ -68,6 +68,14 @@ public class ItemDeserializer {
 		boolean success = false;
 		try {
 			ObjectInputStream objIn = new ObjectInputStream(in);
+			// Rec 19 #19-2: belt-and-suspenders. The header is parsed
+			// via primitive reads only — readObject() is never called
+			// here today. Reject every class lookup so a future edit
+			// that adds a readObject() call surfaces as a deserialization
+			// error rather than silently widening the attack surface.
+			objIn.setObjectInputFilter(info -> info.serialClass() == null
+					? ObjectInputFilter.Status.UNDECIDED
+					: ObjectInputFilter.Status.REJECTED);
 			if (objIn.readLong() != MAGIC_NUMBER) {
 				throw new IOException("Invalid data");
 			}
