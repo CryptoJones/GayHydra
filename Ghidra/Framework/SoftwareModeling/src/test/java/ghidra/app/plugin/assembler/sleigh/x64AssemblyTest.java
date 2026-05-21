@@ -72,8 +72,6 @@ public class x64AssemblyTest extends AbstractAssemblyTest {
 		}
 	}
 
-	//@Test
-	//@Ignore("Can no longer isolate Imm8 case as [R+I]")
 	public void testAssemble_ADD_mRAX_0x1234m_RBX() {
 		// The spec is a little odd: only imm8 has R+I form. Others are I+R.
 		assertAllSemanticErrors("ADD qword ptr [RAX+0x1234],RBX");
@@ -96,8 +94,6 @@ public class x64AssemblyTest extends AbstractAssemblyTest {
 			"ADD qword ptr [RAX + 0x7f],RBX");
 	}
 
-	//@Test
-	//@Ignore("Can no longer isolate Imm8 case as [R+I]")
 	public void testAssemble_ADD_mRAX_128m_RBX() {
 		assertAllSemanticErrors("ADD qword ptr [RAX+128],RBX");
 	}
@@ -287,8 +283,6 @@ public class x64AssemblyTest extends AbstractAssemblyTest {
 		assertOneCompatRestExact("PUSH R8", "41:50");
 	}
 
-	//@Ignore("This is a demonstration of an issue with signedness and scalar print pieces.")
-	//@Test
 	public void testAssembly_AND_mRBP_n0x8m_0x80()
 			throws AssemblySyntaxException, AddressOutOfBoundsException, InsufficientBytesException,
 			UnknownInstructionException, AddressOverflowException, MemoryAccessException {

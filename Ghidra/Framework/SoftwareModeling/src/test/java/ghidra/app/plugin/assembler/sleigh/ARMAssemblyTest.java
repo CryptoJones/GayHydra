@@ -109,7 +109,6 @@ public class ARMAssemblyTest extends AbstractAssemblyTest {
 		assertAllSemanticErrors("and r0, r5", T_CONDIT_ETT_EQ);
 	}
 
-	//@Ignore("This is a whitespace problem")
 	@Test
 	public void testAssemble_T_push_r7_lr() {
 		assertOneCompatRestExact("push {r7,lr}", "80:b5", THUMB, 0x00008000, "push {r7,lr}");

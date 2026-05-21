@@ -91,7 +91,7 @@ public class SymbolPathParserTest extends AbstractGTest {
 	}
 
 	// Testing for detailed processing.  Same as above test, but expecting better results.
-	@Ignore
+	@Ignore("wip: SymbolPathParser detailed-processing better-results #161")
 	public void testCliPinptrMSFTVersion_DetailedProcessing() {
 		List<String> list = SymbolPathParser.parse("namespace::ta<cli::pin_ptr" +
 			"<unsigned char * __ptr64,class System::Text::Encoding ^ __ptr64>");

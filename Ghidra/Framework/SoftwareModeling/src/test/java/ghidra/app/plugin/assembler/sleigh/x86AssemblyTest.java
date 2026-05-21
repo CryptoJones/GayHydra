@@ -28,7 +28,7 @@ public class x86AssemblyTest extends AbstractAssemblyTest {
 	}
 
 	@Test
-	@Ignore("Some results are disassembled with + 0xfffffff8 instead. Wrong but harmless here")
+	@Ignore("blocked-on: x86 scalar-disasm divergence #159")
 	public void testAssemble_ADD_ECX_mEBX_n0x8m() {
 		try {
 			assertOneCompatRestExact("ADD ECX,dword ptr [EDX + -0x8]", "03:4a:f8");

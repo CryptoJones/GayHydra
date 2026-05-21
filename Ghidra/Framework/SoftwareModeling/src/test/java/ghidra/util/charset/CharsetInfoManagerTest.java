@@ -54,7 +54,7 @@ public class CharsetInfoManagerTest extends AbstractGenericTest {
 	 * 
 	 * @throws IOException if error
 	 */
-	@Ignore("temporarily enable and run when new charsets need to be categorized")
+	@Ignore("manual-tool: charset categorisation tool, not a regression test #162")
 	@Test
 	public void generateCharsetInfoFile() throws IOException {
 		File configFilename = CharsetInfoManager.getConfigFileLocation().getFile(false);

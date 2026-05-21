@@ -33,7 +33,7 @@ public class dsPIC30FAssemblyTest extends AbstractAssemblyTest {
 	}
 
 	@Test
-	@Ignore("Fails because W4 is a valid label, but the wrong 'size'")
+	@Ignore("blocked-on: dsPIC30F W4 label-vs-register #160")
 	public void testAssemble_clr_b_W4() {
 		assertOneCompatRestExact("clr.b W4", "00:42:eb:00", 0x000100);
 	}
