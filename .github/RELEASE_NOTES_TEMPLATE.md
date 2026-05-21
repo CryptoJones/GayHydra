@@ -14,7 +14,7 @@ every release. Customize the headline + highlights per release.
 [NSA/ghidra@<sha>](https://github.com/NationalSecurityAgency/ghidra/commit/<sha>)
 (upstream <version>).
 
-See [`CHANGELOG.md`](https://github.com/CryptoJones/GayHydra/blob/vXX.Y/CHANGELOG.md) for the per-PR breakdown.
+See [`CHANGELOG.md`](https://codeberg.org/CryptoJones/GayHydra/src/branch/vXX.Y/CHANGELOG.md) for the per-PR breakdown.
 
 ## Highlights
 
@@ -59,7 +59,7 @@ cosign verify-blob \
     bom.json
 ```
 
-See [`docs/security/BINARY_SIGNING.md`](https://github.com/CryptoJones/GayHydra/blob/vXX.Y/docs/security/BINARY_SIGNING.md) for the threat model and the rollout history.
+See [`docs/security/BINARY_SIGNING.md`](https://codeberg.org/CryptoJones/GayHydra/src/branch/vXX.Y/docs/security/BINARY_SIGNING.md) for the threat model and the rollout history.
 
 ## Known limitations
 

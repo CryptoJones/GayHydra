@@ -5,8 +5,8 @@
 #
 # See docs/security/OSS_FUZZ.md.
 
-homepage: "https://github.com/CryptoJones/GayHydra"
-main_repo: "https://github.com/CryptoJones/GayHydra"
+homepage: "https://codeberg.org/CryptoJones/GayHydra"
+main_repo: "https://codeberg.org/CryptoJones/GayHydra"
 language: c++
 primary_contact: "security@example.invalid"   # replace before submission
 auto_ccs:
@@ -21,4 +21,4 @@ fuzzing_engines:
   - honggfuzz
 architectures:
   - x86_64
-help_url: "https://github.com/CryptoJones/GayHydra/blob/master/docs/security/OSS_FUZZ.md"
+help_url: "https://codeberg.org/CryptoJones/GayHydra/src/branch/master/docs/security/OSS_FUZZ.md"

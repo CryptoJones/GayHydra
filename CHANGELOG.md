@@ -129,7 +129,7 @@ for the WebAssembly PR referenced in [decision 0001](docs/decisions/0001-webasse
 
 ---
 
-[26.1]: https://github.com/CryptoJones/GayHydra/releases/tag/v26.1
+[26.1]: https://codeberg.org/CryptoJones/GayHydra/releases/tag/v26.1
 
 ---
 

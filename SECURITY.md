@@ -21,7 +21,10 @@ Use one of the following private channels, in order of preference:
 1. **GitHub private vulnerability report**:
    <https://github.com/CryptoJones/GayHydra/security/advisories/new>.
    This is the preferred channel because it keeps the entire embargo,
-   patch, and disclosure thread in one place.
+   patch, and disclosure thread in one place, and it's how we mint
+   public CVEs (see [CVE_POLICY.md](docs/security/CVE_POLICY.md)).
+   The fork is also mirrored to Codeberg, but security tooling stays
+   on GitHub for the CNA path.
 2. **Email** to the address listed at <https://github.com/CryptoJones>
    (PGP key fingerprint published there). Mark the subject line
    `[GayHydra security]` to route correctly.

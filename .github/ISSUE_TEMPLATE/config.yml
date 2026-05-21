@@ -4,7 +4,8 @@ contact_links:
     url: https://github.com/CryptoJones/GayHydra/security/advisories/new
     about: >
       For suspected security issues, use the private vulnerability
-      reporting path — do NOT file a public issue. See SECURITY.md.
+      reporting path on GitHub — do NOT file a public issue. (GHSA
+      is the CNA we use to mint CVEs; see SECURITY.md.)
   - name: Question or discussion
     url: https://github.com/CryptoJones/GayHydra/discussions
     about: >

@@ -18,23 +18,23 @@ green build is reachable across all three platforms.
 
 **Delivered Rec 28 wrap-up (4 PRs):**
 
-- **#28-5 batch 1 — [PR #184](https://github.com/CryptoJones/GayHydra/pull/184):** Compliance-fix 23 sites across 9 clusters (LldbCommands EXC_BAD_ACCESS x4 / temp-var-$x x6, JavaMethods race x3, Debugger RMI bare-ignore x5, LldbConnectors TODO x5, JitJvm version-bound, JitMpInt dev-workstation, AbstractToyJitCodeGen x4). Files tracking issues #176–#183.
-- **ignoreAudit warn-only mode — [PRs #185](https://github.com/CryptoJones/GayHydra/pull/185) + [#186](https://github.com/CryptoJones/GayHydra/pull/186):** Stage 1 / Stage 2 split so the audit doesn't break CI mid-sweep.
-- **#28-6 batch 2 — [PR #194](https://github.com/CryptoJones/GayHydra/pull/194):** Sweep the remaining ~35 `@Ignore` sites in MDMang, Hexagon, Debug/Framework-TraceModeling, Debug-jpda, Debugger plugin tests, and Misc. Files tracking issues #187–#193.
-- **#28-7 strict flip — [PR #195](https://github.com/CryptoJones/GayHydra/pull/195):** Tree-wide sweep complete → flip ignoreAudit to `-PignoreAuditStrict=true` in CI. Future bare/uncategorized `@Ignore` additions now fail the build.
+- **#28-5 batch 1 — [PR #184](https://codeberg.org/CryptoJones/GayHydra/pulls/184):** Compliance-fix 23 sites across 9 clusters (LldbCommands EXC_BAD_ACCESS x4 / temp-var-$x x6, JavaMethods race x3, Debugger RMI bare-ignore x5, LldbConnectors TODO x5, JitJvm version-bound, JitMpInt dev-workstation, AbstractToyJitCodeGen x4). Files tracking issues #176–#183.
+- **ignoreAudit warn-only mode — [PRs #185](https://codeberg.org/CryptoJones/GayHydra/pulls/185) + [#186](https://codeberg.org/CryptoJones/GayHydra/pulls/186):** Stage 1 / Stage 2 split so the audit doesn't break CI mid-sweep.
+- **#28-6 batch 2 — [PR #194](https://codeberg.org/CryptoJones/GayHydra/pulls/194):** Sweep the remaining ~35 `@Ignore` sites in MDMang, Hexagon, Debug/Framework-TraceModeling, Debug-jpda, Debugger plugin tests, and Misc. Files tracking issues #187–#193.
+- **#28-7 strict flip — [PR #195](https://codeberg.org/CryptoJones/GayHydra/pulls/195):** Tree-wide sweep complete → flip ignoreAudit to `-PignoreAuditStrict=true` in CI. Future bare/uncategorized `@Ignore` additions now fail the build.
 
 **Delivered CI rescue (8 PRs):**
 
 When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been broken since the fork point — `./gradlew` failed because NSA never checked in the Gradle wrapper jar. Cascading fixes:
 
-- **[PR #196](https://github.com/CryptoJones/GayHydra/pull/196):** Replace `./gradlew` with `gradle/actions/setup-gradle@v4` + `gradle` across `build-ghidra.yml`, `release.yml`, `dependency-submission.yml`.
-- **[PR #197](https://github.com/CryptoJones/GayHydra/pull/197):** Decouple `application.version` (fork's 26.1) from `application.upstream.version` (the NSA/ghidra-data tag 12.2 that fetchDependencies uses). The v26.1 bump silently broke fetchDeps's URL construction.
-- **[PR #198](https://github.com/CryptoJones/GayHydra/pull/198):** Move `plugins {}` block from `gradle/sbom.gradle` + `gradle/errorprone.gradle` to root `build.gradle`. The plugin DSL is only legal at the top of Project/Settings scripts.
-- **[PR #199](https://github.com/CryptoJones/GayHydra/pull/199):** ErrorProne `CheckSeverity` import attempt (didn't fully fix; superseded).
-- **[PR #200](https://github.com/CryptoJones/GayHydra/pull/200):** ErrorProne raw `-Xep:` args (still failed under Gradle 8.5).
-- **[PR #201](https://github.com/CryptoJones/GayHydra/pull/201):** ARM `certification.manifest` — register `ARM8m_cp_be.slaspec` + `ARM8m_cp_le.slaspec` from PR #137.
-- **[PR #202](https://github.com/CryptoJones/GayHydra/pull/202):** Temporarily disable ErrorProne wiring (keep design, defer plumbing to a focused PR).
-- **[PR #203](https://github.com/CryptoJones/GayHydra/pull/203):** `* IP: GHIDRA` headers on the 5 fuzz-harness `.java`/`.cc` files + cert-manifest entries for the 3 supporting non-source files (README.md x2, Makefile.fuzz).
+- **[PR #196](https://codeberg.org/CryptoJones/GayHydra/pulls/196):** Replace `./gradlew` with `gradle/actions/setup-gradle@v4` + `gradle` across `build-ghidra.yml`, `release.yml`, `dependency-submission.yml`.
+- **[PR #197](https://codeberg.org/CryptoJones/GayHydra/pulls/197):** Decouple `application.version` (fork's 26.1) from `application.upstream.version` (the NSA/ghidra-data tag 12.2 that fetchDependencies uses). The v26.1 bump silently broke fetchDeps's URL construction.
+- **[PR #198](https://codeberg.org/CryptoJones/GayHydra/pulls/198):** Move `plugins {}` block from `gradle/sbom.gradle` + `gradle/errorprone.gradle` to root `build.gradle`. The plugin DSL is only legal at the top of Project/Settings scripts.
+- **[PR #199](https://codeberg.org/CryptoJones/GayHydra/pulls/199):** ErrorProne `CheckSeverity` import attempt (didn't fully fix; superseded).
+- **[PR #200](https://codeberg.org/CryptoJones/GayHydra/pulls/200):** ErrorProne raw `-Xep:` args (still failed under Gradle 8.5).
+- **[PR #201](https://codeberg.org/CryptoJones/GayHydra/pulls/201):** ARM `certification.manifest` — register `ARM8m_cp_be.slaspec` + `ARM8m_cp_le.slaspec` from PR #137.
+- **[PR #202](https://codeberg.org/CryptoJones/GayHydra/pulls/202):** Temporarily disable ErrorProne wiring (keep design, defer plumbing to a focused PR).
+- **[PR #203](https://codeberg.org/CryptoJones/GayHydra/pulls/203):** `* IP: GHIDRA` headers on the 5 fuzz-harness `.java`/`.cc` files + cert-manifest entries for the 3 supporting non-source files (README.md x2, Makefile.fuzz).
 
 **Verification:**
 
@@ -57,14 +57,14 @@ When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been br
 
 **Delivered (8 PRs):**
 
-- **Rec 21 — [PR #167](https://github.com/CryptoJones/GayHydra/pull/167):** `sbomSanityCheck` Gradle task fails the build if the CycloneDX SBOM has <10 components.
-- **Rec 17 #17-3 — [PR #168](https://github.com/CryptoJones/GayHydra/pull/168):** `.github/RELEASE_NOTES_TEMPLATE.md` with the permanent Cosign `verify-blob` snippet (OIDC-identity-pinned to our release workflow).
-- **Rec 12 — [PR #169](https://github.com/CryptoJones/GayHydra/pull/169):** `docs/security/retroactive-cve-tracking.md` workspace for the three GP-* trackers. Rows stay TBD until a maintainer applies CVSS by hand.
-- **Rec 29 Stage 1 — [PR #170](https://github.com/CryptoJones/GayHydra/pull/170):** JUnit 5 Jupiter + Vintage engine + Platform launcher on `testImplementation`.
-- **Rec 29 Stage 2 — [PR #171](https://github.com/CryptoJones/GayHydra/pull/171):** `useJUnitPlatform()` wired on both `test` and `integrationTest` tasks.
-- **Rec 08 — [PR #172](https://github.com/CryptoJones/GayHydra/pull/172):** Declarative `.github/labels.yml` + `sync-labels.yml` workflow (dry-run mode for first review).
-- **[PR #173](https://github.com/CryptoJones/GayHydra/pull/173):** Five GitHub issue templates aligned with the lane/severity model + a `config.yml` routing security reports to the private GHSA path.
-- **[PR #174](https://github.com/CryptoJones/GayHydra/pull/174):** CONTRIBUTING.md fork-addendum prepended to NSA's upstream content; points contributors at the entire governance stack in one place.
+- **Rec 21 — [PR #167](https://codeberg.org/CryptoJones/GayHydra/pulls/167):** `sbomSanityCheck` Gradle task fails the build if the CycloneDX SBOM has <10 components.
+- **Rec 17 #17-3 — [PR #168](https://codeberg.org/CryptoJones/GayHydra/pulls/168):** `.github/RELEASE_NOTES_TEMPLATE.md` with the permanent Cosign `verify-blob` snippet (OIDC-identity-pinned to our release workflow).
+- **Rec 12 — [PR #169](https://codeberg.org/CryptoJones/GayHydra/pulls/169):** `docs/security/retroactive-cve-tracking.md` workspace for the three GP-* trackers. Rows stay TBD until a maintainer applies CVSS by hand.
+- **Rec 29 Stage 1 — [PR #170](https://codeberg.org/CryptoJones/GayHydra/pulls/170):** JUnit 5 Jupiter + Vintage engine + Platform launcher on `testImplementation`.
+- **Rec 29 Stage 2 — [PR #171](https://codeberg.org/CryptoJones/GayHydra/pulls/171):** `useJUnitPlatform()` wired on both `test` and `integrationTest` tasks.
+- **Rec 08 — [PR #172](https://codeberg.org/CryptoJones/GayHydra/pulls/172):** Declarative `.github/labels.yml` + `sync-labels.yml` workflow (dry-run mode for first review).
+- **[PR #173](https://codeberg.org/CryptoJones/GayHydra/pulls/173):** Five GitHub issue templates aligned with the lane/severity model + a `config.yml` routing security reports to the private GHSA path.
+- **[PR #174](https://codeberg.org/CryptoJones/GayHydra/pulls/174):** CONTRIBUTING.md fork-addendum prepended to NSA's upstream content; points contributors at the entire governance stack in one place.
 
 **Carried into Sprint 6:**
 
@@ -84,22 +84,22 @@ When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been br
 **Delivered (12 PRs):**
 
 - **6 hand-resolved cherry-picks** (PRs #150–#155 + #165):
-  - [PR #150](https://github.com/CryptoJones/GayHydra/pull/150) ports NSA#8270 (PIC18 RLNCF/RRNCF use rotate, closes #8269)
-  - [PR #151](https://github.com/CryptoJones/GayHydra/pull/151) ports NSA#2244 (exclude `.vscode/`, closes #2243)
-  - [PR #152](https://github.com/CryptoJones/GayHydra/pull/152) ports NSA#8635 (Decompiler: in-place C operations for STOREs, closes #8634)
-  - [PR #153](https://github.com/CryptoJones/GayHydra/pull/153) ports NSA#3687 (ARM exception-return `goto [pc]`→`return [pc]`, closes #3678)
-  - [PR #154](https://github.com/CryptoJones/GayHydra/pull/154) ports NSA#8815 (Linux syscall numbers, closes #8814)
-  - [PR #155](https://github.com/CryptoJones/GayHydra/pull/155) ports NSA#6390 (RISC-V WCH/QingKe XW extension, closes #6391)
-  - [PR #165](https://github.com/CryptoJones/GayHydra/pull/165) hand-ports NSA#6897 (BSim address-space id, 25 files, gson↔json-simple drift resolved, closes #6896)
+  - [PR #150](https://codeberg.org/CryptoJones/GayHydra/pulls/150) ports NSA#8270 (PIC18 RLNCF/RRNCF use rotate, closes #8269)
+  - [PR #151](https://codeberg.org/CryptoJones/GayHydra/pulls/151) ports NSA#2244 (exclude `.vscode/`, closes #2243)
+  - [PR #152](https://codeberg.org/CryptoJones/GayHydra/pulls/152) ports NSA#8635 (Decompiler: in-place C operations for STOREs, closes #8634)
+  - [PR #153](https://codeberg.org/CryptoJones/GayHydra/pulls/153) ports NSA#3687 (ARM exception-return `goto [pc]`→`return [pc]`, closes #3678)
+  - [PR #154](https://codeberg.org/CryptoJones/GayHydra/pulls/154) ports NSA#8815 (Linux syscall numbers, closes #8814)
+  - [PR #155](https://codeberg.org/CryptoJones/GayHydra/pulls/155) ports NSA#6390 (RISC-V WCH/QingKe XW extension, closes #6391)
+  - [PR #165](https://codeberg.org/CryptoJones/GayHydra/pulls/165) hand-ports NSA#6897 (BSim address-space id, 25 files, gson↔json-simple drift resolved, closes #6896)
 
 - **3 cherry-picks deferred** (structural drift too deep for a quick resolve): NSA#5593 (constant integer export — depends on `largetemp` infra missing in our master), NSA#3974 (Comments Set... — 5 file conflicts + missing file), NSA#3137 (cspec docs in build — 7 conflict points across build.gradle + docs).
 
 - **Sprint-1 implementation surface — first PRs landed:**
-  - **Rec 19 #19-1 — [PR #156](https://github.com/CryptoJones/GayHydra/pull/156):** `SafeObjectInput` helper class + 7 JUnit 4 tests. The sanctioned entry point for Java object deserialization.
-  - **Rec 28 #28-2 — [PR #157](https://github.com/CryptoJones/GayHydra/pull/157):** `@Ignore` test inventory document.
-  - **Rec 28 #28-3 — [PR #158](https://github.com/CryptoJones/GayHydra/pull/158):** `gradle ignoreAudit` task + CI step gating the policy.
-  - **Rec 28 #28-4 — [PR #163](https://github.com/CryptoJones/GayHydra/pull/163):** Filed tracking issues #159–#162 for the audit-named tests + rewrote each annotation in compliance with the policy + deleted commented-out `//@Ignore` noise.
-  - **Rec 17 #17-2 — [PR #164](https://github.com/CryptoJones/GayHydra/pull/164):** `.github/workflows/release.yml` — Cosign keyless signing of the release zip + SBOM on tag push.
+  - **Rec 19 #19-1 — [PR #156](https://codeberg.org/CryptoJones/GayHydra/pulls/156):** `SafeObjectInput` helper class + 7 JUnit 4 tests. The sanctioned entry point for Java object deserialization.
+  - **Rec 28 #28-2 — [PR #157](https://codeberg.org/CryptoJones/GayHydra/pulls/157):** `@Ignore` test inventory document.
+  - **Rec 28 #28-3 — [PR #158](https://codeberg.org/CryptoJones/GayHydra/pulls/158):** `gradle ignoreAudit` task + CI step gating the policy.
+  - **Rec 28 #28-4 — [PR #163](https://codeberg.org/CryptoJones/GayHydra/pulls/163):** Filed tracking issues #159–#162 for the audit-named tests + rewrote each annotation in compliance with the policy + deleted commented-out `//@Ignore` noise.
+  - **Rec 17 #17-2 — [PR #164](https://codeberg.org/CryptoJones/GayHydra/pulls/164):** `.github/workflows/release.yml` — Cosign keyless signing of the release zip + SBOM on tag push.
 
 **Sprint 4 total: 12 PRs (7 upstream ports + 5 implementation-surface advances) + 4 tracking issues filed.**
 
@@ -128,9 +128,9 @@ When the user asked "ARE TESTS FAILING IN THE PRs??" I discovered CI had been br
   AArch64 LSE Rs=zr propagation (NSA#9079), TriCore FPU conversion/division semantics (NSA#8999), V850 26 SLEIGH semantic bugs (NSA#8996), comment/label history username anonymize API (NSA#8729), PowerPC MSVC switch-table analysis (NSA#8964).
   Skipped (conflict, deferred to Sprint 4 hand-port): ARM Old Exception Return (NSA#3687), cspec docs in build (NSA#3137), Decompiler in-place C operations (NSA#8635), RISC-V WCH/QingKe XW extension (NSA#6390), Linux syscall numbers (NSA#8815).
 
-- **[Ghidra.MD now in tree (PR #142)](https://github.com/CryptoJones/GayHydra/pull/142):** the audit doc was sitting untracked since fork creation; README + CHANGELOG referenced it but the file itself wasn't on GitHub. Now committed.
+- **[Ghidra.MD now in tree (PR #142)](https://codeberg.org/CryptoJones/GayHydra/pulls/142):** the audit doc was sitting untracked since fork creation; README + CHANGELOG referenced it but the file itself wasn't on GitHub. Now committed.
 
-- **[DesignDecisions.md (PR #143)](https://github.com/CryptoJones/GayHydra/pull/143):** new top-level doc capturing the *why* behind 18 architectural / process / judgment-call decisions made in Sprints 1–3.
+- **[DesignDecisions.md (PR #143)](https://codeberg.org/CryptoJones/GayHydra/pulls/143):** new top-level doc capturing the *why* behind 18 architectural / process / judgment-call decisions made in Sprints 1–3.
 
 **Sprint 3 total: 33 upstream PR ports + Ghidra.MD + DesignDecisions.md.**
 
@@ -176,7 +176,7 @@ the benefit ahead of NSA's own merge timeline.
   | #110 | [NSA#7228](https://github.com/NationalSecurityAgency/ghidra/pull/7228) | [#5858](https://github.com/NationalSecurityAgency/ghidra/issues/5858) | 6 | FunctionID disable-namespace-stripping (manual conflict resolve) |
   | #111 | [NSA#7308](https://github.com/NationalSecurityAgency/ghidra/pull/7308) | [#7029](https://github.com/NationalSecurityAgency/ghidra/issues/7029) | 1 | PCode edge-label XML encoding (renumbered to avoid ID collision) |
 
-- [PR #112](https://github.com/CryptoJones/GayHydra/pull/112) — followup fixing the C++ side of PR #111's ID collision (`Edit` tool silently failed mid-resolve; caught and fixed in the same session).
+- [PR #112](https://codeberg.org/CryptoJones/GayHydra/pulls/112) — followup fixing the C++ side of PR #111's ID collision (`Edit` tool silently failed mid-resolve; caught and fixed in the same session).
 
 **Carried into Sprint 3:**
 
@@ -192,12 +192,12 @@ audit ([`Ghidra.MD`](Ghidra.MD)) as either a working artifact (CI
 workflow, gradle plugin, fuzz harness, config file, regression test)
 or a written design/decision/RFC document.
 
-**Released as:** [GayHydra v26.1 — "the 42-rec audit"](https://github.com/CryptoJones/GayHydra/releases/tag/v26.1).
+**Released as:** [GayHydra v26.1 — "the 42-rec audit"](https://codeberg.org/CryptoJones/GayHydra/releases/tag/v26.1).
 
 **Delivered:**
 
 - [42 audit recommendations](CHANGELOG.md#261--2026-05-21--the-42-rec-audit) as artifacts + plans. Every rec has a deliverable file linked from the README's checklist.
-- [Quality-pass PR (#54)](https://github.com/CryptoJones/GayHydra/pull/54) deepening the first 10 docs after the model thinking level was raised.
+- [Quality-pass PR (#54)](https://codeberg.org/CryptoJones/GayHydra/pulls/54) deepening the first 10 docs after the model thinking level was raised.
 - [SECURITY.md upstream PR opened against NSA](https://github.com/NationalSecurityAgency/ghidra/pull/9202) (Rec 11 — the easiest landable upstream win).
 - Release-v26.1 PR (#89), CHANGELOG.md, README progress checklist with all 42 boxes ticked, `application.name=GayHydra`, `application.version=26.1`.
 

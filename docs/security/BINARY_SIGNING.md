@@ -51,7 +51,7 @@ they sign.
 # Verify the release zip
 cosign verify-blob \
     --certificate-identity-regexp \
-        'https://github.com/NationalSecurityAgency/ghidra/.github/workflows/.*' \
+        'https://github.com/CryptoJones/GayHydra/.github/workflows/release\.yml@.*' \
     --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
     --signature ghidra_<version>.zip.sig \
     --certificate ghidra_<version>.zip.crt \
@@ -61,10 +61,10 @@ cosign verify-blob \
 A green `Verified OK` line tells the user the zip was signed by an
 identity registered as our release workflow. The `--certificate-identity-regexp`
 pins the issuer (the workflow file on this repo); changing CI to
-sign from a different workflow would fail this check.
-
-For this fork (GayHydra), substitute `CryptoJones/GayHydra` for
-`NationalSecurityAgency/ghidra` in the regexp.
+sign from a different workflow would fail this check. **The identity
+URL must stay `github.com/CryptoJones/GayHydra/...`** — that's the
+OIDC identity GitHub Actions provides to Sigstore at sign time;
+mirroring the repo to Codeberg doesn't change it.
 
 The same flow verifies the native binaries individually. The
 release notes link to this doc and show the exact command pre-filled

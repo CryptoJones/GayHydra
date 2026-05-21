@@ -1,12 +1,24 @@
 *Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?logo=apache)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases)
+[![Gradle](https://img.shields.io/badge/Gradle-8.5%2B-02303A?logo=gradle&logoColor=white)](https://gradle.org/releases/)
+[![Build Ghidra](https://github.com/CryptoJones/GayHydra/actions/workflows/build-ghidra.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/build-ghidra.yml)
+[![Decompiler C++ Tests](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml)
+[![Decompiler ASan/UBSan](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml)
+[![Release](https://img.shields.io/github/v/release/CryptoJones/GayHydra?include_prereleases&label=release&logo=github)](https://codeberg.org/CryptoJones/GayHydra/releases)
+[![Codeberg](https://img.shields.io/badge/Codeberg-CryptoJones%2FGayHydra-2185D0?logo=codeberg&logoColor=white)](https://codeberg.org/CryptoJones/GayHydra)
+[![GitHub](https://img.shields.io/badge/GitHub-CryptoJones%2FGayHydra-181717?logo=github&logoColor=white)](https://github.com/CryptoJones/GayHydra)
+
+> **Canonical home is [Codeberg](https://codeberg.org/CryptoJones/GayHydra).** The repo is also mirrored on GitHub for CI (Actions), Sigstore OIDC signing, and the GHSA security-advisory CNA path. Both forges carry the same commits.
+
 # Ghidra: Top 42 Principal-Architect Recommendations
 
 *Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
 
 Findings drawn from: 1,553 open issues, 335 open PRs, ~15.5k Java files, 187k LOC C++ decompiler, 39 processor specs, and the actual CI workflows.
 
-Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/GayHydra/issues?q=is%3Aissue+label%3Aaudit-2026-05)). PRs that address a rec close the issue with `closes #N` and tick the checkbox below.
+Each rec is filed as a GitHub issue ([#1–#42](https://codeberg.org/CryptoJones/GayHydra/issues?q=is%3Aissue+label%3Aaudit-2026-05)). PRs that address a rec close the issue with `closes #N` and tick the checkbox below.
 
 ---
 
@@ -121,7 +133,7 @@ If you do nothing else from this list, do **#1, #2, #11, #13, and #22**:
 
 Everything else is downstream of those five.
 
-Issue tracking: filed as #1–#42 at https://github.com/CryptoJones/GayHydra/issues.
+Issue tracking: filed as #1–#42 at https://codeberg.org/CryptoJones/GayHydra/issues.
 
 ---
 

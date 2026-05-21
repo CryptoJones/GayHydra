@@ -226,7 +226,7 @@ history, not a v1 of anything new); calendar versioning
 numbering with a suffix — awkward to bump).
 
 **Linked:** [`Ghidra/application.properties`](Ghidra/application.properties);
-[GitHub release v26.1](https://github.com/CryptoJones/GayHydra/releases/tag/v26.1).
+[GitHub release v26.1](https://codeberg.org/CryptoJones/GayHydra/releases/tag/v26.1).
 
 ---
 
