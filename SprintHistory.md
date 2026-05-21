@@ -9,6 +9,32 @@ For why decisions were made the way they were, see
 
 ---
 
+## Sprint 5 — Sprint-1 implementation second tier + project polish (delivered 2026-05-21)
+
+**Goal:** Continue landing Sprint-1 implementation surface (SBOM gate, release notes, retroactive-CVE tracking, JUnit 5 deps) and clean up the project's contributor-onboarding edges (declarative labels, issue templates, fork addendum to CONTRIBUTING).
+
+**Delivered (8 PRs):**
+
+- **Rec 21 — [PR #167](https://github.com/CryptoJones/GayHydra/pull/167):** `sbomSanityCheck` Gradle task fails the build if the CycloneDX SBOM has <10 components.
+- **Rec 17 #17-3 — [PR #168](https://github.com/CryptoJones/GayHydra/pull/168):** `.github/RELEASE_NOTES_TEMPLATE.md` with the permanent Cosign `verify-blob` snippet (OIDC-identity-pinned to our release workflow).
+- **Rec 12 — [PR #169](https://github.com/CryptoJones/GayHydra/pull/169):** `docs/security/retroactive-cve-tracking.md` workspace for the three GP-* trackers. Rows stay TBD until a maintainer applies CVSS by hand.
+- **Rec 29 Stage 1 — [PR #170](https://github.com/CryptoJones/GayHydra/pull/170):** JUnit 5 Jupiter + Vintage engine + Platform launcher on `testImplementation`.
+- **Rec 29 Stage 2 — [PR #171](https://github.com/CryptoJones/GayHydra/pull/171):** `useJUnitPlatform()` wired on both `test` and `integrationTest` tasks.
+- **Rec 08 — [PR #172](https://github.com/CryptoJones/GayHydra/pull/172):** Declarative `.github/labels.yml` + `sync-labels.yml` workflow (dry-run mode for first review).
+- **[PR #173](https://github.com/CryptoJones/GayHydra/pull/173):** Five GitHub issue templates aligned with the lane/severity model + a `config.yml` routing security reports to the private GHSA path.
+- **[PR #174](https://github.com/CryptoJones/GayHydra/pull/174):** CONTRIBUTING.md fork-addendum prepended to NSA's upstream content; points contributors at the entire governance stack in one place.
+
+**Carried into Sprint 6:**
+
+- Flip `sync-labels.yml`'s `dry-run` to `false` after Aaron reviews the first workflow run.
+- Rec 11 follow-up: monitor NSA#9202 review.
+- Rec 13 / Rec 14: submit OSS-Fuzz projects to google/oss-fuzz.
+- Rec 19 #19-2: `SafeObjectInput` migration of `ItemDeserializer` (Class A).
+- Rec 25 Stage 2 + Rec 26 Stage 2: warning-floor cleanup before widening.
+- Rec 28 #28-5+: broader `@Ignore` sweep across the remaining ~25 sites.
+
+---
+
 ## Sprint 4 — Sprint-3 conflict-resolve + first Sprint-1 implementation tier (delivered 2026-05-21)
 
 **Goal:** Hand-resolve the 9 conflict-skipped cherry-picks from Sprint 3, hand-port the carried-over BSim PR, and start landing the implementation surface for the recs shipped as designs in Sprint 1.

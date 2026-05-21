@@ -10,7 +10,36 @@ For the *why* behind individual choices, see
 
 ---
 
-## Sprint 5 — More Sprint-1 implementation + give-back PRs (next)
+## Sprint 6 — finish the Sprint-1 implementation surface (next)
+
+**Quick wins:**
+
+- [ ] Flip `.github/workflows/sync-labels.yml`'s `dry-run` to `false` after Aaron reviews the first workflow run.
+- [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
+
+**External submissions:**
+
+- [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
+- [ ] **Rec 14:** same for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).
+
+**Code-touching implementation:**
+
+- [ ] **Rec 19 #19-2:** first `SafeObjectInput` migration — `ItemDeserializer` (Class A, the #1481 archive surface) and `CodeUnitInfo` (Class A, clipboard).
+- [ ] **Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean any subproject ≥50 warnings.
+- [ ] **Rec 26 Stage 2:** `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.
+- [ ] **Rec 28 #28-5+:** broader `@Ignore` sweep across the remaining ~25 sites.
+
+**Carried (still deferred):**
+
+- [ ] 3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137).
+
+**Give-back PRs to NSA/ghidra:**
+
+- [ ] Identify ports where our resolution is cleaner than the original and open follow-up PRs upstream.
+
+---
+
+## Sprint 5 — More Sprint-1 implementation + give-back PRs (delivered — see SprintHistory.md)
 
 **Carried from Sprint 4:**
 
