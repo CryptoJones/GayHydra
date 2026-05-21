@@ -3084,16 +3084,12 @@ public class CodeManager implements ErrorHandler, ManagerDB {
 	 * @throws IOException if there was a problem accessing the database
 	 */
 	public int anonymizeCommentHistory(String anonymousName) throws IOException {
-		lock.acquire();
-		try {
+		try (Closeable c = lock.write()) {
 			if (historyAdapter == null) {
 				return 0;
 			}
 			historyAdapter.anonymizeAllRecords(anonymousName);
 			return historyAdapter.getRecordCount();
-		}
-		finally {
-			lock.release();
 		}
 	}
 
@@ -3106,8 +3102,7 @@ public class CodeManager implements ErrorHandler, ManagerDB {
 	 * @throws IOException if there was a problem accessing the database
 	 */
 	public int anonymizeCommentHistory(String anonymousName, Address addr) throws IOException {
-		lock.acquire();
-		try {
+		try (Closeable c = lock.write()) {
 			if (historyAdapter == null) {
 				return 0;
 			}
@@ -3120,9 +3115,6 @@ public class CodeManager implements ErrorHandler, ManagerDB {
 				count++;
 			}
 			return count;
-		}
-		finally {
-			lock.release();
 		}
 	}
 

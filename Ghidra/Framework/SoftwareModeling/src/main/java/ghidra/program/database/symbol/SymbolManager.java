@@ -1402,8 +1402,7 @@ public class SymbolManager implements SymbolTable, ManagerDB {
 
 	@Override
 	public int anonymizeLabelHistory(String anonymousName) throws IOException {
-		lock.acquire();
-		try {
+		try (Closeable c = lock.write()) {
 			if (historyAdapter == null) {
 				return 0;
 			}
@@ -1414,15 +1413,11 @@ public class SymbolManager implements SymbolTable, ManagerDB {
 			program.dbError(e);
 			throw e;
 		}
-		finally {
-			lock.release();
-		}
 	}
 
 	@Override
 	public int anonymizeLabelHistory(String anonymousName, Address addr) throws IOException {
-		lock.acquire();
-		try {
+		try (Closeable c = lock.write()) {
 			if (historyAdapter == null) {
 				return 0;
 			}
@@ -1440,9 +1435,6 @@ public class SymbolManager implements SymbolTable, ManagerDB {
 		catch (IOException e) {
 			program.dbError(e);
 			throw e;
-		}
-		finally {
-			lock.release();
 		}
 	}
 
