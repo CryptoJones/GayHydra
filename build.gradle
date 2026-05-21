@@ -18,7 +18,14 @@
 // lives in its own gradle/<plugin>.gradle file.
 plugins {
     id 'eclipse'
-    id 'org.cyclonedx.bom' version '1.10.0'           // Rec 21
+    // Rec 21 CycloneDX plugin removed Sprint 7: cyclonedx-gradle-plugin
+    // 1.10.0 NPEs on Ghidra's flat-dir deps (`:AXMLPrinter2:` and
+    // friends) because they have no Maven coordinates for it to derive
+    // a PackageURL from. Re-implementation tracked as Sprint 8 work.
+    // The upstream SBOM generator at gradle/support/sbom.gradle (used
+    // via gradle/root/distribution.gradle) still produces an SBOM
+    // bundled inside the release zip — that path is unaffected.
+    // id 'org.cyclonedx.bom' version '1.10.0'           // Rec 21
     // Rec 26 ErrorProne plugin declaration is intentionally commented
     // out. The plugin's `errorprone` dependency configuration isn't
     // registered in time for the `dependencies { errorprone ... }`
@@ -32,8 +39,10 @@ plugins {
 apply from: 'gradle/root/eclipse.gradle'
 apply from: "gradle/support/loadApplicationProperties.gradle"
 
-// CycloneDX SBOM generation. See docs/release/SBOM.md (Rec 21).
-apply from: 'gradle/sbom.gradle'
+// CycloneDX SBOM (Rec 21) deferred to Sprint 8 — see plugin-removal
+// comment in plugins {} block above. Upstream SBOM remains bundled
+// in the release zip via gradle/support/sbom.gradle (unchanged).
+// apply from: 'gradle/sbom.gradle'
 
 // ErrorProne static analysis: deferred. See ERRORPRONE.md for the design.
 // apply from: 'gradle/errorprone.gradle'
