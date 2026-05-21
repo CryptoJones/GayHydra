@@ -88,7 +88,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **32. Adopt C++20.** The codebase is on `-std=c++11`. The decompiler community has moved on. `std::span`, `std::expected`, `std::format`, ranges, concepts — all directly applicable. Bump in two steps (14 → 20) with CI on three platforms. — [CPP20_ADOPTION.md](docs/decompiler/CPP20_ADOPTION.md)
 
-- [ ] **33. Version the Java↔native IPC protocol.** Custom byte-framing (`{0,0,1,X}` magic markers, `DecompileProcess.java:54-61`) has no schema version, no CRC, no graceful resync. One byte of corruption kills the decompiler process. Add a version handshake and a length-prefix-with-CRC frame.
+- [x] **33. Version the Java↔native IPC protocol.** Custom byte-framing (`{0,0,1,X}` magic markers, `DecompileProcess.java:54-61`) has no schema version, no CRC, no graceful resync. One byte of corruption kills the decompiler process. Add a version handshake and a length-prefix-with-CRC frame. — [IPC_VERSIONING.md](docs/decompiler/IPC_VERSIONING.md)
 
 - [ ] **34. Replace the IPC protocol with a schema (FlatBuffers/Cap'n Proto).** Bigger investment than #33, but solves the recurring "decompiler crashed" UX papercut at the root, enables differential testing across versions, and makes a non-Java host viable (PyGhidra, Rust frontend, etc).
 
