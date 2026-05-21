@@ -24,7 +24,7 @@ AttributeId ATTRIB_DEPTH = AttributeId("depth",76);
 AttributeId ATTRIB_END = AttributeId("end",77);
 AttributeId ATTRIB_OPCODE = AttributeId("opcode",78);
 AttributeId ATTRIB_REV = AttributeId("rev",79);
-AttributeId ATTRIB_EDGE_LABEL = AttributeId("edgelabel",151);
+AttributeId ATTRIB_EDGE_LABEL = AttributeId("edgelabel",159);
 
 ElementId ELEM_BHEAD = ElementId("bhead",102);
 ElementId ELEM_BLOCK = ElementId("block",103);
