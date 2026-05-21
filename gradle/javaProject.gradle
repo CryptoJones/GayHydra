@@ -39,16 +39,21 @@ apply plugin: 'java-library'
 // every javac warning in the tree and hid genuine bugs (the audit
 // found dozens of obvious deprecation + unchecked-cast sites).
 //
-// Strategy: turn on -Xlint:deprecation,unchecked everywhere, but do
-// *not* fail the build on warnings yet. The first sweep is to make
-// warnings visible. -Werror is a follow-up once the warning floor
-// is at a manageable level.
+// Stage 1 (shipped earlier): -Xlint:deprecation,unchecked. First
+// sweep to make warnings visible. No -Werror.
+//
+// Stage 2 (Sprint 8): widen to deprecation,unchecked,rawtypes,cast.
+// rawtypes flags `List` vs `List<T>` usage; cast flags redundant
+// casts. The build does NOT fail on warnings yet — this just
+// surfaces the next ratchet level so we can measure the per-
+// subproject count toward Stage 3 (pre-clean ≥50-warning
+// subprojects, then -Werror promotion).
 //
 // To opt a single subproject out (temporary, while fixing its
 // backlog), set `ext.lintOpts = ['none']` in that subproject's
 // build.gradle.
 compileJava {
-	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked']
+	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked', 'rawtypes', 'cast']
 	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
 	options.fork = true
@@ -56,7 +61,7 @@ compileJava {
 }
 
 compileTestJava {
-	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked']
+	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked', 'rawtypes', 'cast']
 	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
 	options.fork = true
