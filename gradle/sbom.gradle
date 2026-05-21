@@ -16,6 +16,17 @@
 // The plugins {} block lives in the root build.gradle (it's the only
 // place plugin DSL is legal). This file just configures the plugin.
 
+// CycloneDX 1.10.0 refuses to run if the root project's group / name /
+// version aren't set ("Project group, name, and version must be set
+// for the root project"). The application.properties loader sets
+// `version` already, but `group` defaults to empty for non-published
+// projects. Set both here so the SBOM's root component has a valid
+// PURL. name is taken from settings.gradle (defaults to the dir name).
+rootProject.group = 'org.ghidra'
+if (!rootProject.version || rootProject.version.toString() == 'unspecified') {
+    rootProject.version = rootProject.ext.RELEASE_VERSION ?: '26.1'
+}
+
 cyclonedxBom {
     // Schema version of the produced SBOM. 1.5 is the current spec.
     schemaVersion = '1.5'
