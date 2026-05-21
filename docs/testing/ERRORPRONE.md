@@ -2,6 +2,17 @@
 
 *Addresses Rec 26 of the 2026-05-21 principal-architect audit.*
 
+> **Status: design landed, wiring deferred (2026-05-21).** The plugin
+> declaration in [`build.gradle`](../../build.gradle) and the
+> `apply from: 'gradle/errorprone.gradle'` line are temporarily
+> commented out because the `errorprone` dependency configuration
+> doesn't register in time for the `dependencies { errorprone ... }`
+> block under Gradle 8.5 (the version GH Actions installs via
+> `setup-gradle@v4`). Locally it works under Gradle 9.5+. Re-enabling
+> is its own focused PR — likely by moving the plugin application
+> into root `build.gradle` directly or switching to the
+> `errorproneJavac` configuration path.
+
 ## Why ErrorProne
 
 The audit identified zero SpotBugs, ErrorProne, Checkstyle, or
