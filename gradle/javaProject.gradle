@@ -52,10 +52,18 @@ apply plugin: 'java-library'
 // To opt a single subproject out (temporary, while fixing its
 // backlog), set `ext.lintOpts = ['none']` in that subproject's
 // build.gradle.
+// `-Xmaxwarns 0` removes javac's default cap of 100 warnings per compile.
+// Sprint 9 Stage 3 prep: the cap hides the true count for the largest
+// subprojects (Generic/Emulation/Features/Base were all at exactly 100
+// in the post-Stage-2 master log — almost certainly all >100 with the
+// rest truncated). We need accurate per-subproject counts before the
+// `-Werror` flip so we know what to pre-clean. See
+// docs/testing/STAGE3_ENUMERATION.md.
 compileJava {
 	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked', 'rawtypes', 'cast']
 	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
+	options.compilerArgs << '-Xmaxwarns' << '0'
 	options.fork = true
 	options.warnings = true
 }
@@ -64,6 +72,7 @@ compileTestJava {
 	def lintOpts = project.hasProperty('lintOpts') ? project.lintOpts : ['deprecation', 'unchecked', 'rawtypes', 'cast']
 	options.compilerArgs << "-Xlint:${lintOpts.join(',')}".toString()
 	options.compilerArgs << '-XDignore.symbol.file'
+	options.compilerArgs << '-Xmaxwarns' << '0'
 	options.fork = true
 	options.warnings = true
 }
