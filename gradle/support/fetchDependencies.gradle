@@ -58,7 +58,13 @@ ext.createdDirs = [] as Set
 file("${REPO_DIR}/Ghidra/application.properties").withReader { reader ->
 	def ghidraProps = new Properties()
 	ghidraProps.load(reader)
-	ext.RELEASE_VERSION = ghidraProps.getProperty('application.version')
+	// Use `application.upstream.version` (the NSA/ghidra-data tag this fork
+	// is based on) for URL construction. The fork's own `application.version`
+	// (e.g. "26.1") is NOT the same as the upstream-data tag (e.g. "12.2").
+	// Falls back to application.version for compatibility with non-forked
+	// builds that haven't introduced the upstream pin.
+	ext.RELEASE_VERSION = ghidraProps.getProperty('application.upstream.version') ?:
+		ghidraProps.getProperty('application.version')
 }
 
 // Z3 download versions (https://github.com/Z3Prover/z3/releases)
