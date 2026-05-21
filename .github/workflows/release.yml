@@ -59,12 +59,23 @@ jobs:
       - name: Build Ghidra (produces release zip with bundled SBOM)
         run: gradle buildGhidra --parallel
 
-      - name: Locate release zip
+      - name: Locate release zip + extract bundled SBOM
         id: artifacts
         run: |
           ZIP=$(ls build/dist/ghidra_*.zip | head -1)
           test -n "$ZIP" || { echo "no release zip produced"; exit 1; }
           echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
+          # The upstream NSA SBOM generator (gradle/support/sbom.gradle)
+          # writes support/sbom/bom.json inside the zip during the
+          # distribution-assembly step. Extract it as a separate
+          # release asset so downstream supply-chain scanners can
+          # consume it without unzipping the full distribution.
+          SBOM=build/dist/$(basename "$ZIP" .zip)-bom.json
+          unzip -p "$ZIP" "*/support/sbom/bom.json" > "$SBOM" || \
+            unzip -p "$ZIP" "support/sbom/bom.json" > "$SBOM"
+          test -s "$SBOM" || { echo "bundled SBOM not found in zip"; exit 1; }
+          echo "SBOM=$SBOM" >> $GITHUB_OUTPUT
+          echo "Extracted SBOM: $(stat -c%s "$SBOM") bytes"
 
       - name: Sign release zip (cosign keyless)
         env:
@@ -74,6 +85,15 @@ jobs:
             --output-signature ${{ steps.artifacts.outputs.ZIP }}.sig \
             --output-certificate ${{ steps.artifacts.outputs.ZIP }}.crt \
             ${{ steps.artifacts.outputs.ZIP }}
+
+      - name: Sign extracted SBOM (cosign keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature ${{ steps.artifacts.outputs.SBOM }}.sig \
+            --output-certificate ${{ steps.artifacts.outputs.SBOM }}.crt \
+            ${{ steps.artifacts.outputs.SBOM }}
 
       - name: Upload signed artifacts to release
         env:
@@ -85,4 +105,7 @@ jobs:
           gh release upload "$TAG" --clobber \
             ${{ steps.artifacts.outputs.ZIP }} \
             ${{ steps.artifacts.outputs.ZIP }}.sig \
-            ${{ steps.artifacts.outputs.ZIP }}.crt
+            ${{ steps.artifacts.outputs.ZIP }}.crt \
+            ${{ steps.artifacts.outputs.SBOM }} \
+            ${{ steps.artifacts.outputs.SBOM }}.sig \
+            ${{ steps.artifacts.outputs.SBOM }}.crt
