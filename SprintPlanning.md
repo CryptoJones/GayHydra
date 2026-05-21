@@ -12,21 +12,20 @@ For the *why* behind individual choices, see
 
 ## Sprint 10 — OSS-Fuzz submission + Stage 3 finish + give-back PRs
 
-**Carried from Sprint 9:**
+**Done:**
 
-- [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses). Blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `project.yaml` with real maintainer emails before the upstream PR.
-- [x] ~~**Audit-datatests as ongoing regression guard**~~ — weekly schedule trigger landed in [PR #260](https://github.com/CryptoJones/GayHydra/pull/260).
-- [ ] **Rec 25/26 Stage 3 finish:** steps 3–5 landed in [PR #261](https://github.com/CryptoJones/GayHydra/pull/261) (pre-clean PIC + SoftwareModeling + Features/Base top offenders; AARCH64/Emulation/Generic clear via #247's `@SuppressWarnings("removal")` on next master rebuild). Remaining: **step 6** — `-Werror` flip in `gradle/javaProject.gradle` + ErrorProne `JavaUtilDate` WARN→ERROR per the ratchet in `docs/testing/ERRORPRONE.md` (`JdkObsolete` deferred to Stage 4 per the same doc). Gated on the post-#261 master Build-Ghidra log showing the warning floor is at 0 for the ratchet'd checks.
+- [x] ~~**Audit-datatests as ongoing regression guard**~~ — [PR #260](https://github.com/CryptoJones/GayHydra/pull/260) (weekly schedule).
+- [x] ~~**Rec 25/26 Stage 3 pre-clean**~~ — PRs [#261](https://github.com/CryptoJones/GayHydra/pull/261), [#265](https://github.com/CryptoJones/GayHydra/pull/265), [#267](https://github.com/CryptoJones/GayHydra/pull/267), [#268](https://github.com/CryptoJones/GayHydra/pull/268), [#269](https://github.com/CryptoJones/GayHydra/pull/269), [#270](https://github.com/CryptoJones/GayHydra/pull/270), [#271](https://github.com/CryptoJones/GayHydra/pull/271) cleared the warning floor across every ≥5-warning subproject. javacc-generated source patched via a `buildJavacc` `doLast` hook.
+- [x] ~~Consolidated datatest regex updates to NSA~~ — [NSA/ghidra#9207](https://github.com/NationalSecurityAgency/ghidra/pull/9207).
+- [x] ~~`-dumpdir` audit-tooling flag to NSA~~ — [NSA/ghidra#9208](https://github.com/NationalSecurityAgency/ghidra/pull/9208).
+- [x] ~~**Mac Mini bootstrap**~~ — `mac-mini` SSH alias (172.16.28.199) now has Homebrew + Temurin-21 + Gradle 9.5.1 + bison + flex + the repo. Driver at `~/bin/mac-mini-build`. First green build 6m31s cold, 3m53s incremental. Saved to memory at `~/.claude/projects/.../memory/macmini-build-host.md` so future sessions reach for it.
 
-**Give-back PRs to NSA/ghidra (opened):**
+**Open:**
 
-- [x] ~~Consolidated datatest regex updates~~ — [NSA/ghidra#9207](https://github.com/NationalSecurityAgency/ghidra/pull/9207).
-- [x] ~~`-dumpdir` audit-tooling flag~~ — [NSA/ghidra#9208](https://github.com/NationalSecurityAgency/ghidra/pull/9208).
-
-**Open follow-ups:**
-
-- [ ] **PIC-24F GE-recognition regression** — [issue #259](https://github.com/CryptoJones/GayHydra/issues/259). `pic_branch_ge.xml` datatests disabled in #256 with a TODO pointing here. Bisect upstream to find when the simplification stopped firing; re-enable once fixed.
-- [ ] **`Automatic Dependency Submission (Gradle)`** workflow failure — pre-existing, fails on `Unable to find the local maven repo` because the GitHub-managed auto-submission doesn't run `gradle/support/fetchDependencies.gradle` first. Decide: disable in repo settings (we have our own `dependency-submission.yml` that does it right), or make `build.gradle`'s flatRepo check tolerant of submission-only invocations.
+- [ ] **Rec 13/14 OSS-Fuzz submission** — blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `.github/oss-fuzz/project.yaml` with real maintainer emails before the upstream PR.
+- [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
+- [ ] **PIC-24F GE-recognition regression** — [issue #259](https://github.com/CryptoJones/GayHydra/issues/259). Bisect upstream + re-enable the two disabled `pic_branch_ge.xml` tests.
+- [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — decide between disabling the GitHub-managed auto-submission in repo settings, or making `build.gradle`'s flatRepo check tolerant of submission-only invocations.
 
 ---
 
