@@ -44,11 +44,27 @@ public class ClangToken implements ClangNode {
 	public final static int SPECIAL_COLOR = 10;
 	public final static int MAX_COLOR = 11;
 
+	public final static String ELLIPSIS_TEXT = "…";
+
 	private ClangNode parent;
 	private ClangLine lineparent;
 	private String text;
 	private int syntax_type;
+	private int collapseLevel = 0;
 	private boolean matchingToken;
+
+	public boolean getCollapsedToken() {
+		return collapseLevel > 0;
+	}
+
+	public void setCollapsedToken(boolean collapsedToken) {
+		if (collapsedToken) {
+			collapseLevel++;
+		}
+		else {
+			collapseLevel--;
+		}
+	}
 
 	public ClangToken(ClangNode par) {
 		parent = par;
