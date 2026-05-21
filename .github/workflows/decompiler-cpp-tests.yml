@@ -4,12 +4,14 @@ name: Decompiler C++ Unit Tests
 # Seven unittests/*.cc files were never wired into CI. This workflow
 # runs them.
 #
-# Scope note: the test binary also supports 84 XML data-driven tests
-# under datatests/. Those are inherited-from-upstream and have ~190
-# pre-existing failures that the upstream-NSA tree never caught
-# (NSA doesn't run them in CI). Audit + repair tracked separately;
-# this workflow runs ONLY the unit-test side via the `unittests`
-# subcommand so the signal stays meaningful.
+# Also runs the 84 XML data-driven tests under datatests/ as a
+# separate step. Originally these were inherited from upstream with
+# ~190 stringmatch-regex drift failures (NSA doesn't run them in CI,
+# so the drift went uncaught). Sprint 9's #215 audit categorized all
+# 189 as cosmetic and cleared them in PRs #250–#254 + #256 with
+# regex updates that match both old and new decompiler output.
+# Two `pic_branch_ge.xml` tests are disabled pending a real
+# GE-recognition regression — see issue #259.
 #
 # Coordinates with Rec 15 (ASan/UBSan CI) — that workflow runs the
 # same test binary with sanitizers; this workflow runs it with the

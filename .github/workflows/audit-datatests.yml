@@ -1,6 +1,6 @@
 name: Audit Decompiler Datatests
 
-# Sprint 8 audit tooling — see issue #215.
+# Sprint 8 audit tooling — see issue #215, closed in Sprint 9.
 #
 # Runs `decomp_test_dbg datatests` against every XML test file under
 # Ghidra/Features/Decompiler/src/decompile/datatests/ and captures the
@@ -8,9 +8,14 @@ name: Audit Decompiler Datatests
 # lets us read the actual vs expected output without re-running the
 # binary locally for each failure.
 #
-# Triggered manually (workflow_dispatch). Don't wire to push/PR — the
-# build + sleigh-compile + N test runs takes 30-60 min and the goal is
-# audit, not gate.
+# Triggers (post-Sprint-10):
+#   - workflow_dispatch — on-demand audit (filterable to a subset of files).
+#   - schedule — Mondays 06:00 UTC, regression guard now that the Sprint-9
+#     cleanup brought the datatests to a clean signal.
+#
+# Not wired to push/PR: the build + sleigh-compile + N test runs takes
+# 5-30 min depending on filter; PR-blocking belongs in
+# `decompiler-cpp-tests.yml` which runs only the datatests step.
 
 on:
   workflow_dispatch:
