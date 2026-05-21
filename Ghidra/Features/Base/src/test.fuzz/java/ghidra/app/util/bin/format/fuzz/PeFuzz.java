@@ -1,7 +1,8 @@
 /* ###
- * Fuzz harness for the PE loader.
+ * IP: GHIDRA
  *
- * Scaffold for Rec 14: see docs/security/LOADER_FUZZING.md.
+ * Fuzz harness for the PE loader. Scaffold for Rec 14: see
+ * docs/security/LOADER_FUZZING.md.
  *
  * Entry point: PortableExecutable.createPortableExecutable(...).
  *

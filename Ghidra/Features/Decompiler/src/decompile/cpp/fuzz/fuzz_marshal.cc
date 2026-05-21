@@ -1,4 +1,6 @@
 /* ###
+ * IP: GHIDRA
+ *
  * Fuzz harness for the decompiler's binary marshal protocol.
  *
  * Scaffold for Rec 13: see docs/security/OSS_FUZZ.md.

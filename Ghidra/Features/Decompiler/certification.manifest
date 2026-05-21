@@ -127,3 +127,5 @@ src/main/help/help/topics/DecompilePlugin/images/Undefined.png||GHIDRA||||END|
 src/main/resources/images/decompileFunction.gif||GHIDRA||reviewed||END|
 src/main/resources/images/eliminateUnreachable.png||GHIDRA||||END|
 src/main/resources/images/readOnly.png||GHIDRA||||END|
+src/decompile/cpp/fuzz/README.md||GHIDRA||||END|
+src/decompile/cpp/fuzz/Makefile.fuzz||GHIDRA||||END|

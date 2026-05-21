@@ -1,4 +1,6 @@
 /* ###
+ * IP: GHIDRA
+ *
  * Fuzz harness for the ELF loader.
  *
  * Scaffold for Rec 14: see docs/security/LOADER_FUZZING.md.

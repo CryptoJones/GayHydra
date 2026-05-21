@@ -1095,3 +1095,4 @@ src/test.slow/resources/ghidra/app/script/GhidraScriptAsk.properties||GHIDRA||||
 src/test/resources/defaultTools/TestCodeBrowser.tool||GHIDRA||||END|
 src/test/resources/ghidra/app/util/opinion/decompile_debug_test.xml||GHIDRA||||END|
 src/test/resources/ghidra/app/util/opinion/test.ord||GHIDRA||||END|
+src/test.fuzz/java/ghidra/app/util/bin/format/fuzz/README.md||GHIDRA||||END|

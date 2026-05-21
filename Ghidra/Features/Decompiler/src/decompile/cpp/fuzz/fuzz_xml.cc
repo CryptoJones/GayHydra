@@ -1,4 +1,6 @@
 /* ###
+ * IP: GHIDRA
+ *
  * Fuzz harness for the decompiler's XML parser.
  *
  * Scaffold for Rec 13: see docs/security/OSS_FUZZ.md.
