@@ -1,5 +1,27 @@
 # Contributor's Guide
 
+> **GayHydra fork addendum — start here.**
+>
+> This fork (`CryptoJones/GayHydra`) carries an explicit governance
+> stack on top of upstream NSA/ghidra's contributor guide. Before
+> opening a non-trivial PR, please skim:
+>
+> - **[`PR_QUEUE_POLICY.md`](docs/governance/PR_QUEUE_POLICY.md)** — the lanes (`lane:processor`, `lane:decomp-correctness`, `lane:framework`, etc.) and how a PR is routed.
+> - **[`TRIAGE_SLA.md`](docs/governance/TRIAGE_SLA.md)** — 10-business-day first-response commitment (3 days for `lane:decomp-correctness`).
+> - **[`STALE_POLICY.md`](docs/governance/STALE_POLICY.md)** — 365-day clock; how we close PRs that drift.
+> - **[`RFC_PROCESS.md`](docs/governance/RFC_PROCESS.md)** — required for PRs >2,000 net LOC, cross-module interfaces, or security boundaries. See the template at [`docs/rfcs/0000-template.md`](docs/rfcs/0000-template.md).
+> - **[`LABEL_POLICY.md`](docs/governance/LABEL_POLICY.md)** — every label maps to an SLA or an outcome; we explicitly retired `Status: Triage`.
+> - **[`MAINTAINERS.md`](MAINTAINERS.md)** — explicit bus factor.
+> - **[`SECURITY.md`](SECURITY.md)** — for suspected vulnerabilities use the private GHSA path, **not** a public issue.
+>
+> The lane templates ([`processor`](.github/PULL_REQUEST_TEMPLATE/processor.md)) and issue templates ([`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/)) are pre-filled with the checklist your PR/issue is expected to satisfy.
+>
+> Sprint cadence and current focus: see [`SprintHistory.md`](SprintHistory.md) and [`SprintPlanning.md`](SprintPlanning.md). The *why* behind specific design choices: [`DesignDecisions.md`](DesignDecisions.md).
+>
+> The rest of this document is upstream NSA/ghidra's `CONTRIBUTING.md` unchanged.
+
+---
+
 Ghidra is an open source project. If you are interested in making it better,
 there are many ways you can contribute. For example, you can:
 
