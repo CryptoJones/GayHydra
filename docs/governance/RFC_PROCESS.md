@@ -61,9 +61,50 @@ Use the template at `docs/rfcs/0000-template.md`. The shape:
 
 An implementation PR may reference an accepted RFC and proceed. The
 implementation does not need a second RFC for any work that is faithful
-to the accepted design. If the implementation diverges from the design,
-the author updates the RFC in the same PR (and a maintainer must
-re-approve the change).
+to the accepted design.
+
+### Amendments to an accepted RFC
+
+When implementation reveals that the accepted design is wrong, two
+paths exist depending on the size of the change:
+
+- **Minor amendment.** The implementation PR updates the RFC in the
+  same change, the PR description names the divergence, and one core
+  maintainer's review counts as RFC re-approval. Minor means: behaviour
+  unchanged from the user's perspective; type signatures, error modes,
+  performance bounds, and migration contract are all preserved.
+- **Major amendment.** The change does not meet the "minor" bar. The
+  amendment is its own RFC PR (`docs/rfcs/00NN-amendment-of-MMNN.md`)
+  with its own 14-day draft + 7-day FCP. The original RFC is not
+  silently rewritten — both the original and the amendment ship.
+
+The point of distinguishing the two is that a contributor reading the
+RFC three years from now should understand which decisions were the
+original consensus and which were later corrections.
+
+### Rejected RFCs
+
+Rejected RFCs are merged into `docs/rfcs/` with `status: rejected`
+and a one-paragraph rejection rationale appended at the bottom of
+the file. They serve as prior art: a future contributor proposing the
+same idea can read why the project decided against it and either
+adjust the design or make the case that the situation has changed.
+
+A rejected RFC is not a closed door forever — it is a closed door
+*then*. If the rationale no longer holds (new libraries, new
+benchmarks, new requirements), open a new RFC that cites the
+rejected one and explains what changed.
+
+## File-numbering rule
+
+The number is the next free 4-digit integer in `docs/rfcs/`, padded
+with leading zeroes (`0001`, `0023`, `0142`). The slug is
+kebab-cased and matches the title. Filename: `00NN-short-slug.md`.
+
+Numbers are not reused. If RFC 0007 is rejected and merged into
+`docs/rfcs/`, the next RFC is 0008 — not 0007. A reader who reads
+"RFC 0007" anywhere in the codebase should be able to find exactly
+one file matching that number.
 
 ## RFC retirement
 

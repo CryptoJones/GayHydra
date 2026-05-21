@@ -77,6 +77,40 @@ response on reopened work.
 - `needs-rfc` — the item is blocked on an unmerged RFC. Stale clock pauses
   until the RFC merges or is rejected.
 
+## Relationship to the Triage SLA
+
+The stale policy and the [Triage SLA](TRIAGE_SLA.md) handle distinct
+failure modes:
+
+- **SLA breach.** Item has not received a first human response within
+  10 business days. This is a *maintainer* failure. It surfaces on the
+  dashboard immediately and is never resolved by the stale workflow.
+- **Stale.** Item received a first response, then activity stopped on
+  both sides for 365 days. This is a *consensus* failure — both
+  maintainer and author drifted away. The stale workflow closes
+  honestly; the item is not a reproach to either side.
+
+An item must clear the SLA before it can become stale. An SLA-breach
+item is closed via maintainer action with an explicit
+`triage:wont-do` or move to `triage:accepted-for-review` — never by
+the stale workflow. The stale workflow is configured to skip items
+that have **zero** `triage:*` labels (those are SLA-breach
+candidates), so the two systems do not silently collide.
+
+## Author abandonment
+
+A PR sitting in `triage:needs-changes` or `triage:needs-info` with no
+author response for >180 days is *author-abandoned* by default. A
+maintainer may close it with the close template above (a special
+variant noting that the request was unanswered) or move it to a
+`help-wanted` label if the change is still wanted and another
+contributor might pick it up.
+
+This is not the same as stale: author abandonment is a faster, more
+specific signal than the 365-day fallback. The close template makes
+clear that the PR is closed because of the abandonment, not because
+the work was unwelcome.
+
 ## What this is not
 
 This policy is not a way to clear the queue without engaging with it. The

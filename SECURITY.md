@@ -36,6 +36,10 @@ Include in your report:
 - Your assessment of impact (RCE, info-disclosure, DoS, etc).
 - Whether you have already disclosed this to upstream NSA/ghidra. If
   yes, share the upstream advisory ID so we can align embargo timing.
+  If a vulnerability exists in upstream as well as this fork, we
+  coordinate disclosure with upstream and do not publish ahead of
+  their advisory — coordinated disclosure is the default, not the
+  exception.
 - How you would like to be credited in the advisory.
 
 ## What gets a CVE
@@ -91,6 +95,17 @@ Reporters who responsibly disclose are credited in:
 - The published advisory (with reporter consent).
 - `docs/security/CREDITS.md` (created on first credit; opt-in).
 
+## The threat model in one paragraph
+
+Ghidra is run by a security-aware user against a binary the user does
+not trust. The user's environment (the host OS, the user's files, the
+user's network) is in scope to protect. The binary being analyzed is
+the *adversary*: anything that binary causes Ghidra to do — outside
+of "be disassembled, decompiled, and shown on screen" — is a
+vulnerability we want to know about. The Ghidra server, when run,
+exposes additional network-reachable surface; everything that crosses
+that boundary from an untrusted client is in scope.
+
 ## What is in scope for "security"
 
 - Crash, OOM, infinite-loop, stack-overflow on adversary-controlled input.
@@ -100,6 +115,8 @@ Reporters who responsibly disclose are credited in:
   server.
 - Java deserialization vectors (see [JAVA_DESERIALIZATION_AUDIT.md](docs/security/JAVA_DESERIALIZATION_AUDIT.md),
   Rec 19).
+- A trusted-script-only / sandbox mode (see [SCRIPT_SANDBOX.md](docs/security/SCRIPT_SANDBOX.md),
+  Rec 16) that fails to gate untrusted scripts when configured to.
 
 ## What is out of scope
 
@@ -110,6 +127,12 @@ Reporters who responsibly disclose are credited in:
 - Behaviour reproducible only by modifying Ghidra itself. We are not in
   the business of defending against ourselves; we are in the business
   of defending the user from the binary the user is reverse engineering.
+- User-authored scripts running outside sandbox mode. Scripts in
+  `~/ghidra_scripts/` and the project script paths are trusted by
+  design; if a user runs a malicious script, that is the same as
+  running any other untrusted program on their machine.
+- Vulnerabilities in third-party Ghidra extensions distributed
+  outside this repo. Report those to the extension's maintainer.
 
 ## Related
 

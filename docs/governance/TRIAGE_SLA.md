@@ -21,6 +21,36 @@ Every issue and every pull request opened against this fork receives a
 What is **not** a first-response: a bot comment, a label change without
 explanation, or silence.
 
+### Anti-gaming for `needs-info`
+
+The clock-reset on `needs-info` is a known abuse vector: ping the
+author with progressively narrower questions to keep the SLA green
+without ever doing the review. Two safeguards:
+
+1. **The question must be answerable from the PR.** "What is your
+   threat model?" on a one-line patch is not a `needs-info`; it's
+   stalling.
+2. **Repeat `needs-info` is tracked.** If an item cycles through
+   `needs-info` more than twice without a substantive review comment,
+   the next maintainer to touch it must either move it to
+   `accepted-for-review` or `wont-do`. Cycling further is a recorded
+   process miss in the weekly digest.
+
+### Why 10 business days
+
+10 is calibrated against three constraints: it has to be small
+enough that a contributor feels seen (research on contributor churn
+suggests >2 weeks is where most one-time contributors give up), large
+enough that maintainers can absorb a normal incoming volume without
+heroics, and a round-number commitment that survives translation
+across timezones and team configurations. Faster (3–5 days) is the
+right SLA for the [decompiler-correctness lane](lanes/DECOMPILER_CORRECTNESS_LANE.md);
+slower (20+ days) ratifies the upstream pathology.
+
+The number is reviewable. If the dashboard shows we routinely land at
+p90 = 3 days, we tighten. If we cannot meet 10, the right answer is
+to add reviewer capacity or close the lane — not to widen the SLA.
+
 ## Why a stated SLA matters
 
 Stating an SLA does two things the implicit "we'll get to it" cannot:
@@ -54,6 +84,15 @@ Holidays, conference weeks, security embargoes. These are announced in
 advance in `docs/governance/sla-blackouts.md`; during a blackout the
 clock pauses for everyone equally. The blackout list is short and
 public — not a license to drift.
+
+### Security-embargoed items
+
+Items reported via [SECURITY.md](../../SECURITY.md) run on the
+embargo-specific timing in that policy (Critical: 2 business days
+first response, etc.). The general 10-business-day SLA does not
+override the security-specific commitments and is not a backstop for
+them — a security report must hit its own faster SLA or it is a
+specific, surfaced security-process miss.
 
 ## Escalation
 

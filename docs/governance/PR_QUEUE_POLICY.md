@@ -23,8 +23,15 @@ the only document that decides whether a PR sits or moves.
    can review is theater. Stale PRs are closed with a respectful, scripted
    template (see [STALE_POLICY.md](STALE_POLICY.md)).
 4. **Big work needs a design first.** PRs above the mega-PR threshold
-   (>2,000 net LOC or touching cross-module interfaces) require an
-   [RFC](RFC_PROCESS.md) merged first.
+   (>2,000 net LOC, or touching cross-module interfaces, or changing a
+   security boundary) require an [RFC](RFC_PROCESS.md) merged first.
+
+   *Why 2,000?* It is calibrated from the upstream pathology: the median
+   stuck mega-PR (#4103 WASM, #5778 RISC-V, etc.) was 4,000–15,000 LOC.
+   2,000 is the point above which line-by-line review stops being the
+   right unit of work; below it, the queue absorbs the change without a
+   design dance. The number is reviewable — if data shows we're catching
+   the wrong PRs, the threshold moves via RFC, not folklore.
 
 ## Lanes
 
@@ -43,6 +50,14 @@ GitHub Action. Default if rules don't match is `Framework`.
 See [TRIAGE_SLA.md](TRIAGE_SLA.md). Briefly: first human response within
 **10 business days**.
 
+The SLA covers the **first** response, not the full review. A PR that
+moves to `triage:accepted-for-review` enters a second commitment:
+**reviewer assigned within 10 business days, first round of review
+within 20 business days of assignment**. These are tracked separately
+on the queue-health dashboard so a "fast first response, then silence"
+pattern shows up as its own failure mode rather than hiding inside an
+SLA-green column.
+
 ## Bulk-close of the existing graveyard
 
 PRs older than 4 years and without a maintainer comment are closed in one
@@ -53,12 +68,32 @@ current `master` under the appropriate lane.
 
 ## Metrics
 
-Reported weekly in the public maintainers' digest:
+Reported weekly in the public maintainers' digest, committed to
+`docs/governance/sla-dashboard.md` by a workflow:
 
-- Open PR count.
+- Open PR count, broken down by lane.
 - p50 / p90 days to first human response.
-- Count of PRs missing the lane label.
-- Count of PRs sitting >30 days in `awaiting-maintainer`.
+- p50 / p90 days from `triage:accepted-for-review` to first round of review.
+- Median age of items in `triage:accepted-for-review` (catches the
+  "accepted but never actually reviewed" failure mode).
+- Count of PRs missing any `triage:*` label (SLA-breach candidates).
+- Count of PRs in `triage:needs-info` >30 days (probable abandonment).
+- Stale-warning and closed-stale counts (7-day delta).
 
-When p90 days-to-first-response exceeds the SLA, no new feature work lands
-until the SLA is met again. The queue is the customer.
+## Queue health gate
+
+When p90 days-to-first-response exceeds the SLA for two consecutive
+weeks, the project enters **queue-health mode**:
+
+- No new feature PRs from maintainers (bug fixes and correctness fixes
+  exempt).
+- The next maintainers' meeting agenda leads with queue health, not
+  product.
+- Maintainers cycle in on rotation to triage until p90 returns to SLA.
+
+The gate is an honest commitment, not a moral position: a maintainer
+who is shipping new features while the queue rots is making a
+visibility-asymmetry trade against their own contributors. The
+queue-health gate makes that trade impossible to make silently.
+
+The queue is the customer.

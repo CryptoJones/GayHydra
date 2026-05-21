@@ -52,9 +52,25 @@ required, and nothing on this list is optional.
 - [ ] License of the architecture reference is compatible with
       redistributing test vectors. If unclear, cite the manual instead of
       copying.
-- [ ] No changes outside `Ghidra/Processors/<arch>/` (or noted exceptions
-      for shared Sleigh runtime). A processor PR that touches framework
-      code is split.
+- [ ] No changes outside `Ghidra/Processors/<arch>/`. Permitted exceptions,
+      each of which must be called out in the PR description:
+      - `Ghidra/Framework/SoftwareModeling/src/main/java/ghidra/program/model/pcode/` —
+        new pcode-op enum value strictly required by the new Sleigh.
+      - `Ghidra/Features/Decompiler/src/decompile/cpp/typeop.*` —
+        decompiler hookup for a new pcode op (same constraint).
+      - `Ghidra/Features/Decompiler/src/main/doc/sleigh*` — Sleigh
+        manual addendum documenting the new construct.
+
+      Any other cross-directory change splits the PR.
+
+- [ ] Multi-variant architectures (32/64-bit, big/little endian, profile
+      variants) test the changed instruction in *each* variant if the
+      `.slaspec` file is shared, or in the variant whose `.slaspec` is
+      modified if it is split.
+- [ ] Golden-output regression: if the change adds or alters a pcode
+      sequence for an existing opcode, the affected arch's
+      decompiler golden tests (`unittests/*.cc`, the XML data-driven
+      tests under `decompile/cpp/datatests/`) pass unchanged.
 
 ## Out of scope for this lane
 

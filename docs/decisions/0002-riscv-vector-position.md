@@ -46,9 +46,17 @@ single review:
    floating-point.
 
 Each stage is a separate PR under `lane:processor`, with its own ISA
-reference (RVV 1.0 spec for V; Zb-ISA Spec 1.0.0 for B; Crypto-Ext
-Architecture Specification 1.0.1 for K) and its own canonical test
-vector corpus.
+reference and its own canonical test vector corpus:
+
+| Stage | Spec | Version | Test vector source |
+|---|---|---|---|
+| Zb | RISC-V Bit-Manipulation ISA-extensions | 1.0.0 (ratified 2021-11-19) | [riscv-tests/isa/rv64uzb*.S](https://github.com/riscv-software-src/riscv-tests/tree/master/isa) |
+| Zk | RISC-V Cryptography Extensions Volume I | 1.0.1 (ratified 2022-11-04) | NIST CAVP vectors for AES/SHA-2/SM3/SM4 + [riscv-tests/isa/rv64uzk*.S](https://github.com/riscv-software-src/riscv-tests/tree/master/isa) |
+| V | RISC-V "V" Vector Extension | 1.0 (ratified 2021-11-19) | [riscv-tests](https://github.com/riscv-software-src/riscv-tests) + [riscv-vector-tests](https://github.com/chipsalliance/riscv-vector-tests) |
+
+Test vectors that are not redistributable (vendor encumbered) are
+cited but not copied; the PR generates them at build time from the
+upstream test-suite repo at a pinned commit.
 
 ## Why this and not the alternatives
 

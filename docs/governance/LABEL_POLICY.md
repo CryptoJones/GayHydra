@@ -16,14 +16,22 @@ below is wired to a state — never a holding pattern.
 
 ### Lane (exactly one, auto-applied)
 
-| Label | Trigger |
-|---|---|
-| `lane:processor` | Diff under `Ghidra/Processors/` (see [PROCESSOR_LANE.md](lanes/PROCESSOR_LANE.md)) |
-| `lane:decomp-correctness` | Wrong-output decompiler fix (see [DECOMPILER_CORRECTNESS_LANE.md](lanes/DECOMPILER_CORRECTNESS_LANE.md)) |
-| `lane:security` | Reported via SECURITY.md or matches security keywords |
-| `lane:framework` | Default if nothing else matches |
-| `lane:debugger` | Diff under `Ghidra/Debug/` |
-| `lane:rfc` | Diff under `docs/rfcs/` |
+| Label | Trigger | Priority |
+|---|---|---|
+| `lane:security` | Reported via SECURITY.md or matches security keywords | 1 (highest) |
+| `lane:decomp-correctness` | Wrong-output decompiler fix (see [DECOMPILER_CORRECTNESS_LANE.md](lanes/DECOMPILER_CORRECTNESS_LANE.md)) | 2 |
+| `lane:rfc` | Diff under `docs/rfcs/` | 3 |
+| `lane:processor` | Diff under `Ghidra/Processors/` (see [PROCESSOR_LANE.md](lanes/PROCESSOR_LANE.md)) | 4 |
+| `lane:debugger` | Diff under `Ghidra/Debug/` | 5 |
+| `lane:framework` | Default if nothing else matches | 6 (lowest) |
+
+A PR that satisfies multiple lane triggers takes the **highest-priority**
+lane only. A security-impacting processor change is `lane:security`,
+not `lane:processor` — even though both directories are touched, the
+review pool and the SLA come from the security side.
+
+A maintainer can manually override the auto-applied lane label with a
+short comment naming why; the override is logged on the dashboard.
 
 ### Triage state (exactly one, applied by a human)
 
@@ -86,6 +94,28 @@ The bulk-sweep is performed once on adoption with a script under
   considers an item un-triaged if it has zero `triage:*` labels.
 - Severity labels applied by either author or triager.
 - Stale labels auto-applied by `.github/workflows/stale.yml`.
+
+## Adding, removing, renaming a label
+
+The label set defined in this file is the authoritative list. Changes
+require a PR to this file. For a new label:
+
+- Name (kebab-case, namespaced if applicable: `triage:*`, `severity:*`).
+- Trigger or applicability rule (one sentence).
+- Outcome or SLA the label maps to (one sentence).
+- Whether it is auto-applied or human-only.
+
+A new label without a clear outcome is rejected. A label that says
+"we have looked at this" is what we are explicitly retiring; we do
+not bring it back under a new name.
+
+## Misapplication remedy
+
+When a label is incorrectly applied (lane mis-routed, triage state
+unmatched to the maintainer's actual action), any maintainer may
+correct it with a short comment naming the correction. The
+dashboard logs the change for the week's digest; >5 per week
+suggests the auto-label rules need tightening.
 
 ## Why this matters
 

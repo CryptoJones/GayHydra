@@ -63,6 +63,38 @@ Auto-label rules:
 
 ## Maintainer commitment
 
-If we cannot meet the 3-business-day SLA on a correctness fix, that is a
-recordable incident in the weekly maintainers' digest. The crown jewel
-does not get to ship wrong output silently for years.
+If we cannot meet the 3-business-day SLA on a correctness fix, that is
+a *recorded process miss* — captured by the queue-health workflow as
+`decomp-correctness-sla-miss` in the weekly digest with the PR
+number, age, and a one-line cause attribution from a maintainer.
+
+When the count of `decomp-correctness-sla-miss` exceeds **2 in any
+rolling 8-week window**, the project enters queue-health mode (see
+[PR_QUEUE_POLICY.md](../PR_QUEUE_POLICY.md)): no new decompiler
+feature work lands until the moving count drops to zero.
+
+## Backport edge cases
+
+The auto-cherry-pick assumes the file affected by the fix exists on
+the release branch. When it does not (the bug was introduced after
+the release was cut), the auto-cherry-pick is skipped and the PR is
+labelled `no-backport: not-in-release`. The PR description records
+this explicitly so reviewers can confirm the bug was not present in
+the release branch.
+
+When the cherry-pick conflicts non-trivially, the workflow opens a
+fresh PR against the release branch with `[backport]` in the title
+and labels both for maintainer attention. The original fix is not
+held hostage by the conflict.
+
+## Reproducer vs regression test
+
+The `unittests/correctness/<short-name>/` artifact functions as both
+the reproducer (it failed before the patch) *and* the regression
+test (it passes after, and will fail again if the bug recurs). A
+plain reproducer that is not also a regression test does not
+satisfy this lane's checklist — the point is to make this specific
+class of bug visible to future contributors, not just to fix today's
+instance.
+
+The crown jewel does not get to ship wrong output silently for years.
