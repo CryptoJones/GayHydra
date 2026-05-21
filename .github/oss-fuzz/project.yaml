@@ -1,0 +1,24 @@
+# OSS-Fuzz project manifest.
+#
+# To go live: copy this file (plus Dockerfile and build.sh in this
+# directory) to projects/ghidra-decompiler/ in google/oss-fuzz.
+#
+# See docs/security/OSS_FUZZ.md.
+
+homepage: "https://github.com/CryptoJones/GayHydra"
+main_repo: "https://github.com/CryptoJones/GayHydra"
+language: c++
+primary_contact: "security@example.invalid"   # replace before submission
+auto_ccs:
+  - "security@example.invalid"                # replace before submission
+sanitizers:
+  - address
+  - undefined
+  # - memory   # enable after libc++/dep-build chain is verified
+fuzzing_engines:
+  - libfuzzer
+  - afl
+  - honggfuzz
+architectures:
+  - x86_64
+help_url: "https://github.com/CryptoJones/GayHydra/blob/master/docs/security/OSS_FUZZ.md"

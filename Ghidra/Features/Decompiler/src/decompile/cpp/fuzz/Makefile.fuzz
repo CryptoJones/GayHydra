@@ -1,0 +1,60 @@
+# Fuzz harness build recipe.
+#
+# Scaffold for Rec 13: see docs/security/OSS_FUZZ.md.
+#
+# Usage:
+#   make -f Makefile.fuzz fuzz_xml
+#   make -f Makefile.fuzz ASAN=1 UBSAN=1 fuzz_xml
+#   make -f Makefile.fuzz all
+#
+# OSS-Fuzz overrides CXX/CXXFLAGS/LIB_FUZZING_ENGINE itself; this
+# Makefile is for local reproduction.
+
+CXX ?= clang++
+CPP_DIR := ..
+
+# libFuzzer is the default driver locally; OSS-Fuzz substitutes its
+# own engine via $LIB_FUZZING_ENGINE.
+LIB_FUZZING_ENGINE ?= -fsanitize=fuzzer
+
+CXXSTD := -std=c++11
+INCLUDES := -I$(CPP_DIR)
+WARN := -Wall -Wno-sign-compare
+
+SAN :=
+ifeq ($(ASAN),1)
+  SAN += -fsanitize=address
+endif
+ifeq ($(UBSAN),1)
+  SAN += -fsanitize=undefined
+endif
+
+CXXFLAGS += $(CXXSTD) -O1 -g $(WARN) $(INCLUDES) $(SAN) -fno-omit-frame-pointer
+
+# Minimum set of decompiler object files needed to link a harness.
+# The full set lives in $(CPP_DIR)/Makefile under DECOMP_OBJS; we
+# track only the subset required by each harness here for build speed.
+XML_OBJS := \
+    $(CPP_DIR)/xml.o \
+    $(CPP_DIR)/marshal.o \
+    $(CPP_DIR)/address.o \
+    $(CPP_DIR)/space.o
+
+MARSHAL_OBJS := \
+    $(CPP_DIR)/marshal.o \
+    $(CPP_DIR)/xml.o \
+    $(CPP_DIR)/address.o \
+    $(CPP_DIR)/space.o
+
+.PHONY: all clean fuzz_xml fuzz_marshal
+
+all: fuzz_xml fuzz_marshal
+
+fuzz_xml: fuzz_xml.cc $(XML_OBJS)
+	$(CXX) $(CXXFLAGS) $(LIB_FUZZING_ENGINE) $^ -o $@
+
+fuzz_marshal: fuzz_marshal.cc $(MARSHAL_OBJS)
+	$(CXX) $(CXXFLAGS) $(LIB_FUZZING_ENGINE) $^ -o $@
+
+clean:
+	rm -f fuzz_xml fuzz_marshal

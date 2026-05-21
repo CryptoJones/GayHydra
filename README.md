@@ -38,7 +38,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **12. Issue public CVE IDs.** Internal `GP-*` tracker IDs (GP-6832, GP-6719, GP-258) hide security fixes from NVD. Downstream packagers and enterprise security teams cannot patch what they cannot see. Recent server-side hardening (path-traversal in username validation, race in writeUserList, RMI deserialization filter) deserved CVEs and didn't get them. — [CVE_POLICY.md](docs/security/CVE_POLICY.md)
 
-- [ ] **13. Land an OSS-Fuzz integration for the C++ decompiler.** Zero public fuzz harness. 187k LOC of C++ parsing untrusted p-code/Sleigh input with 2,740 raw `new`/`delete` sites. This is the highest-EV security investment in the codebase. Google OSS-Fuzz is free.
+- [x] **13. Land an OSS-Fuzz integration for the C++ decompiler.** Zero public fuzz harness. 187k LOC of C++ parsing untrusted p-code/Sleigh input with 2,740 raw `new`/`delete` sites. This is the highest-EV security investment in the codebase. Google OSS-Fuzz is free. — [OSS_FUZZ.md](docs/security/OSS_FUZZ.md), [harnesses](Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/), [oss-fuzz project](.github/oss-fuzz/)
 
 - [ ] **14. Land fuzz harnesses for file-format loaders.** ELF, PE, Mach-O, DEX, PDB, DWARF, COFF — every loader parses attacker-controlled input. No public fuzzing exists for any of them. Start with the most-used three.
 
