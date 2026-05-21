@@ -25,7 +25,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]
+        # macOS dropped: TEST_DEBUG_OBJS pulls in analyzesigs/bfd_arch/
+        # loadimage_bfd/codedata via the EXTRA wildcard, which require
+        # libbfd. Apple's bundled binutils predates the bfd.h we need,
+        # and Homebrew's binutils is keg-only with non-trivial CPPFLAGS/
+        # LDFLAGS plumbing. Revisit once bfd-on-macOS is sorted.
         # Windows is its own toolchain story (MSVC); land that as
         # a follow-up workflow rather than overload this one.
     runs-on: ${{ matrix.platform }}
@@ -34,18 +39,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Install build deps (Ubuntu)
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y bison flex g++ make
-
-      - name: Install build deps (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install bison flex
-          # Homebrew bison/flex are keg-only — add to PATH.
-          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
-          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+          sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
 
       - name: Build & run unit tests
         working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
