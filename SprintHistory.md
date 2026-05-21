@@ -9,6 +9,53 @@ For why decisions were made the way they were, see
 
 ---
 
+## Sprint 9 — datatest audit, SBOM hotfix, Stage 3 prep (delivered 2026-05-21)
+
+**Goal:** Land the strict CycloneDX SBOM hotfix (Sprint 8's PR #243 ship-out broke master), clear the inherited-from-upstream 189-datatest audit (issue #215), and prep Rec 25/26 Stage 3 for the next sprint.
+
+**Delivered SBOM hotfix (master unbroken):**
+
+- PR #243 (Sprint-8 close-out) rolled in the cyclonedx-gradle-plugin 1.10.0→3.2.4 bump but shipped with two latent String→enum bugs only visible on its first CI run against master. [PR #245](https://github.com/CryptoJones/GayHydra/pull/245) — five iterations — converged on the working pattern:
+  1. `schemaVersion` is now `org.cyclonedx.Version` (enum) — needs the value loaded via the plugin's own classloader (the apply-from script's classloader doesn't include cyclonedx-core-java).
+  2. `projectType` is now `org.cyclonedx.model.Component$Type` (enum) — same lookup path.
+  3. Guard the whole `cyclonedxBom { ... }` block in `if (plugins.hasPlugin('org.cyclonedx.bom'))` so the gradle/actions/dependency-submission action (which runs Gradle in a stripped-down mode without the plugin) doesn't trip.
+  4. Disable per-subproject `cyclonedxDirectBom` tasks — they write into the subproject's build directory which `assembleDistribution` copies, tripping Gradle 8.5+ undeclared-input validation.
+- PR #241 closed as superseded (#243 absorbed its diff).
+
+**Delivered 189-datatest audit (issue #215 closed):**
+
+- Audit tooling upgrade [PR #244](https://github.com/CryptoJones/GayHydra/pull/244) — added `-dumpdir` flag to `decomp_test_dbg`. When set, the test harness writes `<dumpdir>/<testfile-basename>.actual` with the raw decompiled C bulkout per file, so the audit workflow's artifact lets us compare expected stringmatch regex vs. actual output offline. Fixes a SUMMARY.md grep bug (`grep -c ... || echo 0` double-emitted `0\n0` cells on no-match).
+- Five batched regex-fix PRs landed [#250](https://github.com/CryptoJones/GayHydra/pull/250) ... [#254](https://github.com/CryptoJones/GayHydra/pull/254) closing all **189 of 189** audit failures. Categorization:
+  - **L-suffix drift** (decompiler now appends `L` on int8/long literals + pointer-arithmetic array indices) — 153 failures across modulo (38), condconst (4), divopt (68), switchmulti (7), and many smaller files. Fixed with `L?` markers (matches both old + new output).
+  - **Space-after-comma drift** (decompiler now emits spaces after function-call commas) — 27 failures across mixfloatint, longdouble, heapstring, stackstring, stackreturn, injectoverride, gp, stackspill. Fixed with ` ?` after the comma.
+  - **Sign simplification** (`+ -N` → `- N`) — 2 failures in copytrim and ifswitch. Fixed with non-capturing alternation `(?:\+ -|- )`.
+  - **Line-wrap** (decompiler now wraps long expressions) — 1 failure in enum.xml. Single-line pattern split into two lines.
+  - **Float-op prefix** (raw pcode dump emits `f+` instead of `+`) — 1 failure in doublemove. Fixed with `f?\+`.
+  - **L-suffix on trailing comparison constant** — 1 in enum.xml.
+- [PR #255](https://github.com/CryptoJones/GayHydra/pull/255) re-enabled the datatests step in `.github/workflows/decompiler-cpp-tests.yml`.
+
+**Delivered Rec 25/26 Stage 3 prep:**
+
+- [`docs/testing/STAGE3_ENUMERATION.md`](docs/testing/STAGE3_ENUMERATION.md) ([PR #246](https://github.com/CryptoJones/GayHydra/pull/246)) — warning census from the last green master Build-Ghidra log (844 total post-Stage-2, 6 subprojects ≥50, three of those capped at javac's default `-Xmaxwarns=100`). Documents the 6-step Stage-3 PR sequence so the next contributor can pick up any starting point.
+- [PR #249](https://github.com/CryptoJones/GayHydra/pull/249) — step 1: bump `-Xmaxwarns` to 0 (uncapped) so the true per-subproject counts surface in future master logs.
+- [PR #247](https://github.com/CryptoJones/GayHydra/pull/247) — step 2: `@SuppressWarnings("removal")` on 29 self-deprecated classes (the deprecated Vertex/VertexSet graph types + per-arch emulator-state-modifier siblings). Expected to halve the tree-wide warning total (from ~844 to ~400) by removing the `[removal]` noise category in one mechanical PR.
+
+Steps 3–6 (per-subproject pre-clean of the remaining categories, then `-Werror` + ErrorProne WARN→ERROR) queued for Sprint 10 per `STAGE3_ENUMERATION.md`.
+
+**Delivered planning/docs:**
+
+- [PR #248](https://github.com/CryptoJones/GayHydra/pull/248) — SprintPlanning.md updated to capture Sprint-9 in-flight state at the time the 6 dependent PRs were open.
+
+**v26.1.7 release artifacts (Sprint 8 close):** the Sprint-8 close shipped the 26.1.7 bump; first-attempt release CI was blocked by the same #243 SBOM bug. Sprint 9's #245 hotfix unblocks it.
+
+**Carried to Sprint 10:**
+
+- **Rec 13/14 OSS-Fuzz submission** — `.github/oss-fuzz/project.yaml` still has `security@example.invalid` placeholder for `primary_contact` and `auto_ccs`. External-facing config; needs maintainer decision before the upstream PR to google/oss-fuzz.
+- **Rec 25/26 Stage 3 steps 3–6** — per-subproject pre-clean (six subprojects at ≥50 warnings, see STAGE3_ENUMERATION.md), then `-Werror` flip + ErrorProne WARN→ERROR. Approach: smallest subproject first (PIC), measure tree-wide drop, iterate.
+- **PR #141** — port of NSA/ghidra#9015 (PyGhidra `from __main__ import` improvement). Pre-existing, not Sprint-9.
+
+---
+
 ## Sprint 8 — Rebrand + Rec 19/25/26 ratchets + SBOM re-impl (delivered 2026-05-21)
 
 **Goal:** Land Sprint 8's user-facing rebrand at the right scope, knock down the carried Rec 19/25/26 items, and set up the foundation for the deferred datatest audit + SBOM re-implementation.

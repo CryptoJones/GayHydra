@@ -10,21 +10,17 @@ For the *why* behind individual choices, see
 
 ---
 
-## Sprint 9 — strict CycloneDX SBOM + datatest audit + OSS-Fuzz submission
+## Sprint 10 — OSS-Fuzz submission + Stage 3 finish + give-back PRs
 
-**In flight (carried from Sprint 8):**
-
-- [ ] **Strict CycloneDX SBOM hotfix** — PR #243 rolled the CycloneDX 3.2.4 bump into the Sprint-8 close-out, but the bump shipped with two latent bugs that turned master Build-Ghidra red across all three OSes: `schemaVersion` and `projectType` both became enums in plugin 3.x (`org.cyclonedx.Version`, `org.cyclonedx.model.Component$Type`) and need to be loaded via the plugin's own classloader (the apply-from script's classloader doesn't include cyclonedx-core-java). [PR #245](https://github.com/CryptoJones/GayHydra/pull/245) carries the fix. PR #241 closed as superseded by #243+#245.
-- [ ] **189-datatest audit** ([issue #215](https://github.com/CryptoJones/GayHydra/issues/215)) — first run captured pass/fail per file but not actual decompiler output, so categorization (cosmetic-regex-drift vs. real decompiler regression) requires more data. [PR #244](https://github.com/CryptoJones/GayHydra/pull/244) adds `-dumpdir` to `decomp_test_dbg` + wires it into `audit-datatests.yml` so the next workflow_dispatch run captures actual output for every file. Categorization phase + regex-fix PRs queued after #244 merges.
-- [ ] **Re-enable datatests** in `decompiler-cpp-tests.yml` once the audit is done.
-
-**External:**
+**Carried from Sprint 9:**
 
 - [ ] **Rec 13/14 OSS-Fuzz submission** — submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/` (and `projects/ghidra-loader/` for Rec 14, JVM project with Jazzer harnesses). Placeholder `primary_contact` / `auto_ccs` in `project.yaml` need real maintainer emails before the upstream PR.
+- [ ] **Rec 25/26 Stage 3 steps 3–6** — per [`docs/testing/STAGE3_ENUMERATION.md`](docs/testing/STAGE3_ENUMERATION.md). Six subprojects at ≥50 warnings need pre-clean. Recommended order: smallest first (PIC 58, AARCH64 63, SoftwareModeling 91), then the three capped giants (Generic, Emulation, Features/Base — each ≥100 pre-`-Xmaxwarns 0`, true counts visible on the post-#249 master log). Then `-Werror` flip in `gradle/javaProject.gradle`, then promote ErrorProne `JavaUtilDate`/`JdkObsolete` WARN→ERROR.
+- [ ] **Audit-datatests as ongoing regression guard** — currently `workflow_dispatch` only. Consider a weekly `schedule:` trigger now that the audit is reliable.
 
-**Ratchet:**
+**Give-back PRs to NSA/ghidra:**
 
-- [ ] **Rec 25/26 Stage 3** — multi-PR sequence documented in [docs/testing/STAGE3_ENUMERATION.md](docs/testing/STAGE3_ENUMERATION.md) ([PR #246](https://github.com/CryptoJones/GayHydra/pull/246), enumeration phase). Six subprojects at ≥50 warnings; tree-wide total 844. [PR #247](https://github.com/CryptoJones/GayHydra/pull/247) handles step 2 — `@SuppressWarnings("removal")` on 29 self-deprecated classes, expected to cut the total roughly in half. Steps 3–6 (per-subproject pre-clean + `-Werror` flip + ErrorProne WARN→ERROR) queued.
+- [ ] The 5 batched datatest-regex-fix PRs (#250–#254) all apply identically to upstream NSA/ghidra — their datatests have the same drift. Open a give-back PR to upstream consolidating the regex updates.
 
 ---
 
