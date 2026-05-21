@@ -90,7 +90,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **33. Version the Java↔native IPC protocol.** Custom byte-framing (`{0,0,1,X}` magic markers, `DecompileProcess.java:54-61`) has no schema version, no CRC, no graceful resync. One byte of corruption kills the decompiler process. Add a version handshake and a length-prefix-with-CRC frame. — [IPC_VERSIONING.md](docs/decompiler/IPC_VERSIONING.md)
 
-- [ ] **34. Replace the IPC protocol with a schema (FlatBuffers/Cap'n Proto).** Bigger investment than #33, but solves the recurring "decompiler crashed" UX papercut at the root, enables differential testing across versions, and makes a non-Java host viable (PyGhidra, Rust frontend, etc).
+- [x] **34. Replace the IPC protocol with a schema (FlatBuffers/Cap'n Proto).** Bigger investment than #33, but solves the recurring "decompiler crashed" UX papercut at the root, enables differential testing across versions, and makes a non-Java host viable (PyGhidra, Rust frontend, etc). — [IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)
 
 - [ ] **35. Bound decompilation time and memory.** Issue #5730 (huge-function UX) and #8429 (decompiler perf) and PR #9179 (bounded parallel decompiler) all converge on this. The decompiler should never hang the UI. Hard wall-clock + RSS budget per function with partial-result return.
 
