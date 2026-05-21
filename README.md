@@ -24,7 +24,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **7. Publish the bus factor.** Comment analysis shows maintainer engagement concentrates on ~9 logins (`ryanmkurtz`, `ghidra1`, `emteere`, `dragonmacher`, `pjsoberoi`, `mumbel`, `GhidorahRex`, `Sleigh-InSPECtor`, `nsadeveloper789`). Make that explicit. Community contributors (`jobermayr`, `astrelsky`, `LukeSerne`, `nneonneo`) are doing unpaid triage with no recognition or commit bit — formalize this. — [MAINTAINERS.md](MAINTAINERS.md)
 
-- [ ] **8. Reform the "Status: Triage" label.** 184 issues and 226 PRs sit in Triage. The label has become a synonym for "we have looked at this exactly zero times." Either remove it or wire it to an SLA.
+- [x] **8. Reform the "Status: Triage" label.** 184 issues and 226 PRs sit in Triage. The label has become a synonym for "we have looked at this exactly zero times." Either remove it or wire it to an SLA. — [LABEL_POLICY.md](docs/governance/LABEL_POLICY.md)
 
 - [ ] **9. Resolve #4103 WebAssembly definitively.** 46 comments, 4.2 years, the single most-asked-for feature in the queue. Land, fork, or close. Limbo is the worst outcome — it's been the worst outcome for four years.
 
