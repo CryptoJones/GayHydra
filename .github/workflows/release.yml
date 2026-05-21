@@ -77,6 +77,25 @@ jobs:
           echo "SBOM=$SBOM" >> $GITHUB_OUTPUT
           echo "Extracted SBOM: $(stat -c%s "$SBOM") bytes"
 
+      - name: SBOM sanity gate (≥10 components)
+        # Replaces the sbomSanityCheck task that was removed with the
+        # cyclonedxBom revert in PR #220. If the upstream SBOM emitter
+        # silently regresses (e.g. a gradle config rename causes it to
+        # enumerate nothing), the count drops to ~0 and this step
+        # fails the release rather than shipping an empty SBOM.
+        env:
+          SBOM: ${{ steps.artifacts.outputs.SBOM }}
+        run: |
+          # The upstream SBOM is CycloneDX-shaped JSON with .components
+          # holding the per-jar entries.
+          COUNT=$(python3 -c "import json,sys; d=json.load(open('$SBOM')); print(len(d.get('components', [])))")
+          echo "SBOM components: $COUNT"
+          if [ "$COUNT" -lt 10 ]; then
+            echo "::error::SBOM sanity gate failed: $COUNT components, expected ≥10."
+            echo "::error::Probable cause: the upstream gradle/support/sbom.gradle generator regressed."
+            exit 1
+          fi
+
       - name: Sign release zip (cosign keyless)
         env:
           COSIGN_EXPERIMENTAL: "1"
