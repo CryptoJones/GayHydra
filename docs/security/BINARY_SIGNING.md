@@ -123,13 +123,10 @@ OSS ecosystem.
 
 ## Rollout
 
-1. **PR 1 (this PR):** This doc. No CI changes yet.
-2. **PR 2:** Add the `cosign-sign` job to the release workflow.
-   Test against an alpha release first.
-3. **PR 3:** Add the verification commands to the release notes
-   template.
-4. **PR 4 (follow-up):** Wire SLSA Level 3 attestations
-   (`slsa-framework/slsa-github-generator`) for build provenance.
+1. **PR 1 (shipped in v26.1):** This doc. No CI changes yet.
+2. **PR 2 (#17-2, shipped):** [`.github/workflows/release.yml`](../../.github/workflows/release.yml). Triggers on tag push or workflow_dispatch; builds Ghidra (so the release zip + SBOM are produced fresh), signs the zip + SBOM with cosign keyless using the GitHub Actions OIDC identity, and uploads zip + .sig + .crt + SBOM + SBOM .sig + SBOM .crt to the GitHub release.
+3. **PR 3 (follow-up):** Verification commands in the release-notes template.
+4. **PR 4 (follow-up):** Wire SLSA Level 3 attestations (`slsa-framework/slsa-github-generator`) for build provenance.
 
 ## Coordination with upstream
 

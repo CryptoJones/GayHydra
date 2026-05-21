@@ -1,0 +1,108 @@
+name: Release (build + sign + publish)
+
+# Rec 17 #17-2: Sigstore Cosign keyless signing of release artifacts.
+# See docs/security/BINARY_SIGNING.md for the design + DD-006.
+#
+# Triggers on a tag push matching v*. Builds Ghidra, produces the
+# release zip + CycloneDX SBOM (Rec 21), signs both with cosign
+# keyless using the workflow's OIDC identity, and uploads zip +
+# .sig + .crt to the GitHub release.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build & sign (e.g. v26.1)'
+        required: true
+
+permissions:
+  contents: write    # upload assets to releases
+  id-token: write    # cosign keyless OIDC identity
+
+jobs:
+  build_sign_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Read JDK version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.0'
+
+      - name: Fetch Dependencies
+        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra (produces release zip + SBOM via Rec 21)
+        run: ./gradlew buildGhidra --parallel
+
+      - name: Locate release artifacts
+        id: artifacts
+        run: |
+          ZIP=$(ls build/dist/ghidra_*.zip | head -1)
+          test -n "$ZIP" || { echo "no release zip produced"; exit 1; }
+          echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
+          # SBOM produced by the cyclonedxBom task (Rec 21).
+          # Path is build/reports/sbom/bom.{json,xml}.
+          SBOM_JSON=build/reports/sbom/bom.json
+          SBOM_XML=build/reports/sbom/bom.xml
+          echo "SBOM_JSON=$SBOM_JSON" >> $GITHUB_OUTPUT
+          echo "SBOM_XML=$SBOM_XML" >> $GITHUB_OUTPUT
+
+      - name: Sign release zip (cosign keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature ${{ steps.artifacts.outputs.ZIP }}.sig \
+            --output-certificate ${{ steps.artifacts.outputs.ZIP }}.crt \
+            ${{ steps.artifacts.outputs.ZIP }}
+
+      - name: Sign SBOM (cosign keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          for f in ${{ steps.artifacts.outputs.SBOM_JSON }} ${{ steps.artifacts.outputs.SBOM_XML }}; do
+            [ -f "$f" ] || { echo "SBOM missing: $f"; continue; }
+            cosign sign-blob --yes \
+              --output-signature "$f.sig" \
+              --output-certificate "$f.crt" \
+              "$f"
+          done
+
+      - name: Upload signed artifacts to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          # Strip refs/tags/ prefix if present.
+          TAG=${REF#refs/tags/}
+          gh release upload "$TAG" --clobber \
+            ${{ steps.artifacts.outputs.ZIP }} \
+            ${{ steps.artifacts.outputs.ZIP }}.sig \
+            ${{ steps.artifacts.outputs.ZIP }}.crt
+          if [ -f ${{ steps.artifacts.outputs.SBOM_JSON }} ]; then
+            gh release upload "$TAG" --clobber \
+              ${{ steps.artifacts.outputs.SBOM_JSON }} \
+              ${{ steps.artifacts.outputs.SBOM_JSON }}.sig \
+              ${{ steps.artifacts.outputs.SBOM_JSON }}.crt \
+              ${{ steps.artifacts.outputs.SBOM_XML }} \
+              ${{ steps.artifacts.outputs.SBOM_XML }}.sig \
+              ${{ steps.artifacts.outputs.SBOM_XML }}.crt
+          fi
