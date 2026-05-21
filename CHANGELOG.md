@@ -1,5 +1,3 @@
-*Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
-
 # Changelog
 
 All notable changes to GayHydra are recorded here. Format is loosely
@@ -132,3 +130,7 @@ for the WebAssembly PR referenced in [decision 0001](docs/decisions/0001-webasse
 ---
 
 [26.1]: https://github.com/CryptoJones/GayHydra/releases/tag/v26.1
+
+---
+
+*Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
