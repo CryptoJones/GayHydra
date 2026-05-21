@@ -114,8 +114,11 @@ gradle buildGhidra
   distribution test (Rec 22, when it lands) includes an SBOM
   presence check.
 - An SBOM that is empty or fails to enumerate ≥10 components is a
-  build failure (`gradle/sbom-sanity.gradle` will add this gate in a
-  follow-up).
+  build failure. The check lives in [`gradle/sbom.gradle`](../../gradle/sbom.gradle)
+  as the `sbomSanityCheck` task which runs `finalizedBy cyclonedxBom`.
+  The 10-component threshold catches the failure mode where a
+  Gradle dep configuration was silently renamed and the SBOM
+  enumerates nothing useful.
 
 ## Coordination with vulnerability response
 

@@ -39,9 +39,42 @@ cyclonedxBom {
 
 // Hook the SBOM into the distribution flow. The release task
 // (buildGhidra) depends on cyclonedxBom so the SBOM exists before
-// the zip is assembled.
+// the zip is assembled. cyclonedxBom in turn must produce a
+// non-trivial SBOM (sanity gate).
 afterEvaluate {
     tasks.matching { it.name == 'buildGhidra' }.configureEach {
         dependsOn 'cyclonedxBom'
+    }
+    tasks.matching { it.name == 'cyclonedxBom' }.configureEach {
+        finalizedBy 'sbomSanityCheck'
+    }
+}
+
+// Rec 21 sanity gate: a successful cyclonedxBom run must produce an
+// SBOM with at least MIN_COMPONENTS components. A 0-or-handful-of-
+// components SBOM means the configuration silently fell apart
+// (typical cause: a renamed configuration in a future Gradle bump).
+// Fail the build loudly rather than ship an empty SBOM.
+final int MIN_COMPONENTS = 10
+task sbomSanityCheck {
+    description = 'Assert the CycloneDX SBOM at build/reports/sbom/bom.json has at least MIN_COMPONENTS entries.'
+    group = 'verification'
+
+    doLast {
+        File bomJson = file("${buildDir}/reports/sbom/bom.json")
+        if (!bomJson.exists()) {
+            throw new GradleException(
+                "Rec 21 SBOM sanity: expected SBOM at ${bomJson} but file is missing.")
+        }
+        def parsed = new groovy.json.JsonSlurper().parse(bomJson)
+        def components = parsed.components ?: []
+        int n = components.size()
+        if (n < MIN_COMPONENTS) {
+            throw new GradleException(
+                "Rec 21 SBOM sanity: SBOM has ${n} components, expected >= ${MIN_COMPONENTS}. " +
+                "Probable cause: a renamed/missing dependency configuration. " +
+                "See docs/release/SBOM.md.")
+        }
+        logger.lifecycle "sbomSanityCheck: SBOM has ${n} components (threshold ${MIN_COMPONENTS})."
     }
 }
