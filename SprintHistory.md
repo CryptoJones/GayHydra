@@ -23,13 +23,21 @@ For why decisions were made the way they were, see
   PointerToRawData round (NSA#9176), PIC24 OV/N pattern (NSA#8778), PE/COFF symbol-count limit (NSA#9174), Toggle-Type-Casts decompiler menu (NSA#5623), max symbol-name length (NSA#9173), SleighPreprocessor undefined directives (NSA#1835), x86 AF flag support (NSA#9071), x86 YMM FMA 128-bit truncation (NSA#9197), ARM v8M+coprocessor CDE-disable (NSA#8582), i8085 unofficial instructions (NSA#8843), V850 p-code emulation tests (NSA#8997), BSim `listdatabases` (NSA#8439), PyGhidra `from __main__ import` (NSA#9015).
   Skipped (conflict): constant-integer-export detect (NSA#5593), Comments-Set-default-edit (NSA#3974).
 
+- **Medium batch (PRs #144–#148, 5 ports landed, 5 conflicts skipped):**
+  AArch64 LSE Rs=zr propagation (NSA#9079), TriCore FPU conversion/division semantics (NSA#8999), V850 26 SLEIGH semantic bugs (NSA#8996), comment/label history username anonymize API (NSA#8729), PowerPC MSVC switch-table analysis (NSA#8964).
+  Skipped (conflict, deferred to Sprint 4 hand-port): ARM Old Exception Return (NSA#3687), cspec docs in build (NSA#3137), Decompiler in-place C operations (NSA#8635), RISC-V WCH/QingKe XW extension (NSA#6390), Linux syscall numbers (NSA#8815).
+
 - **[Ghidra.MD now in tree (PR #142)](https://github.com/CryptoJones/GayHydra/pull/142):** the audit doc was sitting untracked since fork creation; README + CHANGELOG referenced it but the file itself wasn't on GitHub. Now committed.
+
+- **[DesignDecisions.md (PR #143)](https://github.com/CryptoJones/GayHydra/pull/143):** new top-level doc capturing the *why* behind 18 architectural / process / judgment-call decisions made in Sprints 1–3.
+
+**Sprint 3 total: 33 upstream PR ports + Ghidra.MD + DesignDecisions.md.**
 
 **Carried into Sprint 4:**
 
-- 4 conflict-skipped PRs from Sprint 3 (NSA#8270, NSA#2244, NSA#5593, NSA#3974) — hand-resolve.
+- 9 conflict-skipped PRs from Sprint 3 (NSA#8270, NSA#2244, NSA#5593, NSA#3974, NSA#3687, NSA#3137, NSA#8635, NSA#6390, NSA#8815) — hand-resolve.
 - NSA#6897 (BSim address-space id) — still deferred from Sprint 2 (see [DD-017](DesignDecisions.md#dd-017-defer-nsa6897-bsim-hand-port-2026-05-21-deferred)).
-- ~13 remaining untackled matches in the crossref report (mostly larger / multi-commit).
+- 3 remaining largest crossref matches (NSA#3315 enum-name collision, NSA#9036 e200 VLE PowerPC language, NSA#9107 PDiff Version Tracking, NSA#6596 AVR8 rcall, NSA#9112 XMOS processor) — multi-commit or 1500+ LOC.
 - Begin Sprint 4 implementation surface for the 42-rec design docs from Sprint 1.
 
 ---
