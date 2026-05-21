@@ -12,7 +12,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **1. Fix the PR graveyard.** 77% of open PRs (257/335) have never received a single maintainer comment; 67% are still labeled `Status: Triage`, including 4+ year old PRs. This is the single biggest pathology in the project. Nothing else on this list matters as much. — [PR_QUEUE_POLICY.md](docs/governance/PR_QUEUE_POLICY.md)
 
-- [ ] **2. Adopt an explicit triage SLA.** Commit publicly to first-response-within-N-days. "First response" can be "rejected, here's why" — that is infinitely better than silence. The current implicit policy ("we'll get to it") is corroding contributor trust.
+- [x] **2. Adopt an explicit triage SLA.** Commit publicly to first-response-within-N-days. "First response" can be "rejected, here's why" — that is infinitely better than silence. The current implicit policy ("we'll get to it") is corroding contributor trust. — [TRIAGE_SLA.md](docs/governance/TRIAGE_SLA.md)
 
 - [ ] **3. Close the door on dead PRs.** ~76 PRs are >4yr old. Bulk-close with a respectful template ("we appreciate this work but cannot review it; please reopen if you'd like to rebase against current master and re-submit under [new lane X]"). A clean queue is honest; a 335-deep queue is theater.
 
