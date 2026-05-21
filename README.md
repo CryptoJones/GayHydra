@@ -1,3 +1,5 @@
+*Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
+
 # Ghidra: Top 42 Principal-Architect Recommendations
 
 *Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
