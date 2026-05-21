@@ -26,7 +26,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **8. Reform the "Status: Triage" label.** 184 issues and 226 PRs sit in Triage. The label has become a synonym for "we have looked at this exactly zero times." Either remove it or wire it to an SLA. — [LABEL_POLICY.md](docs/governance/LABEL_POLICY.md)
 
-- [ ] **9. Resolve #4103 WebAssembly definitively.** 46 comments, 4.2 years, the single most-asked-for feature in the queue. Land, fork, or close. Limbo is the worst outcome — it's been the worst outcome for four years.
+- [x] **9. Resolve #4103 WebAssembly definitively.** 46 comments, 4.2 years, the single most-asked-for feature in the queue. Land, fork, or close. Limbo is the worst outcome — it's been the worst outcome for four years. — [decision 0001](docs/decisions/0001-webassembly-position.md)
 
 - [ ] **10. Resolve #5778 RISC-V vector/bitmanip/crypto.** Labeled `Waiting on customer` for years. Convert "waiting" into a yes or a no. RISC-V is no longer a research ISA; analyzing modern firmware without these extensions is an increasingly visible gap.
 
