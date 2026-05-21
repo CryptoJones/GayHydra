@@ -18,7 +18,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **4. Create a "processor submission" fast-lane.** 54% of open PRs (180) are processor/Sleigh additions — this is a structurally distinct review (correctness against ISA docs, not architectural fit). It needs a dedicated reviewer rotation, an explicit checklist, and a separate queue. Mixing it with framework work is why both queues stall. — [PROCESSOR_LANE.md](docs/governance/lanes/PROCESSOR_LANE.md), [PR template](.github/PULL_REQUEST_TEMPLATE/processor.md)
 
-- [ ] **5. Create a separate lane for decompiler *correctness* fixes.** PRs like #6718 (shifted struct-offset loop bug) age the same as 13k-line processor submissions. Correctness regressions in the crown jewel should have an expedited path.
+- [x] **5. Create a separate lane for decompiler *correctness* fixes.** PRs like #6718 (shifted struct-offset loop bug) age the same as 13k-line processor submissions. Correctness regressions in the crown jewel should have an expedited path. — [DECOMPILER_CORRECTNESS_LANE.md](docs/governance/lanes/DECOMPILER_CORRECTNESS_LANE.md)
 
 - [ ] **6. Adopt an RFC process for mega-PRs.** #4103 (WebAssembly, 4.2yr, +15,387 LOC) and #5778 (RISC-V vector/crypto, 2.7yr, +6,676) cannot be reviewed line-by-line against a closed-development model. Require a design RFC *first*, then merge in small landings. Today these PRs are humanitarian disasters for the contributors who wrote them.
 
