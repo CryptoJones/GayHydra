@@ -10,22 +10,12 @@ For completed sprints, see [SprintHistory.md](SprintHistory.md).
 
 ## Sprint 3 — Upstream Cherry-Picks, Wave 2 (next)
 
-Carried over from Sprint 2.
-
-**Manual-resolve conflicts:**
-
-- [ ] Port [NSA#7228](https://github.com/NationalSecurityAgency/ghidra/pull/7228) (FunctionID namespace stripping, 6 👍 issue [#5858](https://github.com/NationalSecurityAgency/ghidra/issues/5858)) — cherry-pick conflicts in `PopulateFidDialog.java`. Resolve by hand against current master.
-- [ ] Port [NSA#7308](https://github.com/NationalSecurityAgency/ghidra/pull/7308) (PCode edge-label XML for switch defaults, issue [#7029](https://github.com/NationalSecurityAgency/ghidra/issues/7029)) — conflicts in `AttributeId.java`.
-
-**Multi-commit / structurally bigger:**
-
-- [ ] Port [NSA#8543](https://github.com/NationalSecurityAgency/ghidra/pull/8543) (decompiler code folding, **30 👍** issue [#1294](https://github.com/NationalSecurityAgency/ghidra/issues/1294) — highest-impact upstream PR by upvotes). Multi-commit; apply as `gh pr diff | git apply --3way` rather than single cherry-pick.
-- [ ] Port [NSA#6134](https://github.com/NationalSecurityAgency/ghidra/pull/6134) (decompiler deoptimization for irreducible statements, 7 👍 issue [#6133](https://github.com/NationalSecurityAgency/ghidra/issues/6133)).
-- [ ] Port [NSA#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) (BSim address-space id, 26 files).
-
-**Infra:**
-
-- [ ] Add `.github/workflows/upstream-crossref-refresh.yml` running the crossref script nightly so the report under [`docs/upstream-tracking/pr-issue-matches.md`](docs/upstream-tracking/pr-issue-matches.md) stays current.
+- [ ] Hand-port [NSA#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) (BSim address-space id, 26 files). Sprint 2 patch-apply hit two structural drifts:
+    1. `ElasticDatabase.java` content conflict (file diverged after PR was authored).
+    2. `BSimServerTest.java` moved/renamed in our master.
+  Needs hand-port against current state — not a simple cherry-pick.
+- [ ] Continue mining the [crossref report](docs/upstream-tracking/pr-issue-matches.md) — ~47 PR↔issue matches still untackled (mostly 0-upvote issues but real fixes). Triage and port the cleanly-applying ones in batches of 5–10.
+- [ ] Open follow-up PRs to upstream NSA/ghidra for fixes we have a clean port of, where it makes sense to give them back (separate from accepting their unmerged work into our fork).
 
 ---
 
