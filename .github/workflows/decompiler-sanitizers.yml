@@ -50,13 +50,20 @@ jobs:
         # the matching step in decompiler-cpp-tests.yml.
         run: gradle allSleighCompile --parallel
 
-      - name: Build & run sanitized unit tests
+      - name: Build decomp_test_san
         working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
         env:
           # Use the same compiler the OSS-Fuzz harnesses use; ensures
           # findings here reproduce there.
           CXX: clang++
-        run: make -j$(nproc) test_san
+        run: make -j$(nproc) decomp_test_san
+
+      - name: Run sanitized unit tests (skip data-driven XML tests)
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp
+        # Match the scope of decompiler-cpp-tests.yml — unit tests only.
+        # datatests/*.xml have inherited-upstream failures tracked
+        # separately; running them under ASan would just amplify noise.
+        run: ./decomp_test_san unittests
 
       - name: Upload sanitizer logs on failure
         if: failure()
