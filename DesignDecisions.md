@@ -13,6 +13,53 @@ decisions too small/cross-cutting to warrant their own file.
 
 ---
 
+## DD-019: Rec 21 cyclonedxBom reverted; SBOM via upstream-bundled extract (2026-05-21, shipped)
+
+**Context:** Sprint 1 wired up cyclonedx-gradle-plugin 1.10.0 to
+produce a CycloneDX SBOM as a buildGhidra dependency. Sprint 7's
+"CI green tree-wide" goal first hit the plugin with `rootProject.group`
+missing (fixed in [PR #217](https://github.com/CryptoJones/GayHydra/pull/217)), then with
+`java.lang.NullPointerException` when it tried to construct a
+PackageURL for every flat-dir dependency (`:AXMLPrinter2:` and
+similar — JARs declared via Gradle's `flatDir` repository, which
+have a name but no Maven group/version coordinates). The 1.10.0
+API offers no clean way to skip those.
+
+**Decision:** Revert the cyclonedxBom plugin and its sbomSanityCheck
+≥10-component gate entirely ([PR #220](https://github.com/CryptoJones/GayHydra/pull/220)). The plugin declaration in
+`build.gradle`, `gradle/sbom.gradle`, and the cyclonedx-specific
+steps in `release.yml` are removed.
+
+The upstream NSA SBOM generator at `gradle/support/sbom.gradle`
+(which walks JAR manifests directly via Java reflection — no Gradle
+dep-coordinate dependency) was preserved and continues to produce
+a bundled SBOM inside the release zip at `support/sbom/bom.json`.
+[PR #230](https://github.com/CryptoJones/GayHydra/pull/230) promotes that bundled SBOM to a first-class signed
+release asset (extract from zip, cosign-sign, upload alongside).
+
+Cleaner Sprint 8 re-implementation queued in
+[`docs/release/SBOM.md`](docs/release/SBOM.md): three paths —
+upgrade plugin past 1.10, switch to a different SBOM generator
+(Microsoft `sbom-tool`, OSSF scorecard), or extend the upstream
+generator to emit CycloneDX-shape + XML + sanity-gate.
+
+**Alternatives considered:**
+
+- Gate cyclonedxBom on a `-PgenerateSBOM=true` flag — keeps the
+  broken wiring, just hides it from default CI. Was nearly shipped
+  before Aaron's "bird's-eye view, tests failing is a code smell"
+  pushback redirected to honest revert + re-implementation.
+- Hand-patch every flat-dir dep with synthetic Maven coords — high-
+  effort + brittle across upstream-merge churn.
+- Switch to SPDX immediately — defers the format-choice debate to
+  Sprint 8.
+
+**Linked:** [`docs/release/SBOM.md`](docs/release/SBOM.md),
+[`.github/workflows/release.yml`](.github/workflows/release.yml),
+[`SprintHistory.md`](SprintHistory.md) Sprint 7.
+
+---
+
 ## DD-018: SprintHistory.md + SprintPlanning.md are the canonical task source (2026-05-21, active)
 
 **Context:** This fork has been moving at a high commit rate
@@ -184,7 +231,7 @@ documented in [`SprintHistory.md`](SprintHistory.md).
 
 ---
 
-## DD-011: Codeberg mirror deferred (2026-05-21, deferred)
+## DD-011: Codeberg mirror deferred → shipped Sprint 7 (2026-05-21, shipped)
 
 **Context:** Aaron's normal convention (per `dual-remote-pr` skill)
 is to mirror repos to both GitHub and Codeberg. During Sprint 1,
@@ -194,14 +241,16 @@ for Aaron's direct browser attempts. The Codeberg `/api/v1/version`
 endpoint *did* respond, and `GET /user` with the same token
 returned the expected user info, ruling out an account-level issue.
 
-**Decision:** Defer the Codeberg mirror until Codeberg's repo-
-create endpoint recovers. Continue all Sprint work on GitHub-only.
-When Codeberg recovers, the mirror is a single `git push codeberg
-master --tags`; no rework needed.
+**Decision:** Originally deferred to a later sprint until Codeberg's
+repo-create endpoint recovered. **Shipped in Sprint 7**: Codeberg
+recovered, the mirror is live at
+[`codeberg.org/CryptoJones/GayHydra`](https://codeberg.org/CryptoJones/GayHydra),
+all `sprint-1`..`sprint-7` branches and `v26.1`..`v26.1.6` tags
+pushed; README pivoted Codeberg-as-canonical (PR #208, #221, #225).
+The dual-remote-pr cycle is now standard for every change.
 
-**Linked:** Future Sprint backlog in [`SprintPlanning.md`](SprintPlanning.md);
-the `dual-remote-pr` skill's normal contract is preserved for
-subsequent changes.
+**Linked:** [`SprintHistory.md`](SprintHistory.md) Sprint 7 entry,
+[`README.md`](README.md) Canonical-home note.
 
 ---
 
