@@ -52,7 +52,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **18. Investigate #1481 (data-type archive deserialization amplification).** Only CWE-tagged open security issue. The archive/extension format deserialization path deserves a principal-level review across the whole pipeline, not a point fix. — [review doc](docs/security/datatype-archive-deserialization-review.md)
 
-- [ ] **19. Audit Java deserialization sites end-to-end.** 20+ files use raw `ObjectInputStream.readObject()` (FileSystem item storage, RepositoryItem, Version, etc.). Recent GP-6719 added an RMI filter — extend the same allowlist discipline to the non-RMI sites. There should be exactly one approved deserialization helper.
+- [x] **19. Audit Java deserialization sites end-to-end.** 20+ files use raw `ObjectInputStream.readObject()` (FileSystem item storage, RepositoryItem, Version, etc.). Recent GP-6719 added an RMI filter — extend the same allowlist discipline to the non-RMI sites. There should be exactly one approved deserialization helper. — [JAVA_DESERIALIZATION_AUDIT.md](docs/security/JAVA_DESERIALIZATION_AUDIT.md)
 
 - [ ] **20. Document and ship a `serial.filter` for the desktop client by default.** Recent work added it (`Framework/FileSystem/data/client.rmi.serial.filter`); make sure it's on by default and that the allowlist is regression-tested when classes are renamed.
 
