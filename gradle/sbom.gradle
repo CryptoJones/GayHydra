@@ -13,9 +13,8 @@
  *   apply from: 'gradle/sbom.gradle'
  */
 
-plugins {
-    id 'org.cyclonedx.bom' version '1.10.0'
-}
+// The plugins {} block lives in the root build.gradle (it's the only
+// place plugin DSL is legal). This file just configures the plugin.
 
 cyclonedxBom {
     // Schema version of the produced SBOM. 1.5 is the current spec.

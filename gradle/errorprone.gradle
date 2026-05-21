@@ -14,9 +14,9 @@
  *   apply from: 'gradle/errorprone.gradle'
  */
 
-plugins {
-    id 'net.ltgt.errorprone' version '4.0.1' apply false
-}
+// The plugins {} block lives in the root build.gradle (it's the only
+// place plugin DSL is legal). This file just applies the plugin to
+// every java-library subproject and configures it.
 
 subprojects {
     plugins.withId('java-library') {

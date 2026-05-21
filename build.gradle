@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply plugin: 'eclipse'
+// Plugin declarations must be in the root build.gradle (not in scripts
+// loaded via `apply from:`). The configuration of each plugin still
+// lives in its own gradle/<plugin>.gradle file.
+plugins {
+    id 'eclipse'
+    id 'org.cyclonedx.bom' version '1.10.0'           // Rec 21
+    id 'net.ltgt.errorprone' version '4.0.1' apply false  // Rec 26
+}
 
 apply from: 'gradle/root/eclipse.gradle'
 apply from: "gradle/support/loadApplicationProperties.gradle"
