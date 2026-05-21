@@ -698,7 +698,7 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("LLDB Can't seem to allocate the string. EXC_BAD_ACCESS.")
+	@Ignore("blocked-on: LLDB EXC_BAD_ACCESS on string allocation #176")
 	public void testSetValueString() throws Exception {
 		assertEquals("\"Hello World!\"", runTestSetValue("", """
 				'"Hello World!"'\
@@ -706,7 +706,7 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("LLDB Can't seem to allocate the string. EXC_BAD_ACCESS.")
+	@Ignore("blocked-on: LLDB EXC_BAD_ACCESS on string allocation #176")
 	public void testSetValueStringWide() throws Exception {
 		assertEquals("L\"Hello World!\"", runTestSetValue("", """
 				'L"Hello World!"'\
@@ -714,14 +714,14 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueBoolArr() throws Exception {
 		assertArrayEquals(new boolean[] { true, false },
 			runTestSetValue("expr bool $x[2]={ true, false }", "$x", ""));
 	}
 
 	@Test
-	@Ignore("LLDB Can't seem to allocate the string. EXC_BAD_ACCESS.")
+	@Ignore("blocked-on: LLDB EXC_BAD_ACCESS on string allocation #176")
 	public void testSetValueByteArrUsingString() throws Exception {
 		// Because explicit array type is chosen, we get null terminator
 		assertArrayEquals(new byte[] { 'H', 0, 'W', 0 }, runTestSetValue("", """
@@ -730,14 +730,14 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueByteArrUsingArray() throws Exception {
 		assertArrayEquals(new byte[] { 'H', 0, 'W' },
 			runTestSetValue("expr char $x[]={'H', 0, 'W'}", "$x", "BYTE_ARR"));
 	}
 
 	@Test
-	@Ignore("LLDB Can't seem to allocate the string. EXC_BAD_ACCESS.")
+	@Ignore("blocked-on: LLDB EXC_BAD_ACCESS on string allocation #176")
 	public void testSetValueCharArrUsingString() throws Exception {
 		// Because explicit array type is chosen, we get null terminator
 		assertArrayEquals(new char[] { 'H', 0, 'W', 0 }, runTestSetValue("", """
@@ -746,14 +746,14 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueCharArrUsingArray() throws Exception {
 		assertArrayEquals(new char[] { 'H', 0, 'W' },
 			runTestSetValue("expr char $x[]={'H', 0, 'W'}", "$x", "CHAR_ARR"));
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueShortArrUsingString() throws Exception {
 		// Because explicit array type is chosen, we get null terminator
 		assertArrayEquals(new short[] { 'H', 0, 'W', 0 },
@@ -761,14 +761,14 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueShortArrUsingArray() throws Exception {
 		assertArrayEquals(new short[] { 'H', 0, 'W' },
 			runTestSetValue("expr short $x[]={'H', 0, 'W'}", "$x", "SHORT_ARR"));
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueIntArrayUsingMixedArray() throws Exception {
 		// Because explicit array type is chosen, we get null terminator
 		assertArrayEquals(new int[] { 'H', 0, 'W' },
@@ -776,14 +776,14 @@ public class LldbCommandsTest extends AbstractLldbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueIntArrUsingArray() throws Exception {
 		assertArrayEquals(new int[] { 1, 2, 3, 4 },
 			runTestSetValue("expr int $x[]={1,2,3,4}", "$x", ""));
 	}
 
 	@Test
-	@Ignore("Temp var $x thing doesn't work")
+	@Ignore("blocked-on: LLDB temp var $x #177")
 	public void testSetValueLongArr() throws Exception {
 		assertArrayEquals(new long[] { 1, 2, 3, 4 },
 			runTestSetValue("expr long long $x[]={1LL,2LL,3LL,4LL}", "$x", ""));

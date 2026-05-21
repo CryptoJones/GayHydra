@@ -32,7 +32,7 @@ import ghidra.trace.model.Trace;
 import ghidra.trace.model.target.TraceObject;
 import ghidra.trace.model.target.TraceObjectValue;
 
-@Ignore
+@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
 public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 
 	/**
@@ -434,7 +434,7 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Still a race condition between the last call to putFrames and the final assert")
+	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepInto() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");
@@ -489,7 +489,7 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Still a race condition between the last call to putFrames and the final assert")
+	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepOver() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");
@@ -531,7 +531,7 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("Still a race condition between the last call to putFrames and the final assert")
+	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepOut() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");

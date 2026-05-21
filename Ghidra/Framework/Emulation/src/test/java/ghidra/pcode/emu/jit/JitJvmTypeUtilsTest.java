@@ -27,7 +27,7 @@ import org.objectweb.asm.*;
 
 import ghidra.pcode.emu.jit.JitPassage.AddrCtx;
 
-@Ignore("Too tightly bound to java version")
+@Ignore("manual-tool: tightly bound to Java version #181")
 public class JitJvmTypeUtilsTest {
 
 	public static class HasFieldTypeSignatures {

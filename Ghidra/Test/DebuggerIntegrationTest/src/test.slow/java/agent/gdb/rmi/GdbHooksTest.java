@@ -254,7 +254,7 @@ public class GdbHooksTest extends AbstractGdbTraceRmiTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
 	public void testOnSyscallMemory() throws Exception {
 		// TODO: Need a specimen
 		// FWIW, I've already seen this getting exercised in other tests.

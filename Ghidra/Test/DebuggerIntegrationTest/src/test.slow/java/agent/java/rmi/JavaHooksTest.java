@@ -33,7 +33,7 @@ import ghidra.trace.model.Trace;
 import ghidra.trace.model.target.TraceObject;
 import ghidra.trace.model.target.TraceObjectValue;
 
-@Ignore
+@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
 public class JavaHooksTest extends AbstractJavaTraceRmiTest {
 
 	@Test

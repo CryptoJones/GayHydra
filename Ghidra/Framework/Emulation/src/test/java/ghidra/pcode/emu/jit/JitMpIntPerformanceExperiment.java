@@ -36,7 +36,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.util.DefaultLanguageService;
 
-@Ignore("For developer workstation")
+@Ignore("manual-tool: developer-workstation perf experiment #182")
 public class JitMpIntPerformanceExperiment {
 	public static final int N = 1_000_000;
 	public static final BigInteger MASK_16_BYTES =

@@ -219,7 +219,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	}
 
 	@Test
-	@Ignore("Undefined")
+	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #183")
 	public void testReadMemDirectWithSpanWrapSpace() throws Exception {
 		long offset = -2;
 		Translation tr = translateSleigh(getLanguageID(), """
@@ -247,7 +247,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	}
 
 	@Test
-	@Ignore("Undefined")
+	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #183")
 	public void testWriteMemDirectWithSpanWrapSpace() throws Exception {
 		long offset = -2;
 		Translation tr = translateSleigh(getLanguageID(), """
@@ -591,7 +591,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	 * @throws Exception because
 	 */
 	@Test
-	@Ignore("No examples, yet")
+	@Ignore("wip: AbstractToyJitCodeGenerator no-examples-yet #183")
 	public void testComputedOffsetsInRegisterSpace() throws Exception {
 		TODO();
 	}
@@ -3618,7 +3618,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	 * expected, or perhaps just turn it completely off.
 	 */
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: AbstractToyJitCodeGenerator TODO #183")
 	public void testUninitializedVsInitializedReads() {
 		TODO();
 	}

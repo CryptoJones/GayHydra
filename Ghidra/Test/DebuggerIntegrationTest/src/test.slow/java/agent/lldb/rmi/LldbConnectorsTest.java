@@ -75,7 +75,7 @@ public class LldbConnectorsTest extends AbstractRmiConnectorsTest {
 	 * @throws Exception because
 	 */
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: LldbConnectorsTest TODO #180")
 	public void testLocalLldbSetup() throws Exception {
 		pipOob("protobuf==3.19.0");
 		try (LaunchResult result = doLaunch("lldb", Map.of("arg:1", chooseImage()))) {
@@ -96,7 +96,7 @@ public class LldbConnectorsTest extends AbstractRmiConnectorsTest {
 	}
 
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: LldbConnectorsTest TODO #180")
 	public void testLldbQemuUser() throws Exception {
 		assumeFalse(isWindows());
 		PathIsFile image = createArmElfImage();
@@ -113,7 +113,7 @@ public class LldbConnectorsTest extends AbstractRmiConnectorsTest {
 	}
 
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: LldbConnectorsTest TODO #180")
 	public void testLldbQemuSys() throws Exception {
 		autoMappingService
 				.setAutoMapSpec(AutoMapSpec.fromConfigName(BySectionAutoMapSpec.CONFIG_NAME));
@@ -163,7 +163,7 @@ public class LldbConnectorsTest extends AbstractRmiConnectorsTest {
 	}
 
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: LldbConnectorsTest TODO #180")
 	public void testLldbViaSshSetupGhidraLldb() throws Exception {
 		try (LaunchResult result = doLaunch(sshLauncherTitle(), Map.ofEntries(
 			Map.entry("arg:1", chooseImageToString()),
@@ -180,7 +180,7 @@ public class LldbConnectorsTest extends AbstractRmiConnectorsTest {
 	}
 
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: LldbConnectorsTest TODO #180")
 	public void testLldbViaSshSetupProtobuf() throws Exception {
 		pip("ghidralldb==%s".formatted(Application.getApplicationVersion()));
 		// Overwrite with an incompatible version we don't include
