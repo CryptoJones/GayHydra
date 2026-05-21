@@ -56,7 +56,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **20. Document and ship a `serial.filter` for the desktop client by default.** Recent work added it (`Framework/FileSystem/data/client.rmi.serial.filter`); make sure it's on by default and that the allowlist is regression-tested when classes are renamed. — [launch.properties](Ghidra/RuntimeScripts/Common/support/launch.properties), [GhidraSerialFilterDefaultTest.java](Ghidra/Framework/FileSystem/src/test/java/ghidra/framework/remote/GhidraSerialFilterDefaultTest.java)
 
-- [ ] **21. Add SBOM generation to release.** Gradle dependency locking is in place — good. But there's no published SBOM. Generate CycloneDX or SPDX as part of `buildGhidra` and attach it to releases. Enterprise consumers increasingly require this.
+- [x] **21. Add SBOM generation to release.** Gradle dependency locking is in place — good. But there's no published SBOM. Generate CycloneDX or SPDX as part of `buildGhidra` and attach it to releases. Enterprise consumers increasingly require this. — [SBOM.md](docs/release/SBOM.md), [sbom.gradle](gradle/sbom.gradle)
 
 ---
 

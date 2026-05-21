@@ -1,0 +1,47 @@
+/* ###
+ * Software Bill of Materials (SBOM) generation for the Ghidra release.
+ *
+ * Addresses Rec 21 of the 2026-05-21 audit. See
+ * docs/release/SBOM.md for the user-facing doc.
+ *
+ * Wires the CycloneDX Gradle plugin (org.cyclonedx.bom) into the
+ * root build. The default output is build/reports/bom.json and
+ * build/reports/bom.xml; the distribution task collects both into
+ * the release zip under `support/sbom/`.
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/sbom.gradle'
+ */
+
+plugins {
+    id 'org.cyclonedx.bom' version '1.10.0'
+}
+
+cyclonedxBom {
+    // Schema version of the produced SBOM. 1.5 is the current spec.
+    schemaVersion = '1.5'
+    // Project type per CycloneDX taxonomy.
+    projectType = 'application'
+    // Emit both JSON and XML; some downstream tools prefer one.
+    outputFormat = 'all'
+    // SBOM files end up here; the distribution task copies them.
+    destination = file("${buildDir}/reports/sbom")
+    // Include all configurations by default. The root project + every
+    // subproject's runtimeClasspath is what enterprise consumers want
+    // to see — the things that actually ship.
+    includeConfigs = ['runtimeClasspath']
+    skipConfigs = ['providedRuntime']
+    // Don't fail the build if a single subproject has no deps — Ghidra
+    // has many module subprojects that are themselves dependencies of
+    // others; the aggregate root SBOM is what matters.
+    skipProjects = []
+}
+
+// Hook the SBOM into the distribution flow. The release task
+// (buildGhidra) depends on cyclonedxBom so the SBOM exists before
+// the zip is assembled.
+afterEvaluate {
+    tasks.matching { it.name == 'buildGhidra' }.configureEach {
+        dependsOn 'cyclonedxBom'
+    }
+}
