@@ -77,26 +77,21 @@ PR. The annotation is correct semantically — javac is warning a
 deprecated class about its use of another deprecated class, which is
 noise, not a real action item.
 
-## Suggested Stage-3 PR sequence
+## Stage-3 PR sequence — landed in Sprint 10
 
-1. **Bump `-Xmaxwarns` to 0** (one-line javaProject.gradle edit) so the
-   three capped subprojects expose their real numbers on the next green
-   master run.
-2. **`@SuppressWarnings("removal")` on the 29 self-deprecated files**
-   (one mechanical PR). Cuts `[removal]` roughly in half. After this
-   lands, redo the per-subproject census.
-3. **Pre-clean the ≥50 set**, ideally one PR per subproject so each
-   reviewer can stay narrow. Order suggested: smallest first (PIC, then
-   AARCH64, then SoftwareModeling, then the three capped giants).
-4. **`ext.lintOpts = ['none']` opt-out** on any subproject still ≥50
-   after step 3 — preserves the per-subproject backlog explicitly
-   instead of leaving the tree red.
-5. **Flip the default to ERROR + add `-Werror` to javac** in
-   `gradle/javaProject.gradle`. The opt-out list from step 4 keeps the
-   tree green while the remaining subprojects ship gates.
-6. **Promote ErrorProne checks from WARN → ERROR** in
-   `gradle/errorprone.gradle` (currently `JavaUtilDate` + `JdkObsolete`
-   at WARN per PR #239). Final Stage-3 milestone.
+1. **Bump `-Xmaxwarns` to 0** ([PR #249](https://github.com/CryptoJones/GayHydra/pull/249)) — uncapped the per-file ceiling. Surfaced the real tail behind the prior 100-cap.
+2. **`@SuppressWarnings("removal")` on 29 self-deprecated files** ([PR #247](https://github.com/CryptoJones/GayHydra/pull/247)).
+3. **Pre-clean every ≥5-warning subproject** ([PRs #261, #265, #267, #268, #269](https://github.com/CryptoJones/GayHydra)) — class-level `@SuppressWarnings({"deprecation","removal","rawtypes","unchecked"})` on each offender file, with a Sprint-10 marker comment. Don't fix the underlying API misuse (separate per-subproject migration work); just acknowledge it and clear the floor.
+4. **javacc-generated source: inject `@SuppressWarnings("all")` post-codegen** (PRs [#265](https://github.com/CryptoJones/GayHydra/pull/265) + [#270](https://github.com/CryptoJones/GayHydra/pull/270)) — Features/Base's parser scaffolding can't be source-edited (regenerated each build), so a `doLast` on `buildJavacc` patches the generated `.java`. Skips files that already self-annotate (PreProcessor.java, CParserTokenManager.java).
+
+### Status
+
+After steps 1–4: tree-wide warning floor near zero across every pre-cleaned subproject. Local Mac Mini `gradle assembleAll` green in 6m31s.
+
+### Deferred (bigger than originally scoped)
+
+5. **`-Werror` on javac** — attempted on the Mac Mini in Sprint 10; the local build immediately surfaced an `EqualsGetClass` ErrorProne warning that `-Werror` promoted to an error. ErrorProne's `allErrorsAsWarnings = true` degrades its (large) default-on check set to javac warnings, which `-Werror` then promotes BACK to errors — a Catch-22. Flipping needs either a global ErrorProne reconfiguration (per-check overrides for everything default-on) or a per-file suppression sweep across the tree. Defer until those are addressed; it's its own sprint task, not a same-PR step.
+6. **Promote ErrorProne checks WARN → ERROR** — Stage 1 set (`MissingOverride`, `MutableConstantField`, etc.) need their per-check floor at zero first; `JavaUtilDate` migration is its own sub-sprint per [`docs/testing/ERRORPRONE.md`](ERRORPRONE.md). Same deferral.
 
 Per-subproject opt-out pattern (Rec 25 stays cleanly reversible):
 

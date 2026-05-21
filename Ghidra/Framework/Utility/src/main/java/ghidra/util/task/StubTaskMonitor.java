@@ -17,6 +17,10 @@ package ghidra.util.task;
 
 import ghidra.util.exception.CancelledException;
 
+// Sprint 10 Stage-3 pre-clean: stub class overrides the deprecated
+// checkCanceled() / clearCanceled() methods to satisfy the
+// TaskMonitor interface contract.
+@SuppressWarnings("deprecation")
 class StubTaskMonitor implements TaskMonitor {
 
 	@Override
