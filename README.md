@@ -50,7 +50,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **17. Sign released decompiler binaries and update the doc.** The decompiler ships as a native executable; binary distribution integrity is a real supply-chain question. Document the verification path. — [BINARY_SIGNING.md](docs/security/BINARY_SIGNING.md)
 
-- [ ] **18. Investigate #1481 (data-type archive deserialization amplification).** Only CWE-tagged open security issue. The archive/extension format deserialization path deserves a principal-level review across the whole pipeline, not a point fix.
+- [x] **18. Investigate #1481 (data-type archive deserialization amplification).** Only CWE-tagged open security issue. The archive/extension format deserialization path deserves a principal-level review across the whole pipeline, not a point fix. — [review doc](docs/security/datatype-archive-deserialization-review.md)
 
 - [ ] **19. Audit Java deserialization sites end-to-end.** 20+ files use raw `ObjectInputStream.readObject()` (FileSystem item storage, RepositoryItem, Version, etc.). Recent GP-6719 added an RMI filter — extend the same allowlist discipline to the non-RMI sites. There should be exactly one approved deserialization helper.
 
