@@ -20,7 +20,7 @@ import static ghidra.lifecycle.Unfinished.TODO;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore("TODO")
+@Ignore("wip: Debugger plugin cluster #191")
 public class DebuggerOpinionsTest {
 	@Test
 	public void testStuff() {

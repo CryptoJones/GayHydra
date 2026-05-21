@@ -184,7 +184,7 @@ public class TenetLoaderTest extends AbstractGhidraHeadedDebuggerTest {
 	/*
 	 * Automate loading a trace for manual testing purposes
 	 */
-	@Ignore
+	@Ignore("wip: TenetLoaderTest undocumented bare-ignore #193")
 	public void testManual() throws Exception {
 		final String testFile = """
 				slide=0x0

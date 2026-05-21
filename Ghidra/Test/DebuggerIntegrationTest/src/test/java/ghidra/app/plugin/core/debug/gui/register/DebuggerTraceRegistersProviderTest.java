@@ -429,7 +429,7 @@ public class DebuggerTraceRegistersProviderTest extends AbstractDebuggerRegister
 	}
 
 	@Test
-	@Ignore("DBTrace not well tested with type replacement, yet")
+	@Ignore("blocked-on: DBTrace type-replacement coverage #191")
 	public void testActivateThenReplaceType() throws Exception {
 		TODO();
 		// NOTE: could get complicated if size changes

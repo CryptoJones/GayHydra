@@ -745,7 +745,7 @@ public class HTMLDataTypeRepresentationTest extends AbstractGenericTest {
 	 * Test marked as ignored pending HTML rendering fix - see GP-1974
 	 */
 	@Test
-	@Ignore
+	@Ignore("wip: misc cluster — undocumented bare-ignore #192")
 	public void testTypeDefDiff_ArraysOfStructures_DifferentStructures() {
 
 		Structure s1 = getStructWithEnum();

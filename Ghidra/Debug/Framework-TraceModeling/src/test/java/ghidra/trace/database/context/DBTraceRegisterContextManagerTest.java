@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 
-@Ignore("TODO")
+@Ignore("wip: Debug/TraceModeling cluster #189")
 public class DBTraceRegisterContextManagerTest extends AbstractGhidraHeadlessIntegrationTest {
 	@Test
 	public void testSomething() {

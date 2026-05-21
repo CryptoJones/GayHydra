@@ -1017,7 +1017,7 @@ public abstract class AbstractDBTraceMemoryManagerMemoryTest
 	 * @throws Exception because
 	 */
 	@Test
-	@Ignore("Developer's desk")
+	@Ignore("manual-tool: developer-desk test in TraceMemoryManager #189")
 	public void testReplicateClassCastExceptionScenario() throws Exception {
 		final int TICKS = 100_000;
 

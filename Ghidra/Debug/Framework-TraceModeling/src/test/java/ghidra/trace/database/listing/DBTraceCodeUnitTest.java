@@ -849,7 +849,7 @@ public class DBTraceCodeUnitTest extends AbstractGhidraHeadlessIntegrationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: Debug/TraceModeling cluster #189")
 	public void testFigureOutAssembly() throws AssemblySyntaxException, AssemblySemanticException {
 		Assembler asm = Assemblers.getAssembler(b.language);
 		System.out.println(

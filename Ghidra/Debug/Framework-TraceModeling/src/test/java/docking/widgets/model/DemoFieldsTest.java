@@ -28,7 +28,7 @@ import ghidra.test.AbstractGhidraHeadedIntegrationTest;
 import ghidra.util.Msg;
 import ghidra.util.SystemUtilities;
 
-@Ignore
+@Ignore("wip: Debug/TraceModeling cluster #189")
 public class DemoFieldsTest extends AbstractGhidraHeadedIntegrationTest {
 	@Before
 	public void checkNotBatch() {

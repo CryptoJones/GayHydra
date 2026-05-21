@@ -63,7 +63,7 @@ public class ToArrayTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: Debug/TraceModeling cluster #189")
 	public void testHashSetToArrayPerformance() {
 		System.out.println("HashSet<String>(10):");
 		Collection<String> col = new HashSet<>();
@@ -72,7 +72,7 @@ public class ToArrayTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: Debug/TraceModeling cluster #189")
 	public void testArrayListToArrayPerformance() {
 		System.out.println("ArrayList<String>(10):");
 		Collection<String> col = new ArrayList<>();

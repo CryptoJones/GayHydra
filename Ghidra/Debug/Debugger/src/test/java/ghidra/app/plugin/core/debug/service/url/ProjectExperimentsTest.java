@@ -33,7 +33,7 @@ import ghidra.util.Msg;
 import ghidra.util.exception.FileInUseException;
 import ghidra.util.task.ConsoleTaskMonitor;
 
-@Ignore("Not actual tests")
+@Ignore("manual-tool: ProjectExperiments not regression tests #191")
 public class ProjectExperimentsTest extends AbstractGhidraHeadedIntegrationTest {
 	private TestEnv env;
 
@@ -179,7 +179,7 @@ public class ProjectExperimentsTest extends AbstractGhidraHeadedIntegrationTest 
 	}
 
 	@Test
-	@Ignore("Just an experiment, anyway. Dev -> Batch, in actual nightly tests")
+	@Ignore("manual-tool: ProjectExperiments dev-batch nightly only #193")
 	public void testCreateProgramFile() throws Exception {
 		RecordingDomainFolderListener rdfl = new RecordingDomainFolderListener();
 		ProjectData data = env.getProject().getProjectData();

@@ -35,7 +35,7 @@ import com.sun.jdi.request.*;
 import ghidra.util.Msg;
 import ghidra.util.NumericUtilities;
 
-@Ignore("These crash in Gradle")
+@Ignore("manual-tool: JdiExperiments crashes in Gradle #190")
 public class JdiExperimentsTest {
 	protected VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
 
@@ -197,7 +197,7 @@ public class JdiExperimentsTest {
 	}
 
 	@Test
-	@Ignore("Enable after you've manually launched a target")
+	@Ignore("manual-tool: JdiExperiments enable-after-manual-launch #190")
 	public void testAtttachJDWP() throws Exception {
 		AttachingConnector tcpConn = vmm.attachingConnectors()
 				.stream()

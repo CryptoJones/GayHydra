@@ -173,25 +173,25 @@ public class HexagonPcodeUseropLibraryTest extends AbstractEmulationEquivalenceT
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: HexagonPcodeUseropLibraryTest undocumented bare-ignore #188")
 	public void testDfmpyhhZeroAnyQNan() throws Exception {
 		runTestDfmpyhh(DF_HEX_NAN, DF_ZERO, DF_ANY, DF_QNAN);
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: HexagonPcodeUseropLibraryTest undocumented bare-ignore #188")
 	public void testDfmpyhhZeroAnySNan() throws Exception {
 		runTestDfmpyhh(DF_HEX_NAN, DF_ZERO, DF_ANY, DF_SNAN);
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: HexagonPcodeUseropLibraryTest undocumented bare-ignore #188")
 	public void testDfmpyhhZeroQNanSNan() throws Exception {
 		runTestDfmpyhh(DF_HEX_NAN, DF_ZERO, DF_QNAN, DF_SNAN);
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: HexagonPcodeUseropLibraryTest undocumented bare-ignore #188")
 	public void testDfmpyhhZeroSNanQNan() throws Exception {
 		runTestDfmpyhh(DF_HEX_NAN, DF_ZERO, DF_SNAN, DF_QNAN);
 	}

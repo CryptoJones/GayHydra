@@ -1249,7 +1249,7 @@ public class DebuggerMemoryBytesProviderTest extends AbstractGhidraHeadedDebugge
 	}
 
 	@Test
-	@Ignore("Enable manually")
+	@Ignore("manual-tool: DebuggerMemoryBytesProvider enable-manually #191")
 	public void testPerformanceManuallyWithManyManySnaps() throws Exception {
 		assumeFalse(SystemUtilities.isInTestingBatchMode());
 		createAndOpenTrace();

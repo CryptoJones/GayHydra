@@ -73,7 +73,7 @@ public class DebuggerManualTest extends AbstractGhidraHeadedDebuggerTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("wip: Debugger plugin cluster #191")
 	public void testManual01() throws PluginException, CodeUnitInsertionException,
 			AddressOverflowException, DuplicateNameException,
 			TraceOverlappedRegionException, InterruptedException {

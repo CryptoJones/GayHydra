@@ -56,7 +56,7 @@ import ghidra.util.database.spatial.RStarTreeMapTest.IntRect;
 import ghidra.util.database.spatial.RStarTreeMapTest.MyDomainObject;
 import ghidra.util.task.TaskMonitor;
 
-@Ignore // Only want for manual testing
+@Ignore("manual-tool: TraceRmiPerformanceTest only-manual #191")
 public class TraceRmiPerformanceTest extends AbstractGhidraHeadedDebuggerIntegrationTest {
 	public static final int REGION_COUNT = 1000;
 	public static final int RECORD_COUNT = 1000 * 6;

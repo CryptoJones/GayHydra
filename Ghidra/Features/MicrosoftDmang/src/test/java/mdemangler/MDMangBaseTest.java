@@ -14543,7 +14543,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	}
 
 	//From gray.cpp
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	//@Test
 	public void testCatch_2() throws Exception {
 		mangled = "__catch$_main$0";
@@ -14971,7 +14971,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	// MSFT CLI symbol from loader.  Has anonymous namespace (mangled), a dot delimiter to
 	//  represent namespace delimiter, and then a "normal" name (which in this case is a
 	//  demangled name with spaces).
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testDotSeparatedSymbolCliOrig() throws Exception {
 		mangled = "?A0xfedcba98.name0<struct _name1,struct _name2 const >";
 		msTruth = "";
@@ -14985,7 +14985,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	//  SymbolUtilities gets a hold of them... this is generally contrary to what we would want,
 	//  but if we cannot lay down symbols with spaces, then we need to make sure we can still
 	//  operate either way
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testDotSeparatedSymbolCliWithUnderscores() throws Exception {
 		mangled = "?A0xfedcba98.name0<struct__name1,struct__name2_const_>";
 		msTruth = "";
@@ -14994,7 +14994,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	}
 
 	// Complete LLVM type symbol with weak prefix and associated suffix
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testLLVMWeakPrefixDefaultXmmSuffix() throws Exception {
 		mangled = ".weak.??_7name0@@6B@.default.__xmm@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 		//llTruth = ""; // fail
@@ -15005,7 +15005,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 
 	// Not expected to be a true symbol, but want to understand partial processing with
 	//  complete suffix
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testVftableLLVMWeakPartial1() throws Exception {
 		mangled = "??_7name0@@6B@.default.__xmm@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 		//llTruth = "const name0::`vftable'";
@@ -15016,7 +15016,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 
 	// Not expected to be a true symbol, but want to understand partial processing with
 	//  partial suffix
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testVftableLLVMWeakPartial2() throws Exception {
 		mangled = "??_7name0@@6B@.default";
 		//llTruth = "const name0::`vftable'";
@@ -15025,7 +15025,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 		demangleAndTest();
 	}
 
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testVftable() throws Exception {
 		mangled = "??_7name0@@6B@";
 		msTruth = "const name0::`vftable'";
@@ -15038,7 +15038,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	// the suffix "3@" is almost like a backreference tag with the '@' closing the full
 	// qualified name... except... we've seen numbers that are beyond the backref range as
 	// here, but also have seen numbers like 18.
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testMangledTypeWithNamespaceSuffix() throws Exception {
 		mangled = ".?AT<unnamed-tag>@name0::3@";
 		msTruth = "";
@@ -15672,7 +15672,7 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	//=====================
 
 	//TODO: ignore for now.
-	@Ignore
+	@Ignore("wip: MDMangBaseTest undocumented bare-ignore #187")
 	public void testFuzzyFit() throws Exception {
 		MDFuzzyFit ff = new MDFuzzyFit();
 		//from: testWin10_0358058()

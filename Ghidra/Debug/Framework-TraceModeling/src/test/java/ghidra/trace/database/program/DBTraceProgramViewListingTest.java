@@ -842,7 +842,7 @@ public class DBTraceProgramViewListingTest extends AbstractGhidraHeadlessIntegra
 	}
 
 	@Test
-	@Ignore("TODO")
+	@Ignore("wip: Debug/TraceModeling cluster #189")
 	public void testGetUndefinedRanges() throws InsufficientBytesException,
 			UnknownInstructionException, CodeUnitInsertionException, CancelledException {
 		try (Transaction tx = b.startTransaction()) {

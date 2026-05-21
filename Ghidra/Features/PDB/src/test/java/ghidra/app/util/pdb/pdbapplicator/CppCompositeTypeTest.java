@@ -2780,7 +2780,7 @@ public class CppCompositeTypeTest extends AbstractGenericTest {
 	 * @throws Exception upon error
 	 */
 //	@Test
-	@Ignore
+	@Ignore("wip: misc cluster — undocumented bare-ignore #192")
 	public void testJ5_32_syntactic_layout() throws Exception {
 //		SyntacticClass structJ5 = createSyntacticStructJ5(MsftVxtManager32);
 		// TODO: determine if we need a builder that inputs a SyntacticClass along with a
