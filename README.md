@@ -76,7 +76,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **28. Triage `@Ignore` debt.** Ignored tests in `x86AssemblyTest`, `dsPIC30FAssemblyTest`, `ARMAssemblyTest`, `x64AssemblyTest`, `SymbolPathParserTest`, `CharsetInfoManagerTest`. Each ignored test is a frozen bug report. Either fix or delete. — [IGNORE_TEST_POLICY.md](docs/testing/IGNORE_TEST_POLICY.md)
 
-- [ ] **29. Migrate to JUnit 5.** 4.13.2 is fine but JUnit 5 unlocks parameterized tests, conditional execution, and parallel run modes that would meaningfully accelerate the integration suite.
+- [x] **29. Migrate to JUnit 5.** 4.13.2 is fine but JUnit 5 unlocks parameterized tests, conditional execution, and parallel run modes that would meaningfully accelerate the integration suite. — [JUNIT5_MIGRATION.md](docs/testing/JUNIT5_MIGRATION.md)
 
 - [ ] **30. Decouple Swing from integration tests.** Driving JFrame/FieldPanel directly (see `AbstractDecompilerTest`) makes the test slow, flaky on CI, and impossible on headless containers. Introduce a headless view layer for tests.
 
