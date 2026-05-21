@@ -77,6 +77,9 @@ jobs:
       - name: Compile (prepdev)
         run: ./gradlew prepdev --parallel
 
+      - name: Audit @Ignore annotations (Rec 28 #28-3)
+        run: ./gradlew ignoreAudit
+
       - name: Run JVM unit tests
         # --continue: don't stop at the first failure; surface the
         # whole picture in one CI run.

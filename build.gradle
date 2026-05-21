@@ -24,6 +24,9 @@ apply from: 'gradle/sbom.gradle'
 // ErrorProne static analysis. See docs/testing/ERRORPRONE.md (Rec 26).
 apply from: 'gradle/errorprone.gradle'
 
+// @Ignore audit. See docs/testing/IGNORE_TEST_POLICY.md (Rec 28 #28-3).
+apply from: 'gradle/ignoreAudit.gradle'
+
 
 /***************************************************************************************
 * Print current Java and Gradle version and make sure the correct version of gradle is being used

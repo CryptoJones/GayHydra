@@ -77,17 +77,27 @@ five years is not "going to be fixed soon."
 
 ## How CI enforces this
 
-A Gradle task `gradle ignoreAudit` (lands in PR #28-3) walks the
-tree and asserts:
+The Gradle task `gradle ignoreAudit` (landed in #28-3, see
+[`gradle/ignoreAudit.gradle`](../../gradle/ignoreAudit.gradle))
+walks the tree and asserts that every `@Ignore` annotation:
 
-- Every `@Ignore` has a tracking issue link in its argument.
-- Every linked issue exists (curl check).
-- Every linked issue has a `ignore:*` deadline label.
-- No tracking issue is past its deadline (otherwise the audit
-  fails the build).
+- Is not bare (no argument) — must be `@Ignore("...")`.
+- Carries a category prefix matching `flaky`, `blocked-on`, `wip`,
+  or `manual-tool`.
+- Contains a tracking-issue reference like `#1234` in the argument.
 
-`ignoreAudit` is wired as a dependency of `test` so the gate is
-unbypassable.
+A future iteration (#28-4) will additionally:
+
+- Verify the linked issue exists (`gh` query).
+- Verify the issue has an `ignore:*` deadline label.
+- Fail the build when an item is past its deadline.
+
+For Stage 1 (this PR), the audit gates only on local-text rules so
+the policy can land without depending on the GitHub API.
+
+The audit runs as a CI step in
+[`.github/workflows/build-ghidra.yml`](../../.github/workflows/build-ghidra.yml)
+before the unit tests. A red `ignoreAudit` blocks the PR.
 
 ## Sequencing
 

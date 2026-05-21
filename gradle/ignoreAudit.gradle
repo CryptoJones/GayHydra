@@ -1,0 +1,108 @@
+/* ###
+ * @Ignore audit task.
+ *
+ * Addresses Rec 28 #28-3 of the 2026-05-21 audit. See
+ * docs/testing/IGNORE_TEST_POLICY.md for the policy and
+ * docs/testing/ignore-test-inventory.md for the current state.
+ *
+ * Walks every src/test/**.java looking for @Ignore annotations.
+ * For each one found, asserts that the annotation argument is
+ * a String literal that matches:
+ *
+ *   @Ignore("category: free text including a tracking issue
+ *            reference like #1234 or blocked-on: #1234")
+ *
+ * Accepted categories: flaky, blocked-on, wip, manual-tool.
+ * Bare `@Ignore` with no argument is rejected.
+ * Empty-string `@Ignore("")` is rejected.
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/ignoreAudit.gradle'
+ *
+ * The task is named `ignoreAudit` at the root and is wired as
+ * a dependsOn of every subproject's `check` so PR CI runs it.
+ */
+
+import java.util.regex.Pattern
+
+// Pattern matches:
+//   @Ignore                                  -> arg = null (BAD)
+//   @Ignore("text")                          -> arg = "text"
+//   @Ignore("category: ... #123 ...")        -> arg = full string
+// The non-capturing inner group eats whitespace + a trailing newline
+// between @Ignore and its arguments; we look at one line at a time.
+final Pattern IGNORE_PATTERN = Pattern.compile(
+    '@Ignore(?:\\(\\s*\"([^\"]*)\"\\s*\\))?')
+
+// Accepted categories per IGNORE_TEST_POLICY.md.
+final Set<String> CATEGORIES = ['flaky', 'blocked-on', 'wip', 'manual-tool'] as Set
+
+// Tracking-issue reference: any '#<digits>' anywhere in the arg.
+final Pattern ISSUE_REF = Pattern.compile('#\\d+')
+
+// Test-framework-internal sentinels — exclude from policy.
+final Set<String> EXCLUDED_FILES = [
+    'generic/test/rule/RepeatedStatement.java',  // @Ignore is part of the rule mechanism, not test debt.
+] as Set
+
+task ignoreAudit {
+    description = 'Verify every @Ignore annotation in src/test/ carries a category and tracking issue.'
+    group = 'verification'
+
+    doLast {
+        List<String> violations = []
+        rootProject.fileTree(rootDir) {
+            include '**/src/test/**/*.java'
+            include '**/src/test.slow/**/*.java'
+        }.each { File f ->
+            String rel = rootDir.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+            if (EXCLUDED_FILES.any { rel.endsWith(it) }) {
+                return
+            }
+            int lineNum = 0
+            f.eachLine('UTF-8') { String line ->
+                lineNum++
+                String trimmed = line.trim()
+                // Skip commented-out @Ignore (with //, but not when @Ignore is inside a string).
+                if (trimmed.startsWith('//')) {
+                    return
+                }
+                if (!trimmed.contains('@Ignore')) {
+                    return
+                }
+                def m = IGNORE_PATTERN.matcher(trimmed)
+                if (!m.find()) {
+                    return
+                }
+                String arg = m.group(1)
+                if (arg == null) {
+                    violations.add("${rel}:${lineNum} bare @Ignore with no argument")
+                    return
+                }
+                if (arg.trim().isEmpty()) {
+                    violations.add("${rel}:${lineNum} @Ignore(\"\") empty argument")
+                    return
+                }
+                boolean hasCategory = CATEGORIES.any { cat ->
+                    arg.toLowerCase().contains(cat + ':') || arg.toLowerCase().startsWith(cat)
+                }
+                boolean hasIssueRef = ISSUE_REF.matcher(arg).find()
+                if (!hasCategory) {
+                    violations.add("${rel}:${lineNum} @Ignore arg lacks category " +
+                        "(${CATEGORIES.join(' | ')}): \"${arg}\"")
+                }
+                if (!hasIssueRef) {
+                    violations.add("${rel}:${lineNum} @Ignore arg lacks tracking-issue reference (e.g. #1234): \"${arg}\"")
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            logger.error '== @Ignore audit failures =='
+            violations.each { logger.error "  ${it}" }
+            throw new GradleException(
+                "${violations.size()} @Ignore policy violations. " +
+                "See docs/testing/IGNORE_TEST_POLICY.md for the rule.")
+        }
+        logger.lifecycle 'ignoreAudit: all @Ignore annotations comply with the policy.'
+    }
+}
