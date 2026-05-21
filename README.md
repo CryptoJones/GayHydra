@@ -100,7 +100,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://github.com/CryptoJones/G
 
 - [x] **38. Tackle variable-naming-across-scopes (#975, 53 👍).** The single most-upvoted open issue. Touches the symbol/scope model end to end; needs design, not a patch. Worth principal-architect time. — [RFC 0002](docs/rfcs/0002-variable-naming-across-scopes.md)
 
-- [ ] **39. Detect typical `for` loops and inline functions (#644, #2376, #4461).** Decompiler output that hides the loop induction variable behind a `while + counter` is the single most common "this looks worse than IDA" complaint. Inline-aware analysis (#2376, #4461) is the same complaint one level deeper.
+- [x] **39. Detect typical `for` loops and inline functions (#644, #2376, #4461).** Decompiler output that hides the loop induction variable behind a `while + counter` is the single most common "this looks worse than IDA" complaint. Inline-aware analysis (#2376, #4461) is the same complaint one level deeper. — [FOR_LOOP_INLINE_DETECTION.md](docs/decompiler/FOR_LOOP_INLINE_DETECTION.md)
 
 - [ ] **40. Formalize Sleigh semantics; add a Sleigh fuzzer.** Sleigh has an HTML reference manual, no formal grammar, no semantic model, no fuzz harness. With 39 processor specs and 21k lines of `.slaspec`, silent codegen bugs in stale processors (PowerPC unchanged since 2019, 8051 since 2019, M8C since 2019) are inevitable and undetectable. Differential fuzzing against canonical ISA test vectors is the right answer.
 
