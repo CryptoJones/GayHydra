@@ -22,6 +22,8 @@ data/languages/ARM7_le.slaspec||GHIDRA||||END|
 data/languages/ARM8_be.slaspec||GHIDRA||||END|
 data/languages/ARM8_le.slaspec||GHIDRA||||END|
 data/languages/ARM8m_be.slaspec||GHIDRA||||END|
+data/languages/ARM8m_cp_be.slaspec||GHIDRA||||END|
+data/languages/ARM8m_cp_le.slaspec||GHIDRA||||END|
 data/languages/ARM8m_le.slaspec||GHIDRA||||END|
 data/languages/ARMCortex.pspec||GHIDRA||||END|
 data/languages/ARMTHUMBinstructions.sinc||GHIDRA||||END|
