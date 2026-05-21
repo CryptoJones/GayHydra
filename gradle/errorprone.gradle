@@ -25,47 +25,54 @@ subprojects {
     plugins.withId('java-library') {
         apply plugin: 'net.ltgt.errorprone'
 
-        // Gradle 8.5 registers the `errorprone` configuration eagerly
-        // during the apply-plugin step, but the registration appears
-        // to complete AFTER this block's synchronous body runs — so
-        // a direct `dependencies { errorprone ... }` here used to NPE
-        // with "configuration 'errorprone' not found". Gradle 9.5+
-        // moved the registration earlier and masked the bug. Defer
-        // via `pluginManager.withPlugin` so the dependency-add runs
-        // after the plugin is fully applied on both Gradle versions.
+        // BOTH the `dependencies { errorprone ... }` block AND the
+        // `options.errorprone { ... }` task-options block depend on
+        // the net.ltgt.errorprone plugin having FULLY applied — they
+        // reference the `errorprone` configuration (added to the
+        // project) and the `errorprone` extension on JavaCompile.options
+        // (added to every task) respectively. On Gradle 8.5 those
+        // additions complete AFTER this `plugins.withId('java-library')`
+        // block's synchronous body runs, so a direct reference fails
+        // with "configuration 'errorprone' not found" / "No signature
+        // of method: CompileOptions.errorprone()". Gradle 9.5+ moved
+        // both registrations earlier and masked the bug.
+        //
+        // Defer the entire ErrorProne wiring inside
+        // `pluginManager.withPlugin` so it runs only after the plugin
+        // is fully applied, on both Gradle versions.
         pluginManager.withPlugin('net.ltgt.errorprone') {
             dependencies {
                 errorprone 'com.google.errorprone:error_prone_core:2.27.0'
             }
-        }
 
-        tasks.withType(JavaCompile).configureEach {
-            options.errorprone {
-                // Stage 1: signal-only. No checks at ERROR.
-                allErrorsAsWarnings = true
+            tasks.withType(JavaCompile).configureEach {
+                options.errorprone {
+                    // Stage 1: signal-only. No checks at ERROR.
+                    allErrorsAsWarnings = true
 
-                // High-EV checks at WARNING, expressed as raw javac args
-                // so we don't need to import CheckSeverity in this script.
-                errorproneArgs.addAll([
-                    '-Xep:ImmutableEnumChecker:WARN',
-                    '-Xep:MissingOverride:WARN',
-                    '-Xep:MutableConstantField:WARN',
-                    '-Xep:MutableMethodReturnType:WARN',
-                    '-Xep:CollectionToArraySafeParameter:WARN',
-                    '-Xep:DefaultCharset:WARN',
-                    '-Xep:EqualsHashCode:WARN',
-                    '-Xep:EqualsIncompatibleType:WARN',
-                    '-Xep:StringSplitter:WARN',
-                    // Rec 26 Stage 2 (Sprint 8): flip these from OFF
-                    // to WARN. allErrorsAsWarnings=true above keeps
-                    // them non-blocking; this just surfaces the
-                    // existing backlog in the build log so we can
-                    // measure the per-subproject count before
-                    // pre-cleaning ≥50-warning subprojects toward
-                    // Stage 3 (`ERROR` promotion).
-                    '-Xep:JavaUtilDate:WARN',
-                    '-Xep:JdkObsolete:WARN',
-                ])
+                    // High-EV checks at WARNING, expressed as raw javac args
+                    // so we don't need to import CheckSeverity in this script.
+                    errorproneArgs.addAll([
+                        '-Xep:ImmutableEnumChecker:WARN',
+                        '-Xep:MissingOverride:WARN',
+                        '-Xep:MutableConstantField:WARN',
+                        '-Xep:MutableMethodReturnType:WARN',
+                        '-Xep:CollectionToArraySafeParameter:WARN',
+                        '-Xep:DefaultCharset:WARN',
+                        '-Xep:EqualsHashCode:WARN',
+                        '-Xep:EqualsIncompatibleType:WARN',
+                        '-Xep:StringSplitter:WARN',
+                        // Rec 26 Stage 2 (Sprint 8): flip these from OFF
+                        // to WARN. allErrorsAsWarnings=true above keeps
+                        // them non-blocking; this just surfaces the
+                        // existing backlog in the build log so we can
+                        // measure the per-subproject count before
+                        // pre-cleaning ≥50-warning subprojects toward
+                        // Stage 3 (`ERROR` promotion).
+                        '-Xep:JavaUtilDate:WARN',
+                        '-Xep:JdkObsolete:WARN',
+                    ])
+                }
             }
         }
     }
