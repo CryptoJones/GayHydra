@@ -1,19 +1,23 @@
 name: Build Ghidra
 
-on: [push]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         platform: [ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
-  
+
       - name: Read Ghidra JDK Version
-        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV 
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
 
       - name: Setup JDK
         uses: actions/setup-java@v5
@@ -26,3 +30,60 @@ jobs:
 
       - name: Build Ghidra
         run: ./gradlew buildGhidra --parallel
+
+  # Rec 22: run the JVM unit-test suite. Was previously not run in CI.
+  # Independent job so a flaky/slow test failure does not block the
+  # build artifact in `build`. Both jobs are required to pass for a PR
+  # to be marked green; the split is for clearer red signal, not for
+  # bypassability.
+  unit_tests:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Fetch Dependencies
+        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Compile (prepdev)
+        run: ./gradlew prepdev --parallel
+
+      - name: Run JVM unit tests
+        # --continue: don't stop at the first failure; surface the
+        # whole picture in one CI run.
+        run: ./gradlew test --parallel --continue
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-results-${{ matrix.platform }}
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload JaCoCo coverage
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-${{ matrix.platform }}
+          path: |
+            **/build/reports/jacoco/**
+          if-no-files-found: ignore
+          retention-days: 30
