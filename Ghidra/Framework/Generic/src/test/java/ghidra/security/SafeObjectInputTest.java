@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -167,6 +168,46 @@ public class SafeObjectInputTest {
         }
         catch (IOException e) {
             // expected
+        }
+    }
+
+    @Test
+    public void headerStreamReadsPrimitives() throws Exception {
+        // Mirrors the ItemDeserializer header pattern: write
+        // primitives via ObjectOutputStream, read them back via
+        // SafeObjectInput.headerStream(). The default-reject class
+        // filter must not interfere with primitive reads.
+        byte[] bytes;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeLong(0xDEADBEEFCAFEBABEL);
+            oos.writeInt(42);
+            oos.writeUTF("packed-file-name");
+            oos.flush();
+            bytes = baos.toByteArray();
+        }
+        try (ObjectInputStream ois =
+                SafeObjectInput.headerStream(new ByteArrayInputStream(bytes))) {
+            assertEquals(0xDEADBEEFCAFEBABEL, ois.readLong());
+            assertEquals(42, ois.readInt());
+            assertEquals("packed-file-name", ois.readUTF());
+        }
+    }
+
+    @Test
+    public void headerStreamRejectsReadObject() throws Exception {
+        // The contract: headerStream() is for primitive-only reads.
+        // If a caller (or a future edit) calls readObject(), the
+        // default-reject filter must fail the call closed.
+        byte[] bytes = serialize(new Allowed("payload"));
+        try (ObjectInputStream ois =
+                SafeObjectInput.headerStream(new ByteArrayInputStream(bytes))) {
+            ois.readObject();
+            fail("expected default-reject filter to block readObject()");
+        }
+        catch (IOException e) {
+            // expected — ObjectInputFilter REJECT manifests as
+            // InvalidClassException (an IOException subclass)
         }
     }
 

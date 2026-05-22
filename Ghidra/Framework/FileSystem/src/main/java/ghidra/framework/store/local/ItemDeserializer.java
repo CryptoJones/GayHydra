@@ -16,6 +16,7 @@
 package ghidra.framework.store.local;
 
 import generic.jar.ResourceFile;
+import ghidra.security.SafeObjectInput;
 import ghidra.util.MonitoredInputStream;
 import ghidra.util.exception.IOCancelledException;
 import ghidra.util.task.TaskMonitor;
@@ -69,15 +70,11 @@ public class ItemDeserializer {
 		// Read header containing: original item name and content type
 		boolean success = false;
 		try {
-			ObjectInputStream objIn = new ObjectInputStream(in);
-			// Rec 19 #19-2: belt-and-suspenders. The header is parsed
-			// via primitive reads only — readObject() is never called
-			// here today. Reject every class lookup so a future edit
-			// that adds a readObject() call surfaces as a deserialization
-			// error rather than silently widening the attack surface.
-			objIn.setObjectInputFilter(info -> info.serialClass() == null
-					? ObjectInputFilter.Status.UNDECIDED
-					: ObjectInputFilter.Status.REJECTED);
+			// Rec 19 #19-2: primitive-only header read through the
+			// sanctioned SafeObjectInput.headerStream() helper — installs
+			// a default-reject class filter so a future readObject() call
+			// fails closed instead of silently widening the attack surface.
+			ObjectInputStream objIn = SafeObjectInput.headerStream(in);
 			if (objIn.readLong() != MAGIC_NUMBER) {
 				throw new IOException("Invalid data");
 			}

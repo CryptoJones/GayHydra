@@ -38,7 +38,7 @@ Sites using `ObjectInputStream` (raw or with partial filtering):
 | `Framework/Generic/.../map/ValueMap.java` | Property storage | Local-trusted |
 | `Framework/SoftwareModeling/.../DefaultPropertyMap.java` | Property storage | Local-trusted |
 | `Framework/SoftwareModeling/.../DataTypeManagerChangeListenerHandler.java` | Event listener machinery | Local-trusted (no attacker reach in normal use) |
-| `Features/Base/.../CodeUnitInfo.java` | Clipboard / drag-drop | **Medium — IDE clipboard is shared OS surface** |
+| `Features/Base/.../CodeUnitInfo.java` | Clipboard / drag-drop | **Not currently a deserialization surface** — see [§Class A reclassification](#class-a-reclassification-codeunitinfo) |
 | `Debug/Framework-TraceModeling/.../AbstractDBTracePropertyMap.java` | Trace property storage | Local-trusted |
 
 Some entries are not yet confirmed-exhaustive; the grep returned 14
@@ -63,12 +63,32 @@ own analysis session. Currently includes:
 
 - `ItemDeserializer` (archive open) — the #1481 / Rec 18 surface.
 - `RepositoryItem` and the RMI surface — partly covered by GP-6719.
-- `CodeUnitInfo` clipboard ingestion — accepts bytes from the OS
-  clipboard, which any process can write to.
 
 **Hardening:** strict allowlist filter via `ObjectInputFilter`
 configured per call. Default-deny; the call site declares the
 exact classes it expects, and unknown classes fail closed.
+
+#### Class A reclassification: CodeUnitInfo
+
+The 2026-05-21 audit listed `CodeUnitInfo` as Class A on the
+theory that the IDE clipboard is a shared OS surface. On closer
+inspection during #19-2:
+
+- `CodeUnitInfo` itself never invokes `ObjectInputStream`. Its
+  custom `readObject()` is present only as commented-out code at
+  the bottom of the file (a historical artifact).
+- `CodeUnitInfoTransferable` declares its single `DataFlavor`
+  with `DataFlavor.javaJVMLocalObjectMimeType`, which is the
+  in-JVM-reference clipboard flavor. The transferred object is
+  passed by reference within the same JVM — no bytes cross
+  `ObjectInputStream`, so no allowlist is needed today.
+
+If `CodeUnitInfoTransferable` is later extended to support a
+cross-JVM clipboard flavor (e.g. drag-and-drop to a separate
+Ghidra process), that new path will need a `SafeObjectInput`
+allowlist before it ships. Until then, `CodeUnitInfo` is not an
+active deserialization surface and is excluded from this audit's
+hardening scope.
 
 ### Class B: server-trusted (multi-user collaborative)
 
@@ -142,7 +162,7 @@ allowlist).
 | PR | Scope | Sites |
 |---|---|---|
 | #19-1 | This audit doc + `SafeObjectInput` helper class | New file |
-| #19-2 | Class A sites (`ItemDeserializer`, `CodeUnitInfo`) | 2 sites |
+| #19-2 | `ItemDeserializer` migrated to `SafeObjectInput.headerStream()` (primitive-only header read with default-reject filter); `CodeUnitInfo` reclassified out of Class A — not currently a deserialization surface (see [§Class A reclassification](#class-a-reclassification-codeunitinfo)) | 1 site migrated, 1 reclassified |
 | #19-3 | Class B sites (RMI + `ItemCheckoutStatus`) | 2 sites |
 | #19-4 | Class C sites in `Framework/Generic` | 6 sites |
 | #19-5 | Class C sites in `Framework/SoftwareModeling` and `Debug` | 4 sites |

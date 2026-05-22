@@ -114,6 +114,29 @@ public final class SafeObjectInput {
     }
 
     /**
+     * Open an {@link ObjectInputStream} on {@code in} with a
+     * default-reject class filter installed. Intended for call
+     * sites that read only primitives ({@code readLong},
+     * {@code readInt}, {@code readUTF}, etc.) out of a header,
+     * never {@code readObject()}.
+     *
+     * <p>If a future edit adds a {@code readObject()} call to one
+     * of those sites, the filter will reject the class lookup and
+     * the call will fail closed — preventing a silent widening of
+     * the deserialization attack surface.
+     *
+     * <p>The returned stream is owned by the caller and must be
+     * closed (typically via try-with-resources).
+     */
+    public static ObjectInputStream headerStream(InputStream in) throws IOException {
+        ObjectInputStream ois = new ObjectInputStream(in);
+        ois.setObjectInputFilter(info -> info.serialClass() == null
+                ? Status.UNDECIDED
+                : Status.REJECTED);
+        return ois;
+    }
+
+    /**
      * Build an {@link ObjectInputFilter} that accepts exactly the
      * supplied classes (plus primitive-wrapper and {@code String}
      * which JVM serialization needs unconditionally). Anything
