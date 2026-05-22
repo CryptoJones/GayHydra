@@ -273,16 +273,23 @@ benefits too.
 
 ## FAQ
 
-**Q. Why "GayHydra"?**
-A. I'm queer, I thought it was clever, the dual-license-license-pun thing is funny to me, and the
-mascot energy of "many heads, all gay" matches how a reverse-engineering tool actually feels in
-practice. If the name keeps a homophobic contributor away, that's a positive selection filter,
+**Q:** Why "GayHydra"?
+
+**A:** I'm queer, I thought it was clever, the dual-license-license-pun thing is funny to me, and
+the mascot energy of "many heads, all gay" matches how a reverse-engineering tool actually feels
+in practice. If the name keeps a homophobic contributor away, that's a positive selection filter,
 not a cost.
 
-**Q. How do you pronounce "Ghidra"?**
-A. I have no idea. My Ghidra book is signed by **Chris Eagle** and I still don't know. (I would
-like Kara Nance's signature too, please.) Pick the pronunciation that sounds least embarrassing
-out loud, commit to it, and never let anyone correct you.
+**Q:** How do you pronounce "Ghidra"?
+
+**A:** I have no idea. My Ghidra book is signed by **Chris Eagle** and I still don't know. (I
+would like Kara Nance's signature too, please.) Pick the pronunciation that sounds least
+embarrassing out loud, commit to it, and never let anyone correct you.
+
+**Q:** *"what the actual fuck am I looking at here?"* — DiscordUser
+
+**A:** I have no idea either. I got stoned and wanted to troll the NSA and this is what I came
+up with.
 
 — *AKC*
 
