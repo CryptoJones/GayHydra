@@ -1,4 +1,4 @@
-*Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
+<p align="center"><em>Proudly Made in Nebraska. Go Big Red! 🌽 <a href="https://xkcd.com/2347/">https://xkcd.com/2347/</a></em></p>
 
 <p align="center"><a href="#faq"><img src="GayHydra.png" width="400" alt="GayHydra logo — click for the FAQ"></a></p>
 
