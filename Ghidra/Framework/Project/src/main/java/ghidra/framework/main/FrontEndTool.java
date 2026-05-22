@@ -102,6 +102,13 @@ public class FrontEndTool extends PluginTool implements OptionsChangeListener {
 	private static final String RESTORE_PREVIOUS_PROJECT_NAME = "Restore Previous Project";
 	private boolean shouldRestorePreviousProject;
 
+	// l10n PoC. Tool Options entry under Edit > Tool Options > Tool > Locale.
+	// Writes Preferences.LOCALE; persisted value drives -Dghidra.locale= on
+	// the NEXT launch (no live Swing reload). PR 1 ships a plain string
+	// field; PR 3 replaces with a combo populated from messages_*.properties
+	// scanning once translations exist.
+	private static final String LOCALE_OPTION_NAME = "Locale";
+
 	private static final int MIN_HEIGHT = 600;
 
 	/**
@@ -366,6 +373,16 @@ public class FrontEndTool extends PluginTool implements OptionsChangeListener {
 		options.registerOption(RESTORE_PREVIOUS_PROJECT_NAME, true, help,
 			"Restore the previous project when Ghidra starts.");
 
+		// l10n PoC. BCP-47 tag stored as a string preference; the launcher
+		// picks it up on the next start. Empty string = system default.
+		options.registerOption(LOCALE_OPTION_NAME,
+			ghidra.framework.preferences.Preferences.getProperty(
+				ghidra.framework.preferences.Preferences.LOCALE, "", true),
+			help,
+			"BCP-47 locale tag for the user interface (e.g. en, es, ru, zh-CN, ko). " +
+				"Leave blank to follow the JVM default. Changes take effect on the next " +
+				"Ghidra launch (no live reload).");
+
 		defaultLaunchMode = options.getEnum(DEFAULT_TOOL_LAUNCH_MODE, defaultLaunchMode);
 
 		boolean autoSave = options.getBoolean(AUTOMATICALLY_SAVE_TOOLS, true);
@@ -418,6 +435,16 @@ public class FrontEndTool extends PluginTool implements OptionsChangeListener {
 		}
 		else if (BLINKING_CURSORS_OPTION_NAME.equals(optionName)) {
 			Gui.setBlinkingCursors((Boolean) newValue);
+		}
+		else if (LOCALE_OPTION_NAME.equals(optionName)) {
+			// l10n PoC. Persist to the global Preferences store so the next
+			// launcher invocation can read it back via -Dghidra.locale=. The
+			// running Swing tree keeps the old locale until restart — see
+			// help text on the option.
+			String tag = newValue == null ? "" : newValue.toString().trim();
+			ghidra.framework.preferences.Preferences.setProperty(
+				ghidra.framework.preferences.Preferences.LOCALE, tag);
+			ghidra.framework.preferences.Preferences.store();
 		}
 	}
 

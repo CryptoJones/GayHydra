@@ -13,6 +13,7 @@ data/gui.palette.theme.properties||GHIDRA||||END|
 data/gui.theme.properties||GHIDRA||||END|
 src/main/java/ghidra/framework/options/package.html||GHIDRA||||END|
 src/main/java/ghidra/util/layout/package.html||GHIDRA||||END|
+src/main/resources/core/messages.properties||GHIDRA||||END|
 src/main/resources/images/EmptyIcon.gif||GHIDRA||||END|
 src/main/resources/images/EmptyIcon16.gif||GHIDRA||||END|
 src/main/resources/images/GhidraIcon128.png||GHIDRA||||END|
@@ -69,3 +70,5 @@ src/main/resources/images/up.png||GHIDRA||||END|
 src/main/resources/images/video-x-generic16.png||Tango Icons - Public Domain|||tango icon set|END|
 src/main/resources/images/viewmagfit.png||Nuvola Icons - LGPL 2.1|||Nuvola icon set|END|
 src/main/resources/images/warning.png||Oxygen Icons - LGPL 3.0|||Oxygen icon theme (dual license; LGPL or CC-SA-3.0)|END|
+src/test/resources/testmod/messages.properties||GHIDRA||||END|
+src/test/resources/testmod/messages_en_XA.properties||GHIDRA||||END|

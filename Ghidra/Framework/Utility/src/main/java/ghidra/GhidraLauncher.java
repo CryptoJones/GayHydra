@@ -133,6 +133,12 @@ public class GhidraLauncher {
 		// Add the classpath to the class loader
 		classpathList.forEach(loader::addPath);
 
+		// l10n PoC: -Dghidra.locale=<tag> wins; otherwise honor the persisted
+		// "Locale" preference. Done after the layout exists so we know where
+		// the preferences file lives, and before any application code runs so
+		// the first ResourceBundle.getBundle(...) call sees the right Locale.
+		applyLocale(layout);
+
 		return layout;
 	}
 
@@ -464,5 +470,60 @@ public class GhidraLauncher {
 		}
 
 		return orderedList;
+	}
+
+	/**
+	 * Pick the UI locale: {@code -Dghidra.locale=<tag>} wins, otherwise the
+	 * {@code Locale} entry from the persisted preferences file, otherwise the
+	 * JVM default. Accepts BCP-47 tags ({@code zh-CN}, {@code en-XA}) and
+	 * underscore-style ({@code zh_CN}).
+	 *
+	 * <p>Done by hand instead of via {@code ghidra.framework.preferences.Preferences}
+	 * because that class lives in the Generic module and importing it here would
+	 * invert the Utility → Generic dependency. We only need a single key, so a
+	 * direct {@link java.util.Properties} read is the right tool.
+	 *
+	 * <p>Locale parsing problems must never block launch — silently fall
+	 * through to the JVM default if anything goes wrong.
+	 */
+	private static void applyLocale(ApplicationLayout layout) {
+		String tag = System.getProperty("ghidra.locale");
+		if (tag == null || tag.isBlank()) {
+			tag = readLocaleFromPreferences(layout);
+		}
+		if (tag == null || tag.isBlank()) {
+			return;
+		}
+		try {
+			Locale locale = Locale.forLanguageTag(tag.replace('_', '-'));
+			if (locale.getLanguage().isEmpty()) {
+				return;
+			}
+			Locale.setDefault(locale);
+		}
+		catch (RuntimeException e) {
+			// Defensive — bad locale data must not break launch.
+		}
+	}
+
+	private static String readLocaleFromPreferences(ApplicationLayout layout) {
+		try {
+			File settingsDir = layout.getUserSettingsDir();
+			if (settingsDir == null) {
+				return null;
+			}
+			File prefs = new File(settingsDir, "preferences");
+			if (!prefs.isFile()) {
+				return null;
+			}
+			Properties props = new Properties();
+			try (FileInputStream in = new FileInputStream(prefs)) {
+				props.load(in);
+			}
+			return props.getProperty("Locale");
+		}
+		catch (IOException | RuntimeException e) {
+			return null;
+		}
 	}
 }

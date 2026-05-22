@@ -65,6 +65,15 @@ public class Preferences {
 	public final static String LAST_NEW_PROJECT_DIRECTORY = "LastNewProjectDirectory";
 
 	/**
+	 * Preference name for the UI locale (BCP-47 tag, e.g. {@code en},
+	 * {@code zh-CN}). Consumed by the launcher via the
+	 * {@code ghidra.locale} system property — Tool Options writes both this
+	 * preference and the system property so the next launch picks up the
+	 * new locale. l10n PoC.
+	 */
+	public final static String LOCALE = "Locale";
+
+	/**
 	 * Preference name for the last chosen directory for path related items.
 	 */
 	public final static String LAST_PATH_DIRECTORY = "LastPathDirectory";

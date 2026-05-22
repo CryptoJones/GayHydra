@@ -37,3 +37,21 @@ ext.addExports([
 	'java.desktop/sun.awt=ALL-UNNAMED'
 ])
 
+// l10n PoC: generate the en-XA pseudo-locale bundle for the core
+// messages bundle. Modules with their own messages.properties wire an
+// analogous task using PseudoLocaleGenerator.generate(...). The pseudo
+// bundle is committed alongside the source bundle for PR 2 visual QA;
+// PR 4 may move it to a build-only artifact so it doesn't ship in
+// release jars.
+tasks.register('generatePseudoLocale', JavaExec) {
+	group = 'i18n'
+	description = 'Regenerate core/messages_en_XA.properties from the source bundle.'
+	dependsOn 'classes'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'generic.i18n.PseudoLocaleGenerator'
+	args = [
+		file('src/main/resources/core/messages.properties').absolutePath,
+		file('src/main/resources/core/messages_en_XA.properties').absolutePath
+	]
+}
+
