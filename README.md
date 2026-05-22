@@ -282,8 +282,8 @@ not a cost.
 
 **Q:** How do you pronounce "Ghidra"?
 
-**A:** I have no idea. My Ghidra book is signed by **Chris Eagle** and I still don't know. (I
-would like Kara Nance's signature too, please.) Pick the pronunciation that sounds least
+**A:** I have no idea. My Ghidra book is signed by **Chris Eagle** and I still don't know.
+(*I would like Kara Nance's signature too, please.*) Pick the pronunciation that sounds least
 embarrassing out loud, commit to it, and never let anyone correct you.
 
 **Q:** *"what the actual fuck am I looking at here?"* — DiscordUser
