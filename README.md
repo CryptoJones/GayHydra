@@ -16,9 +16,9 @@
 
 # GayHydra
 
-*Previously "Ghidra: Top 42 Principal-Architect Recommendations" ("GT42PAR" didn't have the pinache "GayHydra" does! 🏳️‍🌈)
+* Previously "Ghidra: Top 42 Principal-Architect Recommendations" ("GT42PAR" didn't have the pinache "GayHydra" does! 🏳️‍🌈)
 
-*Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
+* Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
 
 Findings drawn from: 1,553 open issues, 335 open PRs, ~15.5k Java files, 187k LOC C++ decompiler, 39 processor specs, and the actual CI workflows.
 
