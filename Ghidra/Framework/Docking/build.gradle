@@ -19,6 +19,7 @@ apply from: "$rootProject.projectDir/gradle/helpProject.gradle"
 apply from: "$rootProject.projectDir/gradle/jacocoProject.gradle"
 apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
 apply from: "$rootProject.projectDir/gradle/javadoc.gradle"
+apply from: "i18n-lint.gradle"
 apply plugin: 'eclipse'
 
 eclipse.project.name = 'Framework Docking'
@@ -34,3 +35,26 @@ dependencies {
 ext.addExports([
 	'java.desktop/sun.awt=ALL-UNNAMED'
 ])
+
+// l10n PoC: regenerate docking/messages_en_XA.properties from the source
+// bundle. Run after editing docking/messages.properties so the pseudo
+// bundle stays in sync. The pseudo bundle is committed (visual-QA
+// convenience); a follow-up should move it to a build-only artifact so
+// release jars don't ship it.
+//
+// evaluationDependsOn(':Gui'): the JavaExec task needs Gui's sourceSets
+// resolved at configuration time, but Gradle does not guarantee Gui has
+// been evaluated yet when Docking's build script runs. Forcing the order
+// is cheaper than wrapping every reference in a provider.
+evaluationDependsOn(':Gui')
+tasks.register('generatePseudoLocale', JavaExec) {
+	group = 'i18n'
+	description = 'Regenerate docking/messages_en_XA.properties from the source bundle.'
+	dependsOn ':Gui:classes'
+	classpath = project(':Gui').sourceSets.main.runtimeClasspath
+	mainClass = 'generic.i18n.PseudoLocaleGenerator'
+	args = [
+		file('src/main/resources/docking/messages.properties').absolutePath,
+		file('src/main/resources/docking/messages_en_XA.properties').absolutePath
+	]
+}

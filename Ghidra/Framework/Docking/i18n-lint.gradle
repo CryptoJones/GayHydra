@@ -1,0 +1,100 @@
+/* ###
+ * IP: GHIDRA
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/*********************************************************************************
+ * i18n-lint.gradle
+ *
+ * Defines the `:Docking:i18nLint` task. Fails the build if any of the four
+ * literal-string patterns the Sprint-10 sweep cleared reappear in
+ * Ghidra/Framework/Docking/src/main/java/, outside the documented allowlist.
+ *
+ * Patterns:
+ *   - new {J,G}{Label,Button,CheckBox,RadioButton,MenuItem,Menu}("Uppercase...")
+ *   - setToolTipText("Uppercase...")
+ *   - setTitle("Uppercase...")
+ *   - super("Uppercase...", ...)         (DialogComponentProvider titles)
+ *
+ * Allowlist (literals on these lines are NOT i18n violations):
+ *   - setAccessibleName(...)  — screen-reader IDs must be locale-stable
+ *   - log/throw strings       — caught by other channels
+ *   - lines containing "i18n-allow"  — escape hatch for genuine non-translatable
+ *
+ * Plays nicely with the upstream-friendly contract: this lint is local to
+ * Docking and does not affect other modules.
+ *********************************************************************************/
+
+tasks.register('i18nLint') {
+	group = 'verification'
+	description = 'Fail the build if Docking re-introduces a hardcoded UI literal.'
+
+	def scanRoot = file('src/main/java/docking')
+	inputs.dir(scanRoot)
+
+	doLast {
+		if (!scanRoot.isDirectory()) {
+			logger.lifecycle("i18nLint: ${scanRoot} missing; nothing to scan.")
+			return
+		}
+
+		// One regex per pattern category. Each must match a line with an
+		// uppercase-or-digit-starting string literal so we don't flag
+		// identifiers or format() arguments.
+		def patterns = [
+			'constructor': ~/new [JG](Label|Button|CheckBox|RadioButton|MenuItem|Menu)\s*\(\s*"[A-Z0-9][^"]+"/,
+			'tooltip'    : ~/setToolTipText\s*\(\s*"[A-Z0-9][^"]+"\s*\)/,
+			'title'      : ~/setTitle\s*\(\s*"[A-Z0-9][^"]+"\s*\)/,
+			'super_title': ~/super\s*\(\s*"[A-Z0-9][^"]+"\s*,/,
+		]
+
+		def hits = []
+		fileTree(scanRoot) {
+			include '**/*.java'
+		}.each { f ->
+			f.eachLine { rawLine, lineNumber ->
+				def line = rawLine
+				// Allowlist: i18n-allow comment escape hatch.
+				if (line.contains('i18n-allow')) {
+					return
+				}
+				// Allowlist: setAccessibleName — see header.
+				if (line.contains('setAccessibleName')) {
+					return
+				}
+				patterns.each { name, pat ->
+					def m = pat.matcher(line)
+					if (m.find()) {
+						hits << "${f.path}:${lineNumber} (${name}): ${line.trim()}"
+					}
+				}
+			}
+		}
+
+		if (!hits.isEmpty()) {
+			def msg = ":Docking:i18nLint — ${hits.size()} hardcoded UI literal(s) found.\n" +
+				"  Rewrite each as I18n.tr(\"docking.<scope>.<element>.<slug>\")\n" +
+				"  and add the key to src/main/resources/docking/messages.properties.\n" +
+				"  See docs/i18n/DEVELOPER-GUIDE.md.\n" +
+				"  Hits:\n    " + hits.take(20).join('\n    ') +
+				(hits.size() > 20 ? "\n    ... and ${hits.size() - 20} more" : '')
+			throw new GradleException(msg)
+		}
+		logger.lifecycle("i18nLint: clean (no hardcoded literals matched).")
+	}
+}
+
+// Run automatically as part of `check` so PRs that touch Docking trip it.
+tasks.named('check').configure {
+	dependsOn 'i18nLint'
+}
