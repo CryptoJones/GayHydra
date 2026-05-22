@@ -14,9 +14,9 @@
 
 > **Canonical home is [Codeberg](https://codeberg.org/CryptoJones/GayHydra).** The repo is also mirrored on GitHub for CI (Actions), Sigstore OIDC signing, and the GHSA security-advisory CNA path. Both forges carry the same commits.
 
-#GayHydra
+# GayHydra
 
-#Previously "Ghidra: Top 42 Principal-Architect Recommendations" but "GT42PAR" didn't have the pinache "GayHydra" does.
+# Previously "Ghidra: Top 42 Principal-Architect Recommendations" but "GT42PAR" didn't have the pinache "GayHydra" does.
 
 *Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
 
