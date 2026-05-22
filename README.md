@@ -288,7 +288,7 @@ embarrassing out loud, commit to it, and never let anyone correct you.
 
 **Q:** *"what the actual fuck am I looking at here?"* — DiscordUser
 
-**A:** I have no idea either. I got stoned and wanted to troll the NSA and this is what I came
+**A:** I have no idea either. I got bored and wanted to troll the NSA and this is what I came
 up with.
 
 — *AKC*
