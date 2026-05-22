@@ -103,6 +103,40 @@ broader allowlist matching the server's documented schema. CVE
 scope: only if the server is reachable beyond the documented user
 set.
 
+#### Class B coverage analysis (#19-3)
+
+On inspection during #19-3, none of the Class B sites
+(`ItemCheckoutStatus`, `Version`, `RepositoryItem`) contain a
+direct `new ObjectInputStream(...)` call site. Each declares a
+custom `readObject(ObjectInputStream)` method that the JVM
+invokes during outer deserialization. There are two outer paths:
+
+- **RMI:** the JVM's RMI machinery constructs the
+  `ObjectInputStream`. The GP-6719 filter at
+  `Framework/FileSystem/data/client.rmi.serial.filter` is
+  installed via the `jdk.serialFilterFactory` system property
+  (`GhidraSerialFilterFactory`) and gates class resolution. The
+  Class B types are explicitly listed in the allowlist via
+  `ghidra.framework.store.*` and `ghidra.framework.remote.*`
+  patterns. Rec 20 verifies the filter is default-on; #19-3 adds
+  a regression test (`allowsClassBSites` in
+  `GhidraSerialFilterDefaultTest`) that fails closed if any of
+  the Class B types is dropped from the allowlist.
+- **Local on-disk checkout file:** `CheckoutManager` persists
+  `ItemCheckoutStatus` to disk as **XML** (via JDOM2), not Java
+  serialization — see
+  `CheckoutManager.readCheckoutsFile()` /
+  `parseCheckoutElement()`. The on-disk path therefore never
+  invokes `ItemCheckoutStatus.readObject(ObjectInputStream)`, so
+  there is no Java-deserialization attack surface on that path.
+
+Because both outer paths are already protected (RMI by GP-6719,
+on-disk by XML-not-Java-serial), no in-class change is required
+for #19-3 beyond the regression test. If a future change adds a
+new on-disk persistence path using `ObjectInputStream`, that
+path must route through `SafeObjectInput.readObject()` with an
+explicit allowlist per the helper's contract.
+
 ### Class C: local-trusted
 
 Sites that only deserialize bytes the user wrote themselves
@@ -163,7 +197,7 @@ allowlist).
 |---|---|---|
 | #19-1 | This audit doc + `SafeObjectInput` helper class | New file |
 | #19-2 | `ItemDeserializer` migrated to `SafeObjectInput.headerStream()` (primitive-only header read with default-reject filter); `CodeUnitInfo` reclassified out of Class A — not currently a deserialization surface (see [§Class A reclassification](#class-a-reclassification-codeunitinfo)) | 1 site migrated, 1 reclassified |
-| #19-3 | Class B sites (RMI + `ItemCheckoutStatus`) | 2 sites |
+| #19-3 | Class B sites verified structurally covered: RMI deserialization gated by GP-6719 filter; local on-disk path uses XML, not Java serial. Adds `allowsClassBSites` regression test to fail closed if the allowlist drops `ItemCheckoutStatus` / `Version` / `RepositoryItem` (see [§Class B coverage analysis](#class-b-coverage-analysis-19-3)) | 0 sites migrated, 3 regression-protected |
 | #19-4 | Class C sites in `Framework/Generic` | 6 sites |
 | #19-5 | Class C sites in `Framework/SoftwareModeling` and `Debug` | 4 sites |
 | #19-6 | Forbid raw `ObjectInputStream` via a Checkstyle rule (or ErrorProne pattern, Rec 26) | enforcement |

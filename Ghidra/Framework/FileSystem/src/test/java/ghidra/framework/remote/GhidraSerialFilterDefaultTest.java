@@ -91,6 +91,38 @@ public class GhidraSerialFilterDefaultTest {
         }
     }
 
+    /**
+     * Rec 19 #19-3 regression: the Class B sites — ItemCheckoutStatus,
+     * Version, RepositoryItem — must remain on the RMI allowlist.
+     *
+     * <p>These classes have no direct {@code new ObjectInputStream(...)}
+     * call site; their custom {@code readObject(ObjectInputStream)}
+     * methods are invoked by the JVM during outer RMI deserialization,
+     * which is gated by the GP-6719 filter loaded from
+     * {@code client.rmi.serial.filter}. If a future filter edit
+     * accidentally drops {@code ghidra.framework.store.*} or
+     * {@code ghidra.framework.remote.*}, this test fails closed so the
+     * regression is caught before it ships.
+     */
+    @Test
+    public void allowsClassBSites() throws Exception {
+        ObjectInputFilter filter =
+            GhidraSerialFilterFactory.getOrInstallInstance().getSerialFilter();
+        assertNotRejected(filter,
+            ghidra.framework.store.ItemCheckoutStatus.class);
+        assertNotRejected(filter, ghidra.framework.store.Version.class);
+        assertNotRejected(filter,
+            ghidra.framework.remote.RepositoryItem.class);
+    }
+
+    private static void assertNotRejected(ObjectInputFilter filter, Class<?> cls) {
+        Status status = filter.checkInput(new TestFilterInfo(cls));
+        if (status == Status.REJECTED) {
+            throw new AssertionError(
+                "Class B allowlist site " + cls.getName() + " was REJECTED");
+        }
+    }
+
     private static final class TestFilterInfo
             implements ObjectInputFilter.FilterInfo {
         private final Class<?> serialClass;
