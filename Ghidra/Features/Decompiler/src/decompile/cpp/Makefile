@@ -191,7 +191,7 @@ endif
 ifeq ($(MAKECMDGOALS),decomp_opt)
 	DEPNAMES=com_opt/depend
 endif
-ifneq (,$(filter $(MAKECMDGOALS),decomp_test_dbg test))
+ifneq (,$(filter $(MAKECMDGOALS),decomp_test_dbg decomp_test_san test test_san))
 	DEPNAMES=test_dbg/depend
 endif
 ifeq ($(MAKECMDGOALS),reallyclean)
