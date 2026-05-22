@@ -46,11 +46,7 @@ FuncProtoTestEnvironment::FuncProtoTestEnvironment(void)
 void FuncProtoTestEnvironment::build(void)
 
 {
-  if (theEnviron.g != (Architecture *)0) {
-    if (glb == (Architecture *)0)
-      throw LowlevelError("Architecture did not load");
-    return;
-  }
+  if (theEnviron.g != (Architecture *)0) return;
   ArchitectureCapability *xmlCapability = ArchitectureCapability::getCapability("xml");
   istringstream s(
       "<binaryimage arch=\"Toy:LE:32:default:default\"></binaryimage>"
@@ -68,10 +64,18 @@ void FuncProtoTestEnvironment::build(void)
   istringstream s3(s2.str());
   doc = store.parseDocument(s3);
   store.registerTag(doc->getRoot());
-  theEnviron.g = xmlCapability->buildArchitecture("", "", &cout);
-  theEnviron.g->init(store);
-
-  glb = theEnviron.g;
+  // If init() throws (e.g. .sla file missing), keep theEnviron.g
+  // null so the early-return guard above doesn't strand glb. See
+  // testcirclerange.cc for the same pattern.
+  Architecture *g = xmlCapability->buildArchitecture("", "", &cout);
+  try {
+    g->init(store);
+  } catch(...) {
+    delete g;
+    throw;
+  }
+  theEnviron.g = g;
+  glb = g;
 }
 
 void FuncProtoTestEnvironment::registerModel1(ostream &s)

@@ -47,10 +47,21 @@ void CircleRangeTestEnvironment::build(void)
   Document *doc = store.parseDocument(s);
   store.registerTag(doc->getRoot());
 
-  theEnviron.g = xmlCapability->buildArchitecture("", "", &cout);
-  theEnviron.g->init(store);
-
-  glb = theEnviron.g;
+  // If init() throws (e.g. .sla file missing for x86:LE:64:default:gcc),
+  // make sure theEnviron.g stays null so the early-return guard above
+  // doesn't strand glb as a null pointer. Without this, the first
+  // pullback test fails cleanly with a LowlevelError, but every
+  // following test SEGVs on `glb->inst[opcode]` because build()
+  // returned early without ever assigning glb.
+  Architecture *g = xmlCapability->buildArchitecture("", "", &cout);
+  try {
+    g->init(store);
+  } catch(...) {
+    delete g;
+    throw;
+  }
+  theEnviron.g = g;
+  glb = g;
 }
 
 CircleRangeTestEnvironment::~CircleRangeTestEnvironment(void)

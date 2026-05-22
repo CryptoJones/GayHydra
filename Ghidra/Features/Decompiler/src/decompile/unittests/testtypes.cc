@@ -53,10 +53,18 @@ void TypeTestEnvironment::build(void)
   Document *doc = store.parseDocument(s);
   store.registerTag(doc->getRoot());
 
-  theEnviron.g = xmlCapability->buildArchitecture("", "", &cout);
-  theEnviron.g->init(store);
-
-  glb = theEnviron.g;
+  // If init() throws (e.g. .sla file missing), keep theEnviron.g
+  // null so the early-return guard above doesn't strand glb. See
+  // testcirclerange.cc for the same pattern.
+  Architecture *g = xmlCapability->buildArchitecture("", "", &cout);
+  try {
+    g->init(store);
+  } catch(...) {
+    delete g;
+    throw;
+  }
+  theEnviron.g = g;
+  glb = g;
   types = glb->types;
   strategy = glb->print->getCastStrategy();
   Address addr(glb->getDefaultCodeSpace(),0x1000);
