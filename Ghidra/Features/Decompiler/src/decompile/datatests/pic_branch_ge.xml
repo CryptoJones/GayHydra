@@ -13,18 +13,6 @@
 <com>print C</com>
 <com>quit</com>
 </script>
-<!--
-  Both tests below disabled in Sprint 9. The PIC-24F decompiler used to
-  emit the simplified `iVar1 < 7;` form after GE-recognition; the
-  current decompiler emits the longer
-    bVar2 = -1 < iVar1 - 7,
-    (bVar2 || !SBORROW2(iVar1, 7)) && (!bVar2 || SBORROW2(iVar1, 7))
-  form. That is a real PIC-greater-than-or-equal recognition
-  regression, not stringmatch-regex drift. Re-enable these once the
-  GE-recognition path on PIC-24F is fixed.
-  Tracking: https://github.com/CryptoJones/GayHydra/issues/259
--->
-<!-- <stringmatch name="PIC greater-or-equal recognized #1" min="1" max="1">&lt; 7;</stringmatch> -->
-<!-- <stringmatch name="PiC greater-or-equal recognized #2" min="0" max="0">SBORROW</stringmatch> -->
-<stringmatch name="PIC greater-or-equal disabled #1" min="0" max="0">__sprint9_pic_disabled_placeholder__</stringmatch>
+<stringmatch name="PIC greater-or-equal recognized #1" min="1" max="1">&lt; 7;</stringmatch>
+<stringmatch name="PiC greater-or-equal recognized #2" min="0" max="0">SBORROW</stringmatch>
 </decompilertest>

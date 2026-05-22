@@ -10,8 +10,8 @@ name: Decompiler C++ Unit Tests
 # so the drift went uncaught). Sprint 9's #215 audit categorized all
 # 189 as cosmetic and cleared them in PRs #250–#254 + #256 with
 # regex updates that match both old and new decompiler output.
-# Two `pic_branch_ge.xml` tests are disabled pending a real
-# GE-recognition regression — see issue #259.
+# `pic_branch_ge.xml` re-enabled in Sprint 10 after porting the
+# PIC24.sinc half of upstream PR #8778 — see issue #259.
 #
 # Coordinates with Rec 15 (ASan/UBSan CI) — that workflow runs the
 # same test binary with sanitizers; this workflow runs it with the
