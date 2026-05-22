@@ -31,6 +31,7 @@ import javax.swing.tree.TreePath;
 import docking.widgets.tree.*;
 import ghidra.util.Msg;
 import ghidra.util.SystemUtilities;
+import generic.i18n.I18n;
 
 public class NewTestApp extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -49,7 +50,7 @@ public class NewTestApp extends JPanel {
 		final GTree tree = new GTree(root);
 		tree.setDragNDropHandler(new DragNDropHandler());
 		container.add(tree, BorderLayout.CENTER);
-		JButton button = new JButton("Push Me");
+		JButton button = new JButton(I18n.tr("docking.new_test_app.label.push_me"));
 		container.add(button, BorderLayout.SOUTH);
 		frame.setSize(400, 600);
 		frame.setVisible(true);

@@ -36,6 +36,7 @@ import ghidra.util.*;
 import ghidra.util.exception.MultipleCauses;
 import ghidra.util.html.HTMLElement;
 import util.CollectionUtils;
+import generic.i18n.I18n;
 
 public class ErrLogExpandableDialog extends AbstractErrDialog {
 	public static Icon IMG_REPORT = new GIcon("icon.dialog.error.expandable.report");
@@ -70,7 +71,7 @@ public class ErrLogExpandableDialog extends AbstractErrDialog {
 		errors.add(throwable);
 
 		popup = new JPopupMenu();
-		JMenuItem menuCopy = new JMenuItem("Copy");
+		JMenuItem menuCopy = new JMenuItem(I18n.tr("docking.err_log_expandable_dialog.label.copy"));
 		menuCopy.setActionCommand((String) TransferHandler.getCopyAction().getValue(Action.NAME));
 		menuCopy.addActionListener(new TransferActionListener());
 		menuCopy.setAccelerator(

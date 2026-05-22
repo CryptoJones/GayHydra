@@ -16,11 +16,12 @@
 package docking.action;
 
 import javax.swing.KeyStroke;
+import generic.i18n.I18n;
 
 public class HelpInfoAction extends AbstractHelpAction {
 
 	public HelpInfoAction(KeyStroke keybinding) {
-		super("Help Info", keybinding, true);
+		super(I18n.tr("docking.help_info_action.title.help_info"), keybinding, true);
 	}
 
 	@Override

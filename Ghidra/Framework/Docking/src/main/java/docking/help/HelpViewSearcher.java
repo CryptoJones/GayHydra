@@ -39,6 +39,7 @@ import generic.util.WindowUtilities;
 import ghidra.util.exception.AssertException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.worker.Worker;
+import generic.i18n.I18n;
 
 /**
  * Enables the Find Dialog for searching through the current page of a help document.
@@ -134,7 +135,7 @@ class HelpViewSearcher {
 	}
 
 	private void showPopupMenu(MouseEvent e) {
-		JMenuItem menuItem = new JMenuItem("Find on Page...");
+		JMenuItem menuItem = new JMenuItem(I18n.tr("docking.help_view_searcher.label.find_on_page"));
 		menuItem.setAction(new FindDialogAction());
 		menuItem.setText("Find on Page...");
 
@@ -335,7 +336,7 @@ class HelpViewSearcher {
 //		private URL pageURL;
 //
 //		IndexerSearchTask(String text, URL pageURL) {
-//			super("Help Search Task", true, false, true, true);
+//			super(I18n.tr("docking.help_view_searcher.title.help_search_task"), true, false, true, true);
 //			this.text = text;
 //			this.pageURL = pageURL;
 //		}

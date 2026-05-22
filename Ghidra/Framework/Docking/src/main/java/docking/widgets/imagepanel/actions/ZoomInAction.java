@@ -22,6 +22,7 @@ import docking.action.MenuData;
 import docking.action.ToolBarData;
 import docking.widgets.imagepanel.ImagePanel;
 import generic.theme.GIcon;
+import generic.i18n.I18n;
 
 /**
  * An action to zoom the image on a NavigableImagePanel.
@@ -31,7 +32,7 @@ public class ZoomInAction extends ImagePanelDockingAction {
 	private static final Icon ICON = new GIcon("icon.widget.imagepanel.zoom.in");
 
 	public ZoomInAction(String owner, ImagePanel imagePanel) {
-		super("Zoom In", owner, imagePanel);
+		super(I18n.tr("docking.zoom_in_action.title.zoom_in"), owner, imagePanel);
 
 		setPopupMenuData(new MenuData(new String[] { "Zoom in" }, "view"));
 

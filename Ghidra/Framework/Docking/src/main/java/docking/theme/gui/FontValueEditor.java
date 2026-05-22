@@ -20,6 +20,7 @@ import java.beans.PropertyChangeListener;
 
 import docking.options.editor.FontPropertyEditor;
 import generic.theme.*;
+import generic.i18n.I18n;
 
 /**
  *  Editor for Theme fonts
@@ -31,7 +32,7 @@ public class FontValueEditor extends ThemeValueEditor<Font> {
 	 * @param listener the {@link PropertyChangeListener} to be notified when changes are made
 	 */
 	public FontValueEditor(PropertyChangeListener listener) {
-		super("Font", listener, new FontPropertyEditor());
+		super(I18n.tr("docking.font_value_editor.title.font"), listener, new FontPropertyEditor());
 	}
 
 	@Override

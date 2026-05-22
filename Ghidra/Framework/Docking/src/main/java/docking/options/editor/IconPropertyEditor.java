@@ -40,6 +40,7 @@ import ghidra.util.filechooser.ExtensionFileFilter;
 import resources.ResourceManager;
 import resources.icons.ScaledImageIcon;
 import resources.icons.UrlImageIcon;
+import generic.i18n.I18n;
 
 public class IconPropertyEditor extends PropertyEditorSupport {
 	private IconChooserPanel iconChooserPanel;
@@ -172,7 +173,7 @@ public class IconPropertyEditor extends PropertyEditorSupport {
 
 		private void browse() {
 			GhidraFileChooser chooser = new GhidraFileChooser(iconChooserPanel);
-			chooser.setTitle("Import Icon");
+			chooser.setTitle(I18n.tr("docking.icon_property_editor.title.import_icon"));
 			chooser.setApproveButtonToolTipText("Import Icon");
 			chooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
 			chooser.setSelectedFileFilter(

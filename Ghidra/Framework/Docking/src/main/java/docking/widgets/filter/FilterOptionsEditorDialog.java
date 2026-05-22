@@ -33,6 +33,7 @@ import docking.widgets.label.GLabel;
 import docking.widgets.list.GComboBoxCellRenderer;
 import ghidra.util.HelpLocation;
 import ghidra.util.layout.*;
+import generic.i18n.I18n;
 
 /**
  * Dialog that allows the user to select options related to table filtering. It consists
@@ -152,10 +153,10 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			setLayout(new PairLayout(2, 2));
 			setBorder(BorderFactory.createTitledBorder("Text Filter Strategy"));
 			ButtonGroup buttonGroup = new ButtonGroup();
-			GRadioButton containsButton = new GRadioButton("Contains");
-			GRadioButton startsWithButton = new GRadioButton("Starts With");
-			GRadioButton matchesExactlyButton = new GRadioButton("Matches Exactly");
-			GRadioButton regularExpressionButton = new GRadioButton("Regular Expression");
+			GRadioButton containsButton = new GRadioButton(I18n.tr("docking.filter_options_editor_dialog.label.contains"));
+			GRadioButton startsWithButton = new GRadioButton(I18n.tr("docking.filter_options_editor_dialog.label.starts_with"));
+			GRadioButton matchesExactlyButton = new GRadioButton(I18n.tr("docking.filter_options_editor_dialog.label.matches_exactly"));
+			GRadioButton regularExpressionButton = new GRadioButton(I18n.tr("docking.filter_options_editor_dialog.label.regular_expression"));
 
 			startsWithButton.setToolTipText(
 				"The filter will match all entries that start with the entered filter text.");
@@ -259,7 +260,7 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			this.setLayout(new HorizontalLayout(6));
 			setBorder(BorderFactory.createEmptyBorder(10, 4, 0, 4));
 
-			caseSensitiveCheckbox = new GCheckBox("Case Sensitive");
+			caseSensitiveCheckbox = new GCheckBox(I18n.tr("docking.filter_options_editor_dialog.label.case_sensitive"));
 			caseSensitiveCheckbox.setToolTipText(
 				"Toggles whether the case of the filter text matters in the match.  NOTE: does " +
 					"not apply to regular expressons.");
@@ -267,9 +268,9 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 				caseSensitiveCheckbox.setSelected(true);
 			}
 
-			globbingCheckbox = new GCheckBox("Allow Globbing");
+			globbingCheckbox = new GCheckBox(I18n.tr("docking.filter_options_editor_dialog.label.allow_globbing"));
 			globbingCheckbox
-					.setToolTipText("Toggles whether globbing chars (?*) are literal or wildcards");
+					.setToolTipText(I18n.tr("docking.filter_options_editor_dialog.tooltip.toggles_whether_globbing_chars_are"));
 			if (initialFilterOptions.isGlobbingAllowed()) {
 				globbingCheckbox.setSelected(true);
 			}
@@ -303,7 +304,7 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			this.setLayout(new HorizontalLayout(6));
 			setBorder(BorderFactory.createEmptyBorder(10, 4, 5, 4));
 
-			invertCheckbox = new GCheckBox("Invert Filter");
+			invertCheckbox = new GCheckBox(I18n.tr("docking.filter_options_editor_dialog.label.invert_filter"));
 			invertCheckbox.setToolTipText("<html>" +
 				"Inverts the match.  For example, <i>contains</i> becomes <i>does not contain</i>.");
 			if (initialFilterOptions.isInverted()) {
@@ -330,7 +331,7 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			this.setLayout(new HorizontalLayout(6));
 			setBorder(BorderFactory.createEmptyBorder(5, 4, 10, 4));
 
-			pathCheckbox = new GCheckBox("Use Path");
+			pathCheckbox = new GCheckBox(I18n.tr("docking.filter_options_editor_dialog.label.use_path"));
 			pathCheckbox.setToolTipText(
 				"<html>" + "Allows filtering on node paths, for example '*/folder/node' or " +
 					"'*folder1*folder2*node'");
@@ -360,7 +361,7 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 
 		public MultiTermPanel() {
 
-			super(new GCheckBox("Enable Multi-Term Filtering", true),
+			super(new GCheckBox(I18n.tr("docking.filter_options_editor_dialog.label.enable_multi_term_filtering"), true),
 				BorderFactory.createEtchedBorder());
 
 			enableCheckbox = (JCheckBox) getTitleComponent();
@@ -455,9 +456,9 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			optionsPanel.setLayout(new PairLayout());
 
 			// Delimiter Row
-			JLabel delimiterCharacterFieldName = new GLabel("Delimiter:");
+			JLabel delimiterCharacterFieldName = new GLabel(I18n.tr("docking.filter_options_editor_dialog.label.delimiter"));
 			delimiterCharacterFieldName
-					.setToolTipText("Set the character used to separate filter terms.");
+					.setToolTipText(I18n.tr("docking.filter_options_editor_dialog.tooltip.set_the_character_used_to_separate"));
 
 			delimiterCharacterCB = new GComboBox<>(FilterOptions.VALID_MULTITERM_DELIMITERS_ARRAY);
 			delimiterCharacterCB.setRenderer(new DelimiterListCellRenderer());
@@ -470,7 +471,7 @@ public class FilterOptionsEditorDialog extends DialogComponentProvider {
 			optionsPanel.add(fixedSizePanel);
 
 			// Mode Row
-			JLabel label = new GLabel("Evaluation Mode:");
+			JLabel label = new GLabel(I18n.tr("docking.filter_options_editor_dialog.label.evaluation_mode"));
 
 			JPanel buttonGroupPanel = new JPanel();
 			buttonGroupPanel.setLayout(new FlowLayout(FlowLayout.LEFT));

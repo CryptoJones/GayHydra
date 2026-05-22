@@ -23,6 +23,7 @@ import docking.widgets.EmptyBorderButton;
 import docking.widgets.label.GLabel;
 import generic.theme.GIcon;
 import gui.event.MouseBinding;
+import generic.i18n.I18n;
 
 /**
  * A panel that displays inputs for key strokes and mouse bindings.
@@ -57,11 +58,11 @@ public class ActionBindingPanel extends JPanel {
 		clearMouseButton.setName("Clear Mouse Binding");
 		clearMouseButton.addActionListener(e -> mouseEntryField.clearMouseBinding());
 
-		GLabel keyBindingLabel = new GLabel("Key Binding: ");
+		GLabel keyBindingLabel = new GLabel(I18n.tr("docking.action_binding_panel.label.key_binding"));
 		JTextField tf = keyEntryPanel.getTextField();
 		keyBindingLabel.setLabelFor(tf);
 
-		GLabel mouseBindingLabel = new GLabel("Mouse Binding: ");
+		GLabel mouseBindingLabel = new GLabel(I18n.tr("docking.action_binding_panel.label.mouse_binding"));
 		mouseBindingLabel.setLabelFor(mouseBindingLabel);
 
 		add(keyBindingLabel);

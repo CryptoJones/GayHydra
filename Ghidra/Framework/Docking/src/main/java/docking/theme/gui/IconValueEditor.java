@@ -21,6 +21,7 @@ import javax.swing.Icon;
 
 import docking.options.editor.IconPropertyEditor;
 import generic.theme.*;
+import generic.i18n.I18n;
 
 /**
  *  Editor for Theme fonts
@@ -32,7 +33,7 @@ public class IconValueEditor extends ThemeValueEditor<Icon> {
 	 * @param listener the {@link PropertyChangeListener} to be notified when changes are made
 	 */
 	public IconValueEditor(PropertyChangeListener listener) {
-		super("Icon", listener, new IconPropertyEditor());
+		super(I18n.tr("docking.icon_value_editor.title.icon"), listener, new IconPropertyEditor());
 	}
 
 	@Override

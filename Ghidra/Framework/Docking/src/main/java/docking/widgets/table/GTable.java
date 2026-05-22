@@ -48,6 +48,7 @@ import ghidra.framework.preferences.Preferences;
 import ghidra.util.*;
 import ghidra.util.exception.AssertException;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * A sub-class of <code>JTable</code> that provides navigation and auto-lookup. By default, both of
@@ -1188,7 +1189,7 @@ public class GTable extends JTable {
 	}
 
 	private JMenuItem createAddRemoveColumnsMenuItem(HelpLocation helpLocation) {
-		JMenuItem item = new JMenuItem("Add/Remove Columns...");
+		JMenuItem item = new JMenuItem(I18n.tr("docking.gtable.label.add_remove_columns"));
 		final TableModel model = getModel();
 		item.addActionListener(e -> {
 			SelectColumnsDialog dialog =
@@ -1200,7 +1201,7 @@ public class GTable extends JTable {
 	}
 
 	private JMenuItem createColumnSettingsMenuItem(HelpLocation helpLocation) {
-		JMenuItem item = new JMenuItem("Column Settings...");
+		JMenuItem item = new JMenuItem(I18n.tr("docking.gtable.label.column_settings"));
 		item.addActionListener(e -> {
 			ConfigurableColumnTableModel configurableModel = getConfigurableColumnTableModel();
 			if (configurableModel == null) {

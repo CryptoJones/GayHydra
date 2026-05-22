@@ -24,6 +24,7 @@ import docking.actions.dialog.ActionDisplayLevel;
 import docking.tool.ToolConstants;
 import generic.util.action.SystemKeyBindings;
 import ghidra.util.HelpLocation;
+import generic.i18n.I18n;
 
 /**
  * Action for displaying the {@link ActionChooserDialog}. This action determines the focused 
@@ -33,7 +34,7 @@ import ghidra.util.HelpLocation;
 public class ShowActionChooserDialogAction extends DockingAction {
 
 	public ShowActionChooserDialogAction() {
-		super("Show Action Chooser Dialog", ToolConstants.TOOL_OWNER);
+		super(I18n.tr("docking.show_action_chooser_dialog_action.title.show_action_chooser_dialog"), ToolConstants.TOOL_OWNER);
 		createSystemKeyBinding(SystemKeyBindings.ACTION_CHOOSER_KEY);
 		setHelpLocation(new HelpLocation("KeyboardNavigation", "ActionChooserDialog"));
 	}

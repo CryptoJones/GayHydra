@@ -28,6 +28,7 @@ import docking.widgets.label.GDHtmlLabel;
 import generic.theme.GThemeDefaults.Colors.Palette;
 import ghidra.util.ColorUtils;
 import ghidra.util.WebColors;
+import generic.i18n.I18n;
 
 /**
  * Color editor that is a bit unusual in that its custom component is a button that when pushed,
@@ -121,7 +122,7 @@ public class ColorEditor extends PropertyEditorSupport {
 
 	private class EditorProvider extends DialogComponentProvider {
 		EditorProvider(JPanel contentPanel) {
-			super("Color Editor", true);
+			super(I18n.tr("docking.color_editor.title.color_editor"), true);
 
 			addWorkPanel(contentPanel);
 			addOKButton();

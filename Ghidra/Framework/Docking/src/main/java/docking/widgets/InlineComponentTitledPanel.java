@@ -21,6 +21,7 @@ import java.util.Objects;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
+import generic.i18n.I18n;
 
 /**
  * A panel with a component-containing border. Use a checkbox as the component, for example, 
@@ -35,13 +36,13 @@ import javax.swing.border.TitledBorder;
  *  public class MyPanel extends InlineComponentTitledPanel {
  *    private JCheckBox enableCheckbox = null;
  *    public MyPanel() {
- *      super(new JCheckBox("Enable"), BorderFactory.createEtchedBorder());
+ *      super(new JCheckBox(I18n.tr("docking.inline_component_titled_panel.label.enable")), BorderFactory.createEtchedBorder());
  *      enableCheckbox = (JCheckBox) getTitleComponent();
  *      enableCheckbox.addActionListener(...);
  *      
  *      JPanel content = getContentPane();
  *      content.setLayout(new BorderLayout());
- *      add(new JButton("Click me"));
+ *      add(new JButton(I18n.tr("docking.inline_component_titled_panel.label.click_me")));
  *      ...
  *    }
  *    ...

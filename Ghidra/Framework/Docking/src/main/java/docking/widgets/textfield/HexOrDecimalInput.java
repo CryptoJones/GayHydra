@@ -25,6 +25,7 @@ import javax.swing.text.*;
 import docking.util.GraphicsUtils;
 import generic.theme.GThemeDefaults.Colors.Messages;
 import generic.theme.Gui;
+import generic.i18n.I18n;
 
 public class HexOrDecimalInput extends JTextField {
 	private static final String FONT_ID = "font.input.hint";
@@ -49,7 +50,7 @@ public class HexOrDecimalInput extends JTextField {
 		currentValue = initialValue;
 		setDocument(new MyDocument());
 		updateText();
-		setToolTipText("Press 'M' to toggle Hex or Decimal Mode");
+		setToolTipText(I18n.tr("docking.hex_or_decimal_input.tooltip.press_m_to_toggle_hex_or_decimal_mode"));
 		addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {

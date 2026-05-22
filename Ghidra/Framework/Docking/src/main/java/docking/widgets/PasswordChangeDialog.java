@@ -27,6 +27,7 @@ import docking.widgets.label.GLabel;
 import ghidra.util.MessageType;
 import ghidra.util.Msg;
 import ghidra.util.layout.PairLayout;
+import generic.i18n.I18n;
 
 public class PasswordChangeDialog extends DialogComponentProvider {
 
@@ -50,20 +51,20 @@ public class PasswordChangeDialog extends DialogComponentProvider {
 		}
 
 		if (userID != null) {
-			wp.add(new GLabel("User ID:"));
+			wp.add(new GLabel(I18n.tr("docking.password_change_dialog.label.user_id")));
 			JLabel nameLabel = new GLabel(userID);
 			nameLabel.setName("NAME-COMPONENT");
 			nameLabel.getAccessibleContext().setAccessibleName("Name");
 			wp.add(nameLabel);
 		}
 
-		wp.add(new GLabel("New Password:"));
+		wp.add(new GLabel(I18n.tr("docking.password_change_dialog.label.new_password")));
 		passwordField1 = new JPasswordField(16);
 		passwordField1.setName("PASSWORD-ENTRY1-COMPONENT");
 		passwordField1.getAccessibleContext().setAccessibleName("Password Entry 1");
 		wp.add(passwordField1);
 
-		wp.add(new GLabel("Repeat Password:"));
+		wp.add(new GLabel(I18n.tr("docking.password_change_dialog.label.repeat_password")));
 		passwordField2 = new JPasswordField(16);
 		passwordField2.setName("PASSWORD-ENTRY2-COMPONENT");
 		passwordField2.getAccessibleContext().setAccessibleName("Password Entry 2");

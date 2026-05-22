@@ -32,6 +32,7 @@ import docking.widgets.label.GLabel;
 import docking.widgets.search.FindDialogSearcher;
 import docking.widgets.search.SearchResults;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * A dialog used to perform text searches on a text display.
@@ -78,20 +79,20 @@ public class FindDialog extends ReusableDialogComponentProvider {
 	}
 
 	protected void buildFindButtons() {
-		nextButton = new JButton("Next");
+		nextButton = new JButton(I18n.tr("docking.find_dialog.label.next"));
 		nextButton.setMnemonic('N');
 		nextButton.getAccessibleContext().setAccessibleName("Next");
 		nextButton.addActionListener(ev -> doSearch(true));
 		addButton(nextButton);
 		setDefaultButton(nextButton);
 
-		previousButton = new JButton("Previous");
+		previousButton = new JButton(I18n.tr("docking.find_dialog.label.previous"));
 		previousButton.setMnemonic('P');
 		previousButton.getAccessibleContext().setAccessibleName("Previous");
 		previousButton.addActionListener(ev -> doSearch(false));
 		addButton(previousButton);
 
-		findAllButton = new JButton("Find All");
+		findAllButton = new JButton(I18n.tr("docking.find_dialog.label.find_all"));
 		findAllButton.setMnemonic('A');
 		findAllButton.getAccessibleContext().setAccessibleName("Find All");
 		findAllButton.addActionListener(ev -> doSearchAll());
@@ -103,9 +104,9 @@ public class FindDialog extends ReusableDialogComponentProvider {
 	private JPanel buildMainPanel() {
 
 		ButtonGroup formatGroup = new ButtonGroup();
-		stringRadioButton = new GRadioButton("String", true);
+		stringRadioButton = new GRadioButton(I18n.tr("docking.find_dialog.label.string"), true);
 		stringRadioButton.getAccessibleContext().setAccessibleName("String");
-		regexRadioButton = new GRadioButton("Regular Expression", false);
+		regexRadioButton = new GRadioButton(I18n.tr("docking.find_dialog.label.regular_expression"), false);
 		regexRadioButton.getAccessibleContext().setAccessibleName("Regular Expresion");
 		formatGroup.add(stringRadioButton);
 		formatGroup.add(regexRadioButton);
@@ -137,7 +138,7 @@ public class FindDialog extends ReusableDialogComponentProvider {
 			}
 		});
 
-		JLabel findLabel = new GLabel("Find: ");
+		JLabel findLabel = new GLabel(I18n.tr("docking.find_dialog.label.find"));
 		findLabel.getAccessibleContext().setAccessibleName("Find");
 		// associate this label with a mnemonic key that activates the text field
 		findLabel.setDisplayedMnemonic(KeyEvent.VK_N);

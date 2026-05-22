@@ -18,6 +18,7 @@ package docking.widgets.table.constraint;
 import java.time.LocalDate;
 
 import docking.widgets.table.constraint.provider.EditorProvider;
+import generic.i18n.I18n;
 
 /**
  * Column Constraint where acceptable column values are not within some range defined by a min value and
@@ -36,7 +37,7 @@ public class NotInDateRangeColumnConstraint extends RangeColumnConstraint<LocalD
 	 */
 	public NotInDateRangeColumnConstraint(LocalDate minValue, LocalDate maxValue,
 			EditorProvider<LocalDate> editorProvider) {
-		super("Not Between Dates", minValue, maxValue, editorProvider, "date");
+		super(I18n.tr("docking.not_in_date_range_column_constraint.title.not_between_dates"), minValue, maxValue, editorProvider, "date");
 	}
 
 	@Override

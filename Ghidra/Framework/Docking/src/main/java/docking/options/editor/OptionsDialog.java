@@ -23,6 +23,7 @@ import javax.swing.tree.TreePath;
 import docking.ReusableDialogComponentProvider;
 import docking.widgets.OptionDialog;
 import ghidra.framework.options.Options;
+import generic.i18n.I18n;
 
 /**
  * Dialog for editing options within a tool.
@@ -48,7 +49,7 @@ public class OptionsDialog extends ReusableDialogComponentProvider {
 
 	public OptionsDialog(String title, String rootNodeName, Options[] options,
 			OptionsEditorListener listener, boolean showRestoreDefaultsButton) {
-		super("Options Dialog", true, false, true, false);
+		super(I18n.tr("docking.options_dialog.title.options_dialog"), true, false, true, false);
 		this.listener = listener;
 		panel = new OptionsPanel(rootNodeName, options, showRestoreDefaultsButton,
 			new OptionsPropertyChangeListener());

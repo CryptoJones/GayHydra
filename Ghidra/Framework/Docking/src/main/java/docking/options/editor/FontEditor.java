@@ -23,6 +23,7 @@ import javax.swing.*;
 
 import docking.DialogComponentProvider;
 import docking.DockingWindowManager;
+import generic.i18n.I18n;
 
 /**
  * Font property editor that is a bit unusual in that its custom component is a button that when 
@@ -86,7 +87,7 @@ public class FontEditor extends PropertyEditorSupport {
 		private Font originalFont = (Font) getValue();
 
 		EditorDialogProvider() {
-			super("Font Editor", true);
+			super(I18n.tr("docking.font_editor.title.font_editor"), true);
 			addWorkPanel(buildWorkPanel());
 			addOKButton();
 			addCancelButton();

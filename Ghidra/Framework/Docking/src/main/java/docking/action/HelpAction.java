@@ -16,11 +16,12 @@
 package docking.action;
 
 import javax.swing.KeyStroke;
+import generic.i18n.I18n;
 
 public class HelpAction extends AbstractHelpAction {
 
 	public HelpAction(KeyStroke keyStroke, boolean isPrimary) {
-		super("Context Help", keyStroke, isPrimary);
+		super(I18n.tr("docking.help_action.title.context_help"), keyStroke, isPrimary);
 	}
 
 	@Override

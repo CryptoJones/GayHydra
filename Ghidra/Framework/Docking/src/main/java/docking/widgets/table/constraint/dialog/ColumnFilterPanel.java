@@ -31,6 +31,7 @@ import ghidra.util.Swing;
 import ghidra.util.layout.VerticalLayout;
 import resources.Icons;
 import resources.ResourceManager;
+import generic.i18n.I18n;
 
 /**
  * Panel for displaying a single column filter entry.  This consists of multiple ConstraintFilterPanels
@@ -61,7 +62,7 @@ class ColumnFilterPanel extends JPanel {
 		icon = ResourceManager.getScaledIcon(icon, BUTTON_ICON_SIZE, BUTTON_ICON_SIZE);
 
 		JButton button = new EmptyBorderButton(icon);
-		button.setToolTipText("Add a column condition");
+		button.setToolTipText(I18n.tr("docking.column_filter_panel.tooltip.add_a_column_condition"));
 		button.addActionListener(e -> filterEntry.addFilterCondition());
 		panel.add(button, BorderLayout.NORTH);
 

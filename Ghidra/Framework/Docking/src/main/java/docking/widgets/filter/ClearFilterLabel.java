@@ -31,6 +31,7 @@ import docking.util.AnimationUtils;
 import docking.widgets.label.GIconLabel;
 import generic.theme.GIcon;
 import ghidra.util.SystemUtilities;
+import generic.i18n.I18n;
 
 /**
  * A label that displays an icon that, when clicked, will clear the contents of the 
@@ -104,7 +105,7 @@ public class ClearFilterLabel extends GIconLabel {
 		});
 
 		setIcon(ICON);
-		setToolTipText("Clear filter");
+		setToolTipText(I18n.tr("docking.clear_filter_label.tooltip.clear_filter"));
 	}
 
 	private void clearFilter() {

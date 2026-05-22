@@ -31,6 +31,7 @@ import docking.widgets.table.columnfilter.ColumnBasedTableFilter;
 import docking.widgets.table.columnfilter.ColumnFilterSaveManager;
 import ghidra.util.HTMLUtilities;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * Dialog for loading saved ColumnFilters.
@@ -138,7 +139,7 @@ public class ColumnFilterArchiveDialog<R> extends DialogComponentProvider {
 	private JComponent buildActionPanel() {
 		Icon icon = Icons.DELETE_ICON;
 
-		removeSelectedFiltersButton = new JButton("Remove", icon);
+		removeSelectedFiltersButton = new JButton(I18n.tr("docking.column_filter_archive_dialog.label.remove"), icon);
 		removeSelectedFiltersButton.setEnabled(false);
 		removeSelectedFiltersButton.addActionListener(e -> removeSelectedFilter());
 		removeSelectedFiltersButton.getAccessibleContext()

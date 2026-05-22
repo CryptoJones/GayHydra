@@ -32,6 +32,7 @@ import ghidra.util.HelpLocation;
 import help.Help;
 import help.HelpService;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * A dialog for displaying a series of wizard panels used to collect data from the user before
@@ -230,7 +231,7 @@ public class WizardDialog extends DialogComponentProvider {
 				: new GDLabel(INIT_TITLE, wizardIcon, SwingConstants.TRAILING));
 
 		EmptyBorderButton helpButton = new EmptyBorderButton(Icons.INFO_ICON);
-		helpButton.setToolTipText("Help (F1)");
+		helpButton.setToolTipText(I18n.tr("docking.wizard_dialog.tooltip.help_f1"));
 		helpButton.addActionListener(
 			e -> DockingWindowManager.getHelpService().showHelp(rootPanel, false, rootPanel));
 

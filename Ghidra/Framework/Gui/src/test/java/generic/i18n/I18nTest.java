@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MessagesTest {
+public class I18nTest {
 
 	private Locale originalLocale;
 
@@ -31,34 +31,34 @@ public class MessagesTest {
 	public void setUp() {
 		originalLocale = Locale.getDefault();
 		Locale.setDefault(Locale.ROOT);
-		Messages.clearCacheForTesting();
+		I18n.clearCacheForTesting();
 	}
 
 	@After
 	public void tearDown() {
 		Locale.setDefault(originalLocale);
-		Messages.clearCacheForTesting();
+		I18n.clearCacheForTesting();
 	}
 
 	@Test
 	public void plainLookup_resolvesFromModuleBundle() {
-		assertEquals("Hello", Messages.tr("testmod.plain"));
+		assertEquals("Hello", I18n.tr("testmod.plain"));
 	}
 
 	@Test
 	public void messageFormatLookup_substitutesSingleArgument() {
-		assertEquals("Hello, Aaron!", Messages.tr("testmod.with.args", "Aaron"));
+		assertEquals("Hello, Aaron!", I18n.tr("testmod.with.args", "Aaron"));
 	}
 
 	@Test
 	public void messageFormatLookup_substitutesTwoArguments() {
-		assertEquals("a of b", Messages.tr("testmod.two.args", "a", "b"));
+		assertEquals("a of b", I18n.tr("testmod.two.args", "a", "b"));
 	}
 
 	@Test
 	public void missingKey_returnsPlaceholder_neverThrows() {
-		assertEquals("???testmod.nope???", Messages.tr("testmod.nope"));
-		assertEquals("???testmod.nope???", Messages.tr("testmod.nope", "ignored"));
+		assertEquals("???testmod.nope???", I18n.tr("testmod.nope"));
+		assertEquals("???testmod.nope???", I18n.tr("testmod.nope", "ignored"));
 	}
 
 	@Test
@@ -67,20 +67,20 @@ public class MessagesTest {
 		// It is NOT defined in testmod/messages.properties.  Looking it up
 		// with the "core." module prefix should hit the core bundle directly;
 		// this confirms the core bundle is reachable from tests.
-		assertEquals("OK", Messages.tr("core.button.ok"));
+		assertEquals("OK", I18n.tr("core.button.ok"));
 	}
 
 	@Test
 	public void localeSwitch_picksUpPseudoLocale() {
 		Locale.setDefault(Locale.forLanguageTag("en-XA"));
-		Messages.clearCacheForTesting();
-		assertEquals("[!! Hellö !!]", Messages.tr("testmod.plain"));
+		I18n.clearCacheForTesting();
+		assertEquals("[!! Hellö !!]", I18n.tr("testmod.plain"));
 	}
 
 	@Test
 	public void bundle_returnsCachedResourceBundle() {
-		assertNotNull(Messages.bundle("testmod"));
+		assertNotNull(I18n.bundle("testmod"));
 		// Repeated calls return the same instance via the cache.
-		assertSame(Messages.bundle("testmod"), Messages.bundle("testmod"));
+		assertSame(I18n.bundle("testmod"), I18n.bundle("testmod"));
 	}
 }

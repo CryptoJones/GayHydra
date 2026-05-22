@@ -26,6 +26,7 @@ import docking.widgets.combobox.GComboBox;
 import docking.widgets.list.GComboBoxCellRenderer;
 import docking.widgets.table.constraint.ColumnConstraint;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * Panel for display a single constraint entry within a column.
@@ -97,7 +98,7 @@ public class ConstraintFilterPanel extends JPanel {
 		Icon icon = Icons.DELETE_ICON;
 
 		JButton button = new EmptyBorderButton(icon);
-		button.setToolTipText("Delete entry");
+		button.setToolTipText(I18n.tr("docking.constraint_filter_panel.tooltip.delete_entry"));
 		button.addActionListener(e -> constraintEntry.delete());
 		panel.add(button, BorderLayout.NORTH);
 		return panel;
