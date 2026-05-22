@@ -14313,7 +14313,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	// than the __MEP and __T2M prefixes that we see from
 	// dumpbin.
 	//This is ThrowInfo type
-//	@Ignore
 	@Test
 	public void testThrowInfo_1a() throws Exception {
 		mangled = "__TI1?AUX@@";
@@ -14331,7 +14330,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 		demangleAndTest();
 	}
 
-//	@Ignore
 	@Test
 	public void testThrowInfo_2a() throws Exception {
 		mangled = "__TI2PAVCircle3@@";
@@ -14357,7 +14355,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	// than the __MEP and __T2M prefixes that we see from
 	// dumpbin.
 	//This is CatchableTypeArray
-//	@Ignore
 	@Test
 	public void testCatchableTypeArray_1a() throws Exception {
 		mangled = "__CTA1?AUX@@";
@@ -14375,7 +14372,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 		demangleAndTest();
 	}
 
-//	@Ignore
 	@Test
 	public void testCatchableTypeArray_2a() throws Exception {
 		mangled = "__CTA2PAVCircle3@@";
@@ -14404,7 +14400,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 	// how to process all of the characters.  The last
 	// character '1' remains with what we currently have.
 	//This is CatchableType
-//	@Ignore
 	@Test
 	public void testCatchableType_1a() throws Exception {
 		mangled = "__CT??_R0?AUX@@@81";
@@ -14422,7 +14417,6 @@ public class MDMangBaseTest extends AbstractGenericTest {
 		demangleAndTest();
 	}
 
-//	@Ignore
 	@Test
 	public void testCatchableType_2a() throws Exception {
 		mangled = "__CT??_R0PAVCircle3@@@84";

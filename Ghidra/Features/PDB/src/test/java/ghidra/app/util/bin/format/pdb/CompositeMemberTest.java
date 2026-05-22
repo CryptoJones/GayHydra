@@ -781,7 +781,6 @@ public class CompositeMemberTest extends AbstractGhidraHeadlessIntegrationTest
 		//@formatter:on
 	}
 
-	// @Ignore defined structure is too ambiguous
 	@Test
 	public void testMoreComplicatedStructure() throws Exception {
 
