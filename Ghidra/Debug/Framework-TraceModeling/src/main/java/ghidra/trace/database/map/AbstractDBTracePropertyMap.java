@@ -27,6 +27,7 @@ import db.*;
 import ghidra.framework.data.OpenMode;
 import ghidra.program.model.address.*;
 import ghidra.program.model.lang.Language;
+import ghidra.security.SafeObjectInput;
 import ghidra.trace.database.DBTrace;
 import ghidra.trace.database.DBTraceUtils;
 import ghidra.trace.database.map.DBTraceAddressSnapRangePropertyMapTree.AbstractDBTraceAddressSnapRangePropertyMapData;
@@ -434,8 +435,15 @@ public abstract class AbstractDBTracePropertyMap<T,
 					value = obj.valueClass.getConstructor().newInstance();
 					setValue(obj, value);
 				}
+				// Rec 19 #19-5: route through SafeObjectInput.openStream()
+				// with the baseline allowlist (String + primitive wrappers).
+				// ObjectStorageStreamAdapter.getString() is the only
+				// readObject() callsite reachable through the adapter; the
+				// allowlist permits String and rejects everything else,
+				// so a malicious enc payload cannot smuggle a gadget class.
 				ObjectStorage objStorage = new ObjectStorageStreamAdapter(
-					new ObjectInputStream(new ByteArrayInputStream(enc)));
+					SafeObjectInput.openStream(new ByteArrayInputStream(enc),
+						SafeObjectInput.allowlist()));
 				value.restore(objStorage);
 			}
 			catch (IOException e) {

@@ -199,7 +199,7 @@ allowlist).
 | #19-2 | `ItemDeserializer` migrated to `SafeObjectInput.headerStream()` (primitive-only header read with default-reject filter); `CodeUnitInfo` reclassified out of Class A — not currently a deserialization surface (see [§Class A reclassification](#class-a-reclassification-codeunitinfo)) | 1 site migrated, 1 reclassified |
 | #19-3 | Class B sites verified structurally covered: RMI deserialization gated by GP-6719 filter; local on-disk path uses XML, not Java serial. Adds `allowsClassBSites` regression test to fail closed if the allowlist drops `ItemCheckoutStatus` / `Version` / `RepositoryItem` (see [§Class B coverage analysis](#class-b-coverage-analysis-19-3)) | 0 sites migrated, 3 regression-protected |
 | #19-4 | Class C sites in `Framework/Generic` | 6 sites |
-| #19-5 | Class C sites in `Framework/SoftwareModeling` and `Debug` | 4 sites |
+| #19-5 | `AbstractDBTracePropertyMap` (the one direct `new ObjectInputStream(...)` site remaining in production) migrated to `SafeObjectInput.openStream()` + baseline allowlist (String + primitive wrappers). New `openStream(InputStream, ObjectInputFilter)` helper added so foreign APIs that need an `ObjectInputStream` reference can still get one — with a mandatory filter. Tests verify the allowlist accepts String and rejects an arbitrary Serializable | 1 site migrated, new helper |
 | #19-6 | Forbid raw `ObjectInputStream` via a Checkstyle rule (or ErrorProne pattern, Rec 26) | enforcement |
 
 Each PR includes a test asserting that an unexpected-type or

@@ -172,6 +172,46 @@ public class SafeObjectInputTest {
     }
 
     @Test
+    public void openStreamReadsAllowlistedClass() throws Exception {
+        // Mirrors the AbstractDBTracePropertyMap pattern: open a
+        // stream with an allowlist that permits String, then read
+        // through the adapter / foreign API.
+        byte[] bytes = serialize("hello");
+        try (ObjectInputStream ois =
+                SafeObjectInput.openStream(new ByteArrayInputStream(bytes),
+                    SafeObjectInput.allowlist())) {
+            // String is on the baseline allowlist; readObject() succeeds.
+            Object obj = ois.readObject();
+            assertEquals("hello", obj);
+        }
+    }
+
+    @Test
+    public void openStreamRejectsNonAllowlistedClass() throws Exception {
+        byte[] bytes = serialize(new Allowed("nope"));
+        try (ObjectInputStream ois =
+                SafeObjectInput.openStream(new ByteArrayInputStream(bytes),
+                    SafeObjectInput.allowlist())) {
+            ois.readObject();
+            fail("expected rejection of non-allowlisted Allowed class");
+        }
+        catch (IOException e) {
+            // expected
+        }
+    }
+
+    @Test
+    public void openStreamRejectsNullFilter() throws Exception {
+        try {
+            SafeObjectInput.openStream(new ByteArrayInputStream(new byte[0]), null);
+            fail("expected IllegalArgumentException for null filter");
+        }
+        catch (IllegalArgumentException e) {
+            // expected
+        }
+    }
+
+    @Test
     public void headerStreamReadsPrimitives() throws Exception {
         // Mirrors the ItemDeserializer header pattern: write
         // primitives via ObjectOutputStream, read them back via

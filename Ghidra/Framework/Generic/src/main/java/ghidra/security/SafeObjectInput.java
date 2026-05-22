@@ -114,6 +114,32 @@ public final class SafeObjectInput {
     }
 
     /**
+     * Open an {@link ObjectInputStream} on {@code in} with the
+     * caller's {@link ObjectInputFilter} installed. Use this when
+     * the call site needs to drive the stream itself (e.g., must
+     * pass the stream to a foreign API that expects an
+     * {@link ObjectInputStream} reference) and cannot use
+     * {@link #readObject(InputStream, Class, ObjectInputFilter)}.
+     *
+     * <p>The returned stream is owned by the caller and must be
+     * closed (typically via try-with-resources).
+     *
+     * @param in source stream
+     * @param classFilter allowlist filter; required (mandatory
+     *     default-reject discipline — see class javadoc)
+     */
+    public static ObjectInputStream openStream(InputStream in,
+            ObjectInputFilter classFilter) throws IOException {
+        if (classFilter == null) {
+            throw new IllegalArgumentException(
+                "classFilter must not be null — default-reject allowlist is mandatory");
+        }
+        ObjectInputStream ois = new ObjectInputStream(in);
+        ois.setObjectInputFilter(classFilter);
+        return ois;
+    }
+
+    /**
      * Open an {@link ObjectInputStream} on {@code in} with a
      * default-reject class filter installed. Intended for call
      * sites that read only primitives ({@code readLong},
@@ -129,11 +155,9 @@ public final class SafeObjectInput {
      * closed (typically via try-with-resources).
      */
     public static ObjectInputStream headerStream(InputStream in) throws IOException {
-        ObjectInputStream ois = new ObjectInputStream(in);
-        ois.setObjectInputFilter(info -> info.serialClass() == null
+        return openStream(in, info -> info.serialClass() == null
                 ? Status.UNDECIDED
                 : Status.REJECTED);
-        return ois;
     }
 
     /**
