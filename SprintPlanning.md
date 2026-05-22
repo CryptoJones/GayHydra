@@ -19,12 +19,12 @@ For the *why* behind individual choices, see
 - [x] ~~Consolidated datatest regex updates to NSA~~ — [NSA/ghidra#9207](https://github.com/NationalSecurityAgency/ghidra/pull/9207).
 - [x] ~~`-dumpdir` audit-tooling flag to NSA~~ — [NSA/ghidra#9208](https://github.com/NationalSecurityAgency/ghidra/pull/9208).
 - [x] ~~**Mac Mini bootstrap**~~ — `mac-mini` SSH alias (172.16.28.199) now has Homebrew + Temurin-21 + Gradle 9.5.1 + bison + flex + the repo. Driver at `~/bin/mac-mini-build`. First green build 6m31s cold, 3m53s incremental. Saved to memory at `~/.claude/projects/.../memory/macmini-build-host.md` so future sessions reach for it.
+- [x] ~~**PIC-24F GE-recognition regression**~~ — [PR #275](https://github.com/CryptoJones/GayHydra/pull/275) ported the slaspec half of upstream NSA/ghidra#8778 and re-enabled the two `pic_branch_ge.xml` stringmatch tests. Closes [issue #259](https://github.com/CryptoJones/GayHydra/issues/259).
 
 **Open:**
 
-- [ ] **Rec 13/14 OSS-Fuzz submission** — blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `.github/oss-fuzz/project.yaml` with real maintainer emails before the upstream PR.
+- [ ] **Rec 13/14 OSS-Fuzz submission** — blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `.github/oss-fuzz/project.yaml` with real maintainer emails before the upstream PR. External-contact decision (whose inbox monitors OSS-Fuzz crash reports?) — needs Aaron to pick the addresses.
 - [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
-- [ ] **PIC-24F GE-recognition regression** — [issue #259](https://github.com/CryptoJones/GayHydra/issues/259). Bisect upstream + re-enable the two disabled `pic_branch_ge.xml` tests.
 - [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
 
 ---
