@@ -47,6 +47,7 @@ import ghidra.util.xml.GenericXMLOutputter;
 import ghidra.util.xml.XmlUtilities;
 import util.CollectionUtils;
 import utilities.util.reflection.ReflectionUtilities;
+import generic.i18n.I18n;
 
 /**
  * A class to provide utilities for system key bindings, such as importing and
@@ -900,7 +901,7 @@ public class KeyBindingUtils {
 		KeyboardFocusManager kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager();
 		Component activeComponent = kfm.getActiveWindow();
 		GhidraFileChooser fileChooser = new GhidraFileChooser(activeComponent);
-		fileChooser.setTitle("Please Select A File");
+		fileChooser.setTitle(I18n.tr("docking.key_binding_utils.title.please_select_a_file"));
 		fileChooser.setFileFilter(FILE_FILTER);
 		fileChooser.setApproveButtonText("OK");
 		fileChooser.setCurrentDirectory(startingDir);

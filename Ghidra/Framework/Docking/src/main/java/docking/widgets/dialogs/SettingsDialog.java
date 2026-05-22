@@ -35,6 +35,7 @@ import docking.widgets.table.GTable;
 import ghidra.docking.settings.*;
 import ghidra.util.HelpLocation;
 import ghidra.util.exception.AssertException;
+import generic.i18n.I18n;
 
 public class SettingsDialog extends DialogComponentProvider {
 
@@ -48,7 +49,7 @@ public class SettingsDialog extends DialogComponentProvider {
 	private GTable settingsTable;
 
 	public SettingsDialog(HelpLocation help) {
-		super("Settings", true, false, true, false);
+		super(I18n.tr("docking.settings_dialog.title.settings"), true, false, true, false);
 		if (help != null) {
 			setHelpLocation(help);
 		}

@@ -32,6 +32,7 @@ import ghidra.util.Msg;
 import ghidra.util.layout.ColumnLayout;
 import ghidra.util.task.*;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * Abstract base class for constraint editors that load all the data in a column in order to
@@ -95,7 +96,7 @@ public abstract class DataLoadingConstraintEditor<T> extends AbstractColumnConst
 		taskMonitorComponent = new TaskMonitorComponent();
 
 		reloadDataButton = new EmptyBorderButton(Icons.REFRESH_ICON);
-		reloadDataButton.setToolTipText("Reload column data");
+		reloadDataButton.setToolTipText(I18n.tr("docking.data_loading_constraint_editor.tooltip.reload_column_data"));
 		reloadDataButton.addActionListener(e -> loadData());
 
 		viewLayout = new CardLayout();
@@ -294,7 +295,7 @@ public abstract class DataLoadingConstraintEditor<T> extends AbstractColumnConst
 	private class LoadDataTask extends Task {
 
 		public LoadDataTask() {
-			super("Load column data", true, true, true, true);
+			super(I18n.tr("docking.data_loading_constraint_editor.title.load_column_data"), true, true, true, true);
 
 		}
 

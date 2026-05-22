@@ -27,6 +27,7 @@ import ghidra.util.Swing;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorComponent;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * A convenience component designed specifically for rendering threaded table models.
@@ -155,10 +156,10 @@ public class GThreadedTablePanel<T> extends JPanel {
 	private void buildPending() {
 		refreshButton = new EmptyBorderButton(Icons.REFRESH_ICON);
 		refreshButton.addActionListener(e -> threadedModel.reload());
-		refreshButton.setToolTipText("Force Refresh Now");
+		refreshButton.setToolTipText(I18n.tr("docking.gthreaded_table_panel.tooltip.force_refresh_now"));
 		pendingPanel = new JPanel(new FlowLayout());
 		pendingPanel.setName("Pending Panel");
-		pendingPanel.add(new GLabel("Update pending...", SwingConstants.CENTER),
+		pendingPanel.add(new GLabel(I18n.tr("docking.gthreaded_table_panel.label.update_pending"), SwingConstants.CENTER),
 			BorderLayout.CENTER);
 		pendingPanel.add(refreshButton, BorderLayout.EAST);
 	}

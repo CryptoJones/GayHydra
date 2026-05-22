@@ -63,6 +63,7 @@ import ghidra.util.worker.Worker;
 import resources.Icons;
 import util.CollectionUtils;
 import util.HistoryList;
+import generic.i18n.I18n;
 
 /**
  * An implementation of a file chooser dialog.
@@ -490,7 +491,7 @@ public class GhidraFileChooser extends ReusableDialogComponentProvider implement
 
 		filenameTextField.setName("filenameTextField");
 
-		JLabel filterLabel = new GLabel("Type:");
+		JLabel filterLabel = new GLabel(I18n.tr("docking.ghidra_file_chooser.label.type"));
 		filterLabel.getAccessibleContext().setAccessibleName("Filter");
 		filterCombo = new GComboBox<>();
 		filterLabel.setLabelFor(filterCombo);
@@ -674,19 +675,19 @@ public class GhidraFileChooser extends ReusableDialogComponentProvider implement
 		backButton = new EmptyBorderButton(ICON_BACK);
 		backButton.setName("BACK_BUTTON");
 		backButton.setEnabled(false);
-		backButton.setToolTipText("Go to last folder visited");
+		backButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.go_to_last_folder_visited"));
 		backButton.addActionListener(e -> goBack());
 
 		forwardButton = new EmptyBorderButton(ICON_FORWARD);
 		forwardButton.setName("FORWARD_BUTTON");
 		forwardButton.setEnabled(false);
-		forwardButton.setToolTipText("Go to previous folder visited");
+		forwardButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.go_to_previous_folder_visited"));
 		forwardButton.addActionListener(e -> goForward());
 
 		upButton = new EmptyBorderButton(ICON_UP);
 		upButton.setName(UP_BUTTON_NAME);
 		upButton.setEnabled(false);
-		upButton.setToolTipText("Up one level");
+		upButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.up_one_level"));
 		upButton.addActionListener(e -> goUp());
 
 		return new JButton[] { backButton, forwardButton, upButton };
@@ -697,19 +698,19 @@ public class GhidraFileChooser extends ReusableDialogComponentProvider implement
 		newFolderButton = new EmptyBorderButton(ICON_NEW_FOLDER);
 		newFolderButton.setName("NEW_BUTTON");
 		newFolderButton.getAccessibleContext().setAccessibleName("New Folder");
-		newFolderButton.setToolTipText("Create new folder");
+		newFolderButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.create_new_folder"));
 		newFolderButton.addActionListener(e -> createNewFolder());
 
 		refreshButton = new EmptyBorderButton(Icons.REFRESH_ICON);
 		refreshButton.setName("REFRESH_BUTTON");
 		refreshButton.getAccessibleContext().setAccessibleName("Refresh");
-		refreshButton.setToolTipText("Rescan current directory");
+		refreshButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.rescan_current_directory"));
 		refreshButton.addActionListener(e -> rescanCurrentDirectory());
 
 		detailsButton = new EmptyBorderToggleButton(ICON_DETAILS);
 		detailsButton.setName("DETAILS_BUTTON");
 		detailsButton.getAccessibleContext().setAccessibleName("Details");
-		detailsButton.setToolTipText("Show details");
+		detailsButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.show_details"));
 		detailsButton.addActionListener(e -> {
 			cancelEdits();
 			doSetShowDetails(!showDetails);
@@ -718,7 +719,7 @@ public class GhidraFileChooser extends ReusableDialogComponentProvider implement
 		optionsButton = new EmptyBorderButton(ICON_OPTIONS);
 		optionsButton.setName("OPTIONS_BUTTON");
 		optionsButton.getAccessibleContext().setAccessibleName("Options");
-		optionsButton.setToolTipText("File Chooser Options");
+		optionsButton.setToolTipText(I18n.tr("docking.ghidra_file_chooser.tooltip.file_chooser_options"));
 		optionsButton.addActionListener(e -> {
 			DockingWindowManager.showDialog(parent, optionsDialog);
 			loadOptions();

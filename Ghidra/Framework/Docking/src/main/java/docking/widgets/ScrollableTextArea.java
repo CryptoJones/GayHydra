@@ -27,6 +27,7 @@ import docking.DockingUtils;
 import docking.dnd.GClipboard;
 import docking.dnd.StringTransferable;
 import generic.util.WindowUtilities;
+import generic.i18n.I18n;
 
 /**
  * A JScrollPane wrapper for a text area that can be told to scroll to bottom
@@ -227,7 +228,7 @@ public class ScrollableTextArea extends JScrollPane {
 		this.setViewportView(textArea);
 
 		final JPopupMenu popup = new JPopupMenu();
-		JMenuItem menuCopy = new JMenuItem("Copy");
+		JMenuItem menuCopy = new JMenuItem(I18n.tr("docking.scrollable_text_area.label.copy"));
 		menuCopy.setActionCommand((String) TransferHandler.getCopyAction().getValue(Action.NAME));
 		menuCopy.addActionListener(new CopyActionListener());
 		menuCopy.setAccelerator(

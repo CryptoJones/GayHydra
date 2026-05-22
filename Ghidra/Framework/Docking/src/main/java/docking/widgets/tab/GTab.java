@@ -27,6 +27,7 @@ import docking.widgets.label.GIconLabel;
 import generic.theme.*;
 import ghidra.util.layout.HorizontalLayout;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * Component for representing individual tabs within a {@link GTabPanel}.
@@ -76,7 +77,7 @@ public class GTab<T> extends JPanel {
 		add(nameLabel, BorderLayout.WEST);
 
 		closeLabel = new GIconLabel(selected ? CLOSE_ICON : EMPTY16_ICON);
-		closeLabel.setToolTipText("Close");
+		closeLabel.setToolTipText(I18n.tr("docking.gtab.tooltip.close"));
 		closeLabel.setName("Close");
 		closeLabel.setOpaque(true);
 		add(closeLabel, BorderLayout.EAST);

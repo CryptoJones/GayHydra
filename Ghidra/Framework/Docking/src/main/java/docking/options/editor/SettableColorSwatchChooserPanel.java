@@ -41,6 +41,7 @@ import generic.theme.GThemeDefaults.Colors.Palette;
 import ghidra.util.ColorUtils;
 import ghidra.util.WebColors;
 import ghidra.util.layout.HorizontalLayout;
+import generic.i18n.I18n;
 
 public class SettableColorSwatchChooserPanel extends AbstractColorChooserPanel {
 
@@ -178,7 +179,7 @@ public class SettableColorSwatchChooserPanel extends AbstractColorChooserPanel {
 		historySwatchPanel.setBorder(border);
 
 		JPanel historyPanel = new JPanel(new BorderLayout());
-		JLabel historyLabel = new GLabel("History:");
+		JLabel historyLabel = new GLabel(I18n.tr("docking.settable_color_swatch_chooser_panel.label.history"));
 		historyLabel.setLabelFor(historySwatchPanel);
 		historyPanel.add(historyLabel, BorderLayout.NORTH);
 		historyPanel.add(historySwatchPanel, BorderLayout.CENTER);
@@ -242,12 +243,12 @@ public class SettableColorSwatchChooserPanel extends AbstractColorChooserPanel {
 		colorNameListener = new ColorNameListener();
 		document.addDocumentListener(colorNameListener);
 
-		GLabel colorNameLabel = new GLabel("Color Name: ");
+		GLabel colorNameLabel = new GLabel(I18n.tr("docking.settable_color_swatch_chooser_panel.label.color_name"));
 		String colorNameTip = "Enter a Web Color name or a color value";
 
 		colorValueLabel = new GDLabel();
 		colorValueLabel.setForeground(Messages.HINT);
-		colorValueLabel.setToolTipText("Double-click to copy color info");
+		colorValueLabel.setToolTipText(I18n.tr("docking.settable_color_swatch_chooser_panel.tooltip.double_click_to_copy_color_info"));
 		colorValueLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {

@@ -42,6 +42,7 @@ import ghidra.util.task.SwingUpdateManager;
 import help.HelpService;
 import utilities.util.reflection.ReflectionUtilities;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * This class is a panel that provides a label and text field that allows users to input text that
@@ -445,7 +446,7 @@ public class GTableFilterPanel<ROW_OBJECT> extends JPanel {
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 
 		searchLabel = new GDLabel(filterLabel);
-		searchLabel.setToolTipText("Include only table elements that match the given search text");
+		searchLabel.setToolTipText(I18n.tr("docking.gtable_filter_panel.tooltip.include_only_table_elements_that_match"));
 
 		filterField = new FilterTextField(table);
 		filterField.setName(FILTER_TEXTFIELD_NAME);
@@ -478,7 +479,7 @@ public class GTableFilterPanel<ROW_OBJECT> extends JPanel {
 			}
 		});
 
-		filterStateButton.setToolTipText("Filter Options");
+		filterStateButton.setToolTipText(I18n.tr("docking.gtable_filter_panel.tooltip.filter_options"));
 		updateFilterFactory();
 		return filterStateButton;
 	}

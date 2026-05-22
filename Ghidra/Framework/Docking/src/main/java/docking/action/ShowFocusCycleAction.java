@@ -25,12 +25,13 @@ import org.apache.logging.log4j.Logger;
 import docking.ActionContext;
 import docking.DockingWindowManager;
 import generic.util.action.SystemKeyBindings;
+import generic.i18n.I18n;
 
 public class ShowFocusCycleAction extends DockingAction {
 	static final Logger log = LogManager.getLogger(ShowFocusCycleAction.class);
 
 	public ShowFocusCycleAction() {
-		super("Show Focus Cycle", DockingWindowManager.DOCKING_WINDOWS_OWNER);
+		super(I18n.tr("docking.show_focus_cycle_action.title.show_focus_cycle"), DockingWindowManager.DOCKING_WINDOWS_OWNER);
 		createSystemKeyBinding(SystemKeyBindings.FOCUS_CYCLE_INFO_KEY);
 		setEnabled(true);
 

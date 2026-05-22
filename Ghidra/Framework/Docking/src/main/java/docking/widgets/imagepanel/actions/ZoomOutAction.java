@@ -22,6 +22,7 @@ import docking.action.MenuData;
 import docking.action.ToolBarData;
 import docking.widgets.imagepanel.ImagePanel;
 import generic.theme.GIcon;
+import generic.i18n.I18n;
 
 /**
  * An action to de-zoom the image on a NavigableImagePanel.
@@ -31,7 +32,7 @@ public class ZoomOutAction extends ImagePanelDockingAction {
 	private static final Icon ZOOM_OUT_ICON = new GIcon("icon.widget.imagepanel.zoom.out");
 
 	public ZoomOutAction(String owner, ImagePanel imagePanel) {
-		super("Zoom Out", owner, imagePanel);
+		super(I18n.tr("docking.zoom_out_action.title.zoom_out"), owner, imagePanel);
 
 		setPopupMenuData(new MenuData(new String[] { "Zoom out" }, "view"));
 

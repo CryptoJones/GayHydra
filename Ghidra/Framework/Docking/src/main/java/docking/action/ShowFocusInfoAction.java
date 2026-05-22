@@ -26,12 +26,13 @@ import org.apache.logging.log4j.Logger;
 
 import docking.*;
 import generic.util.action.SystemKeyBindings;
+import generic.i18n.I18n;
 
 public class ShowFocusInfoAction extends DockingAction {
 	static final Logger log = LogManager.getLogger(ShowFocusInfoAction.class);
 
 	public ShowFocusInfoAction() {
-		super("Show Focus Info", DockingWindowManager.DOCKING_WINDOWS_OWNER);
+		super(I18n.tr("docking.show_focus_info_action.title.show_focus_info"), DockingWindowManager.DOCKING_WINDOWS_OWNER);
 		createSystemKeyBinding(SystemKeyBindings.FOCUS_INFO_KEY);
 		setEnabled(true);
 

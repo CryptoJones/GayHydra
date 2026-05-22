@@ -32,6 +32,7 @@ import ghidra.util.UserSearchUtils;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.*;
 import ghidra.util.worker.Worker;
+import generic.i18n.I18n;
 
 /**
  * A class to find text matches in the given {@link TextComponent}.  This class will search for all
@@ -214,7 +215,7 @@ public class TextComponentSearcher implements FindDialogSearcher {
 		private boolean useRegex;
 
 		SearchTask(String searchText, boolean useRegex) {
-			super("Text Find Task", true, false, true, true);
+			super(I18n.tr("docking.text_component_searcher.title.text_find_task"), true, false, true, true);
 			this.searchText = searchText;
 			this.useRegex = useRegex;
 		}

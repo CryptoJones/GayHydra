@@ -40,6 +40,7 @@ import ghidra.util.Msg;
 import ghidra.util.layout.VerticalLayout;
 import resources.Icons;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * Dialog for creating and editing column table filters.
@@ -71,7 +72,7 @@ public class ColumnFilterDialog<R> extends ReusableDialogComponentProvider
 	 */
 	public ColumnFilterDialog(ColumnFilterManager<R> filterManager, JTable table,
 			RowObjectFilterModel<R> tableModel) {
-		super("Table Column Filters", WindowUtilities.areModalDialogsVisible(), true, true, false);
+		super(I18n.tr("docking.column_filter_dialog.title.table_column_filters"), WindowUtilities.areModalDialogsVisible(), true, true, false);
 		this.filterManager = filterManager;
 		this.table = table;
 		this.tableModel = tableModel;
@@ -102,9 +103,9 @@ public class ColumnFilterDialog<R> extends ReusableDialogComponentProvider
 	}
 
 	private void addClearFilterButton() {
-		JButton button = new JButton("Clear Filter");
+		JButton button = new JButton(I18n.tr("docking.column_filter_dialog.label.clear_filter"));
 		button.addActionListener(e -> clearFilter());
-		button.setToolTipText("Clears any applied column filter and clears the dialog.");
+		button.setToolTipText(I18n.tr("docking.column_filter_dialog.tooltip.clears_any_applied_column_filter_and"));
 		button.getAccessibleContext().setAccessibleName("Clear Filter");
 		addButton(button);
 	}
@@ -225,13 +226,13 @@ public class ColumnFilterDialog<R> extends ReusableDialogComponentProvider
 			bottomPanel = new JPanel(new BorderLayout());
 			JPanel innerPanel = new JPanel(new VerticalLayout(3));
 
-			JButton addAndConditionButton = new JButton("Add AND condition", Icons.ADD_ICON);
+			JButton addAndConditionButton = new JButton(I18n.tr("docking.column_filter_dialog.label.add_and_condition"), Icons.ADD_ICON);
 
 			addAndConditionButton.addActionListener(e -> addFilterCondition(LogicOperation.AND));
 			addAndConditionButton.getAccessibleContext().setAccessibleName("Add AND Condition");
 			addAndConditionButton.setEnabled(true);
 
-			JButton addOrConditionButton = new JButton("Add  OR   condition", Icons.ADD_ICON);
+			JButton addOrConditionButton = new JButton(I18n.tr("docking.column_filter_dialog.label.add_or_condition"), Icons.ADD_ICON);
 
 			addOrConditionButton.setHorizontalAlignment(SwingConstants.LEFT);
 			addOrConditionButton.addActionListener(e -> addFilterCondition(LogicOperation.OR));
@@ -385,9 +386,9 @@ public class ColumnFilterDialog<R> extends ReusableDialogComponentProvider
 	private JComponent buildHeaderPanel() {
 		JPanel headerPanel = new JPanel(new FilterPanelLayout(200, 0));
 
-		headerPanel.add(new GLabel("Table Column", SwingConstants.CENTER));
-		headerPanel.add(new GLabel("Filter", SwingConstants.CENTER));
-		headerPanel.add(new GLabel("Filter Value", SwingConstants.CENTER));
+		headerPanel.add(new GLabel(I18n.tr("docking.column_filter_dialog.label.table_column"), SwingConstants.CENTER));
+		headerPanel.add(new GLabel(I18n.tr("docking.column_filter_dialog.label.filter"), SwingConstants.CENTER));
+		headerPanel.add(new GLabel(I18n.tr("docking.column_filter_dialog.label.filter_value"), SwingConstants.CENTER));
 
 		headerPanel.setBorder(
 			new CompoundBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Colors.BORDER),

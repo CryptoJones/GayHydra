@@ -30,6 +30,7 @@ import docking.widgets.OptionDialog;
 import docking.widgets.combobox.GhidraComboBox;
 import generic.theme.*;
 import ghidra.util.*;
+import generic.i18n.I18n;
 
 /**
  * Primary dialog for editing Themes.
@@ -277,7 +278,7 @@ public class ThemeEditorDialog extends DialogComponentProvider {
 		combo.setSelectedItem(themeManager.getActiveTheme().getLookAndFeelType());
 		combo.addItemListener(comboListener);
 
-		panel.add(new JLabel("Look And Feel: "), BorderLayout.WEST);
+		panel.add(new JLabel(I18n.tr("docking.theme_editor_dialog.label.look_and_feel")), BorderLayout.WEST);
 		panel.add(combo);
 		panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
 		panel.getAccessibleContext().setAccessibleName("Themes");
@@ -317,12 +318,12 @@ public class ThemeEditorDialog extends DialogComponentProvider {
 	}
 
 	private JButton createSaveButton() {
-		saveButton = new JButton("Save");
+		saveButton = new JButton(I18n.tr("docking.theme_editor_dialog.label.save"));
 		saveButton.setMnemonic('S');
 		saveButton.setName("Save");
 		saveButton.getAccessibleContext().setAccessibleName("Save");
 		saveButton.addActionListener(e -> saveCallback());
-		saveButton.setToolTipText("Saves changed values to a new Theme");
+		saveButton.setToolTipText(I18n.tr("docking.theme_editor_dialog.tooltip.saves_changed_values_to_a_new_theme"));
 		return saveButton;
 	}
 

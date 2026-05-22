@@ -33,6 +33,7 @@ import ghidra.framework.preferences.Preferences;
 import ghidra.util.filechooser.GhidraFileFilter;
 import resources.Icons;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * Component that has a table to show pathnames; the panel includes buttons to control the order of
@@ -198,26 +199,26 @@ public class PathnameTablePanel extends JPanel {
 
 		upButton = new GButton(Icons.UP_ICON);
 		upButton.setName("UpArrow");
-		upButton.setToolTipText("Move the selected path up in list");
+		upButton.setToolTipText(I18n.tr("docking.pathname_table_panel.tooltip.move_the_selected_path_up_in_list"));
 		upButton.addActionListener(e -> up());
 		upButton.setVisible(ordered);
 		downButton = new GButton(Icons.DOWN_ICON);
 		downButton.setName("DownArrow");
-		downButton.setToolTipText("Move the selected path down in list");
+		downButton.setToolTipText(I18n.tr("docking.pathname_table_panel.tooltip.move_the_selected_path_down_in_list"));
 		downButton.addActionListener(e -> down());
 		downButton.setVisible(ordered);
 		addButton = new GButton(Icons.ADD_ICON);
 		addButton.setName("AddPath");
-		addButton.setToolTipText("Display file chooser to select paths to add");
+		addButton.setToolTipText(I18n.tr("docking.pathname_table_panel.tooltip.display_file_chooser_to_select_paths_to"));
 		addButton.addActionListener(e -> add());
 		removeButton = new GButton(Icons.DELETE_ICON);
 		removeButton.setName("RemovePath");
-		removeButton.setToolTipText("Remove selected path(s) from list");
+		removeButton.setToolTipText(I18n.tr("docking.pathname_table_panel.tooltip.remove_selected_path_s_from_list"));
 		removeButton.addActionListener(e -> remove());
 
 		resetButton = new GButton(RESET_ICON);
 		resetButton.setName("RefreshPaths");
-		resetButton.setToolTipText("Resets path list to the default values");
+		resetButton.setToolTipText(I18n.tr("docking.pathname_table_panel.tooltip.resets_path_list_to_the_default_values"));
 		resetButton.addActionListener(e -> reset());
 
 		Box buttonBox = Box.createVerticalBox();

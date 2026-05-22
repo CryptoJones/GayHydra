@@ -31,6 +31,7 @@ import docking.widgets.imagepanel.ImagePanel;
 import generic.util.image.ImageUtils;
 import ghidra.util.Msg;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * An action to save the image from a NavigableImagePanel to a file.
@@ -48,7 +49,7 @@ import resources.Icons;
 public class SaveImageAction extends ImagePanelDockingAction {
 
 	public SaveImageAction(String owner, ImagePanel imagePanel) {
-		super("Export Image", owner, imagePanel);
+		super(I18n.tr("docking.save_image_action.title.export_image"), owner, imagePanel);
 
 		setPopupMenuData(new MenuData(new String[] { "Export Image As..." }, "io"));
 		setToolBarData(new ToolBarData(Icons.SAVE_AS_ICON));
@@ -58,7 +59,7 @@ public class SaveImageAction extends ImagePanelDockingAction {
 	private static File getExportFile() {
 
 		GhidraFileChooser chooser = new GhidraFileChooser(null);
-		chooser.setTitle("Export Image As...");
+		chooser.setTitle(I18n.tr("docking.save_image_action.title.export_image_as"));
 		chooser.setApproveButtonText("Save As");
 		chooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
 		chooser.setMultiSelectionEnabled(false);

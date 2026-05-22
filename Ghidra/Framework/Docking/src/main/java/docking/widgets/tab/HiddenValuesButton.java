@@ -25,6 +25,7 @@ import javax.swing.border.Border;
 
 import docking.widgets.label.GDLabel;
 import generic.theme.*;
+import generic.i18n.I18n;
 
 /**
  * Component displayed when not all tabs fit on the tab panel and is used to display a popup
@@ -46,7 +47,7 @@ public class HiddenValuesButton extends GDLabel {
 		setIconTextGap(2);
 		Gui.registerFont(this, FONT_TABS_LIST_ID);
 		setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
-		setToolTipText("Show Tab List");
+		setToolTipText(I18n.tr("docking.hidden_values_button.tooltip.show_tab_list"));
 		getAccessibleContext().setAccessibleName("Show Hidden Values List");
 		setBackground(BG_COLOR_MORE_TABS_HOVER);
 

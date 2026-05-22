@@ -41,6 +41,7 @@ import ghidra.util.task.SwingUpdateManager;
 import help.Help;
 import help.HelpService;
 import resources.Icons;
+import generic.i18n.I18n;
 
 public class OptionsPanel extends JPanel {
 	private PropertyChangeListener changeListener;
@@ -134,7 +135,7 @@ public class OptionsPanel extends JPanel {
 
 	private Component createRestoreDefaultsButton() {
 
-		JButton button = new JButton("Restore Defaults");
+		JButton button = new JButton(I18n.tr("docking.options_panel.label.restore_defaults"));
 		button.addActionListener(e -> {
 			Options currentOptions = getSelectedOptions();
 

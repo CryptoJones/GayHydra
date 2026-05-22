@@ -25,6 +25,7 @@ import javax.swing.table.*;
 import docking.DialogComponentProvider;
 import generic.theme.GColor;
 import ghidra.util.HelpLocation;
+import generic.i18n.I18n;
 
 public class SelectColumnsDialog extends DialogComponentProvider {
 
@@ -39,7 +40,7 @@ public class SelectColumnsDialog extends DialogComponentProvider {
 	private final GTableColumnModel columnModel;
 
 	public SelectColumnsDialog(GTableColumnModel columnModel, TableModel model) {
-		super("Select Columns", true, true, true, false);
+		super(I18n.tr("docking.select_columns_dialog.title.select_columns"), true, true, true, false);
 		this.columnModel = columnModel;
 		this.sourceTablemodel = model;
 

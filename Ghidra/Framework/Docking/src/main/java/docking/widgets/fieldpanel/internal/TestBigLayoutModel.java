@@ -29,6 +29,7 @@ import docking.widgets.fieldpanel.listener.LayoutModelListener;
 import docking.widgets.fieldpanel.support.*;
 import docking.widgets.indexedscrollpane.IndexedScrollPane;
 import generic.theme.GThemeDefaults.Colors;
+import generic.i18n.I18n;
 
 public class TestBigLayoutModel implements LayoutModel {
 	private static final Highlight[] NO_HIGHLIGHTS = new Highlight[0];
@@ -134,7 +135,7 @@ public class TestBigLayoutModel implements LayoutModel {
 		Container contentPane = frame.getContentPane();
 		contentPane.setLayout(new BorderLayout());
 		contentPane.add(scrollPanel);
-		JButton button = new JButton("Hit Me");
+		JButton button = new JButton(I18n.tr("docking.test_big_layout_model.label.hit_me"));
 		button.addActionListener(e -> model.updateData(1000, 2000));
 		contentPane.add(button, BorderLayout.SOUTH);
 		frame.pack();

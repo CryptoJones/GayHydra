@@ -20,6 +20,7 @@ import java.beans.PropertyChangeListener;
 
 import docking.options.editor.ColorPropertyEditor;
 import generic.theme.*;
+import generic.i18n.I18n;
 
 /**
  *  Editor for Theme colors
@@ -31,7 +32,7 @@ public class ColorValueEditor extends ThemeValueEditor<Color> {
 	 * @param listener the {@link PropertyChangeListener} to be notified when changes are made
 	 */
 	public ColorValueEditor(PropertyChangeListener listener) {
-		super("Color", listener, new ColorPropertyEditor());
+		super(I18n.tr("docking.color_value_editor.title.color"), listener, new ColorPropertyEditor());
 	}
 
 	@Override

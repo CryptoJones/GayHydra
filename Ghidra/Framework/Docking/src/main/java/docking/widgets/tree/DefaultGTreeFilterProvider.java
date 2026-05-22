@@ -34,6 +34,7 @@ import ghidra.framework.options.PreferenceState;
 import ghidra.util.FilterTransformer;
 import ghidra.util.HelpLocation;
 import help.HelpService;
+import generic.i18n.I18n;
 
 public class DefaultGTreeFilterProvider implements GTreeFilterProvider {
 	private static final String FILTER_STATE = "FILTER_STATE";
@@ -312,7 +313,7 @@ public class DefaultGTreeFilterProvider implements GTreeFilterProvider {
 		helpService.registerHelp(filterLabel, helpLocation);
 		helpService.registerHelp(filterField, helpLocation);
 
-		filterStateButton.setToolTipText("Filter Options");
+		filterStateButton.setToolTipText(I18n.tr("docking.default_gtree_filter_provider.tooltip.filter_options"));
 		newFilterPanel.add(filterStateButton, BorderLayout.EAST);
 		return newFilterPanel;
 	}

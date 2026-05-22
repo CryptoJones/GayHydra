@@ -26,6 +26,7 @@ import docking.action.ToggleDockingActionIf;
 import docking.event.mouse.GMouseListenerAdapter;
 import docking.widgets.label.GIconLabel;
 import docking.widgets.label.GLabel;
+import generic.i18n.I18n;
 
 /**
  * Dialog to show multiple actions that are mapped to the same keystroke;
@@ -48,7 +49,7 @@ public class MultiActionDialog extends DialogComponentProvider {
 	 */
 	public MultiActionDialog(String keystrokeName, List<DockingActionIf> actions,
 			ActionContext context) {
-		super("Select Action", true);
+		super(I18n.tr("docking.multi_action_dialog.title.select_action"), true);
 		this.keystrokeName = keystrokeName;
 		this.context = context;
 		init();
@@ -103,8 +104,8 @@ public class MultiActionDialog extends DialogComponentProvider {
 		JPanel innerPanel = new JPanel(new BorderLayout());
 
 		JPanel labelPanel = new JPanel(new GridLayout(0, 1));
-		labelPanel.add(new GLabel("Multiple actions have been mapped to " + keystrokeName));
-		labelPanel.add(new GLabel("Actions that can be enabled at the same"));
+		labelPanel.add(new GLabel(I18n.tr("docking.multi_action_dialog.label.multiple_actions_have_been_mapped_to") + keystrokeName));
+		labelPanel.add(new GLabel(I18n.tr("docking.multi_action_dialog.label.actions_that_can_be_enabled_at_the_same")));
 		labelPanel.add(new GLabel("time should be mapped to different keys"));
 		labelPanel.getAccessibleContext().setAccessibleName("Label");
 

@@ -33,6 +33,7 @@ import ghidra.util.MessageType;
 import ghidra.util.Msg;
 import ghidra.util.filechooser.GhidraFileFilter;
 import ghidra.util.layout.PairLayout;
+import generic.i18n.I18n;
 
 /**
  * Dialog for exporting themes to external files or zip files.
@@ -105,11 +106,11 @@ public class ExportThemeDialog extends DialogComponentProvider {
 		JPanel panel = new JPanel(new PairLayout(10, 10));
 		panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-		panel.add(new GLabel("Theme Name:", SwingConstants.RIGHT));
+		panel.add(new GLabel(I18n.tr("docking.export_theme_dialog.label.theme_name"), SwingConstants.RIGHT));
 		panel.add(buildNameField());
-		panel.add(new GLabel("Output File:", SwingConstants.RIGHT));
+		panel.add(new GLabel(I18n.tr("docking.export_theme_dialog.label.output_file"), SwingConstants.RIGHT));
 		panel.add(buildFilePanel());
-		panel.add(new GLabel("Include Defaults:", SwingConstants.RIGHT));
+		panel.add(new GLabel(I18n.tr("docking.export_theme_dialog.label.include_defaults"), SwingConstants.RIGHT));
 		panel.add(buildIncludeDefaultsCheckbox());
 		panel.getAccessibleContext().setAccessibleName("Export Theme");
 		return panel;
@@ -155,7 +156,7 @@ public class ExportThemeDialog extends DialogComponentProvider {
 
 	private void chooseFile() {
 		GhidraFileChooser chooser = new GhidraFileChooser(getComponent());
-		chooser.setTitle("Choose Theme File");
+		chooser.setTitle(I18n.tr("docking.export_theme_dialog.title.choose_theme_file"));
 		chooser.getComponent().getAccessibleContext().setAccessibleName("File Theme");
 		chooser.setApproveButtonToolTipText("Select File");
 		chooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);

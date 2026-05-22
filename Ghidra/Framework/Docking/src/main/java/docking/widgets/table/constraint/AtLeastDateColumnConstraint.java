@@ -18,6 +18,7 @@ package docking.widgets.table.constraint;
 import java.time.LocalDate;
 
 import docking.widgets.table.constraint.provider.EditorProvider;
+import generic.i18n.I18n;
 
 /**
  * Column Constraint where acceptable column values are greater than or equal to some specified
@@ -33,7 +34,7 @@ public class AtLeastDateColumnConstraint extends SingleValueColumnConstraint<Loc
 	 */
 	public AtLeastDateColumnConstraint(LocalDate minValue,
 			EditorProvider<LocalDate> editorProvider) {
-		super("On or After Date", minValue, editorProvider, "date");
+		super(I18n.tr("docking.at_least_date_column_constraint.title.on_or_after_date"), minValue, editorProvider, "date");
 	}
 
 	@Override

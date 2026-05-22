@@ -31,11 +31,12 @@ import docking.DockingWindowManager;
 import generic.theme.GColor;
 import generic.util.action.SystemKeyBindings;
 import ghidra.util.Msg;
+import generic.i18n.I18n;
 
 public class ComponentThemeInspectorAction extends DockingAction {
 
 	public ComponentThemeInspectorAction() {
-		super("Component Theme Inspector", DockingWindowManager.DOCKING_WINDOWS_OWNER, true);
+		super(I18n.tr("docking.component_theme_inspector_action.title.component_theme_inspector"), DockingWindowManager.DOCKING_WINDOWS_OWNER, true);
 		createSystemKeyBinding(SystemKeyBindings.COMPONENT_THEME_INFO_KEY);
 
 		// System action; no help needed

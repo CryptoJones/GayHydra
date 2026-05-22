@@ -29,6 +29,7 @@ import docking.widgets.label.GLabel;
 import ghidra.framework.preferences.Preferences;
 import ghidra.util.MessageType;
 import ghidra.util.layout.PairLayout;
+import generic.i18n.I18n;
 
 /**
  * <code>PasswordDialog</code> is a modal dialog which 
@@ -79,7 +80,7 @@ public class PasswordDialog extends DialogComponentProvider {
 			workPanel.add(choiceCB);
 		}
 		if (includeAnonymousOption) {
-			anonymousAccess = new GCheckBox("Request Anonymous Access");
+			anonymousAccess = new GCheckBox(I18n.tr("docking.password_dialog.label.request_anonymous_access"));
 			anonymousAccess.setName("ANONYMOUS-COMPONENT");
 			anonymousAccess.addChangeListener(e -> {
 				boolean anonymousAccessRequested = anonymousAccess.isSelected();

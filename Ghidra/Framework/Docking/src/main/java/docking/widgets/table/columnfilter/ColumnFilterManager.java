@@ -31,6 +31,7 @@ import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
 import resources.Icons;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * A class that manages column filters for a table.  This includes creating the UI elements that 
@@ -243,7 +244,7 @@ public class ColumnFilterManager<ROW_OBJECT> {
 
 	private class ClearFilterActionState extends ColumnFilterActionState {
 		public ClearFilterActionState() {
-			super("Clear Filter", CLEAR_FILTER_ICON, null);
+			super(I18n.tr("docking.column_filter_manager.title.clear_filter"), CLEAR_FILTER_ICON, null);
 		}
 
 		@Override
@@ -254,7 +255,7 @@ public class ColumnFilterManager<ROW_OBJECT> {
 
 	private class CreateFilterActionState extends ColumnFilterActionState {
 		public CreateFilterActionState() {
-			super("Create Column Filter", FILTER_OFF_ICON, null);
+			super(I18n.tr("docking.column_filter_manager.title.create_column_filter"), FILTER_OFF_ICON, null);
 		}
 
 		@Override
@@ -287,7 +288,7 @@ public class ColumnFilterManager<ROW_OBJECT> {
 
 	private class ApplyLastUsedActionState extends ColumnFilterActionState {
 		public ApplyLastUsedActionState(ColumnBasedTableFilter<ROW_OBJECT> filter) {
-			super("Apply Last Unsaved", FILTER_ON_ICON, filter);
+			super(I18n.tr("docking.column_filter_manager.title.apply_last_unsaved"), FILTER_ON_ICON, filter);
 		}
 
 		@Override

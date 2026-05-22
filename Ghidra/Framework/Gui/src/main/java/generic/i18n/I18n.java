@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *       (intended for CI). Off by default.</li>
  * </ul>
  */
-public final class Messages {
+public final class I18n {
 
 	private static final String CORE_MODULE = "core";
 	private static final String BUNDLE_BASE = ".messages";
@@ -52,7 +52,7 @@ public final class Messages {
 	private static final ConcurrentHashMap<String, ResourceBundle> CACHE =
 		new ConcurrentHashMap<>();
 
-	private Messages() {
+	private I18n() {
 	}
 
 	/**

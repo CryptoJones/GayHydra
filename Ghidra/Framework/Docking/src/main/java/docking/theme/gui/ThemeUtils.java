@@ -30,6 +30,7 @@ import generic.theme.*;
 import ghidra.framework.Application;
 import ghidra.util.Msg;
 import ghidra.util.filechooser.ExtensionFileFilter;
+import generic.i18n.I18n;
 
 /**
  * Some common methods related to saving themes. These are invoked from various places to handle
@@ -106,7 +107,7 @@ public class ThemeUtils {
 	 */
 	public static void importTheme(ThemeManager themeManager) {
 		GhidraFileChooser chooser = new GhidraFileChooser(null);
-		chooser.setTitle("Choose Theme File");
+		chooser.setTitle(I18n.tr("docking.theme_utils.title.choose_theme_file"));
 		chooser.setApproveButtonToolTipText("Select File");
 		chooser.setFileSelectionMode(GhidraFileChooserMode.FILES_ONLY);
 		chooser.setFileFilter(ExtensionFileFilter.forExtensions("Ghidra Theme Files",

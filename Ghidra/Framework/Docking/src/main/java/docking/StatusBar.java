@@ -36,6 +36,7 @@ import generic.util.WindowUtilities;
 import ghidra.util.*;
 import ghidra.util.layout.HorizontalLayout;
 import ghidra.util.layout.MiddleLayout;
+import generic.i18n.I18n;
 
 /**
  * Provides a status bar panel which has a text area to the left.  The status bar may
@@ -122,7 +123,7 @@ public class StatusBar extends JPanel {
 
 		EmptyBorderButton button = new EmptyBorderButton(icon);
 		button.addActionListener(e -> callback.run());
-		button.setToolTipText("Press to show the primary application window");
+		button.setToolTipText(I18n.tr("docking.status_bar.tooltip.press_to_show_the_primary_application"));
 
 		// We currently don't support components outside of DockingComponents (Except for 
 		// JTabbedPanes) getting focus. If this button were to get focus via keyboard traversal, the 

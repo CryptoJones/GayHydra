@@ -41,6 +41,7 @@ import ghidra.util.exception.AssertException;
 import ghidra.util.task.*;
 import help.HelpService;
 import utility.function.Callback;
+import generic.i18n.I18n;
 
 /**
  * Base class used for creating dialogs in Ghidra. Subclass this to create a dialog provider that has
@@ -484,7 +485,7 @@ public class DialogComponentProvider
 	 * okCallback() will be invoked whenever the "OK" button is pressed.
 	 */
 	protected void addOKButton() {
-		okButton = new JButton("OK");
+		okButton = new JButton(I18n.tr("docking.dialog_component_provider.label.ok"));
 		okButton.setMnemonic('K');
 		okButton.setName("OK");
 		okButton.getAccessibleContext().setAccessibleName("OK");
@@ -497,7 +498,7 @@ public class DialogComponentProvider
 	 * CancelCallback() will be invoked whenever the "Cancel" button is pressed.
 	 */
 	protected void addCancelButton() {
-		cancelButton = new JButton("Cancel");
+		cancelButton = new JButton(I18n.tr("docking.dialog_component_provider.label.cancel"));
 		cancelButton.setMnemonic('C');
 		cancelButton.setName("Cancel");
 		cancelButton.getAccessibleContext().setAccessibleName("Cancel");
@@ -510,7 +511,7 @@ public class DialogComponentProvider
 	 * dismissCallback() will be invoked whenever the "Dismiss" button is pressed.
 	 */
 	protected void addDismissButton() {
-		dismissButton = new JButton("Dismiss");
+		dismissButton = new JButton(I18n.tr("docking.dialog_component_provider.label.dismiss"));
 		dismissButton.setMnemonic('D');
 		dismissButton.setName("Dismiss");
 		dismissButton.getAccessibleContext().setAccessibleName("Dismiss");
@@ -523,7 +524,7 @@ public class DialogComponentProvider
 	 * applyCallback() will be invoked whenever the "Apply" button is pressed.
 	 */
 	protected void addApplyButton() {
-		applyButton = new JButton("Apply");
+		applyButton = new JButton(I18n.tr("docking.dialog_component_provider.label.apply"));
 		applyButton.setMnemonic('A');
 		applyButton.setName("Apply");
 		applyButton.getAccessibleContext().setAccessibleName("Apply");

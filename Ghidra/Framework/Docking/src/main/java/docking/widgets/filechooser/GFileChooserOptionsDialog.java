@@ -21,6 +21,7 @@ import docking.ReusableDialogComponentProvider;
 import docking.widgets.checkbox.GCheckBox;
 import ghidra.framework.preferences.Preferences;
 import ghidra.util.layout.PairLayout;
+import generic.i18n.I18n;
 
 class GFileChooserOptionsDialog extends ReusableDialogComponentProvider {
 
@@ -46,7 +47,7 @@ class GFileChooserOptionsDialog extends ReusableDialogComponentProvider {
 	private JComponent buildComponent() {
 		JPanel panel = new JPanel(new PairLayout());
 
-		showDotFilesCheckBox = new GCheckBox("Show '.' files");
+		showDotFilesCheckBox = new GCheckBox(I18n.tr("docking.gfile_chooser_options_dialog.label.show_files"));
 		showDotFilesCheckBox.setToolTipText("When toggled on the file chooser will show files " +
 			"with names that begin with a '.' character");
 		showDotFilesCheckBox.getAccessibleContext().setAccessibleName("Show Dot Files");

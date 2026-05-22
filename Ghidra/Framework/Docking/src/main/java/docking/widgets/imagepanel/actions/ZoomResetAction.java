@@ -21,6 +21,7 @@ import docking.ActionContext;
 import docking.action.ToolBarData;
 import docking.widgets.imagepanel.ImagePanel;
 import generic.theme.GIcon;
+import generic.i18n.I18n;
 
 /**
  * An action to reset the zoom of a NavigableImagePanel.
@@ -30,7 +31,7 @@ public class ZoomResetAction extends ImagePanelDockingAction {
 	private static final Icon ZOOM_ICON = new GIcon("icon.widget.imagepanel.reset");
 
 	public ZoomResetAction(String owner, ImagePanel imagePanel) {
-		super("Reset Zoom", owner, imagePanel);
+		super(I18n.tr("docking.zoom_reset_action.title.reset_zoom"), owner, imagePanel);
 
 		setToolBarData(new ToolBarData(ZOOM_ICON));
 	}

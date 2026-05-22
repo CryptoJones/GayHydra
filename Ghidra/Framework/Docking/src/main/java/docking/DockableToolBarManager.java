@@ -27,6 +27,7 @@ import generic.theme.CloseIcon;
 import generic.theme.GColor;
 import ghidra.util.exception.AssertException;
 import ghidra.util.task.SwingUpdateManager;
+import generic.i18n.I18n;
 
 /**
  * Manages to toolbar for the dockable components.
@@ -191,7 +192,7 @@ class DockableToolBarManager {
 	private class ToolBarCloseAction extends DockingAction {
 
 		ToolBarCloseAction(String owner) {
-			super("Close Window", owner, KeyBindingType.SHARED);
+			super(I18n.tr("docking.dockable_tool_bar_manager.title.close_window"), owner, KeyBindingType.SHARED);
 			setDescription("Close Window");
 			setToolBarData(new ToolBarData(CLOSE_ICON, null));
 			markHelpUnnecessary();
@@ -235,7 +236,7 @@ class DockableToolBarManager {
 		 * those used when direct rendering.
 		 */
 		ToolBarMenuAction() {
-			super("Local Menu", DockingWindowManager.DOCKING_WINDOWS_OWNER);
+			super(I18n.tr("docking.dockable_tool_bar_manager.title.local_menu"), DockingWindowManager.DOCKING_WINDOWS_OWNER);
 			setDescription("Menu");
 			setToolBarData(new ToolBarData(MENU_ICON, null));
 			markHelpUnnecessary();
@@ -246,7 +247,7 @@ class DockableToolBarManager {
 		 * @param owner the action owner, typically a plugin
 		 */
 		ToolBarMenuAction(String owner) {
-			super("Local Menu", owner, KeyBindingType.SHARED);
+			super(I18n.tr("docking.dockable_tool_bar_manager.title.local_menu"), owner, KeyBindingType.SHARED);
 			setDescription("Menu");
 			setToolBarData(new ToolBarData(MENU_ICON, null));
 			markHelpUnnecessary();

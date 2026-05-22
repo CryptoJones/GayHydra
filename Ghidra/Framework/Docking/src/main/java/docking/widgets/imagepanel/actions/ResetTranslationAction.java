@@ -22,6 +22,7 @@ import docking.action.MenuData;
 import docking.action.ToolBarData;
 import docking.widgets.imagepanel.ImagePanel;
 import generic.theme.GIcon;
+import generic.i18n.I18n;
 
 /**
  * An action to re-center the image on a NavigableImagePanel.
@@ -31,7 +32,7 @@ public class ResetTranslationAction extends ImagePanelDockingAction {
 	private static final Icon RECENTER_ICON = new GIcon("icon.widget.imagepanel.reset");
 
 	public ResetTranslationAction(String owner, ImagePanel imagePanel) {
-		super("Recenter", owner, imagePanel);
+		super(I18n.tr("docking.reset_translation_action.title.recenter"), owner, imagePanel);
 
 		setPopupMenuData(new MenuData(new String[] { "Recenter Image" }, "view"));
 

@@ -36,6 +36,7 @@ import ghidra.framework.preferences.Preferences;
 import ghidra.util.filechooser.GhidraFileChooserModel;
 import ghidra.util.filechooser.GhidraFileFilter;
 import resources.Icons;
+import generic.i18n.I18n;
 
 /**
  * Component that has a table to show pathnames; the panel includes buttons to control
@@ -162,26 +163,26 @@ public class PathManager {
 		if (allowOrdering) {
 			upButton = new GButton(Icons.UP_ICON);
 			upButton.setName("UpArrow");
-			upButton.setToolTipText("Move the selected path up in list");
+			upButton.setToolTipText(I18n.tr("docking.path_manager.tooltip.move_the_selected_path_up_in_list"));
 			upButton.addActionListener(e -> up());
 			upButton.setFocusable(false);
 
 			downButton = new GButton(Icons.DOWN_ICON);
 			downButton.setName("DownArrow");
-			downButton.setToolTipText("Move the selected path down in list");
+			downButton.setToolTipText(I18n.tr("docking.path_manager.tooltip.move_the_selected_path_down_in_list"));
 			downButton.addActionListener(e -> down());
 			downButton.setFocusable(false);
 		}
 
 		addButton = new GButton(Icons.ADD_ICON);
 		addButton.setName("AddPath");
-		addButton.setToolTipText("Display file chooser to select files to add");
+		addButton.setToolTipText(I18n.tr("docking.path_manager.tooltip.display_file_chooser_to_select_files_to"));
 		addButton.addActionListener(e -> add());
 		addButton.setFocusable(false);
 
 		removeButton = new GButton(Icons.DELETE_ICON);
 		removeButton.setName("RemovePath");
-		removeButton.setToolTipText("Remove selected path(s) from list");
+		removeButton.setToolTipText(I18n.tr("docking.path_manager.tooltip.remove_selected_path_s_from_list"));
 		removeButton.addActionListener(e -> remove());
 		removeButton.setFocusable(false);
 

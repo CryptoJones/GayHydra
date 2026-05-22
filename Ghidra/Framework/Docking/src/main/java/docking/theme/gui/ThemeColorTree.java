@@ -31,6 +31,7 @@ import docking.widgets.tree.GTree;
 import docking.widgets.tree.GTreeNode;
 import generic.theme.*;
 import ghidra.util.WebColors;
+import generic.i18n.I18n;
 
 /**
  * Tree for showing colors organized by similar colors and reference relationships. This was
@@ -59,9 +60,9 @@ public class ThemeColorTree extends JPanel implements ActionContextProvider {
 
 	private Component buildControls() {
 		JPanel panel = new JPanel();
-		panel.add(new JLabel("Group By: "));
+		panel.add(new JLabel(I18n.tr("docking.theme_color_tree.label.group_by")));
 		panel.add(groupingCombo);
-		panel.add(new JLabel("Sort Order: "));
+		panel.add(new JLabel(I18n.tr("docking.theme_color_tree.label.sort_order")));
 		panel.add(colorSortCombo);
 		return panel;
 	}

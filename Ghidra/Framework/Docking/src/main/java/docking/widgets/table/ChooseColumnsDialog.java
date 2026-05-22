@@ -27,6 +27,7 @@ import javax.swing.table.*;
 import docking.DialogComponentProvider;
 import ghidra.util.HelpLocation;
 import util.CollectionUtils;
+import generic.i18n.I18n;
 
 public class ChooseColumnsDialog extends DialogComponentProvider {
 
@@ -39,7 +40,7 @@ public class ChooseColumnsDialog extends DialogComponentProvider {
 	private boolean wasCancelled;
 
 	ChooseColumnsDialog(GTableColumnModel columnModel, TableModel model) {
-		super("Select Columns", true, true, true, false);
+		super(I18n.tr("docking.choose_columns_dialog.title.select_columns"), true, true, true, false);
 		this.columnModel = columnModel;
 
 		initialize();
@@ -77,7 +78,7 @@ public class ChooseColumnsDialog extends DialogComponentProvider {
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.getAccessibleContext().setAccessibleName("Buttons");
-		JButton selectAllButton = new JButton("Select All");
+		JButton selectAllButton = new JButton(I18n.tr("docking.choose_columns_dialog.label.select_all"));
 		selectAllButton.getAccessibleContext().setAccessibleName("Select All");
 		selectAllButton.addActionListener(new ActionListener() {
 			@Override
@@ -86,7 +87,7 @@ public class ChooseColumnsDialog extends DialogComponentProvider {
 			}
 		});
 
-		JButton deselectAllButton = new JButton("Deselect All");
+		JButton deselectAllButton = new JButton(I18n.tr("docking.choose_columns_dialog.label.deselect_all"));
 		deselectAllButton.getAccessibleContext().setAccessibleName("Deselect All");
 		deselectAllButton.addActionListener(new ActionListener() {
 			@Override
