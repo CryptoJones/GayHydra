@@ -25,7 +25,7 @@ For the *why* behind individual choices, see
 - [ ] **Rec 13/14 OSS-Fuzz submission** — blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `.github/oss-fuzz/project.yaml` with real maintainer emails before the upstream PR.
 - [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
 - [ ] **PIC-24F GE-recognition regression** — [issue #259](https://github.com/CryptoJones/GayHydra/issues/259). Bisect upstream + re-enable the two disabled `pic_branch_ge.xml` tests.
-- [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — decide between disabling the GitHub-managed auto-submission in repo settings, or making `build.gradle`'s flatRepo check tolerant of submission-only invocations.
+- [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
 
 ---
 
