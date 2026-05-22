@@ -48,6 +48,9 @@ apply from: 'gradle/errorprone.gradle'
 // @Ignore audit. See docs/testing/IGNORE_TEST_POLICY.md (Rec 28 #28-3).
 apply from: 'gradle/ignoreAudit.gradle'
 
+// Raw ObjectInputStream enforcement gate. See docs/security/JAVA_DESERIALIZATION_AUDIT.md (Rec 19 #19-6).
+apply from: 'gradle/objectInputStreamAudit.gradle'
+
 
 /***************************************************************************************
 * Print current Java and Gradle version and make sure the correct version of gradle is being used

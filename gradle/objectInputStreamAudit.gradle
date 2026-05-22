@@ -1,0 +1,86 @@
+/* ###
+ * Raw ObjectInputStream audit task.
+ *
+ * Addresses Rec 19 #19-6 of the 2026-05-21 audit. See
+ * docs/security/JAVA_DESERIALIZATION_AUDIT.md for the policy and
+ * Ghidra/Framework/Generic/src/main/java/ghidra/security/SafeObjectInput.java
+ * for the sanctioned helper.
+ *
+ * Walks every src/main/**.java looking for `new ObjectInputStream(`.
+ * The only acceptable call site is inside SafeObjectInput itself
+ * (the sanctioned helper); every other occurrence is a policy
+ * violation — direct construction bypasses the mandatory class
+ * allowlist and reintroduces the gadget-chain attack surface that
+ * Rec 19 closes.
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/objectInputStreamAudit.gradle'
+ *
+ * The task is named `objectInputStreamAudit` at the root and is
+ * invoked as a dedicated CI step in
+ * `.github/workflows/build-ghidra.yml`. After #19-2/#19-3/#19-5
+ * the in-tree count is zero; the audit is strict by default and
+ * fails the build on any regression.
+ */
+
+import java.util.regex.Pattern
+
+// Match `new ObjectInputStream(` and the fully-qualified
+// `new java.io.ObjectInputStream(`. Whitespace between `new`
+// and the class name is tolerated.
+final Pattern RAW_OIS_PATTERN = Pattern.compile(
+    'new\\s+(?:java\\.io\\.)?ObjectInputStream\\s*\\(')
+
+// The sanctioned helper itself MUST construct an OIS — that's its
+// whole job. Allowlist its source file (path-suffix match so the
+// rule is independent of the repo's root layout).
+final Set<String> EXCLUDED_FILES = [
+    'ghidra/security/SafeObjectInput.java',
+] as Set
+
+task objectInputStreamAudit {
+    description = 'Verify no src/main/ source constructs a raw ObjectInputStream outside SafeObjectInput.'
+    group = 'verification'
+
+    doLast {
+        List<String> violations = []
+        rootProject.fileTree(rootDir) {
+            include '**/src/main/**/*.java'
+        }.each { File f ->
+            String rel = rootDir.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+            if (EXCLUDED_FILES.any { rel.endsWith(it) }) {
+                return
+            }
+            int lineNum = 0
+            f.eachLine('UTF-8') { String line ->
+                lineNum++
+                // Skip commented-out occurrences. Block-comment handling
+                // is intentionally simple; the false-positive surface
+                // (a string literal containing the pattern) is acceptable
+                // because the rule only forbids real constructor calls
+                // and any in-tree false positive can be fixed by the
+                // author adjusting the string.
+                String trimmed = line.trim()
+                if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+                    return
+                }
+                def m = RAW_OIS_PATTERN.matcher(line)
+                if (m.find()) {
+                    violations.add("${rel}:${lineNum} raw ObjectInputStream construction " +
+                        "(use SafeObjectInput.openStream() or SafeObjectInput.headerStream())")
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            logger.error '== ObjectInputStream audit failures =='
+            violations.each { logger.error "  ${it}" }
+            throw new GradleException(
+                "${violations.size()} raw ObjectInputStream construction(s) outside SafeObjectInput. " +
+                "See docs/security/JAVA_DESERIALIZATION_AUDIT.md (Rec 19) — every deserialization " +
+                "must route through the sanctioned helper with an explicit class allowlist.")
+        }
+        logger.lifecycle 'objectInputStreamAudit: no raw ObjectInputStream constructions outside SafeObjectInput.'
+    }
+}
+

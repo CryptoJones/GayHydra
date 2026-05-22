@@ -200,7 +200,7 @@ allowlist).
 | #19-3 | Class B sites verified structurally covered: RMI deserialization gated by GP-6719 filter; local on-disk path uses XML, not Java serial. Adds `allowsClassBSites` regression test to fail closed if the allowlist drops `ItemCheckoutStatus` / `Version` / `RepositoryItem` (see [§Class B coverage analysis](#class-b-coverage-analysis-19-3)) | 0 sites migrated, 3 regression-protected |
 | #19-4 | Class C sites in `Framework/Generic` | 6 sites |
 | #19-5 | `AbstractDBTracePropertyMap` (the one direct `new ObjectInputStream(...)` site remaining in production) migrated to `SafeObjectInput.openStream()` + baseline allowlist (String + primitive wrappers). New `openStream(InputStream, ObjectInputFilter)` helper added so foreign APIs that need an `ObjectInputStream` reference can still get one — with a mandatory filter. Tests verify the allowlist accepts String and rejects an arbitrary Serializable | 1 site migrated, new helper |
-| #19-6 | Forbid raw `ObjectInputStream` via a Checkstyle rule (or ErrorProne pattern, Rec 26) | enforcement |
+| #19-6 | `gradle objectInputStreamAudit` task ([`gradle/objectInputStreamAudit.gradle`](../../gradle/objectInputStreamAudit.gradle)) walks every `src/main/**/*.java` and rejects any `new ObjectInputStream(...)` outside `SafeObjectInput.java`. Wired as a strict CI step in `build-ghidra.yml`. Strict by default — no warning-mode (the in-tree count is zero) | enforcement gate |
 
 Each PR includes a test asserting that an unexpected-type or
 unexpected-class payload is rejected without instantiation.

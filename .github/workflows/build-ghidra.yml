@@ -96,6 +96,12 @@ jobs:
         # any future bare/uncategorized @Ignore fails CI.
         run: gradle ignoreAudit -PignoreAuditStrict=true
 
+      - name: Audit raw ObjectInputStream (Rec 19 #19-6)
+        # Forbid any `new ObjectInputStream(...)` outside SafeObjectInput.
+        # In-tree count is zero after #19-2/#19-3/#19-5; this gate fails
+        # CI on any regression that reintroduces unfiltered deserialization.
+        run: gradle objectInputStreamAudit
+
       - name: i18n lint (Docking)
         # Localization PoC: fail the build if a hardcoded UI literal
         # reappears in Ghidra/Framework/Docking outside the
