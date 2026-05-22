@@ -1,5 +1,7 @@
 *Proudly Made in Nebraska. Go Big Red! 🌽 <https://xkcd.com/2347/>*
 
+<p align="center"><a href="#faq"><img src="GayHydra.png" width="400" alt="GayHydra logo — click for the FAQ"></a></p>
+
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?logo=apache)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases)
 [![Gradle](https://img.shields.io/badge/Gradle-8.5%2B-02303A?logo=gradle&logoColor=white)](https://gradle.org/releases/)
@@ -137,8 +139,6 @@ Issue tracking: filed as #1–#42 at https://codeberg.org/CryptoJones/GayHydra/i
 
 ---
 
-<img src="GayHydra.png" width="400" alt="GayHydra logo">
-
 # GayHydra — a security-hardened fork of NSA's Ghidra
 GayHydra is a fork of [Ghidra](https://github.com/NationalSecurityAgency/ghidra), the software 
 reverse engineering (SRE) framework created and maintained by the [National Security Agency][nsa] 
@@ -267,6 +267,21 @@ please take a look at our [Contributor's Guide][contrib] to see how you can part
 upstream-applicable fixes, also consider opening the same PR against
 [NationalSecurityAgency/ghidra](https://github.com/NationalSecurityAgency/ghidra) so upstream
 benefits too.
+
+## FAQ
+
+**Q. Why "GayHydra"?**
+A. I'm queer, I thought it was clever, the dual-license-license-pun thing is funny to me, and the
+mascot energy of "many heads, all gay" matches how a reverse-engineering tool actually feels in
+practice. If the name keeps a homophobic contributor away, that's a positive selection filter,
+not a cost.
+
+**Q. How do you pronounce "Ghidra"?**
+A. I have no idea. My Ghidra book is signed by **Chris Eagle** and I still don't know. (I would
+like Kara Nance's signature too, please.) Pick the pronunciation that sounds least embarrassing
+out loud, commit to it, and never let anyone correct you.
+
+— *AKC*
 
 [nsa]: https://www.nsa.gov
 [contrib]: CONTRIBUTING.md
