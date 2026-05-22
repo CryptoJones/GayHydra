@@ -156,19 +156,32 @@ having full code execution.
 
 ## The approved helper
 
-A new class:
+The class lives at:
 
 ```java
-ghidra.framework.security.SafeObjectInput
+ghidra.security.SafeObjectInput
 ```
 
-with one entry point:
+(in `Ghidra/Framework/Generic/src/main/java/ghidra/security/SafeObjectInput.java`)
+
+with three entry points:
 
 ```java
+// Read a single top-level object with mandatory class allowlist.
 public static <T> T readObject(
         InputStream in,
         Class<T> expected,
         ObjectInputFilter filter) throws IOException, ClassNotFoundException;
+
+// Open an ObjectInputStream with the caller's filter installed —
+// for sites that must hand the stream to a foreign API.
+public static ObjectInputStream openStream(
+        InputStream in,
+        ObjectInputFilter classFilter) throws IOException;
+
+// Convenience: open a stream for primitive-only header reads with
+// a default-reject class filter (any readObject() call fails closed).
+public static ObjectInputStream headerStream(InputStream in) throws IOException;
 ```
 
 Rules:
