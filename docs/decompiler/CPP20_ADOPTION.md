@@ -57,8 +57,10 @@ table stakes across the supported toolchains, that's a follow-up.
 | macOS | Xcode 14+ / clang 14+ | Yes |
 | Windows | MSVC 2019 16.10+ / 2022 | Yes |
 
-Toolchain requirements are documented in
-`docs/decompiler/cpp20-toolchains.md` (added in #32-2).
+Toolchain requirements are the compatibility matrix above; the
+referenced `cpp20-toolchains.md` placeholder was folded into this
+doc (the matrix is the requirements). See [`Ghidra/Features/Decompiler/buildNatives.gradle`](../../Ghidra/Features/Decompiler/buildNatives.gradle)
+for the actual `-std=` flags currently in effect.
 
 ## Migration plan
 
@@ -69,7 +71,7 @@ valid C++20.
 | PR | Scope |
 |---|---|
 | #32-1 (this PR) | This plan |
-| #32-2 | Bump to `-std=c++14` everywhere; add CI gate that the build is C++14 (no C++17+ features yet). |
+| #32-2 | ~~Bump to `-std=c++14` everywhere~~ — shipped: flipped `buildNatives.gradle` (Gcc + Clang), `decompile/cpp/Makefile`, and `fuzz/Makefile.fuzz` to `-std=c++14`. MSVC implicit default is already C++14. |
 | #32-3 | Bump to `-std=c++20`; CI on Linux + macOS + Windows. No code change to opt into C++20 features; just verify the bump compiles. |
 | #32-4 | Opportunistic `std::span` adoption in `xml.cc` + `marshal.cc` parameter pairs (paired with Rec 31 Stage 2). |
 | #32-5 | Opportunistic `std::expected` adoption for parser entry points. |

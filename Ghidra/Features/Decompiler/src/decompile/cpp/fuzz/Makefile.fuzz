@@ -17,7 +17,7 @@ CPP_DIR := ..
 # own engine via $LIB_FUZZING_ENGINE.
 LIB_FUZZING_ENGINE ?= -fsanitize=fuzzer
 
-CXXSTD := -std=c++11
+CXXSTD := -std=c++14
 INCLUDES := -I$(CPP_DIR)
 WARN := -Wall -Wno-sign-compare
 

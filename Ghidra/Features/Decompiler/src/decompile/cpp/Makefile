@@ -35,7 +35,7 @@ ifeq ($(OS),Darwin)
   OSDIR=mac_x86_64
 endif
 
-CXX=g++ -std=c++11
+CXX=g++ -std=c++14
 
 # Debug flags
 DBG_CXXFLAGS=-g -Wall -Wno-sign-compare
