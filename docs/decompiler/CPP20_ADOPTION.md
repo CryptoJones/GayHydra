@@ -72,7 +72,7 @@ valid C++20.
 |---|---|
 | #32-1 (this PR) | This plan |
 | #32-2 | ~~Bump to `-std=c++14` everywhere~~ — shipped: flipped `buildNatives.gradle` (Gcc + Clang), `decompile/cpp/Makefile`, and `fuzz/Makefile.fuzz` to `-std=c++14`. MSVC implicit default is already C++14. |
-| #32-3 | Bump to `-std=c++20`; CI on Linux + macOS + Windows. No code change to opt into C++20 features; just verify the bump compiles. |
+| #32-3 | ~~Bump to `-std=c++20`~~ — shipped: same 3 sites as #32-2 (`buildNatives.gradle`, `decompile/cpp/Makefile`, `fuzz/Makefile.fuzz`). No code change to opt into C++20 features; just verifies the bump compiles on Linux/macOS/Windows. |
 | #32-4 | Opportunistic `std::span` adoption in `xml.cc` + `marshal.cc` parameter pairs (paired with Rec 31 Stage 2). |
 | #32-5 | Opportunistic `std::expected` adoption for parser entry points. |
 | #32-6 | Opportunistic `std::format` adoption (replaces a portion of the error messages). |

@@ -219,7 +219,7 @@ model {
 	binaries {
 		all{ b ->
 			if (b.toolChain in Gcc) {
-				b.cppCompiler.args "-std=c++14"
+				b.cppCompiler.args "-std=c++20"
 				b.cppCompiler.args "-Wall"
 				b.cppCompiler.args "-O2"			// for DEBUG, comment this line out
 				// b.cppCompiler.args "-g"			// for DEBUG, uncomment	this line
@@ -261,7 +261,7 @@ model {
 				b.cCompiler.define "ZLIB_WINAPI"
 			}
 			else if (b.toolChain in Clang) {
-				b.cppCompiler.args "-std=c++14"
+				b.cppCompiler.args "-std=c++20"
 				b.cppCompiler.args "-Wall"
 				b.cppCompiler.args "-O2"			// for DEBUG, comment this line out
 				// b.cppCompiler.args "-g"			// for DEBUG, uncomment	this line

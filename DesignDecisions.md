@@ -365,18 +365,26 @@ only downside is verifier-UX familiarity, which is closing fast.
 
 ---
 
-## DD-005: SafeObjectInput as the only Java deser entry point (2026-05-21, planned)
+## DD-005: SafeObjectInput as the only Java deser entry point (2026-05-21, shipped 2026-05-22)
 
 **Context:** Rec 19 audit found 14 production sites using raw
 `ObjectInputStream`. Some are attacker-reachable (the #1481 archive
 path); some are local-trusted (property maps).
 
-**Decision:** A new class `ghidra.framework.security.SafeObjectInput`
-becomes the only sanctioned deserialization helper. Every call site
-declares its expected top-level type and an `ObjectInputFilter`
-allowlist of expected classes; depth + byte caps are enforced.
-Direct `new ObjectInputStream(...)` is forbidden by Checkstyle /
-ErrorProne lint.
+**Decision:** A new class `ghidra.security.SafeObjectInput`
+(at `Ghidra/Framework/Generic/src/main/java/ghidra/security/SafeObjectInput.java`)
+became the only sanctioned deserialization helper. The class exposes
+three entry points (added across the migration sprints):
+* `readObject(InputStream, Class<T>, ObjectInputFilter)` — one top-level
+  object with mandatory allowlist; depth + byte caps enforced.
+* `openStream(InputStream, ObjectInputFilter)` — for sites that must
+  hand an OIS to a foreign API (added #19-5).
+* `headerStream(InputStream)` — primitive-only header read with default-
+  reject filter (added #19-2).
+
+Direct `new ObjectInputStream(...)` is forbidden by a Gradle audit task
+(`objectInputStreamAudit`, added #19-6) that walks `src/main/**/*.java`
+and rejects raw constructions outside `SafeObjectInput.java`.
 
 **Why:** Class A sites (attacker-reachable) genuinely need
 allowlisting. Class C sites (local-trusted) don't, but they should
@@ -385,7 +393,18 @@ surface, a single deprecation path if we ever move off Java
 serialization. The audit can't trust "this site is local-trusted"
 forever; the threat model changes.
 
-**Linked:** [`docs/security/JAVA_DESERIALIZATION_AUDIT.md`](docs/security/JAVA_DESERIALIZATION_AUDIT.md).
+**Refined:** During implementation, two scope adjustments were made:
+* `CodeUnitInfo` was reclassified out of Class A — it never invokes
+  `ObjectInputStream` (its custom `readObject` is dead commented-out
+  code) and `CodeUnitInfoTransferable` uses `javaJVMLocalObjectMimeType`
+  (in-JVM reference, no serialization).
+* Class B sites (`ItemCheckoutStatus`, `Version`, `RepositoryItem`)
+  needed no in-class change — RMI deserialization is already gated by
+  the GP-6719 filter, and the local on-disk path uses XML, not Java
+  serial. Coverage is regression-tested by `allowsClassBSites` in
+  `GhidraSerialFilterDefaultTest`.
+
+**Linked:** [`docs/security/JAVA_DESERIALIZATION_AUDIT.md`](docs/security/JAVA_DESERIALIZATION_AUDIT.md), PRs [#293](https://github.com/CryptoJones/GayHydra/pull/293), [#297](https://github.com/CryptoJones/GayHydra/pull/297), [#299](https://github.com/CryptoJones/GayHydra/pull/299), [#301](https://github.com/CryptoJones/GayHydra/pull/301).
 
 ---
 
