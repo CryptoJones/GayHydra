@@ -71,7 +71,7 @@ public class ByteMappingScheme {
 
 	/**
 	 * Construct byte mapping scheme specified as a ratio of mapped bytes to source bytes.
-	 * The two integer values in the range 1..127 are seperated by a ':' character.  The number of
+	 * The two integer values in the range 1..127 are separated by a ':' character.  The number of
 	 * mapped bytes must be less-than or equal to the number of source bytes.
 	 * @param mappingScheme mapping scheme in string form (e.g., "2:4").
 	 * @throws IllegalArgumentException if invalid mapping scheme specified

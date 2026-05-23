@@ -311,9 +311,9 @@ public class PrototypeModel {
 	 * @param params existing set parameters to which the parameter specified by
 	 * argIndex will be added/inserted be appended. Element-0 corresponds to the return
 	 * datatype. Parameter elements prior to the argIndex are required for an accurate 
-	 * storage determination to be made.  Any preceeding parameters not specified will be assumed 
+	 * storage determination to be made.  Any preceding parameters not specified will be assumed 
 	 * as a 1-byte integer type which could cause an erroneous storage result to be returned.  
-	 * A null params list will cause all preceeding params to be assumed in a similar fashion.
+	 * A null params list will cause all preceding params to be assumed in a similar fashion.
 	 * @param dataType dataType associated with next parameter location or null
 	 * for a default undefined type.
 	 * @param program is the Program

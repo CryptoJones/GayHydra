@@ -157,7 +157,7 @@ public class BSimServerInfo implements Comparable<BSimServerInfo> {
 	 * (i.e., {@code postgresql:}, {@code https:}, {@code elastic:}, {@code file:}).
 	 * 
 	 * @param url supported BSim database URL.  For non-file URLs, the hostname or 
-	 * address may be preceeded by a DB username (e.g., postgresql://user@host:port/dbname
+	 * address may be preceded by a DB username (e.g., postgresql://user@host:port/dbname
 	 * @throws IllegalArgumentException if unsupported URL protocol specified
 	 */
 	public BSimServerInfo(URL url) throws IllegalArgumentException {

@@ -68,7 +68,7 @@ public class ModelTrainingUtils {
 		catch (MemoryAccessException | AddressOutOfBoundsException e) {
 			//most likely an exception means that you are trying to read beyond a block
 			//boundary.  This will happen occasionally when the sliding window is near the
-			//begining or end of a block.  
+			//beginning or end of a block.  
 			Msg.warn(RandomForestTrainingTask.class,
 				"MemoryAccessException at " + address.toString());
 			return trainingVector;
