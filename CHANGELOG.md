@@ -6,6 +6,53 @@ does not yet promise SemVer.
 
 ---
 
+## [Unreleased]
+
+Work toward v26.1.8 (Sprint 11 close). Tracked per-PR in
+[SprintPlanning.md](SprintPlanning.md); per-release notes are
+generated from the GitHub Releases UI at sprint close.
+
+Highlights since v26.1.7:
+
+- **Rec 19 closed.** SafeObjectInput migration completed across all
+  three risk classes ([#293](https://github.com/CryptoJones/GayHydra/pull/293), [#297](https://github.com/CryptoJones/GayHydra/pull/297), [#299](https://github.com/CryptoJones/GayHydra/pull/299)). Enforcement gate
+  via `gradle objectInputStreamAudit` task ([#301](https://github.com/CryptoJones/GayHydra/pull/301)) — any future
+  raw `new ObjectInputStream(...)` outside `SafeObjectInput.java`
+  fails CI.
+- **Rec 32 #32-2 + #32-3.** Decompiler C++ bumped `-std=c++11` →
+  `-std=c++14` ([#310](https://github.com/CryptoJones/GayHydra/pull/310)) and `-std=c++14` → `-std=c++20`
+  ([#313](https://github.com/CryptoJones/GayHydra/pull/313)) across `buildNatives.gradle` Gcc/Clang +
+  decompile/cpp/Makefile + fuzz/Makefile.fuzz. MSVC implicit default
+  already C++14. CI green on all 3 platforms.
+- **Rec 28 #28-5.** Dead commented-out `//@Ignore` cleanup
+  ([#295](https://github.com/CryptoJones/GayHydra/pull/295)) — 7 lines across MDMangBaseTest + CompositeMemberTest.
+- **Test-flake fix.** `GhidraSerialFilterDefaultTest`
+  (`rejectsNonAllowlistedClass` flake) replaced with a textual filter-
+  file check ([#308](https://github.com/CryptoJones/GayHydra/pull/308)) — was flaking on JVM-installed
+  BuiltinFilterFactory + uninitialized GhidraObjectInputFilter.
+
+## Released sprints (v26.1.1 – v26.1.7)
+
+Per-sprint release notes live on the
+[GitHub Releases page](https://github.com/CryptoJones/GayHydra/releases)
+(and [Codeberg Releases](https://codeberg.org/CryptoJones/GayHydra/releases)).
+Each `26.1.x` tag corresponds to a Sprint close per the cadence
+documented in [SprintHistory.md](SprintHistory.md):
+
+- **v26.1.7** — Sprint 8 close: rebrand + Rec 19/25/26 ratchets + SBOM
+  bundled-extract.
+- **v26.1.6** — Sprint 7 close: CI green tree-wide + Codeberg mirror +
+  Win11 VM.
+- **v26.1.5** — Sprint 6 close: @Ignore tree-wide sweep + CI rescue.
+- **v26.1.4** — Sprint 5 close: Sprint-1 implementation second tier +
+  project polish.
+- **v26.1.3** — Sprint 4 close: Sprint-3 conflict-resolve + first
+  Sprint-1 implementation tier.
+- **v26.1.2** — Sprint 3 close: upstream cherry-picks wave 2.
+- **v26.1.1** — Sprint 2 close: upstream cherry-picks wave 1.
+
+---
+
 ## [26.1] — 2026-05-21 — "the 42-rec audit"
 
 **First release of the GayHydra fork.** Forked from
