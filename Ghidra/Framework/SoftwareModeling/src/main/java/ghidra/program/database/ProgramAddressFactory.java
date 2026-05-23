@@ -224,7 +224,7 @@ public class ProgramAddressFactory extends DefaultAddressFactory {
 
 	/**
 	 * Remove an overlay space.
-	 * It may be neccessary to invoke {@link #refreshStaleOverlayStatus()} when an overlay is
+	 * It may be necessary to invoke {@link #refreshStaleOverlayStatus()} when an overlay is
 	 * removed.
 	 * @param name overlay space name
 	 */

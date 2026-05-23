@@ -163,7 +163,7 @@ public class UnixAoutProgramLoader {
 
 		try (InputStream fileIn = byteProvider.getInputStream(0);
 				MonitoredInputStream mis = new MonitoredInputStream(fileIn, monitor)) {
-			// Indicate that cleanup is not neccessary for cancelled import operation.
+			// Indicate that cleanup is not necessary for cancelled import operation.
 			mis.setCleanupOnCancel(false);
 			fileBytes = program.getMemory()
 					.createFileBytes(byteProvider.getName(), 0, byteProvider.length(), mis,

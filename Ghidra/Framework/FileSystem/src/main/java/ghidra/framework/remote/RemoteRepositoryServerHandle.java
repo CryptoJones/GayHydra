@@ -25,7 +25,7 @@ import java.rmi.server.RemoteObjectInvocationHandler;
  * <p>
  * IMPORTANT: Methods from {@link RepositoryServerHandle} <b>must</b> be re-declared here 
  * so they may be properly marshalled for remote invocation via RMI.  
- * This became neccessary with an OpenJDK 11.0.6 change made to 
+ * This became necessary with an OpenJDK 11.0.6 change made to 
  * {@link RemoteObjectInvocationHandler}.
  */
 public interface RemoteRepositoryServerHandle extends RepositoryServerHandle, Remote {

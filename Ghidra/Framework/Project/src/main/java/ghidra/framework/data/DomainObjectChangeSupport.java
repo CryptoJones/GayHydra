@@ -257,9 +257,9 @@ class DomainObjectChangeSupport {
 		private Collection<DomainObjectListener> receivers;
 
 		EventNotification(DomainObjectChangedEvent event,
-				Collection<DomainObjectListener> recievers) {
+				Collection<DomainObjectListener> receivers) {
 			this.event = event;
-			this.receivers = recievers;
+			this.receivers = receivers;
 		}
 
 		// Note: must be called on the Swing thread; must be called outside of lockQueue()

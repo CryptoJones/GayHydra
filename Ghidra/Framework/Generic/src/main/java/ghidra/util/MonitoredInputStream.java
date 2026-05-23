@@ -260,7 +260,7 @@ public class MonitoredInputStream extends InputStream {
 	/**
 	 * Convey to byte stream consumer if cleanup of any artifacts produced is recommended, when 
 	 * applicable, if {@link IOCancelledException} is thrown by this input stream.
-	 * @param enable true if cleanup recommended, false if no cleanup neccessary (default).
+	 * @param enable true if cleanup recommended, false if no cleanup necessary (default).
 	 * @return this instance
 	 */
 	public MonitoredInputStream setCleanupOnCancel(boolean enable) {

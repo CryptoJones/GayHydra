@@ -324,7 +324,7 @@ public class ElfLoadAdapter {
 
 	/**
 	 * This method allows an extension to override the default address calculation for loading
-	 * a symbol.  This is generally only neccessary when symbol requires handling of processor-specific 
+	 * a symbol.  This is generally only necessary when symbol requires handling of processor-specific 
 	 * flags or section index.  This method should return null when default symbol processing 
 	 * is sufficient. {@link Address#NO_ADDRESS} should be returned if the symbol is external
 	 * and is not handled by default processing.
@@ -554,7 +554,7 @@ public class ElfLoadAdapter {
 	 * 
 	 * @param section ELF section header which is specified by the ELF symbol
 	 * @param sectionBase memory address where section has been loaded.  Could be within overlay
-	 * space if load conflict occured.
+	 * space if load conflict occurred.
 	 * @param elfSymbol ELF symbol
 	 * @return section relative symbol offset or null if symbol value offset is absolute
 	 */

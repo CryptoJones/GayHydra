@@ -32,10 +32,10 @@ import ghidra.util.exception.VersionException;
  * Relocation Adapter (v6) introduced a stored status and length value.  The byte-length value
  * is  only stored/used when stored bytes are not used and the original bytes are obtained from 
  * the underlying {@link FileBytes} via associated {@link Memory}.  Older program's may 
- * have a stored bytes array but is unneccessary when original FileBytes are available. 
+ * have a stored bytes array but is unnecessary when original FileBytes are available. 
  * <br>
  * During the transition of older relocation records we are unable to determine a proper status 
- * without comparing current memory to the original bytes.  It may also be neccessary to reconcile
+ * without comparing current memory to the original bytes.  It may also be necessary to reconcile
  * overlapping relocations when the stored bytes value is null to obtain a valid length.  This
  * transition is too complicated for a low-level record translation so it must be deferred to 
  * a higher-level program upgrade (see {@link ProgramDB}).  This also holds true for establishing

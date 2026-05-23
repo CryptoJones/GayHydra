@@ -367,7 +367,7 @@ public class ExternalSymbolResolver implements Closeable {
 			 * Define external Library dependency associated with {@link ProgramSymbolResolver}
 			 * instance.
 			 * @param lib external library dependency
-			 * @param problem exception which occured while accessing Library
+			 * @param problem exception which occurred while accessing Library
 			 */
 			ExtLibInfo(Library lib, Throwable problem) {
 				if (program != lib.getSymbol().getProgram()) {

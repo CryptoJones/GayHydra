@@ -1204,7 +1204,7 @@ public class DBLongKeyTableTest extends AbstractGenericTest {
 			DBLongIterator longKeyIterator =
 				table.longKeyIterator(Long.MIN_VALUE, Long.MAX_VALUE, Long.MIN_VALUE);
 			for (long n = 0; n < 20; n++) {
-				// NOTE: Test purposely invokes hasNext more than neccessary
+				// NOTE: Test purposely invokes hasNext more than necessary
 				if (longKeyIterator.hasNext()) {
 					assertEquals(++total, longKeyIterator.next());
 				}
@@ -1238,7 +1238,7 @@ public class DBLongKeyTableTest extends AbstractGenericTest {
 			DBLongIterator longKeyIterator =
 				table.longKeyIterator(Long.MIN_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
 			for (long n = 0; n < 20; n++) {
-				// NOTE: Test purposely invokes hasNext more than neccessary
+				// NOTE: Test purposely invokes hasNext more than necessary
 				if (longKeyIterator.hasPrevious()) {
 					assertEquals(k - n, longKeyIterator.previous());
 					++total;

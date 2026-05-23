@@ -103,7 +103,7 @@ abstract public class Exporter implements ExtensionPoint {
 	 * type.  For example, some exporters have the ability to export programs, other exporters can 
 	 * export project data type archives.
 	 * <p>
-	 * NOTE: This method should only be used as a preliminary check, if neccessary, to identify 
+	 * NOTE: This method should only be used as a preliminary check, if necessary, to identify 
 	 * exporter implementations that are capable of handling a specified content type/class.  Prior
 	 * to export a final check should be performed based on the export or either a 
 	 * {@link DomainFile} or {@link DomainObject}:

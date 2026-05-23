@@ -505,7 +505,7 @@ public interface DomainObject {
 	 * transaction is ended.
 	 * <P>
 	 * NOTE: Use of rollback ({@code commit=false} should be avoided unless absolutely
-	 * neccessary since it will incur overhead to revert changes and may rollback multiple
+	 * necessary since it will incur overhead to revert changes and may rollback multiple
 	 * concurrent transactions if they exist.
 	 * @param transactionID transaction ID obtained from startTransaction method
 	 * @param commit if true the changes made in this transaction will be marked for commit,

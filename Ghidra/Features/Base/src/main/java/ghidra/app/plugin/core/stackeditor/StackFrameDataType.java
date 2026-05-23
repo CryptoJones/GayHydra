@@ -701,7 +701,7 @@ class StackFrameDataType implements Structure {
 
 	/**
 	 * Determine if the specified stackOffset corresponds to a parameter which should not be 
-	 * modified via the stack editor other than its name and comment.  This is neccessary when
+	 * modified via the stack editor other than its name and comment.  This is necessary when
 	 * (i.e., custom storage is disabled) in which case the function signature should be adjusted
 	 * using the Function Editor.
 	 * 
@@ -782,7 +782,7 @@ class StackFrameDataType implements Structure {
 
 	/**
 	 * {@link StackComponentWrapper} wraps and standard {@link Structure}
-	 * {@link DataTypeComponent} and provides the neccessary stack offset 
+	 * {@link DataTypeComponent} and provides the necessary stack offset 
 	 * translation.
 	 */
 	class StackComponentWrapper implements DataTypeComponent {
@@ -838,7 +838,7 @@ class StackFrameDataType implements Structure {
 
 		/**
 		 * Determine if this component corresponds to a parameter which should not be 
-		 * modified via the stack editor other than its name and comment.  This is neccessary when
+		 * modified via the stack editor other than its name and comment.  This is necessary when
 		 * (i.e., custom storage is disabled) in which case the function signature should be adjusted
 		 * using the Function Editor.
 		 * 

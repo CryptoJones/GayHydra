@@ -240,7 +240,7 @@ public class VariableStorageManagerDB implements VariableStorageManager {
 	/**
 	 * Perform language translation.
 	 * Following the invocation of this method it is important to ensure that the program 
-	 * architecure is adjusted if neccessary.
+	 * architecure is adjusted if necessary.
 	 * Update variable storage specifications to reflect address space and register mappings
 	 * @param translator language translator to be used for mapping storage varnodes to new
 	 * architecture.

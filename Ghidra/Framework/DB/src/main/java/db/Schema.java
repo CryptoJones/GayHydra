@@ -381,7 +381,7 @@ public class Schema {
 	 * This method provides a work-around for legacy schemas which
 	 * employ primitive fixed-length keys other than LongField
 	 * and improperly employ a variable-length-key storage schema.
-	 * Although rare, this may be neccessary to ensure backward compatibility 
+	 * Although rare, this may be necessary to ensure backward compatibility 
 	 * with legacy DB storage (example ByteField key employed by old table).
 	 */
 	void forceUseOfVariableLengthKeyNodes() {

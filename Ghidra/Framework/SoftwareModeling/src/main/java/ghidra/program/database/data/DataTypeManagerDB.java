@@ -867,7 +867,7 @@ abstract public class DataTypeManagerDB implements DataTypeManager {
 	 * False will be returned when {@code ifPreviouslyStored} is true and data organization has never 
 	 * beeen saved.
 	 * @param ifPreviouslyStored if true and data organization has never been saved false will be returned
-	 * @return true if a data organization change has occured
+	 * @return true if a data organization change has occurred
 	 * @throws IOException if an IO error occurs
 	 */
 	protected final boolean hasDataOrganizationChange(boolean ifPreviouslyStored)
@@ -883,7 +883,7 @@ abstract public class DataTypeManagerDB implements DataTypeManager {
 	/**
 	 * Save the current data organization to facilitate future change detection and 
 	 * upgrades.
-	 * @throws IOException if failure occured while saving data organization.
+	 * @throws IOException if failure occurred while saving data organization.
 	 */
 	protected void saveDataOrganization() throws IOException {
 		DataOrganizationImpl.save(getDataOrganization(), getDataMap(true), "dataOrg.");
@@ -1973,7 +1973,7 @@ abstract public class DataTypeManagerDB implements DataTypeManager {
 	}
 
 	/**
-	 * Allow extensions to perform any neccessary fixups to address all datatype replacements.
+	 * Allow extensions to perform any necessary fixups to address all datatype replacements.
 	 * @param dataTypeReplacementMap map of datatype replacements (oldID maps to replacementID).
 	 */
 	abstract protected void replaceDataTypesUsed(Map<Long, Long> dataTypeReplacementMap);

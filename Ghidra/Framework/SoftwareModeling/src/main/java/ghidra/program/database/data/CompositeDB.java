@@ -771,7 +771,7 @@ abstract class CompositeDB extends DataTypeDB implements CompositeInternal {
 	 * Set packing and alignment settings.  Record is modified but it is not written to the
 	 * database and no repacking or notification is performed.
 	 * @param composite instance whose packing and alignment are to be copied
-	 * @throws IOException if database IO error occured
+	 * @throws IOException if database IO error occurred
 	 */
 	protected void doSetPackingAndAlignment(CompositeInternal composite) throws IOException {
 		record.setIntValue(CompositeDBAdapter.COMPOSITE_MIN_ALIGN_COL,
@@ -786,7 +786,7 @@ abstract class CompositeDB extends DataTypeDB implements CompositeInternal {
 	}
 
 	/**
-	 * Perform any neccessary component adjustments based on sizes of components differing from 
+	 * Perform any necessary component adjustments based on sizes of components differing from 
 	 * their specification which may be influenced by the data organization.  This method
 	 * does not consider alignment changes and should be used on non-packed structures only.
 	 * If this composite changes parents will not be notified - handling this is the caller's 

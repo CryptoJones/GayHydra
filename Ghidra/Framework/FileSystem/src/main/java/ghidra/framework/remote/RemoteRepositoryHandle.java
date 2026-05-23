@@ -29,7 +29,7 @@ import ghidra.util.InvalidNameException;
  * <p>
  * Methods from {@link RepositoryHandle} <b>must</b> be re-declared here
  * so they may be properly marshalled for remote invocation via RMI.  
- * This became neccessary with an OpenJDK 11.0.6 change made to 
+ * This became necessary with an OpenJDK 11.0.6 change made to 
  * {@link RemoteObjectInvocationHandler}.
  */
 public interface RemoteRepositoryHandle extends RepositoryHandle, Remote {

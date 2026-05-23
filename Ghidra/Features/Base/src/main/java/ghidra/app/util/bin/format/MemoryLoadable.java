@@ -27,13 +27,13 @@ import ghidra.program.model.mem.MemoryBlock;
 /**
  * <code>MemoryLoadable</code> serves as both a marker interface which identifies a memory 
  * loadable portion of a binary file (supports use as a {@link Hashtable} key).  In addition,
- * it serves to supply the neccessary input stream to create a {@link MemoryBlock}.
+ * it serves to supply the necessary input stream to create a {@link MemoryBlock}.
  * 
  */
 public interface MemoryLoadable {
 
 	/**
-	 * Determine if the use of input stream decompression or filtering via an extension is neccessary. 
+	 * Determine if the use of input stream decompression or filtering via an extension is necessary. 
 	 * If this method returns true and a 
 	 * {@link #getFilteredLoadInputStream(ElfLoadHelper, Address, long, BiConsumer) filtered stream} 
 	 * is required and will prevent the use of a direct mapping to file bytes for affected memory 

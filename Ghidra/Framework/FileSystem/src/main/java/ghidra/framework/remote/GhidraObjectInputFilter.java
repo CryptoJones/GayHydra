@@ -495,7 +495,7 @@ public class GhidraObjectInputFilter implements ObjectInputFilter {
 	 * @param sourceNameSupplier source name supplied for use during logging, or null.  It 
 	 * is assumed that a the current thread may be used to differentiate a client connection
 	 * over which the serialization is occuring.
-	 * @throws IllegalStateException if error occured building or installing serial input filter
+	 * @throws IllegalStateException if error occurred building or installing serial input filter
 	 * and related filter factory.
 	 */
 	public static void configureServerSerialFilter(ResourceFile filterFile,
@@ -519,7 +519,7 @@ public class GhidraObjectInputFilter implements ObjectInputFilter {
 	 * This filter will make use of the {@link GhidraSerialFilterFactory} and ensure that it is
 	 * properly installed.
 	 * 
-	 * @throws IllegalStateException if error occured building or installing serial input filter
+	 * @throws IllegalStateException if error occurred building or installing serial input filter
 	 * and related filter factory.
 	 */
 	public static synchronized void configureClientSerialFilter()

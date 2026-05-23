@@ -31,7 +31,7 @@ public class ProgramOverlayAddressSpace extends OverlayAddressSpace {
 	 * 
 	 * @param key DB record key
 	 * @param overlayName current overlay name
-	 * @param baseSpace base address space (type should be restricted as neccessary by caller)
+	 * @param baseSpace base address space (type should be restricted as necessary by caller)
 	 * @param unique assigned unique ID
 	 * @param overlayRegionSupplier callback handler which supplies the defined address set 
 	 * for a specified overlay address space. 
