@@ -30,6 +30,17 @@ Highlights since v26.1.7:
   (`rejectsNonAllowlistedClass` flake) replaced with a textual filter-
   file check ([#308](https://github.com/CryptoJones/GayHydra/pull/308)) — was flaking on JVM-installed
   BuiltinFilterFactory + uninitialized GhidraObjectInputFilter.
+- **RE training target + release smoke test.** Added
+  `samples/re-targets/gayhydra-dropper/` ([#319](https://github.com/CryptoJones/GayHydra/pull/319), [#321](https://github.com/CryptoJones/GayHydra/pull/321)) — a small Go
+  program with XOR-obfuscated strings (key `0x5A`) for users learning
+  Ghidra/GayHydra. Wired into `release.yml` as a post-build decompiler
+  sanity gate: scans the freshly-built prebuilt for `XOR <reg>, 0x5A`
+  instructions and asserts the constant survives into the decompiler's
+  C output. First dogfood run caught three release-pipeline regressions
+  (Go 1.26 analyzer crash, JDK 21.0.10+ headless launch collision,
+  v26.1.7 release workflow failure) — tracked under Sprint 10
+  "Release pipeline hardening" in
+  [SprintPlanning.md](SprintPlanning.md).
 
 ## Released sprints (v26.1.1 – v26.1.7)
 

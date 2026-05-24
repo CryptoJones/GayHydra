@@ -96,6 +96,60 @@ jobs:
             exit 1
           fi
 
+      - name: Decompiler smoke test (gayhydra-dropper)
+        # Extracts the freshly-built prebuilt, compiles the
+        # samples/re-targets/gayhydra-dropper Go sample stripped,
+        # runs the headless analyzer with the bundled
+        # scripts/DumpDeobfuscate.java post-script, and asserts the
+        # decompiler still recovers the literal XOR key 0x5A from
+        # main.main (where the Go compiler inlines main.deobfuscate
+        # at every call site). Catches: Go-analyzer regressions,
+        # decompiler regressions, headless-launch regressions.
+        #
+        # See samples/re-targets/gayhydra-dropper/README.md for the
+        # design + the three real regressions this test caught on its
+        # first dogfood run.
+        run: |
+          set -euxo pipefail
+
+          EXTRACT_DIR=$(mktemp -d)
+          unzip -q "${{ steps.artifacts.outputs.ZIP }}" -d "$EXTRACT_DIR"
+          GAYHYDRA=$(ls -d "$EXTRACT_DIR"/ghidra_* | head -1)
+          test -n "$GAYHYDRA" || { echo "::error::no ghidra_* dir in $EXTRACT_DIR"; exit 1; }
+
+          # JDK 21.0.10+ workaround: ObjectInputFilter$Config.
+          # setSerialFilterFactory only honors one call; the JVM
+          # pre-installs via -Djdk.serialFilterFactory before Ghidra's
+          # programmatic install fires, so the second call dies with
+          # IllegalStateException. Drop the -D so Ghidra's runtime
+          # install is the first/only one. See SprintPlanning.md →
+          # Sprint 10 "Release pipeline hardening" → upstream NSA bug
+          # filing. Remove this sed once that lands.
+          sed -i 's|^VMARGS=-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory|#&|' \
+            "$GAYHYDRA/support/launch.properties"
+
+          pushd samples/re-targets/gayhydra-dropper
+          go build -ldflags="-s -w" -o /tmp/gh-dropper-stripped .
+          popd
+
+          PROJECT_DIR=$(mktemp -d)
+          OUTPUT=$("$GAYHYDRA"/support/analyzeHeadless "$PROJECT_DIR" DropperRE \
+            -import /tmp/gh-dropper-stripped \
+            -postScript DumpDeobfuscate.java \
+            -scriptPath samples/re-targets/gayhydra-dropper/scripts \
+            -deleteProject 2>&1) || {
+              echo "$OUTPUT"
+              echo "::error::analyzeHeadless exited non-zero (smoke-test infrastructure failure)"
+              exit 1
+            }
+          echo "$OUTPUT"
+
+          if ! echo "$OUTPUT" | grep -q "RESULT: PASS"; then
+            echo "::error::Decompiler smoke test FAILED — XOR key 0x5A not visible in main.main decompilation"
+            echo "::error::See samples/re-targets/gayhydra-dropper/README.md for what this test asserts."
+            exit 1
+          fi
+
       - name: Sign release zip (cosign keyless)
         env:
           COSIGN_EXPERIMENTAL: "1"

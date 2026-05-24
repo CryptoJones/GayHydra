@@ -27,6 +27,16 @@ For the *why* behind individual choices, see
 - [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
 - [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
 
+**Release pipeline hardening (from gayhydra-dropper dogfood):**
+
+The first end-to-end run of the new `samples/re-targets/gayhydra-dropper/` smoke test against the v26.1.6 prebuilt surfaced three release-pipeline regressions ([PR #321](https://github.com/CryptoJones/GayHydra/pull/321) findings).
+
+- [ ] **Cut v26.1.8 release.** `application.version` is already bumped to 26.1.8 and the sbom hotfix ([#245](https://github.com/CryptoJones/GayHydra/pull/245)) is on master, so v26.1.7's missing-prebuilt gap can be closed by tagging HEAD as `v26.1.8` and letting `release.yml` run. Needs Aaron's go-ahead before tag push (destructive — triggers a public release).
+- [ ] **Wire `DumpDeobfuscate.java` into `release.yml`.** Post-build decompiler-sanity gate: extract the freshly-built prebuilt, build `gayhydra-dropper` stripped, run headless analyzer with the dropper's `DumpDeobfuscate.java` post-script, fail the release if the literal constant `0x5A` no longer appears in `main.main`'s decompilation. Catches Go-analyzer regressions, decompiler regressions, and headless-launch regressions in one step.
+- [ ] **File upstream NSA/ghidra bugs**:
+  - `GolangSymbolAnalyzer` throws `java.io.EOFException: Invalid index: …` from `GoUncommonType` introspection on Go 1.26 binaries — partial analysis succeeds but function name labels are never applied (all functions land as `FUN_*`).
+  - `GhidraSerialFilterFactory.getOrInstallInstance` collides with the JVM `-Djdk.serialFilterFactory` in `launch.properties` on JDK 21.0.10+; headless launch dies with `IllegalStateException: Serial filter factory has previously been instantiated`. PR [#308](https://github.com/CryptoJones/GayHydra/pull/308) fixed the unit test surface; production launch path still affected.
+
 ---
 
 ## Sprint 6 — finish the Sprint-1 implementation surface
