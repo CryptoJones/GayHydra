@@ -149,7 +149,7 @@ public class Utils {
 	}
 
 	public static int leastsigbit_set(long val) { // Return bit number (0=lsb)
-		// of the least signifigant bit set or -1 if none set
+		// of the least significant bit set or -1 if none set
 		if (val == 0) {
 			return -1;
 		}
@@ -169,7 +169,7 @@ public class Utils {
 	}
 
 	public static int mostsigbit_set(long val) { // Return bit number (0=lsb)
-		// of the most signifigant bit set or -1 if none set
+		// of the most significant bit set or -1 if none set
 		if (val == 0) {
 			return -1;
 		}

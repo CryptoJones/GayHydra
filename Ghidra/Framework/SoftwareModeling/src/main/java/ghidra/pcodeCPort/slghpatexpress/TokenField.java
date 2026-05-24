@@ -30,7 +30,7 @@ public class TokenField extends PatternValue {
 	private Token tok;
 	private boolean bigendian;
 	private boolean signbit;
-	private int bitstart, bitend; // Bits within the token, 0 bit is LEAST signifigant
+	private int bitstart, bitend; // Bits within the token, 0 bit is LEAST significant
 	private int bytestart, byteend; // Bytes to read to get value
 	private int shift; // Amount to shift to align value (bitstart % 8)
 
