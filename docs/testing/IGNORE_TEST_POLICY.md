@@ -38,9 +38,25 @@ Every `@Ignore` must satisfy **all** of:
      test infrastructure that doesn't exist yet.
    - `wip` — work-in-progress; must include a target stage in
      the linked issue.
+   - `manual-tool` — the class is structurally a developer-bench
+     tool rather than a regression test (dev experiments,
+     perf-only benchmarks, code-generation harnesses). Often
+     pairs with a runtime guard like `assumeFalse(SystemUtilities.
+     isInTestingBatchMode())` for defense in depth. Long-term
+     resolution is usually "move out of the test source set" or
+     "convert into a real test"; the `@Ignore` documents the
+     current state until that happens.
 3. **A deadline.** The linked issue carries a deadline label
    (`ignore:30d`, `ignore:90d`, `ignore:1y`). After the deadline,
    the test is **fixed or deleted** — there is no fourth option.
+   Picking the right deadline:
+   - `ignore:30d` — short-fuse, scoped to a single sprint. Use
+     when the fix is known and the only blocker is bandwidth.
+   - `ignore:90d` — quarterly cleanup window. Use for flaky races
+     and other "fixable but not next-sprint" work.
+   - `ignore:1y` — long-running upstream blockers (LLDB EXC_BAD_
+     ACCESS, sleigh-spec correctness), Debugger RMI cluster work,
+     `manual-tool` classes that mostly stay @Ignore'd indefinitely.
 
 An `@Ignore` without all three is a defect; CI surfaces it
 (`gradle ignoreAudit`, a follow-up task in this rec series).
