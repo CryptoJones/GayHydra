@@ -234,7 +234,7 @@ class FunctionStackFrame implements StackFrame {
 		try (Closeable c = lock.read()) {
 			checkIsValid();
 
-			// NOTE: This logic is sensitive to the existance of Local variables at the incorrect
+			// NOTE: This logic is sensitive to the existence of Local variables at the incorrect
 			// stack offset placed before parameters.  This can occur when adjustments are made to
 			// the prototype model's stack pentry specification.  Unfortunately, the distinction
 			// between a parameter and a local is locked-in at the time of creation due to the

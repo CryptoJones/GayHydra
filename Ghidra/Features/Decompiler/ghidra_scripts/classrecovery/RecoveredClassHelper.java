@@ -2760,8 +2760,8 @@ public class RecoveredClassHelper {
 	 * 8. set RecoveredClass indeterminate list to const/dest list
 	 * 9. update list of all indeterminate const/dest
 	 * @param vftableSymbolList List of vftable symbols
-	 * @param allowNullFunctionPtrs if true, allow existance of null pointers in vftable
-	 * @param allowDefaultRefsInMiddle if true, allow existance of default refs into the middle of a vftable
+	 * @param allowNullFunctionPtrs if true, allow existence of null pointers in vftable
+	 * @param allowDefaultRefsInMiddle if true, allow existence of default refs into the middle of a vftable
 	 * @return List of RecoveredClass objects created corresponding to the vftable symbols
 	 * @throws CancelledException if cancelled
 	 * @throws Exception if issues getting data

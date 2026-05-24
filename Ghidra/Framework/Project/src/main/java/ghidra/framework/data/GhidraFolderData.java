@@ -89,7 +89,7 @@ class GhidraFolderData {
 	 * @param parent parent folder
 	 * @param name folder name
 	 * @throws FileNotFoundException if folder not found or error occurred while checking
-	 * for its existance
+	 * for its existence
 	 */
 	GhidraFolderData(GhidraFolderData parent, String name) throws FileNotFoundException {
 		if (name == null || name.isEmpty()) {
@@ -836,7 +836,7 @@ class GhidraFolderData {
 	 * rely on the cached folderList.
 	 * @param folderName name of folder to look for
 	 * @return true if folder exists, else false
-	 * @throws IOException if an IO error occurs when checking for folder's existance.
+	 * @throws IOException if an IO error occurs when checking for folder's existence.
 	 */
 	boolean containsFolder(String folderName) throws IOException {
 		synchronized (fileSystem) {
@@ -902,7 +902,7 @@ class GhidraFolderData {
 	 * Check for existence of file.  If folder previously visited, rely on fileDataCache
 	 * @param fileName the name of the file to look for
 	 * @return true if this folder contains the fileName, else false
-	 * @throws IOException if an IO error occurs while checking for file existance
+	 * @throws IOException if an IO error occurs while checking for file existence
 	 */
 	public boolean containsFile(String fileName) throws IOException {
 		synchronized (fileSystem) {
@@ -921,7 +921,7 @@ class GhidraFolderData {
 	 * if file does not exist or an IOException occurs.
 	 * @param fileName name of file
 	 * @return file data or null if not found
-	 * @throws IOException if an IO error occurs while checking for file existance
+	 * @throws IOException if an IO error occurs while checking for file existence
 	 */
 	private GhidraFileData addFileData(String fileName) throws IOException {
 		GhidraFileData fileData = fileDataCache.get(fileName);
@@ -953,7 +953,7 @@ class GhidraFolderData {
 	 * @param lazy if true file will not be searched for if not already discovered - in
 	 * this case null will be returned
 	 * @return file data or null if not found or lazy=true and not yet discovered
-	 * @throws IOException if an IO error occurs while checking for file existance
+	 * @throws IOException if an IO error occurs while checking for file existence
 	 */
 	GhidraFileData getFileData(String fileName, boolean lazy) throws IOException {
 		synchronized (fileSystem) {

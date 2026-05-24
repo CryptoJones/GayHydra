@@ -20,7 +20,7 @@ import java.io.IOException;
 
 /**
  * {@link InvalidPropertyFile} provides a substitue {@link ItemPropertyFile} when one
- * fails to parse.  This allows the item's existance to be managed even if the item cannot
+ * fails to parse.  This allows the item's existence to be managed even if the item cannot
  * be opened.
  */
 public class InvalidPropertyFile extends ItemPropertyFile {

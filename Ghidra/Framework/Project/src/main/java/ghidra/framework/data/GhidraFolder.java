@@ -396,7 +396,7 @@ public class GhidraFolder implements DomainFolder {
 
 	/**
 	 * ** Used for testing **
-	 * Check for existance of private folder
+	 * Check for existence of private folder
 	 * @return true if private folder exists else false
 	 */
 	boolean privateExists() {
@@ -410,7 +410,7 @@ public class GhidraFolder implements DomainFolder {
 
 	/**
 	 * ** Used for testing **
-	 * Check for existance of versioned/shared folder
+	 * Check for existence of versioned/shared folder
 	 * @return true if versioned/shared folder exists else false
 	 */
 	boolean sharedExists() {

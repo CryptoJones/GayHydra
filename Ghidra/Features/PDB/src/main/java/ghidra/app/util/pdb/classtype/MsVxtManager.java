@@ -375,7 +375,7 @@ public class MsVxtManager extends VxtManager {
 	 * @param owner the owning class of the table
 	 * @param parentage the parentage for the desired table.  The parentage must start with the
 	 * parent that contains the pointer to the table and should include the ordered lineage from
-	 * that class through all of its decendents to the owner, excluding the owner
+	 * that class through all of its descendants to the owner, excluding the owner
 	 * @param ordinal ordinal of table for owner as sorted by address
 	 * @return the table
 	 */
@@ -461,7 +461,7 @@ public class MsVxtManager extends VxtManager {
 	 * @param owner the owning class of the table
 	 * @param parentage the parentage for the desired table.  The parentage must start with the
 	 * parent that contains the pointer to the table and should include the ordered lineage from
-	 * that class through all of its decendents to the owner, excluding the owner
+	 * that class through all of its descendants to the owner, excluding the owner
 	 * @param ordinal ordinal of table for owner as sorted by address
 	 * @return the table
 	 */

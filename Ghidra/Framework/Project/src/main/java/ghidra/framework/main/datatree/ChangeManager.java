@@ -278,7 +278,7 @@ class ChangeManager implements DomainFolderChangeListener, TreeModelListener {
 			return;
 		}
 
-		// Check for existance of file by that name
+		// Check for existence of file by that name
 		DomainFileNode fileNode = (DomainFileNode) node.getChild(fileName,
 			isFolderLink ? NodeType.FOLDER_LINK : NodeType.FILE);
 		if (fileNode != null) {
@@ -300,7 +300,7 @@ class ChangeManager implements DomainFolderChangeListener, TreeModelListener {
 			return;
 		}
 
-		// Check for existance of folder by that name
+		// Check for existence of folder by that name
 		if (node.getChild(folderName, NodeType.FOLDER) != null) {
 			return;
 		}
