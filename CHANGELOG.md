@@ -59,7 +59,7 @@ Highlights since v26.1.7:
   "Release pipeline hardening" in
   [SprintPlanning.md](SprintPlanning.md).
 
-## Released sprints (v26.1.1 – v26.1.7)
+## Released sprints (v26.1.1 – v26.1.10)
 
 Per-sprint release notes live on the
 [GitHub Releases page](https://github.com/CryptoJones/GayHydra/releases)
@@ -67,6 +67,14 @@ Per-sprint release notes live on the
 Each `26.1.x` tag corresponds to a Sprint close per the cadence
 documented in [SprintHistory.md](SprintHistory.md):
 
+- **v26.1.10** — Sprint 9 close + Sprint 10 first half: datatests
+  re-enabled (#244, #250–256), Rec 25/26 Stage 3 prep (#247, #249,
+  #261, #265–270), SBOM hotfix (#245), RE training sample +
+  decompiler smoke test (#319, #321, #323), release pipeline bug
+  fixes (#327, #331, #333). First end-to-end signed release —
+  prebuilt zip (568 MB), cosign sigs, bundled CycloneDX SBOM.
+  v26.1.8/9 tagged but failed; v26.1.10 is the first successful
+  release artifact since v26.1.6.
 - **v26.1.7** — Sprint 8 close: rebrand + Rec 19/25/26 ratchets + SBOM
   bundled-extract.
 - **v26.1.6** — Sprint 7 close: CI green tree-wide + Codeberg mirror +
