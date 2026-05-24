@@ -8,9 +8,16 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.8 (Sprint 11 close). Tracked per-PR in
+Work toward v26.1.9 (Sprint 11 close). Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+v26.1.8 was tagged but its release workflow failed at the "Locate
+release zip + extract bundled SBOM" step — the unzip pattern added
+in [#230](https://github.com/CryptoJones/GayHydra/pull/230) looked
+for `*/support/sbom/bom.json` but the upstream NSA SBOM generator
+actually writes `bom.json` at the top of the zip-prefix directory.
+v26.1.9 patches the path and re-tags from a HEAD that fires the fix.
 
 Highlights since v26.1.7:
 

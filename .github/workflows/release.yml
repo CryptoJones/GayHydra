@@ -4,11 +4,12 @@ name: Release (build + sign + publish)
 # See docs/security/BINARY_SIGNING.md for the design + DD-006.
 #
 # Triggers on a tag push matching v*. Builds Ghidra, produces the
-# release zip (which bundles the upstream SBOM at support/sbom/bom.json
-# via gradle/support/sbom.gradle), signs the zip with cosign keyless
-# using the workflow's OIDC identity, and uploads zip + .sig + .crt
-# to the GitHub release. Rec 21's standalone CycloneDX SBOM step was
-# removed in Sprint 7 and is queued for Sprint 8 re-implementation.
+# release zip (which bundles the upstream SBOM at the top of the
+# zip-prefix directory as bom.json via gradle/support/sbom.gradle),
+# signs the zip with cosign keyless using the workflow's OIDC identity,
+# and uploads zip + .sig + .crt to the GitHub release. Rec 21's
+# standalone CycloneDX SBOM step was removed in Sprint 7 and is queued
+# for Sprint 8 re-implementation.
 
 on:
   push:
@@ -65,15 +66,17 @@ jobs:
           ZIP=$(ls build/dist/ghidra_*.zip | head -1)
           test -n "$ZIP" || { echo "no release zip produced"; exit 1; }
           echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
-          # The upstream NSA SBOM generator (gradle/support/sbom.gradle)
-          # writes support/sbom/bom.json inside the zip during the
-          # distribution-assembly step. Extract it as a separate
-          # release asset so downstream supply-chain scanners can
-          # consume it without unzipping the full distribution.
+          # The upstream NSA SBOM generator (gradle/support/sbom.gradle's
+          # writeSoftwareBillOfMaterials, called from gradle/root/
+          # distribution.gradle's assembleDistribution doLast) writes
+          # bom.json at the top of the zip-prefix directory (i.e. the
+          # same level as Ghidra/, docs/, support/), not under
+          # support/sbom/. Extract it as a separate release asset so
+          # downstream supply-chain scanners can consume it without
+          # unzipping the full distribution.
           SBOM=build/dist/$(basename "$ZIP" .zip)-bom.json
-          unzip -p "$ZIP" "*/support/sbom/bom.json" > "$SBOM" || \
-            unzip -p "$ZIP" "support/sbom/bom.json" > "$SBOM"
-          test -s "$SBOM" || { echo "bundled SBOM not found in zip"; exit 1; }
+          unzip -p "$ZIP" "*/bom.json" > "$SBOM"
+          test -s "$SBOM" || { echo "bundled SBOM not found in zip at */bom.json"; exit 1; }
           echo "SBOM=$SBOM" >> $GITHUB_OUTPUT
           echo "Extracted SBOM: $(stat -c%s "$SBOM") bytes"
 
