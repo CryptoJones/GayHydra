@@ -169,7 +169,7 @@ public class FileBitPatternInfoReader {
 
 	/**
 	 * Get the parameters used to gather this information
-	 * @return the data gathering paramaters
+	 * @return the data gathering parameters
 	 */
 	public DataGatheringParams getDataGatheringParams() {
 		return params;

@@ -133,7 +133,7 @@ public class BSimOverviewProvider extends ComponentProviderAdapter {
 		new ActionBuilder("Overview BSim Search From Dialog", getOwner())
 				.popupMenuPath("Search Selected Functions...")
 				.description(
-					"Displays the BSim Simliar Functions Search Dialog with the selected funtions.")
+					"Displays the BSim Simliar Functions Search Dialog with the selected functions.")
 				.helpLocation(new HelpLocation(BSimSearchPlugin.HELP_TOPIC,
 					"Overview_Initiate_Search_Dialog"))
 				.enabledWhen(c -> table.getSelectedRowCount() > 0)

@@ -118,7 +118,7 @@ public class NamespacePath implements Comparable<NamespacePath> {
 	 * creating missing elements on the path as necessary.
 	 *
 	 * @param program Ghidra {@link Program} where the namespace should be retrieved from or created in.
-	 * @return {@link Namespace} or fallback to the progam's Global root namespace if problem.
+	 * @return {@link Namespace} or fallback to the program's Global root namespace if problem.
 	 */
 	public Namespace getNamespace(Program program) {
 		if (isRoot()) {

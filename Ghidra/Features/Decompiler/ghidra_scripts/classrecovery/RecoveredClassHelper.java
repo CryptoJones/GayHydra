@@ -243,7 +243,7 @@ public class RecoveredClassHelper {
 
 	/**
 	 * Method to add function to map of class it is contained in some functions are in
-	 * multiple classes becuase they have references to multiple class vtables either
+	 * multiple classes because they have references to multiple class vtables either
 	 * because they have an inlined parent
 	 * @param functions the given list of functions
 	 * @param recoveredClass the given class

@@ -23,7 +23,7 @@
 * _Scripting_. Added `AddVfunctionCallRefScript`, which, if the cursor is on a vftable->function 
   token in the Decompiler, will create a CALL reference to the associated function in the Listing, 
   if it can be determined. (GP-6693)
-* _Search_. Added the ability to scan using the results from one progam rebased on another. (GP-6260)
+* _Search_. Added the ability to scan using the results from one program rebased on another. (GP-6260)
 
 ### Improvements
 * _Analysis_. More Swift type metadata has been marked up. (GP-6281)

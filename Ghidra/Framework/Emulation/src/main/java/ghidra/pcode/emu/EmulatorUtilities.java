@@ -173,7 +173,7 @@ public enum EmulatorUtilities {
 	 * <p>
 	 * This will first examine the entry point's context for a stack pointer value using
 	 * {@link #chooseStackRangeFromContext(Program, Address, int)}. Then, it will examine the
-	 * progam's memory map using {@link #chooseStackRangeFromBlock(Program)}. Finally, it will
+	 * program's memory map using {@link #chooseStackRangeFromBlock(Program)}. Finally, it will
 	 * search for a slack address range of the requested size. That is, it seeks a range that does
 	 * not intersect any existing memory block. If possible, this will avoid choosing a stack range
 	 * that intersects [0, 4096), so that 0-valued pointers are in fact invalid.

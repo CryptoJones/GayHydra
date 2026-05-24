@@ -65,7 +65,7 @@ public class ElfSectionHeaderType {
 	public static ElfSectionHeaderType SHT_GROUP = addDefaultSectionHeaderType(
 		ElfSectionHeaderConstants.SHT_GROUP, "SHT_GROUP", "Section group");
 	public static ElfSectionHeaderType SHT_SYMTAB_SHNDX = addDefaultSectionHeaderType(
-		ElfSectionHeaderConstants.SHT_SYMTAB_SHNDX, "SHT_SYMTAB_SHNDX", "Extended section indeces");
+		ElfSectionHeaderConstants.SHT_SYMTAB_SHNDX, "SHT_SYMTAB_SHNDX", "Extended section indices");
 
 	// OS-specific range: 0x60000000 - 0x6fffffff
 	

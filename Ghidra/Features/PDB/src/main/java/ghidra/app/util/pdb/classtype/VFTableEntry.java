@@ -49,7 +49,7 @@ public interface VFTableEntry extends VXTEntry {
 
 	/**
 	 * Sets the pointer to the function definition type
-	 * @param pointer the pointer to the funciton definition type
+	 * @param pointer the pointer to the function definition type
 	 */
 	public void setFunctionPointer(Pointer pointer);
 

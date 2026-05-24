@@ -266,7 +266,7 @@ public class TenetLoader implements Loader {
 		}
 
 		if ((programPath == null) || programPath.isBlank()) {
-			throw new LoadException("No progam to associate with trace was given");
+			throw new LoadException("No program to associate with trace was given");
 		}
 
 		Msg.info(this, "Loading trace for %s".formatted(programPath));

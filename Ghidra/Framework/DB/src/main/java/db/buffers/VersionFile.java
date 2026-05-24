@@ -98,7 +98,7 @@ class VersionFile {
 		// Save magic number for version file
 		versionFile.setParameter(MAGIC_NUMBER_PARM, MAGIC_NUMBER);
 		
-		// Save original and target file IDs as user paramater values
+		// Save original and target file IDs as user parameter values
 		originalFileId = originalBf.getFileId();
 		versionFile.setParameter(ORIGINAL_FILE_ID_HI_PARM, (int)(originalFileId >> 32));
 		versionFile.setParameter(ORIGINAL_FILE_ID_LOW_PARM, (int)(originalFileId & 0xffffffffL));
