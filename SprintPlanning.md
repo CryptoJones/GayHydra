@@ -29,13 +29,24 @@ For the *why* behind individual choices, see
 
 **Release pipeline hardening (from gayhydra-dropper dogfood):**
 
-The first end-to-end run of the new `samples/re-targets/gayhydra-dropper/` smoke test against the v26.1.6 prebuilt surfaced three release-pipeline regressions ([PR #321](https://github.com/CryptoJones/GayHydra/pull/321) findings).
+The first end-to-end run of the new `samples/re-targets/gayhydra-dropper/` smoke test against the v26.1.6 prebuilt surfaced three release-pipeline regressions ([PR #321](https://github.com/CryptoJones/GayHydra/pull/321) findings). All shipped.
 
-- [ ] **Cut v26.1.8 release.** `application.version` is already bumped to 26.1.8 and the sbom hotfix ([#245](https://github.com/CryptoJones/GayHydra/pull/245)) is on master, so v26.1.7's missing-prebuilt gap can be closed by tagging HEAD as `v26.1.8` and letting `release.yml` run. Needs Aaron's go-ahead before tag push (destructive — triggers a public release).
-- [ ] **Wire `DumpDeobfuscate.java` into `release.yml`.** Post-build decompiler-sanity gate: extract the freshly-built prebuilt, build `gayhydra-dropper` stripped, run headless analyzer with the dropper's `DumpDeobfuscate.java` post-script, fail the release if the literal constant `0x5A` no longer appears in `main.main`'s decompilation. Catches Go-analyzer regressions, decompiler regressions, and headless-launch regressions in one step.
-- [ ] **File upstream NSA/ghidra bugs**:
-  - `GolangSymbolAnalyzer` throws `java.io.EOFException: Invalid index: …` from `GoUncommonType` introspection on Go 1.26 binaries — partial analysis succeeds but function name labels are never applied (all functions land as `FUN_*`).
-  - `GhidraSerialFilterFactory.getOrInstallInstance` collides with the JVM `-Djdk.serialFilterFactory` in `launch.properties` on JDK 21.0.10+; headless launch dies with `IllegalStateException: Serial filter factory has previously been instantiated`. PR [#308](https://github.com/CryptoJones/GayHydra/pull/308) fixed the unit test surface; production launch path still affected.
+- [x] ~~**Cut v26.1.10 release.**~~ Shipped: [v26.1.10 release](https://github.com/CryptoJones/GayHydra/releases/tag/v26.1.10) with prebuilt zip (568 MB) + cosign zip/sbom signatures + bundled-CycloneDX SBOM. Closing the missing-prebuilt gap left by v26.1.7. The pipeline iterated v26.1.8 → v26.1.9 → v26.1.10 as each tag surfaced a different release-pipeline bug; each was fixed before the next tag — see "release-pipeline bugs found and fixed" below.
+- [x] ~~**Wire `DumpDeobfuscate.java` into `release.yml`.**~~ Shipped: [PR #323](https://github.com/CryptoJones/GayHydra/pull/323), iterated by [PR #331](https://github.com/CryptoJones/GayHydra/pull/331) (orphan-XOR tolerance for Go-analyzer-crashed binaries). Post-build decompiler-sanity gate now runs as the third-from-last release step.
+- [x] ~~**File upstream NSA/ghidra bugs.**~~ Shipped: [NSA/ghidra#9219](https://github.com/NationalSecurityAgency/ghidra/issues/9219) (`GolangSymbolAnalyzer` EOFException on Go 1.25/1.26 binaries) and [NSA/ghidra#9220](https://github.com/NationalSecurityAgency/ghidra/issues/9220) (`GhidraSerialFilterFactory` collision with JVM `-Djdk.serialFilterFactory` on JDK 21.0.10+).
+
+**Release-pipeline bugs found and fixed during v26.1.8 → v26.1.10:**
+
+The smoke test wiring + first three release attempts together exposed four pipeline bugs that would have silently shipped broken releases to users without it:
+
+| Tag attempt | Failing step | Bug | Fix |
+|---|---|---|---|
+| v26.1.7 | Fetch Dependencies | `cyclonedx-gradle-plugin` 3.x changed `schemaVersion` from `String` to `org.cyclonedx.Version` enum | [PR #245](https://github.com/CryptoJones/GayHydra/pull/245) (pre-this-sprint) |
+| v26.1.8 | Locate release zip + extract bundled SBOM | unzip pattern `*/support/sbom/bom.json` was wrong; upstream NSA writes `bom.json` at top of zip-prefix dir | [PR #327](https://github.com/CryptoJones/GayHydra/pull/327) |
+| v26.1.9 | Decompiler smoke test | post-script silently dropped XOR-0x5A instructions when no containing function existed (Go-analyzer crash) | [PR #331](https://github.com/CryptoJones/GayHydra/pull/331) |
+| v26.1.10 (first run) | Upload signed artifacts to release | `gh release upload` requires the Release entry to pre-exist; tag-push doesn't auto-create | [PR #333](https://github.com/CryptoJones/GayHydra/pull/333) |
+
+Each fix shipped as a self-contained PR with the corresponding bug as the linked issue. The smoke-test step has now been validated end-to-end on CI; future releases will fail-fast if any of these regress.
 
 ---
 
