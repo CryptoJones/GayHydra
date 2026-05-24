@@ -33,7 +33,7 @@ import ghidra.app.util.bin.BinaryReader;
  * <br>
  * int [] ends        - ending address of code from the module
  * <br>
- * short [] segs      - Array of segment indicies that receive code from the module
+ * short [] segs      - Array of segment indices that receive code from the module
  */
 public class OMFSrcModule {
 
@@ -124,8 +124,8 @@ public class OMFSrcModule {
 	}
 
 	/**
-	 * Returns an array of segment indicies that receive code from the module.
-	 * @return an array of segment indicies that receive code from the module
+	 * Returns an array of segment indices that receive code from the module.
+	 * @return an array of segment indices that receive code from the module
 	 */
 	public short[] getSegments() {
 		return segs;
