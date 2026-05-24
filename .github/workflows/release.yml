@@ -195,3 +195,65 @@ jobs:
             ${{ steps.artifacts.outputs.SBOM }} \
             ${{ steps.artifacts.outputs.SBOM }}.sig \
             ${{ steps.artifacts.outputs.SBOM }}.crt
+
+      - name: Mirror release to Codeberg (Gitea API)
+        # Codeberg is the canonical-source mirror (per DevGuide.md); without
+        # this step, Codeberg-only users only see tags, never prebuilts.
+        # Aaron: to enable, add a Codeberg user token to GitHub repo
+        # Settings → Secrets and variables → Actions as CB_TOKEN. Until
+        # the secret exists, this step exits 0 with a "skipped" message
+        # rather than failing the release.
+        env:
+          CB_TOKEN: ${{ secrets.CB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+          CB_REPO: CryptoJones/GayHydra
+        run: |
+          if [ -z "${CB_TOKEN:-}" ]; then
+            echo "::warning::CB_TOKEN secret not set; skipping Codeberg release mirror. Add it to repo Settings → Secrets and variables → Actions to enable."
+            exit 0
+          fi
+          set -euxo pipefail
+          TAG=${REF#refs/tags/}
+          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
+
+          # Create the Codeberg release entry if missing (same idempotency
+          # logic as the GitHub branch above).
+          if ! curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+              "${CB_API}/releases/tags/${TAG}" >/dev/null 2>&1; then
+            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "${CB_API}/releases" \
+              -d "$(jq -nc --arg t "$TAG" \
+                '{tag_name:$t, name:$t, body:"Automated release mirrored from GitHub. Sprint notes appended at sprint close — see CHANGELOG.md.", draft:false, prerelease:false}')"
+          fi
+
+          # Fetch the release ID (needed for asset uploads on Gitea API).
+          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
+          test -n "$REL_ID" && test "$REL_ID" != "null" || { echo "::error::Codeberg release id lookup failed for $TAG"; exit 1; }
+
+          # Upload each asset; delete pre-existing asset of the same name
+          # first (Gitea's POST /assets has no --clobber equivalent).
+          upload() {
+            local file="$1"
+            local name
+            name="$(basename "$file")"
+            local existing
+            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+              "${CB_API}/releases/${REL_ID}/assets" \
+              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
+            if [ -n "$existing" ]; then
+              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
+                "${CB_API}/releases/${REL_ID}/assets/${existing}"
+            fi
+            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
+              -F "attachment=@${file};filename=${name}" \
+              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
+          }
+
+          upload "${{ steps.artifacts.outputs.ZIP }}"
+          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
+          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
+          upload "${{ steps.artifacts.outputs.SBOM }}"
+          upload "${{ steps.artifacts.outputs.SBOM }}.sig"
+          upload "${{ steps.artifacts.outputs.SBOM }}.crt"
