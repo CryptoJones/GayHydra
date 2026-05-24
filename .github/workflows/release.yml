@@ -178,6 +178,16 @@ jobs:
         run: |
           # Strip refs/tags/ prefix if present.
           TAG=${REF#refs/tags/}
+          # Tag-push doesn't auto-create a GitHub Release entry; create
+          # one if it doesn't exist yet so `gh release upload` has
+          # somewhere to attach assets. The first build for a given tag
+          # always hits this branch; subsequent workflow_dispatch
+          # re-runs against the same tag skip the create.
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "$TAG" \
+              --notes "Automated release. Sprint notes appended at sprint close — see CHANGELOG.md."
+          fi
           gh release upload "$TAG" --clobber \
             ${{ steps.artifacts.outputs.ZIP }} \
             ${{ steps.artifacts.outputs.ZIP }}.sig \
