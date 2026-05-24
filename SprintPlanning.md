@@ -35,6 +35,12 @@ The first end-to-end run of the new `samples/re-targets/gayhydra-dropper/` smoke
 - [x] ~~**Wire `DumpDeobfuscate.java` into `release.yml`.**~~ Shipped: [PR #323](https://github.com/CryptoJones/GayHydra/pull/323), iterated by [PR #331](https://github.com/CryptoJones/GayHydra/pull/331) (orphan-XOR tolerance for Go-analyzer-crashed binaries). Post-build decompiler-sanity gate now runs as the third-from-last release step.
 - [x] ~~**File upstream NSA/ghidra bugs.**~~ Shipped: [NSA/ghidra#9219](https://github.com/NationalSecurityAgency/ghidra/issues/9219) (`GolangSymbolAnalyzer` EOFException on Go 1.25/1.26 binaries) and [NSA/ghidra#9220](https://github.com/NationalSecurityAgency/ghidra/issues/9220) (`GhidraSerialFilterFactory` collision with JVM `-Djdk.serialFilterFactory` on JDK 21.0.10+).
 
+**Cross-platform release coverage (added late 2026-05-24):**
+
+- [x] ~~**Mac (arm64) build of v26.1.10.**~~ Shipped: `ghidra_26.1.10_GayHydra-26.1.10_20260524_mac_arm_64.zip` (567 MB) + `.sha256` uploaded as separate v26.1.10 assets on both forges. Built out-of-band on mac-mini (`mac-mini` SSH alias, macOS 26.5, 3m17s after clearing two stray `${sys:...}`-named files left by a prior log4j run). **Unsigned** — sigstore keyless chains to GHA OIDC, only available inside a GHA runner; out-of-band builds verify via SHA256 instead.
+- [ ] **Windows (x86_64) build of v26.1.10.** In flight: Win11 VM (`win11-ci` SSH alias, 127.0.0.1:2222 QEMU tunnel) was bare per Sprint 7 (set up for .NET testing, not Ghidra builds). Currently bootstrapping via Chocolatey: Temurin-21 + Gradle + git + winflexbison + Visual Studio 2022 Build Tools (multi-GB, ~1-2h). Will mirror the mac path: out-of-band build → upload as `*_windows_x86_64.zip` + `.sha256` to v26.1.10 on both forges, also unsigned.
+- [ ] **Long-term: matrix release.yml over runners.** Both mac/arm64 and windows/x86_64 should run inside GHA matrix jobs on `macos-latest` + `windows-latest` runners, which would extend the cosign signing chain to all three platforms. Carryover for the Sprint 11 release-pipeline track.
+
 **Release-pipeline bugs found and fixed during v26.1.8 → v26.1.10:**
 
 The smoke test wiring + first three release attempts together exposed four pipeline bugs that would have silently shipped broken releases to users without it:
