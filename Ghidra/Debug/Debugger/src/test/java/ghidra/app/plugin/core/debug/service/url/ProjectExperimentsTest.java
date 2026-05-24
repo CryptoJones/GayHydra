@@ -179,7 +179,6 @@ public class ProjectExperimentsTest extends AbstractGhidraHeadedIntegrationTest 
 	}
 
 	@Test
-	@Ignore("manual-tool: ProjectExperiments dev-batch nightly only #193")
 	public void testCreateProgramFile() throws Exception {
 		RecordingDomainFolderListener rdfl = new RecordingDomainFolderListener();
 		ProjectData data = env.getProject().getProjectData();

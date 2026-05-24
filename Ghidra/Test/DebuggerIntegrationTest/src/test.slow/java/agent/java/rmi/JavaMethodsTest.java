@@ -434,7 +434,6 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepInto() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");
@@ -489,7 +488,6 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepOver() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");
@@ -531,7 +529,6 @@ public class JavaMethodsTest extends AbstractJavaTraceRmiTest {
 	}
 
 	@Test
-	@Ignore("flaky: race in JavaMethodsTest putFrames assert #178")
 	public void testStepOut() throws Exception {
 		try (JshellAndConnection conn = startAndConnectJshell()) {
 			start(conn, "HelloWorld.class");

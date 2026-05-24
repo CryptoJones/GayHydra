@@ -25,9 +25,11 @@ Live count from `grep -rn '@Ignore("' Ghidra --include='*.java' | grep -v Repeat
 |---|---|
 | `wip` | 46 |
 | `blocked-on` | 19 |
-| `manual-tool` | 10 |
-| `flaky` | 3 |
-| **Total properly-categorized** | **78** |
+| `manual-tool` | 8 |
+| `flaky` | 0 |
+| **Total properly-categorized** | **73** |
+
+The `manual-tool` count dropped from 10 → 8 and `flaky` from 3 → 0 in [PR #28-6a](#sequencing): five method-level `@Ignore` lines were removed because their enclosing classes are already `@Ignore`'d at class level (two in `JdiExperimentsTest`/`ProjectExperimentsTest`, three in `JavaMethodsTest`). The method annotations were dead — the class-level annotation skipped them first. Issue references (#178, #190, #193) remain valid; if the class-level ignores are ever lifted, those issues can be re-attached at the method level.
 
 `RepeatedStatement.java` is excluded — its `@Ignore` reference is part of a test-rule mechanism, not test debt (also listed in `ignoreAudit.gradle`'s `EXCLUDED_FILES`).
 
@@ -42,7 +44,8 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 | #28-3 | `gradle ignoreAudit` task + CI wiring | shipped |
 | #28-4 | Tracking issues filed for the six | shipped (#159–#162, #178, etc.) |
 | #28-5 | Dead commented-out `//@Ignore` cleanup (7 lines) | shipped ([PR #295](https://github.com/CryptoJones/GayHydra/pull/295)) |
-| #28-6+ | Active-`@Ignore` fix-or-delete sweep across the remaining 78 sites | open |
+| #28-6a | Redundant inner `@Ignore` cleanup (5 lines inside already-`@Ignore`'d classes) | shipped |
+| #28-6b+ | Active-`@Ignore` fix-or-delete sweep across the remaining 73 sites | open |
 
 ## #28-6+ sweep heuristics
 

@@ -197,7 +197,6 @@ public class JdiExperimentsTest {
 	}
 
 	@Test
-	@Ignore("manual-tool: JdiExperiments enable-after-manual-launch #190")
 	public void testAtttachJDWP() throws Exception {
 		AttachingConnector tcpConn = vmm.attachingConnectors()
 				.stream()
