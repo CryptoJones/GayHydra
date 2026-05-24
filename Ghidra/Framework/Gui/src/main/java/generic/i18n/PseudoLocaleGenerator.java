@@ -32,8 +32,9 @@ import java.util.Properties;
  * <p>Used for visual QA: launch with {@code -Dghidra.locale=en-XA} and
  * any unbracketed string is a hardcoded literal that escaped the sweep.
  *
- * <p>{@link MessageFormat} placeholders ({@code '{0}'}, {@code "'{'"}, etc.)
- * are passed through unmodified — only literal characters get pseudo-ed.
+ * <p><code>java.text.MessageFormat</code> placeholders (<code>'{0}'</code>,
+ * <code>"'{'"</code>, etc.) are passed through unmodified — only literal
+ * characters get pseudo-ed.
  */
 public final class PseudoLocaleGenerator {
 

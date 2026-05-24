@@ -312,7 +312,7 @@ public class FunctionDescription implements Comparable<FunctionDescription> {
 	 * Match new functions to old functions via the address, test if there is an update between the two functions,
 	 * generate an update record if there is, return the list of updates
 	 * @param iter is the list of NEW functions
-	 * @param spacemap is a map from address space id's to addresses from that space to OLD functions
+	 * @param spaceMap is a map from address space id's to addresses from that space to OLD functions
 	 * @param badList is a container for new functions that could not be mapped to old
 	 * @return the list of Update records
 	 */
