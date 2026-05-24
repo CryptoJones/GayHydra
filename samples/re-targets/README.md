@@ -13,6 +13,7 @@ Binaries (and source) intended to be reverse-engineered with GayHydra. Each samp
 |---|---|---|---|
 | [`gayhydra-dropper/`](gayhydra-dropper/) | Go | XOR-with-constant string deobfuscation (key `0x5A`) | ✅ yes |
 | [`crackme-arrayxor/`](crackme-arrayxor/) | Go | Per-position XOR with a 16-byte key array — array-scoped deobfuscation (harder than constant XOR) | ✅ yes (data-segment signal, complementary to the dropper's decompiler-output signal) |
+| [`rot13-secret/`](rot13-secret/) | Go | ROT13 — a **non-XOR** cipher. Recognizing the `LEA -base` / `ADD $0xd` / `SHR $0xd` (constant-modulo trick) pattern. | ❌ no (existing two samples already cover the strong signals; rot13 is supplementary) |
 
 ## Why these exist
 
