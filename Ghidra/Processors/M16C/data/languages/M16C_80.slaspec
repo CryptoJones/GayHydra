@@ -608,7 +608,7 @@ bitbaseAbs16: imm16_dat  is imm16_dat { export *:1 imm16_dat; }
 @define BITBASE     "((b1_d5=4 | b1_d5_4=0) ... & bitbase)"
 @define BITBASE_AX    "((b1_d5=0x0; b2_d5_1=1) & bitbaseAx)"
 
-# Bit identifier (may be overriden if useBitIndex has been set by BINDEX instruction
+# Bit identifier (may be overridden if useBitIndex has been set by BINDEX instruction
 bit: b2_bit      is useBitIndex=0 & b2_bit   { export *[const]:1 b2_bit; }
 bit: [bitIndex]  is useBitIndex=1 & bitIndex { val:3 = bitIndex % 8; b:1 = val:1; export b; }
 

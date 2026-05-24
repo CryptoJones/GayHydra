@@ -1751,7 +1751,7 @@ CheckLpcfg:  is useLoopCfg=1 [ useLoopCfg=0; ] {
 
 # EndPacket: End of HW Loop handling (uses parse1 and parse2)
 
-EndOfLoop: 			 		is PropogateLoopCfg { } # not end-of-loop - propogate useLoopCfg if active
+EndOfLoop: 			 		is PropogateLoopCfg { } # not end-of-loop - propagate useLoopCfg if active
 EndOfLoop: " :endloop0"		is parse1=2 & CheckLpcfg { # Last in HW Loop 0
 	# :endloop0 - TODO: not sure how to display
 	build CheckLpcfg;
@@ -1759,7 +1759,7 @@ EndOfLoop: " :endloop0"		is parse1=2 & CheckLpcfg { # Last in HW Loop 0
 	LC0 = LC0 - 1;
 	goto [SA0];
 }
-EndOfLoop: " :endloop1" 	is parse1=1 & parse2=2 & PropogateLoopCfg { # Last in HW Loop 1 - propogate useLoopCfg if active
+EndOfLoop: " :endloop1" 	is parse1=1 & parse2=2 & PropogateLoopCfg { # Last in HW Loop 1 - propagate useLoopCfg if active
 	# :endloop1 - TODO: not sure how to display
 	if (LC1 <= 1) goto inst_next;
 	LC1 = LC1 - 1;
@@ -1838,10 +1838,10 @@ CrossBuild:      is packetOffset=3 & CrossBuildAddr0 & CrossBuildAddr1 & CrossBu
 }	 
 
 # End of Packet pcode
-# - if NOT end-of-packet propogate packet context bits and skip further checks
+# - if NOT end-of-packet propagate packet context bits and skip further checks
 # - if end-of-packet include CrossBuild and EndOfLoop pcode
-EndPacket:				is (parse=1 | parse=2) & PropogateLoopCfg [ globalset(inst_next,packetBits); ] { } # this is not end-of-packet - propogate packetBits and useLoopCfg if needed
-EndPacket: EndOfLoop	is (parse=0 | parse=3) & CrossBuild & EndOfLoop { # EndOfLoop will propogate useLoopCfg if needed
+EndPacket:				is (parse=1 | parse=2) & PropogateLoopCfg [ globalset(inst_next,packetBits); ] { } # this is not end-of-packet - propagate packetBits and useLoopCfg if needed
+EndPacket: EndOfLoop	is (parse=0 | parse=3) & CrossBuild & EndOfLoop { # EndOfLoop will propagate useLoopCfg if needed
 	build CrossBuild;
 	build EndOfLoop;
 }
