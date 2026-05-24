@@ -647,7 +647,7 @@ public class FunctionStartRFParamsDialog extends ReusableDialogComponentProvider
 
 	private void addHideDialogButton() {
 		JButton hideDialogButton = new JButton("Hide Dialog");
-		hideDialogButton.setToolTipText("Hide Dialog (does not cancel training or destory models)");
+		hideDialogButton.setToolTipText("Hide Dialog (does not cancel training or destroy models)");
 		hideDialogButton.addActionListener(e -> close());
 		addButton(hideDialogButton);
 	}
