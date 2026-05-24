@@ -25,9 +25,9 @@ Live count from `grep -rn '@Ignore("' Ghidra --include='*.java' | grep -v Repeat
 |---|---|
 | `wip` | 46 |
 | `blocked-on` | 19 |
-| `manual-tool` | 6 |
+| `manual-tool` | 5 |
 | `flaky` | 0 |
-| **Total properly-categorized** | **71** |
+| **Total properly-categorized** | **70** |
 
 The `manual-tool` count dropped from 10 → 8 and `flaky` from 3 → 0 in [PR #28-6a](#sequencing): five method-level `@Ignore` lines were removed because their enclosing classes are already `@Ignore`'d at class level (two in `JdiExperimentsTest`/`ProjectExperimentsTest`, three in `JavaMethodsTest`). The method annotations were dead — the class-level annotation skipped them first. Issue references (#178, #190, #193) remain valid; if the class-level ignores are ever lifted, those issues can be re-attached at the method level.
 
@@ -51,9 +51,9 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 
 ## #28-6+ sweep heuristics
 
-Suggested order for tackling the remaining 71 sites:
+Suggested order for tackling the remaining 70 sites:
 
-1. **`manual-tool` (6 sites)** — most are full classes whose entire purpose is dev-bench experimentation (e.g. `JdiExperimentsTest`, `ProjectExperimentsTest`). Decide: move to `src/main/test-tools/` or delete. Either resolution is a one-PR-per-class change. Deleted so far: `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest` (this PR).
+1. **`manual-tool` (5 sites)** — split into "real test, ignored for infrastructure reason" (e.g. `JdiExperimentsTest` crashes in Gradle, `JitJvmTypeUtilsTest` is Java-version-bound) and "author-declared not-a-regression-test" (the experiment notebooks). The first group needs an infra fix or move to `src/main/test-tools/`; the second can be deleted. Deleted so far: `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest`, `ProjectExperimentsTest` (this PR).
 2. **`flaky` (0 sites)** — historical bucket; all three former sites in `JavaMethodsTest` (issue #178) were collapsed in [PR #28-6a](#sequencing) when the enclosing class's class-level `@Ignore` was recognised as already covering them.
 3. **`blocked-on` (19 sites)** — the dependent issue list is the next sweep target. Closing the upstream blocker for any of these unblocks the test.
 4. **`wip` (46 sites)** — largest bucket; mostly Debugger RMI integration work. Sweep last; many will resolve as the Debugger RMI work matures.
