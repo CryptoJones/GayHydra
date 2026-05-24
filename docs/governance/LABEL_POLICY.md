@@ -74,6 +74,18 @@ shows up on the SLA dashboard as a breach if older than 10 business days.
 | `good-first-issue` | Small, well-scoped, owned by no one else, has acceptance criteria |
 | `help-wanted` | Maintainers have decided this is wanted but lack the bandwidth |
 
+### `@Ignore`-test deadlines (Rec 28, see [IGNORE_TEST_POLICY.md](../testing/IGNORE_TEST_POLICY.md))
+
+Applied to the issue an `@Ignore("category: … #N")` annotation in a Java test points at. After the deadline the test is fixed or deleted — there is no fourth option.
+
+| Label | Meaning |
+|---|---|
+| `ignore:30d` | Linked `@Ignore`'d test must be fixed or deleted within 30 days |
+| `ignore:90d` | Same, 90 days — e.g. flaky tests with a sprint-scale fix window |
+| `ignore:1y` | Same, 1 year — long-running upstream blockers, cluster-cleanup work |
+
+`gradle ignoreAudit` Stage 2 will gate on these (the audit task already enforces the in-tree `@Ignore("category: … #N")` form; Stage 2 adds the via-GitHub-API deadline check).
+
 ## Migration from the upstream label set
 
 | Upstream label | Action in this fork |
