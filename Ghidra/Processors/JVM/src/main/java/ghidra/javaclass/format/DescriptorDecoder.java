@@ -96,7 +96,7 @@ public class DescriptorDecoder {
 	 * Given a method descriptor, returns the data type of the return value of the corresponding
 	 * method
 	 * @param methodDescriptor descriptor of method
-	 * @param dtManager data type manger for containing program
+	 * @param dtManager data type manager for containing program
 	 * @return data type of return value of method
 	 */
 	public static DataType getReturnTypeOfMethodDescriptor(String methodDescriptor,

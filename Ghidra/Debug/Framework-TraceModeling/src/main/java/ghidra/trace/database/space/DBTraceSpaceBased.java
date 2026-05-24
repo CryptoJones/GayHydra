@@ -28,7 +28,7 @@ public interface DBTraceSpaceBased extends TraceSpaceMixin {
 		 * This turned out to be a bad idea! Every place a client gives an address would have to be
 		 * translated into the overlay space first. Every manager, every method. It's a lot. For
 		 * now, I'll leave that burden on the client. Especially, since the register overlay spaces
-		 * will all be delegated from the manger directly, it doesn't make sense to permit sloppy
+		 * will all be delegated from the manager directly, it doesn't make sense to permit sloppy
 		 * access.
 		 */
 		/*if (space.isRegisterSpace() && space == getAddressSpace().getPhysicalSpace()) {

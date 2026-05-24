@@ -128,7 +128,7 @@ public class PcodeDataTypeManager {
 
 	/**
 	 * Constructor
-	 * @param prog the program for the p-code data type maanger
+	 * @param prog the program for the p-code data type manager
 	 * @param simplifier the name transformer to be used
 	 */
 	public PcodeDataTypeManager(Program prog, NameTransformer simplifier) {

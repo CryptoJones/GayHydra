@@ -23,7 +23,7 @@ import java.util.List;
  * register that "breaks down" into smaller registers can be represent by a 
  * RegisterTree.  The largest register will be at the root and the registers that
  * make it up will be its children trees.  The children are RegisterTrees as well
- * and can have children trees of thier own.  The root of a RegisterTree may not
+ * and can have children trees of their own.  The root of a RegisterTree may not
  * have an associated Register which means that its children are unrelated.  This
  * way all the registers of a processor can be represented as a single RegisterTree.
  */

@@ -37,7 +37,7 @@ public enum PointerType {
 	/**
 	 * Pointer offset relative to pointer storage address.
 	 * NOTE: This type has limited usefulness since it can only be applied to
-	 * a pointer stored in memory based upon its storage location.  Type-propogation
+	 * a pointer stored in memory based upon its storage location.  Type-propagation
 	 * should be avoided on the resulting pointer typedef.
 	 */
 	RELATIVE(2),

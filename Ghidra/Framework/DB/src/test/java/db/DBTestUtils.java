@@ -517,7 +517,7 @@ public class DBTestUtils {
 	 * Fill record with random data.
 	 * @param rec record
 	 * @param varDataSize number of bytes to fill into all variable length fields.
-	 * NOTE: The StringField does not strictly follow the varDataSize paramter.
+	 * NOTE: The StringField does not strictly follow the varDataSize parameter.
 	 * A value less than 0 results in a null assignment to those fields.
 	 */
 	static void fillRecord(DBRecord rec, int varDataSize) {

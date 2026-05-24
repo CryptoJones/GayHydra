@@ -66,7 +66,7 @@ public class FunctionSignatureParser {
 	 * Constructs a SignatureParser for a program.  The destDataTypeManager and/or
 	 * service must be specified.
 	 * 
-	 * @param destDataTypeManager the destination datatype maanger.
+	 * @param destDataTypeManager the destination datatype manager.
 	 * @param service the DataTypeManagerService to use for resolving datatypes that
 	 *                can't be found in the given program. Can be null to utilize
 	 *                program based types only.

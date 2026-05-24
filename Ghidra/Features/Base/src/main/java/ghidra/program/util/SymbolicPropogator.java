@@ -2592,7 +2592,7 @@ public class SymbolicPropogator {
 	/**
 	 * Make from the instruction to the reference based on the varnode passed in.
 	 * 
-	 * @param varnodeContext - context to use for any other infomation needed
+	 * @param varnodeContext - context to use for any other information needed
 	 * @param instruction - instruction to place the reference on.
 	 * @param pcodeop - pcode op that caused the reference
 	 * @param opIndex - operand it should be placed on, or -1 if unknown

@@ -61,7 +61,7 @@ public interface GhidraURLResultHandler {
 	 * @param message error detail
 	 * @param url URL which was used for query
 	 * @param cause cause of error (may be null)
-	 * @throws IOException may be thrown if handler decides to propogate error
+	 * @throws IOException may be thrown if handler decides to propagate error
 	 */
 	void handleError(String title, String message, URL url, IOException cause) throws IOException;
 
@@ -71,7 +71,7 @@ public interface GhidraURLResultHandler {
 	 * This method does not do anything by default but is provided to flag failure if needed since
 	 * {@link #handleError(String, String, URL, IOException)} will not be invoked.
 	 * @param url connection URL
-	 * @throws IOException may be thrown if handler decides to propogate error
+	 * @throws IOException may be thrown if handler decides to propagate error
 	 */
 	default void handleUnauthorizedAccess(URL url) throws IOException {
 		// do nothing - assume user has already been notified or issue has been logged
@@ -80,7 +80,7 @@ public interface GhidraURLResultHandler {
 	/**
 	 * Handle an external link URL which is not followed.
 	 * @param url connection URL
-	 * @throws IOException may be thrown if handler decides to propogate error
+	 * @throws IOException may be thrown if handler decides to propagate error
 	 */
 	default void externalLinkIgnored(URL url) throws IOException {
 		// do nothing

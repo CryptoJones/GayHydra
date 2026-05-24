@@ -4213,8 +4213,8 @@ abstract public class DataTypeManagerDB implements DataTypeManager {
 	 * primitve size changes based upon specified primitiveTypeIds.  It is assumed TypeDef
 	 * use of primitives have already be handled elsewhere.
 	 * All pointers are ignored and not followed during graph generation.
-	 * This method is intended to facilitate datatype size change propogation in an 
-	 * orderly fashion to reduce size change propogation.
+	 * This method is intended to facilitate datatype size change propagation in an 
+	 * orderly fashion to reduce size change propagation.
 	
 	 * @param monitor task monitor
 	 * @return order list of composites

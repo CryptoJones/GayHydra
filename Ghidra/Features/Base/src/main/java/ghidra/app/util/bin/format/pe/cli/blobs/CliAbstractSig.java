@@ -199,7 +199,7 @@ public abstract class CliAbstractSig extends CliBlob implements CliRepresentable
 		ELEMENT_TYPE_STRING(0xe),
 
 		ELEMENT_TYPE_PTR(0xf),
-		ELEMENT_TYPE_BYREF(0x10), // ByRef flag in paramters
+		ELEMENT_TYPE_BYREF(0x10), // ByRef flag in parameters
 
 		ELEMENT_TYPE_VALUETYPE(0x11),
 		ELEMENT_TYPE_CLASS(0x12),

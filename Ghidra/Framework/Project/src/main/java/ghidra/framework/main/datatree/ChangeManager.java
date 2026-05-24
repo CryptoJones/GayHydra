@@ -229,7 +229,7 @@ class ChangeManager implements DomainFolderChangeListener, TreeModelListener {
 
 	/**
 	 * Following a folder move or rename where only a single notification is provided this
-	 * method should be used to propogate link related updates which may refer to the affected
+	 * method should be used to propagate link related updates which may refer to the affected
 	 * folder or its children.  This method is invoked recursively for all child folders.
 	 * @param oldParentPath folder's old parent path
 	 * @param oldName folder's previous name

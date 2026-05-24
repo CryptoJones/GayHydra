@@ -1027,7 +1027,7 @@ public class VarnodeContext implements ProcessorContext {
 	 * Propogate any results that are in the value cache.
 	 * 
 	 * @param clearContext  true if the cache should be cleared.
-	 *                      The propogation could be for flow purposes, and the
+	 *                      The propagation could be for flow purposes, and the
 	 *                      processing of the instruction is finished, so it's effects should be kept.
 	 */
 	public void propogateResults(boolean clearContext) {

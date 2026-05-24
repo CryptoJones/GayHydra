@@ -27,7 +27,7 @@ public interface Mask {
 
 	/**
 	*   Test if the given object is equal to this object. Two masks are
-	*   equal if they have exactly the same values in thier byte arrays.
+	*   equal if they have exactly the same values in their byte arrays.
 	*   @param obj the object to be tested for equals
 	*   @return true if the object is equal to this mask, false otherwise.
 	*/

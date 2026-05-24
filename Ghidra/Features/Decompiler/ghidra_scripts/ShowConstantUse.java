@@ -573,7 +573,7 @@ public class ShowConstantUse extends GhidraScript {
 
 	/**
 	 * Backtrack to a constant given a start position of a parameter of a given
-	 * function Useful if you want to start from a function paramter.
+	 * function Useful if you want to start from a function parameter.
 	 * 
 	 * @param f function to start in
 	 * @param paramIndex parameter index to backtrack from

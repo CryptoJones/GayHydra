@@ -46,7 +46,7 @@ public class AddressRangeObjectMap<T> {
 	/**
 	 * Returns an {@link AddressRangeIterator} over all ranges that have associated objects within
 	 * the given range.  Object Ranges that overlap the beginning or end of the given range are
-	 * included, but have thier start or end index adjusted to be in the given range.
+	 * included, but have their start or end index adjusted to be in the given range.
 	 * @param start the first Address in the range to find all index ranges that have associated values.
 	 * @param end the last Address(inclusive) in the range to find all index ranges that have associated
 	 *  values.

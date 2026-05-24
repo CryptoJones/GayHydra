@@ -664,7 +664,7 @@ public class RTTIGccClassRecoverer extends RTTIClassRecoverer {
 				// parent isn't a known class - cannot continue processing recoveredClass
 				if (parentClass == null) {
 					Msg.error(this, "Removing class: " + recoveredClass.getName() +
-						" from list to" + " process since parent information is not availalbe.");
+						" from list to" + " process since parent information is not available.");
 					recoveredClasses.remove(recoveredClass);
 				}
 				continue;
@@ -678,7 +678,7 @@ public class RTTIGccClassRecoverer extends RTTIClassRecoverer {
 				if (parents == null) {
 					Msg.debug(this,
 						"Removing class: " + recoveredClass.getName() + " from list to" +
-							" process since full parent information is not availalbe.");
+							" process since full parent information is not available.");
 					recoveredClasses.remove(recoveredClass);
 				}
 

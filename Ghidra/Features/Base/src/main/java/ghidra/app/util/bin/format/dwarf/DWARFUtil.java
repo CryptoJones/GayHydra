@@ -382,7 +382,7 @@ public class DWARFUtil {
 		// DW_AT_artificial indicates that the param was not declared in the source but
 		// was added 'behind the scenes', and a "this" param is the main example of this.
 		//
-		// A DW_AT_object_pointer property in the parent function is an explict way of
+		// A DW_AT_object_pointer property in the parent function is an explicit way of
 		// referencing the param that points to the object instance (ie. "this").
 		//
 		String paramName = paramDIEA.getName();
