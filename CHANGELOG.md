@@ -8,16 +8,26 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.9 (Sprint 11 close). Tracked per-PR in
+Work toward v26.1.10 (Sprint 11 close). Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
-v26.1.8 was tagged but its release workflow failed at the "Locate
-release zip + extract bundled SBOM" step — the unzip pattern added
-in [#230](https://github.com/CryptoJones/GayHydra/pull/230) looked
-for `*/support/sbom/bom.json` but the upstream NSA SBOM generator
-actually writes `bom.json` at the top of the zip-prefix directory.
-v26.1.9 patches the path and re-tags from a HEAD that fires the fix.
+Release-pipeline-hardening false starts during this sprint:
+
+- **v26.1.8** failed at "Locate release zip + extract bundled SBOM" —
+  the unzip pattern from [#230](https://github.com/CryptoJones/GayHydra/pull/230)
+  looked for `*/support/sbom/bom.json` but the upstream NSA SBOM
+  generator actually writes `bom.json` at the top of the zip-prefix
+  directory. Fixed in v26.1.9 ([#327](https://github.com/CryptoJones/GayHydra/pull/327)).
+- **v26.1.9** got past SBOM extract + sanity gate but the new
+  "Decompiler smoke test" step (added in [#323](https://github.com/CryptoJones/GayHydra/pull/323))
+  reported FAIL because the post-script gated on `getFunctionContaining
+  != null` — and the Go 1.25 toolchain CI pulled crashes the Go
+  analyzer (NSA/ghidra#9219), so no containing function is ever
+  created even though the XOR-0x5A instructions are correctly
+  disassembled. Fixed in v26.1.10 by counting orphan disassembled
+  XOR-0x5A as PASS-weak and only requiring the decompile check when
+  a containing function exists.
 
 Highlights since v26.1.7:
 
