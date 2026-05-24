@@ -83,7 +83,7 @@ public interface TraceStack extends TraceUniqueObject, TraceObjectInterface {
 	 * 
 	 * @param snap the snap
 	 * @param level the level, where 0 indicates the inner-most frame.
-	 * @param ensureDepth true to expand the depth to accomodate the requested frame
+	 * @param ensureDepth true to expand the depth to accommodate the requested frame
 	 * @return the frame, or {@code null} if level exceeds the depth without ensureDepth set
 	 * @throws IndexOutOfBoundsException if the level is negative
 	 */

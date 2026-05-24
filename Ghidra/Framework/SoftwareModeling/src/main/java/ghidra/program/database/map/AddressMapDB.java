@@ -314,7 +314,7 @@ public class AddressMapDB implements AddressMap {
 				// AddressSpace instance is not from my program's AddressFactory -
 				// perform a lookup by name and allow use if matching space is found.
 				// Although mixing address space use between programs is not preferred we try to 
-				// accomodate provided all address characterics match.  An ID lookup is performed 
+				// accommodate provided all address characterics match.  An ID lookup is performed 
 				// first since it is the fastest way to verify the address originated from our
 				// address factory, otherwise we must attempt to find the same address space
 				// by name and check all characteristics via the equals method.  This assumes

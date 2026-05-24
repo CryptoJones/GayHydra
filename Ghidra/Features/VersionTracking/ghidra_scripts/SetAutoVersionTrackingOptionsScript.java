@@ -65,7 +65,7 @@ public class SetAutoVersionTrackingOptionsScript extends GhidraScript {
 		// This option defines the minimum data length for the Exact Data Correlator
 		optionsValues.defineInt(VTOptionDefines.DATA_CORRELATOR_MIN_LEN_OPTION_TEXT, 5);
 
-		// This option defines the minimum symbol name lenght for the Exact Symbol Correlator
+		// This option defines the minimum symbol name length for the Exact Symbol Correlator
 		optionsValues.defineInt(VTOptionDefines.SYMBOL_CORRELATOR_MIN_LEN_OPTION_TEXT, 3);
 
 		// This option defines the minimum function length for the Exact Function Bytes Correlator, 

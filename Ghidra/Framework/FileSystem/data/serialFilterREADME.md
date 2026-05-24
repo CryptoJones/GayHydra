@@ -7,13 +7,13 @@ are employed by both Ghidra Server and client applications.  The consequqnce of 
 that all Java Object deserialization is subject to the filter even when it corresponds to purely 
 local functionality.  This can occur with certain code that relies on serialization to facilitate 
 object cloning (e.g., `org.apache.commons.collections4.functors.PrototypeFactory`).  When such cases occur
-it may be neccessary to add allowed classes to a client-side serial input filter.
+it may be necessary to add allowed classes to a client-side serial input filter.
 
 The Ghidra application discovers serial input filter specifications (`*.serial.filter`) files within
 each Ghidra module's data directory (e.g., `Ghidra/Framework/FileSystem/data`) at startup.  The 
 combined filter set is used to establish a global input serialization filter for Ghidra.
 
-When adding functionality to Ghidra it may be neccessary to adjust the defined serial filter 
+When adding functionality to Ghidra it may be necessary to adjust the defined serial filter 
 specifications.  When the filter rejects a class deserialization an `InvalidClassException` will be 
 thrown and the rejected class name will be logged.  The log will need to be consulted since the 
 exception itself does not convey the name of the offending class.

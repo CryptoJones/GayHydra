@@ -114,7 +114,7 @@ class BinarySearchFormat extends SearchFormat {
 
 	/**
 	 * Return a mask byte that has a bit set to 1 for each bit that is not a wildcard.  Any bits
-	 * that aren't specified (i.e. token.lenght &lt; 8) are treated as valid test bits. 
+	 * that aren't specified (i.e. token.length &lt; 8) are treated as valid test bits. 
 	 * @param token the string of bits to determine a mask for.
 	 */
 	private byte getMask(String token) {

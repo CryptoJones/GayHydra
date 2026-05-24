@@ -25,7 +25,7 @@ import ghidra.util.exception.InvalidInputException;
  * Allows for the adding of a parameter to a given function.
  * 
  * Note: If no ordinal is provided to this class at construction time, then
- * the ordinal of hte given parameter will be used.
+ * the ordinal of the given parameter will be used.
  * 
  * @see AddRegisterParameterCommand
  * @see AddStackParameterCommand

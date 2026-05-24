@@ -499,7 +499,7 @@ public class Repository implements FileSystemListener, RepositoryLogger {
 	 * @param currentUser current user
 	 * @param newUserMap user map
 	 * @param allowAnonymous true if anonymous access is allowed
-	 * @throws UserAccessException if currentUser does not have admin priviledge
+	 * @throws UserAccessException if currentUser does not have admin privilege
 	 * @throws IOException if an IO error occurs
 	 */
 	private void writeUserList(String currentUser, LinkedHashMap<String, User> newUserMap,
@@ -517,7 +517,7 @@ public class Repository implements FileSystemListener, RepositoryLogger {
 	 * Privileged method for updating user access list.
 	 * @param newUserMap user map
 	 * @param allowAnonymous true if anonymous access is allowed
-	 * @throws UserAccessException if currentUser does not have admin priviledge
+	 * @throws UserAccessException if currentUser does not have admin privilege
 	 * @throws IOException if an IO error occurs
 	 */
 	private synchronized void writeUserList(LinkedHashMap<String, User> newUserMap,
@@ -558,7 +558,7 @@ public class Repository implements FileSystemListener, RepositoryLogger {
 	 * and simply delete those repository directories which are unwanted.
 	 * @param currentUser current user
 	 * @throws IOException if an IO error occurs
-	 * @throws UserAccessException if currentUser does not have Admin priviledge
+	 * @throws UserAccessException if currentUser does not have Admin privilege
 	 */
 	void delete(String currentUser) throws IOException, UserAccessException {
 		synchronized (fileSystem) {

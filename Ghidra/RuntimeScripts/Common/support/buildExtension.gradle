@@ -104,7 +104,7 @@ task buildExtension (type: Zip) {
 	duplicatesStrategy = 'exclude'
 	
 	// This filtered property file copy must appear before the general 
-	// copy to ensure that it is prefered over the unmodified file
+	// copy to ensure that it is preferred over the unmodified file
 	File propFile = new File(project.projectDir, "extension.properties")
 	from (propFile) {
 		String version = "${ghidra_version}"

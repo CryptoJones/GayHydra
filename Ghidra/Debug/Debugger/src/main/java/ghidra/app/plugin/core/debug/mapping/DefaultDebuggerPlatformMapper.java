@@ -109,7 +109,7 @@ public class DefaultDebuggerPlatformMapper extends AbstractDebuggerPlatformMappe
 		}
 		catch (AddressOverflowException e) {
 			Msg.showError(this, null, "Map Registers",
-				"The host language cannot accomodate register storage for the" +
+				"The host language cannot accommodate register storage for the" +
 					" guest platform (language: " + platform.getLanguage() + ")");
 		}
 	}

@@ -188,7 +188,7 @@ public class RepositoryManager {
 	 * Delete a specified repository.
 	 * @param currentUser current user
 	 * @param name repository name
-	 * @throws UserAccessException if currentUser does not have Admin priviledge
+	 * @throws UserAccessException if currentUser does not have Admin privilege
 	 * @throws IOException if error occurs while removing repository
 	 */
 	public synchronized void deleteRepository(String currentUser, String name)

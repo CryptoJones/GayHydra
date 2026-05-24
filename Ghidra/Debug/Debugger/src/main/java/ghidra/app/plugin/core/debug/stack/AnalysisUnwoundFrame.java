@@ -331,7 +331,7 @@ public class AnalysisUnwoundFrame<T> extends AbstractUnwoundFrame<T> {
 				truncateOrDelete(existing, span);
 			}
 			bm.addBookmark(span, spPlusParams, btWarn, "Stack Unwind",
-				"Frame " + level + " has lenght 0");
+				"Frame " + level + " has length 0");
 			return null;
 		}
 		for (TraceBookmark existing : bm.getBookmarksIntersecting(span,

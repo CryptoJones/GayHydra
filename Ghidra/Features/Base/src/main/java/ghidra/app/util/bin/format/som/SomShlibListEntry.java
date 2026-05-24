@@ -103,7 +103,7 @@ public class SomShlibListEntry implements StructConverter {
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		StructureDataType struct = new StructureDataType("shlib_list_entry", SIZE);
 		struct.setPackingEnabled(true);
-		struct.add(DWORD, "shlib_name", "offset withing string table");
+		struct.add(DWORD, "shlib_name", "offset within string table");
 		try {
 			struct.addBitField(BYTE, 6, "reserved1", "");
 			struct.addBitField(BYTE, 1, "internal_name", "shlib entry is an internal name");

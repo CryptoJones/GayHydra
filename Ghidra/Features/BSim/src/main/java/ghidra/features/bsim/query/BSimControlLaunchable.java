@@ -262,7 +262,7 @@ public class BSimControlLaunchable implements GhidraLaunchable {
 			String value = null;
 
 			if (optionName.startsWith("-")) {
-				// although not prefered, allow option value to be specified as --option=value
+				// although not preferred, allow option value to be specified as --option=value
 				int ix = optionName.indexOf("=");
 				if (ix > 1) {
 					value = optionName.substring(ix + 1);
