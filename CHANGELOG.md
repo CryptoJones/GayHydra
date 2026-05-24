@@ -71,10 +71,20 @@ documented in [SprintHistory.md](SprintHistory.md):
   re-enabled (#244, #250–256), Rec 25/26 Stage 3 prep (#247, #249,
   #261, #265–270), SBOM hotfix (#245), RE training sample +
   decompiler smoke test (#319, #321, #323), release pipeline bug
-  fixes (#327, #331, #333). First end-to-end signed release —
-  prebuilt zip (568 MB), cosign sigs, bundled CycloneDX SBOM.
-  v26.1.8/9 tagged but failed; v26.1.10 is the first successful
-  release artifact since v26.1.6.
+  fixes (#327, #331). First end-to-end signed release — prebuilt zip
+  (568 MB), cosign sigs, bundled CycloneDX SBOM. v26.1.8/9 tagged
+  but failed; v26.1.10 is the first successful release artifact
+  since v26.1.6.
+
+  Caveat: v26.1.10's source tree does **not** include [#333](https://github.com/CryptoJones/GayHydra/pull/333)
+  (the `gh release create` fix). The v26.1.10 tag's own first
+  release-workflow run hit `release not found` at the upload step
+  and was finally rescued by a `workflow_dispatch` re-run against
+  master, which used master's already-fixed workflow file but
+  checked out the v26.1.10 source. Re-firing release.yml against
+  the v26.1.10 tag from a fresh repo clone — without a master
+  workflow override — would hit the same `gh release upload`
+  failure. Fixed for v26.1.11+ in #333.
 - **v26.1.7** — Sprint 8 close: rebrand + Rec 19/25/26 ratchets + SBOM
   bundled-extract.
 - **v26.1.6** — Sprint 7 close: CI green tree-wide + Codeberg mirror +
