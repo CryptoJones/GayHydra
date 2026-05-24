@@ -46,7 +46,7 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 | #28-5 | Dead commented-out `//@Ignore` cleanup (7 lines) | shipped ([PR #295](https://github.com/CryptoJones/GayHydra/pull/295)) |
 | #28-6a | Redundant inner `@Ignore` cleanup (5 lines inside already-`@Ignore`'d classes) | shipped |
 | #28-6b | `ignore:30d` / `ignore:90d` / `ignore:1y` deadline labels declared in `.github/labels.yml` | shipped |
-| #28-6c | Deadline labels created in the live GitHub repo via API (bypasses `sync-labels.yml` dry-run gate) and applied to all 13 tracking issues: `ignore:90d` on #178 (flaky `putFrames` race — fixable inside a sprint), `ignore:1y` on the other twelve (long-running upstream/blocker work). Policy violation cleared. | shipped |
+| #28-6c | Deadline labels created in the live GitHub repo via API (bypasses `sync-labels.yml` dry-run gate) and applied to all 18 tracking issues currently referenced by an `@Ignore` annotation in-tree (#159, #160, #161, #162, #176, #177, #179, #180, #181, #182, #183, #187, #188, #189, #190, #191, #192, #193): `ignore:90d` on #178 (flaky `putFrames` race — fixable inside a sprint), `ignore:1y` on the others (long-running upstream blockers + Debugger RMI cluster work). Policy violation cleared. Stale titles on #187/#188/#192 (still said "bare @Ignore" though the annotations have been categorized) updated to reflect current state. | shipped |
 | #28-6d+ | Remaining 73-site fix-or-delete sweep across `manual-tool` (8), `blocked-on` (19), `wip` (46) buckets | open |
 
 ## #28-6+ sweep heuristics
