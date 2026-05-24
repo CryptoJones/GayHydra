@@ -250,7 +250,7 @@
       types at specific offsets within a structure whose size has been specified. When editing a non-packed structure
       the editor attempts to prevent defined components from moving
       to a different offset when performing operations like drag and drop which may consume undefined bytes. 
-      The default alignment for non-packed structures is 1-byte but may be overriden by setting a specific 
+      The default alignment for non-packed structures is 1-byte but may be overridden by setting a specific 
       non-default <A href="#Structure_Editor_Align">minimum alignment</A>. 
       The alignment will not influence the size of a non-packed structure so it is advised
       that the size always be explicity set to a multiple of the alignment value.<BR>
@@ -323,7 +323,7 @@
 
     <BLOCKQUOTE>
       <P>This setting controls the packing behavior of the structure or union.  In general, packing should 
-      be disabled when a complete definition is unknown and it is neccessary to reverse engineer the 
+      be disabled when a complete definition is unknown and it is necessary to reverse engineer the 
       component specifications.  This is the initial state of a new structure with the <B>pack</B>
       checkbox left unchecked.  When a the specifications of a composite are known, such as from
       a source header file, it may be preferred to enable packing to allow for automatic placement of 
@@ -841,7 +841,7 @@
        <ul>
        <li>Fit (non-packed structure only) - when modifying a component 
        there must be adequate space to place the component.  Any undefined components which immediately follow
-       the modified component may be consumed or added based upon the component size change.  It may be neccessary to 
+       the modified component may be consumed or added based upon the component size change.  It may be necessary to 
        insert undefined bytes or clear other components before the modification may be completed.</li>
        <li>Illegal Datatype - certain datatypes are not permitted (e.g., data driven Dynamic types, Factory types).</li>
        <li>Zero-Length Components (non-packed structure only) - modification of an existing zero-length component may
@@ -891,7 +891,7 @@
         <P>A bitfield may be specified by appending <b>:&lt;bitsize&gt;</b> to the end of a valid base datatype.  Valid base datatypes include
         all integer types (e.g., byte, char, int, etc.), a defined enum, or a typedef which corresponds to an integer-type or enum.
         It is important to note that specifying a bitfield in this manner works well for packed structures, however for non-packed
-        structures it may be neccessary to use the <A href="#Structure_Editor_Bitfield_Actions">Bitfield Actions</A> to properly define a bitfield.</P>
+        structures it may be necessary to use the <A href="#Structure_Editor_Bitfield_Actions">Bitfield Actions</A> to properly define a bitfield.</P>
         
         <P>For example, <i>int:4</i> defines a signed integer bitfield which is 4-bits in length.  
  
