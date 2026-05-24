@@ -1,0 +1,63 @@
+name: Samples — go test
+
+# Runs `go test ./...` against each Go sample under samples/re-targets/.
+# Each sample is its own Go module (own go.mod) so the test job needs
+# to enter each dir individually.
+#
+# Catches regressions in the samples themselves before they reach the
+# release-time smoke test (which also exercises them but only on tag
+# pushes, ~60 min into the build).
+#
+# Triggers on PR + push to master, paths-filtered so changes outside
+# samples/ don't fire it.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'samples/re-targets/**'
+      - '.github/workflows/samples-go-test.yml'
+  pull_request:
+    paths:
+      - 'samples/re-targets/**'
+      - '.github/workflows/samples-go-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - gayhydra-dropper
+          - crackme-arrayxor
+          - rot13-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          # Sample go.mod files declare `go 1.25.0` as the minimum,
+          # which lets setup-go pick the latest patch >= 1.25 from
+          # its cache. The actual toolchain version is invisible to
+          # the test assertions (they're language-level).
+          go-version: '1.25'
+
+      - name: go vet
+        working-directory: samples/re-targets/${{ matrix.sample }}
+        run: go vet ./...
+
+      - name: go test
+        working-directory: samples/re-targets/${{ matrix.sample }}
+        run: go test -v ./...
+
+      - name: go build (smoke check that the sample compiles stripped)
+        working-directory: samples/re-targets/${{ matrix.sample }}
+        run: |
+          go build -ldflags="-s -w" -o /tmp/${{ matrix.sample }}-stripped .
+          ls -la /tmp/${{ matrix.sample }}-stripped
