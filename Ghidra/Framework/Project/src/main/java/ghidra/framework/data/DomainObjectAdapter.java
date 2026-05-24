@@ -64,7 +64,7 @@ public abstract class DomainObjectAdapter implements DomainObject {
 	protected Map<String, String> metadata = new LinkedHashMap<String, String>();
 
 	// FIXME: (see GP-2003) "changed" flag is improperly manipulated by various methods.  
-	// In general, comitted transactions will trigger all valid cases of setting flag to true, 
+	// In general, committed transactions will trigger all valid cases of setting flag to true, 
 	// there may be a few cases where setting it to false may be appropriate.  Without a transation 
 	// it's unclear why it should ever need to get set true.
 

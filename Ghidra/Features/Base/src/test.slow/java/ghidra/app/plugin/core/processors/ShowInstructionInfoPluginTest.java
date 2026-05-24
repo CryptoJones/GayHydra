@@ -125,7 +125,7 @@ public class ShowInstructionInfoPluginTest extends AbstractGhidraHeadedIntegrati
 //	@Test
 	public void testShowProcessorManual_ErrorDialog() throws Exception {
 
-		// FIXME: This test is bogus and needs to be corrected by refering to
+		// FIXME: This test is bogus and needs to be corrected by referring to
 		// an instruction whose manual is missing.  Test apepars to work with 
 		// CI test environment because none of the manuals are found
 

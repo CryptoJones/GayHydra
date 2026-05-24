@@ -83,7 +83,7 @@ public class GhidraObjectInputFilter implements ObjectInputFilter {
 	// all filters will be ignored.  An normal process shutdown will dump the list of deserialized 
 	// classes to the file TRACKER_LOG_FILE.
 
-	// IMPORTANT: TRACKER_ENABLED must be set to 'false' when comitted to source control !!
+	// IMPORTANT: TRACKER_ENABLED must be set to 'false' when committed to source control !!
 
 	private static final boolean TRACKER_ENABLED = false; // class tracking enablement
 	private Map<String, ClassInfo> classTracker = new TreeMap<>(); // classnames -> ClassInfo

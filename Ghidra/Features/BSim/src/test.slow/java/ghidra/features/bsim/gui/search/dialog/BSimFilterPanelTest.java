@@ -294,7 +294,7 @@ public class BSimFilterPanelTest extends AbstractBSimPluginTest {
 
 	/**
 	 * Uses regex to search a given string for all text between two substrings of
-	 * that full string. The position of the two substrings relative to eachother
+	 * that full string. The position of the two substrings relative to each other
 	 * is unimportant. ie: str1 + <some stuff> + str2 will work just as well as
 	 * str2 + <some stuff> + str1. This method will figure out what the correct
 	 * order is.

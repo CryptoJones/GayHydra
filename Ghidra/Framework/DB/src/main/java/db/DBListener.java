@@ -23,7 +23,7 @@ public interface DBListener {
 	/**
 	 * Provides notification that an undo or redo was performed.
 	 * During the restore process {@link #tableAdded(DBHandle, Table)} and
-	 * {@link #tableDeleted(DBHandle, Table)} notifications will be supressed.
+	 * {@link #tableDeleted(DBHandle, Table)} notifications will be suppressed.
 	 * Any listener concerned with tables added or removed should reacquire their table(s).
 	 * @param dbh associated database handle
 	 */

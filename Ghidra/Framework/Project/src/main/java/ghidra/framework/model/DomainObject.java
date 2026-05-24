@@ -510,7 +510,7 @@ public interface DomainObject {
 	 * @param transactionID transaction ID obtained from startTransaction method
 	 * @param commit if true the changes made in this transaction will be marked for commit,
 	 * if false this and any concurrent transaction will be rolled-back.
-	 * @return true if this invocation was the final transaction and all changes were comitted.
+	 * @return true if this invocation was the final transaction and all changes were committed.
 	 */
 	public boolean endTransaction(int transactionID, boolean commit);
 

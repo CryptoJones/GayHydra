@@ -550,7 +550,7 @@ public class EmulatorTestRunner {
 					// enter printf function
 					printfCallAddr = lastAddress;
 					emuCallbacks.logRWEnabled = false;
-					executionListener.log(testGroup, "printf invocation (log supressed) ...");
+					executionListener.log(testGroup, "printf invocation (log suppressed) ...");
 				}
 				else if (printfCallAddr != null && isPrintfReturn(executeAddr, printfCallAddr)) {
 					// return from printf function 

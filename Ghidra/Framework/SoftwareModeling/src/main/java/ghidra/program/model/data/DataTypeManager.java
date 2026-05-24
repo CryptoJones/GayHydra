@@ -437,7 +437,7 @@ public interface DataTypeManager {
 	 * @param transactionID id of the transaction to end
 	 * @param commit true if changes are committed, false if changes in transaction should be
 	 * rolled back.
-	 * @return true if this invocation was the final transaction and all changes were comitted.
+	 * @return true if this invocation was the final transaction and all changes were committed.
 	 */
 	public boolean endTransaction(int transactionID, boolean commit);
 

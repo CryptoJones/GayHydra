@@ -347,7 +347,7 @@ public class CompositeViewerDataTypeManager<T extends Composite> extends StandAl
 	public void dataTypeChanged(DataType dt, boolean isAutoChange) {
 		super.dataTypeChanged(dt, isAutoChange);
 		if (dt == viewComposite) {
-			// Set dataTypeChanged which will trigger changeCallback when transaction fully comitted
+			// Set dataTypeChanged which will trigger changeCallback when transaction fully committed
 			dataTypeChanged = true;
 		}
 	}

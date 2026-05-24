@@ -111,7 +111,7 @@ class DmgServerProcessManager implements Closeable {
 			PrintWriter outputWriter = new PrintWriter(process.getOutputStream());
 			startReaderThread(new BufferedReader(new InputStreamReader(process.getErrorStream())));
 
-			// hack to send the inital "open" to the dmg server process
+			// hack to send the initial "open" to the dmg server process
 			Cmd startupCmd = new Cmd("open " + file.getAbsolutePath(), 0);
 
 			try {

@@ -616,7 +616,7 @@ public class DWARFDataTypeImporterTest extends DWARFTestBase {
 	 * <p>
 	 * Currently the DTM resolve() will ignore the conflict handlers attempt to 
 	 * replace since it will result in cyclic dependency issue.  It will instead
-	 * rename the new structure as a conflict with its field refering to the original
+	 * rename the new structure as a conflict with its field referring to the original
 	 * structure.
 	 * <p>
 	 * This situation happens in DWARF when there is a base class and a derived class

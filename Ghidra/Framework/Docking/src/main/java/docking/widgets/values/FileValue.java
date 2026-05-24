@@ -64,7 +64,7 @@ public class FileValue extends AbstractValue<File> {
 	 * @param name the name of the value
 	 * @param defaultValue the optional default File value. If non-null this can be either a
 	 * file or directory, but it should match the given {@link GhidraFileChooserMode} 
-	 * @param startingDir an optional directory specifying where the FileChooser should intialize
+	 * @param startingDir an optional directory specifying where the FileChooser should initialize
 	 * its starting selected directory.
 	 * @param mode the {@link GhidraFileChooserMode} used to indicate if this File represents a
 	 * file or directory. It will put the GhidraFileChooser in a mode for choosing files or

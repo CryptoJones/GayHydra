@@ -56,7 +56,7 @@ public interface ListingMergeConstants {
 	 */
 	public static final int TRUNCATE_LENGTH = 160;
 
-	// Standaradized strings for refering to each of the versioned programs.
+	// Standaradized strings for referring to each of the versioned programs.
 	public static final String RESULT_TITLE = MergeConstants.RESULT_TITLE;
 	public static final String ORIGINAL_TITLE = MergeConstants.ORIGINAL_TITLE;
 	public static final String LATEST_TITLE = MergeConstants.LATEST_TITLE;

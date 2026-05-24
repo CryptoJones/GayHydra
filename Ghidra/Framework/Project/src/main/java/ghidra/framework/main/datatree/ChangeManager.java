@@ -701,7 +701,7 @@ class ChangeManager implements DomainFolderChangeListener, TreeModelListener {
 				refresh(linkedTreeNode.folderLinks);
 				boolean removed = linkedTreeNode.folderLinks.isEmpty();
 
-				// Refresh all file links refering to files within this folder
+				// Refresh all file links referring to files within this folder
 				Collection<Set<DomainFileNode>> linkedFileSets =
 					linkedTreeNode.linkedFilesMap.values();
 				if (!linkedFileSets.isEmpty()) {
