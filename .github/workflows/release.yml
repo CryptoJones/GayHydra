@@ -232,9 +232,47 @@ jobs:
           # always hits this branch; subsequent workflow_dispatch
           # re-runs against the same tag skip the create.
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            ZIP_NAME=$(basename "${{ steps.artifacts.outputs.ZIP }}")
+            SBOM_NAME=$(basename "${{ steps.artifacts.outputs.SBOM }}")
+            # Rec 17 #17-3: cosign verification commands in release notes.
+            # The OIDC certificate identity proves the signature came from
+            # release.yml on this repo, not a hand-run cosign off a
+            # developer laptop. The regex covers both push (refs/tags/v*)
+            # and workflow_dispatch invocations.
+            NOTES=$(cat <<EOF
+Automated release. Sprint notes appended at sprint close — see [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/master/CHANGELOG.md).
+
+## Verifying the artifacts (Rec 17, see [BINARY_SIGNING.md](https://github.com/${GITHUB_REPOSITORY}/blob/master/docs/security/BINARY_SIGNING.md))
+
+Both the distribution zip and the bundled CycloneDX SBOM are signed with [Sigstore Cosign keyless](https://docs.sigstore.dev/cosign/overview/) (no static signing key — the cert chains to GitHub Actions' OIDC issuer).
+
+\`\`\`bash
+ZIP=${ZIP_NAME}
+SBOM=${SBOM_NAME}
+
+# Verify the distribution zip
+cosign verify-blob \\\\
+  --certificate "\$ZIP.crt" \\\\
+  --signature "\$ZIP.sig" \\\\
+  --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\\\
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \\\\
+  "\$ZIP"
+
+# Verify the CycloneDX SBOM
+cosign verify-blob \\\\
+  --certificate "\$SBOM.crt" \\\\
+  --signature "\$SBOM.sig" \\\\
+  --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\\\
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \\\\
+  "\$SBOM"
+\`\`\`
+
+A successful verify means the bytes you downloaded match what \`release.yml\` produced on a GitHub-hosted runner from this repo's source at this tag (modulo the workflow-vs-source caveat the SprintPlanning entry notes for early v26.1.x tags).
+EOF
+)
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --title "$TAG" \
-              --notes "Automated release. Sprint notes appended at sprint close — see CHANGELOG.md."
+              --notes "$NOTES"
           fi
           gh release upload "$TAG" --clobber \
             ${{ steps.artifacts.outputs.ZIP }} \

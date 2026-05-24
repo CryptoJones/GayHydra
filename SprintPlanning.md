@@ -95,7 +95,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork.
 - [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
 - [ ] **Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).
-- [ ] **Rec 17 #17-3:** add Cosign verification commands to release-notes template.
+- [x] ~~**Rec 17 #17-3:** add Cosign verification commands to release-notes template.~~ Shipped. The `gh release create` step in `.github/workflows/release.yml`'s upload block now emits a templated body containing the `cosign verify-blob` commands for both the zip and the bundled SBOM, plus a pointer to [`BINARY_SIGNING.md`](docs/security/BINARY_SIGNING.md). Identity-regex matches both push and `workflow_dispatch` invocations of `release.yml`.
 - [ ] **Rec 19 #19-2:** first SafeObjectInput migration — `ItemDeserializer` + `CodeUnitInfo` (Class A sites — attacker-reachable).
 - [ ] **Rec 21:** SBOM build-sanity gate (≥10 components or fail).
 - [ ] **Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean any subproject ≥50 warnings.
