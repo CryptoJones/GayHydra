@@ -76,7 +76,7 @@ public:
 class TargetHit {
 public:
   Address funcstart;		// Starting address of function making target call
-  Address codeaddr;		// Address of instruction refering to target call
+  Address codeaddr;		// Address of instruction referring to target call
   Address thunkaddr;		// The target call
   uint4 mask;			// Mask associated with this target
   TargetHit(const Address &func,const Address &code,const Address &thunk,uint4 m) :
