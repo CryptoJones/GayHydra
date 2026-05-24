@@ -201,4 +201,4 @@ Each pass that has a budget check gets:
   partial-result diagnostic surfaces.
 
 Tests live under `unittests/budget/` and ride the
-[Rec 13 / Rec 15](OSS_FUZZ.md) ASan + UBSan path.
+[Rec 13 / Rec 15](../security/OSS_FUZZ.md) ASan + UBSan path.
