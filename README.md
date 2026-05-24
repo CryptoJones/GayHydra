@@ -17,7 +17,7 @@
 # GayHydra
 
 * Previously "Ghidra: Top 42 Principal-Architect Recommendations"
-* ("GT42PAR" didn't have the pinache "GayHydra" does! 🏳️‍🌈)
+* ("GT42PAR" didn't have the panache "GayHydra" does! 🏳️‍🌈)
 
 * Audit date: 2026-05-21. Repo: NationalSecurityAgency/ghidra @ master (94164bd6e9).*
 
