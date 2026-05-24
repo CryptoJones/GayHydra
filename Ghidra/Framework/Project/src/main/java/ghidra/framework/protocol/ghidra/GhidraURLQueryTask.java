@@ -34,10 +34,10 @@ import ghidra.util.task.*;
  * All implementations of this Task should override one or
  * both of the processing methods {@link #processResult(DomainFile, URL, TaskMonitor)}
  * and {@link #processResult(DomainFolder, URL, TaskMonitor)}.  For any process method
- * not overriden the default behavior is reporting <I>Unsupported Content</I>.
+ * not overridden the default behavior is reporting <I>Unsupported Content</I>.
  * <P>
  * If {@link #handleError(String, String, URL, IOException)}
- * is not overriden all errors are reported via 
+ * is not overridden all errors are reported via 
  * {@link Msg#showError(Object, java.awt.Component, String, Object)}.
  */
 public abstract class GhidraURLQueryTask extends Task implements GhidraURLResultHandler {

@@ -38,7 +38,7 @@ public class TemplateSimplifier implements NameTransformer {
 		SUB_OPTION_NAME + ".Min Template Length";
 
 	public static final String SIMPLY_TEMPLATES_DESCRIPTION =
-		"Determines whether to diplay templated names in a simplified form.";
+		"Determines whether to display templated names in a simplified form.";
 	public static final String TEMPLATE_NESTING_DEPTH_DESCRIPTION =
 		"Maximum template depth to display when simplify templated names.";
 	public static final String MAX_TEMPLATE_LENGTH_DESCRIPTION =

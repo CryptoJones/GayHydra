@@ -2832,7 +2832,7 @@ public class SymbolicPropogator {
 		}
 
 		// if target is the fallthrough of this instruction
-		//   any flow override might be an overriden call/return
+		//   any flow override might be an overridden call/return
 		// this is a sanity check in case a speculative constant matches the fallthru of the instruction
 		//  we shouldn't make these type of references.
 		// Note: it is possible that the reference is to the data right below it by passing a parameter

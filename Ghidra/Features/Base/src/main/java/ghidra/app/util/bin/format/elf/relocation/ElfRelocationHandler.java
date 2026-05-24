@@ -94,7 +94,7 @@ abstract public class ElfRelocationHandler implements ExtensionPoint {
 	/**
 	 * Perform relocation fixup.
 	 * <br>
-	 * IMPORTANT: this class must be overriden if this implementation does not specify an
+	 * IMPORTANT: this class must be overridden if this implementation does not specify an
 	 * {@link ElfRelocationType} enum class (see {@link #ElfRelocationHandler()}).
 	 * 
 	 * @param elfRelocationContext relocation context

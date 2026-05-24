@@ -53,7 +53,7 @@ public class InstructionStasher {
 		fallthroughOverride =
 			instruction.isFallThroughOverridden() ? instruction.getFallThrough() : null;
 		// Relocation data change may mutate instruction.  Do not force length of instruction 
-		// unless it was previously overriden.  A value of 0 allows length to match prototoype.
+		// unless it was previously overridden.  A value of 0 allows length to match prototoype.
 		lengthOverride = instruction.isLengthOverridden() ? instruction.getLength() : 0;
 		program.getListing().clearCodeUnits(minAddress, instruction.getMaxAddress(), false);
 	}

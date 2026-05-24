@@ -446,7 +446,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 
 		MouseBinding currentMouseBinding = getMouseBindingFromTable(actionName, actionOwner);
 
-		assertEquals("Mouse binding not restored after a call to restore defautls",
+		assertEquals("Mouse binding not restored after a call to restore defaults",
 			defaultMouseBinding, currentMouseBinding);
 		assertOptionsMouseBinding(tool, actionName, actionOwner, defaultMouseBinding);
 	}
@@ -479,7 +479,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 
 		MouseBinding currentMouseBinding = getMouseBindingFromTable(actionName, actionOwner);
 
-		assertEquals("Mouse binding not restored after a call to restore defautls",
+		assertEquals("Mouse binding not restored after a call to restore defaults",
 			defaultMouseBinding, currentMouseBinding);
 		assertOptionsMouseBinding(tool, actionName, actionOwner, defaultMouseBinding);
 		assertOptionsKeyStroke(tool, actionName, actionOwner, defaultKeyStroke);
@@ -517,7 +517,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 
 		MouseBinding currentMouseBinding = getMouseBindingFromTable(actionName, actionOwner);
 
-		assertEquals("Mouse binding not restored after a call to restore defautls",
+		assertEquals("Mouse binding not restored after a call to restore defaults",
 			defaultMouseBinding, currentMouseBinding);
 		assertOptionsMouseBinding(tool, actionName, actionOwner, defaultMouseBinding);
 		assertOptionsKeyStroke(tool, actionName, actionOwner, defaultKeyStroke);
@@ -546,7 +546,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 
 		MouseBinding currentMouseBinding = getMouseBindingFromTable(actionName, actionOwner);
 
-		assertEquals("Mouse binding not restored after a call to restore defautls",
+		assertEquals("Mouse binding not restored after a call to restore defaults",
 			defaultMouseBinding, currentMouseBinding);
 		assertOptionsMouseBinding(tool, actionName, actionOwner, defaultMouseBinding);
 		assertOptionsKeyStroke(tool, actionName, actionOwner, defaultKeyStroke);
@@ -569,7 +569,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 		restoreDefaults();
 
 		KeyStroke currentBinding = getKeyBindingFromTable(actionName, actionOwner);
-		assertEquals("Key binding not restored after a call to restore defautls", defaultKeyStroke,
+		assertEquals("Key binding not restored after a call to restore defaults", defaultKeyStroke,
 			currentBinding);
 		assertOptionsKeyStroke(tool, actionName, actionOwner, defaultKeyStroke);
 	}
@@ -596,7 +596,7 @@ public class OptionsDialogTest extends AbstractGhidraHeadedIntegrationTest {
 		restoreDefaults();
 
 		KeyStroke currentBinding = getKeyBindingFromTable(actionName, actionOwner);
-		assertEquals("Key binding not restored after a call to restore defautls", defaultKeyStroke,
+		assertEquals("Key binding not restored after a call to restore defaults", defaultKeyStroke,
 			currentBinding);
 		assertOptionsKeyStroke(frontEndTool, actionName, actionOwner, defaultKeyStroke);
 	}

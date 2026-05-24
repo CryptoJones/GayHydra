@@ -57,7 +57,7 @@ public class MachoFunctionStartsAnalyzer extends AbstractAnalyzer {
 
 	private static String OPTION_NAME_BOOKMARKS_NEW = "Bookmark new functions";
 	private static String OPTION_DESC_BOOKMARKS_NEW =
-		"Create a bookmark for each function sucessfully created by this analyzer";
+		"Create a bookmark for each function successfully created by this analyzer";
 	private static boolean OPTION_DEFAULT_BOOKMARKS_NEW = false;
 
 	private static String OPTION_NAME_BOOKMARKS_FAILED = "Bookmark failed functions";

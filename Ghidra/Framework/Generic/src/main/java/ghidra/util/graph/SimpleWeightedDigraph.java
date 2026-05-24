@@ -91,7 +91,7 @@ public class SimpleWeightedDigraph extends WeightedDigraph {
 	 * specified by the edge already exists in the graph, 
 	 * then the edge weight in increased by the default value.
 	 * @param e the edge to add.
-	 * @return true if the edge was added sucessfully.
+	 * @return true if the edge was added successfully.
 	 */
 	@Override
 	public boolean add(Edge e) {
@@ -113,7 +113,7 @@ public class SimpleWeightedDigraph extends WeightedDigraph {
 	 * then the edge weight in increased
 	 * by the specified value.
 	 * 
-	 * @return true if the edge was added sucessfully.
+	 * @return true if the edge was added successfully.
 	 */
 	@Override
 	public boolean add(Edge e, double weight) {

@@ -482,8 +482,8 @@ public class ElfLoadAdapter {
 
 	/**
 	 * Return filtered InputStream for loading a memory block (includes non-loaded OTHER blocks).
-	 * NOTE: If this method is overriden, the {@link #hasFilteredLoadInputStream(ElfLoadHelper, MemoryLoadable, Address)}
-	 * must also be overriden in a consistent fashion.
+	 * NOTE: If this method is overridden, the {@link #hasFilteredLoadInputStream(ElfLoadHelper, MemoryLoadable, Address)}
+	 * must also be overridden in a consistent fashion.
 	 * @param elfLoadHelper
 	 * @param loadable Corresponding ElfSectionHeader or ElfProgramHeader for the memory block to be created.
 	 * @param start memory load address

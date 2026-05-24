@@ -91,7 +91,7 @@ public abstract class MemoryAccessFilter {
 	 * Dispose this filter which will cause it to be removed from the memory state.
 	 * 
 	 * <p>
-	 * If overriden, be sure to invoke {@code super.dispose()}.
+	 * If overridden, be sure to invoke {@code super.dispose()}.
 	 */
 	public void dispose() {
 		if (nextFilter != null) {

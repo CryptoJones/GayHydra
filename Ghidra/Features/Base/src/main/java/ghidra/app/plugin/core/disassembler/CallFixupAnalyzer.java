@@ -291,7 +291,7 @@ public class CallFixupAnalyzer extends AbstractAnalyzer {
 			Address fallthruAddr = instr.getFallThrough();
 			if (instr.getFlowOverride() != FlowOverride.CALL_RETURN && fallthruAddr != null) {
 				instr.setFlowOverride(FlowOverride.CALL_RETURN);
-				// some overriden flows, like conditional call, keep their fallthrough
+				// some overridden flows, like conditional call, keep their fallthrough
 				//   no need to fix these locations
 				if (instr.getFlowType().hasFallthrough()) {
 					continue;

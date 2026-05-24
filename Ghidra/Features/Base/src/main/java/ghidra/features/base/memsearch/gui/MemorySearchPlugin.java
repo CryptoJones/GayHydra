@@ -99,7 +99,7 @@ public class MemorySearchPlugin extends Plugin implements MemorySearchService {
 				.menuPath("&Search", "Repeat Search &Forwards")
 				.menuGroup("search", "b")
 				.keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0))
-				.description("Repeat last memory search fowards once")
+				.description("Repeat last memory search forwards once")
 				.helpLocation(new HelpLocation(HelpTopics.SEARCH, "Repeat Search Forwards"))
 				.withContext(NavigatableActionContext.class, true)
 				.enabledWhen(c -> lastByteMatcher != null && c.getAddress() != null)

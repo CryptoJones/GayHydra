@@ -1527,7 +1527,7 @@ public class CodeUnitIteratorTest extends AbstractGhidraHeadedIntegrationTest {
 		cu = it.next();
 		assertEquals(addr(0x3f4), cu.getMinAddress());
 		assertTrue(cu instanceof Instruction);
-		assertEquals(1, cu.getLength()); // length overriden
+		assertEquals(1, cu.getLength()); // length overridden
 		assertEquals("imm r0,#0x0", cu.toString());
 
 		cu = it.next();

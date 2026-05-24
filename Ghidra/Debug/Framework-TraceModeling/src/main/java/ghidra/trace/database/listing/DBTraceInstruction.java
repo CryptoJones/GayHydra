@@ -675,7 +675,7 @@ public class DBTraceInstruction extends AbstractDBTraceCodeUnit<DBTraceInstructi
 				refSpace.addMemoryReference(lifespan, getAddress(), fallThrough,
 					RefType.FALL_THROUGH, SourceType.USER_DEFINED, Reference.MNEMONIC);
 				// TODO: ReferenceManager must be observable. Listen for FALL_THROUGHs
-				// and react by setting overriden flag appropriately
+				// and react by setting overridden flag appropriately
 				setFallThroughOverridden(true);
 			}
 		}

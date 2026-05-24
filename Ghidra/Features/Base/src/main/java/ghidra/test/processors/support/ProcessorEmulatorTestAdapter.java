@@ -106,7 +106,7 @@ import utility.application.ApplicationLayout;
  * traceLevel and traceLog file controlled via environment properties EmuTestTraceLevel and
  * EmuTestTraceFile. 3. The TestInfo structure must be properly maintained within the datatype
  * archive EmuTesting.gdt and field naming consistent with use in PCodeTestControlBlock.java 4. The
- * {@link #initializeState(EmulatorTestRunner, Program)} may be overriden to initialize the register
+ * {@link #initializeState(EmulatorTestRunner, Program)} may be overridden to initialize the register
  * values if needed. This should be based upon symbols or other program information if possible
  * since hardcoded constants may not track future builds of a test binaries. An attempt is made to
  * initialize the stack pointer automatically based upon well known stack initialization symbols.
@@ -1451,7 +1451,7 @@ public abstract class ProcessorEmulatorTestAdapter extends TestCase implements E
 	}
 
 	//
-	// Protected helper methods which may be overriden
+	// Protected helper methods which may be overridden
 	//
 
 	/**

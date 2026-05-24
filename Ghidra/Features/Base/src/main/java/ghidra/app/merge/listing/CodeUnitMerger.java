@@ -874,7 +874,7 @@ class CodeUnitMerger extends AbstractListingMerger {
 			ProgramMemoryUtil.copyBytesInRanges(resultPgm, fromPgm, minAddress, maxAddress);
 		}
 
-		// avoid forcing length of new instruction if old instruction length was not overriden
+		// avoid forcing length of new instruction if old instruction length was not overridden
 		int lengthOverride = instruction.isLengthOverridden() ? instruction.getLength() : 0;
 
 		Instruction inst = resultListing.createInstruction(minAddress, instruction.getPrototype(),

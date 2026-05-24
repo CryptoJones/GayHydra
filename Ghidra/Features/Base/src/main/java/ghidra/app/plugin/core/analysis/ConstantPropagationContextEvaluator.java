@@ -152,7 +152,7 @@ public class ConstantPropagationContextEvaluator extends ContextEvaluatorAdapter
 
 	/**
 	 * If you override this method, and the default behavior of checking 0-256 and mask values is desired,
-	 * call super.evaluateConstant() in your overriden method.
+	 * call super.evaluateConstant() in your overridden method.
 	 */
 	@Override
 	public Address evaluateConstant(VarnodeContext context, Instruction instr, int pcodeop,
@@ -180,7 +180,7 @@ public class ConstantPropagationContextEvaluator extends ContextEvaluatorAdapter
 
 	/**
 	 * If you override this method, and the default behavior of checking 0-256 and mask values is desired,
-	 * call super.evaluateReference() in your overriden method.
+	 * call super.evaluateReference() in your overridden method.
 	 */
 	@Override
 	public boolean evaluateReference(VarnodeContext context, Instruction instr, int pcodeop,

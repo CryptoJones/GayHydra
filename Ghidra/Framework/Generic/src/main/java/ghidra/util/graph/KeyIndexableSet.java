@@ -44,7 +44,7 @@ public interface KeyIndexableSet<T extends KeyedObject> {
 	public boolean add(T o);
 
 	/** Remove a KeyedObject from this KeyIndexableSet. 
-	 * @return true if the KeyedObject was sucessfully removed. Returns false
+	 * @return true if the KeyedObject was successfully removed. Returns false
 	 * if the KeyedObject was not in the KeyIndexablrSet.
 	 */
 	public boolean remove(T o);

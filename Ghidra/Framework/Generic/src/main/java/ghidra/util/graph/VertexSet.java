@@ -81,7 +81,7 @@ class VertexSet implements KeyIndexableSet<Vertex> {
 	 * Adds the given vertex to the vertex set, if it does not already contain
 	 * it.
 	 * 
-	 * @return true if and only if the vertex was sucessfully added.
+	 * @return true if and only if the vertex was successfully added.
 	 */
 	@Override
 	public boolean add(Vertex v) {
@@ -100,7 +100,7 @@ class VertexSet implements KeyIndexableSet<Vertex> {
 
 	/** 
 	 * Removes the given vertex from this vertex set if it contains it. 
-	 * @return true if and only if the vertex was sucessfully removed.
+	 * @return true if and only if the vertex was successfully removed.
 	 */
 	@Override
 	public boolean remove(Vertex v) {

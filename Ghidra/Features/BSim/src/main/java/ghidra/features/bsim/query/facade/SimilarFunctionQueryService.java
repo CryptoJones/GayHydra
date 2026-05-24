@@ -416,7 +416,7 @@ public class SimilarFunctionQueryService implements AutoCloseable {
 		return null;
 	}
 
-	// NOTE: Method overriden for testing
+	// NOTE: Method overridden for testing
 	protected FunctionDatabase createDatabase(String urlString) throws MalformedURLException {
 		URL url = BSimClientFactory.deriveBSimURL(urlString);
 		return BSimClientFactory.buildClient(url, false);

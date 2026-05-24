@@ -678,7 +678,7 @@ public class FunctionDB extends DbObject implements Function {
 	/**
 	 * Adjust the specified parameter for a thunk function if required.
 	 * This method will return a newly minted this auto-param if required
-	 * to reflect the overriden name and class within which this thunk
+	 * to reflect the overridden name and class within which this thunk
 	 * resides.
 	 * @param parameter thunk parameter
 	 * @return an adjusted auto-parameter or the original parameter

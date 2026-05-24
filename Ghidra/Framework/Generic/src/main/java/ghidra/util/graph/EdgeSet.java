@@ -63,7 +63,7 @@ class EdgeSet implements KeyIndexableSet<Edge> {
 	}
 
 	/** Removes an edge from this EdgeSet. Returns true if and only if the
-	 *   edge was in the EdgeSet and was sucessfully removed.
+	 *   edge was in the EdgeSet and was successfully removed.
 	 */
 	@Override
 	public boolean remove(Edge e) {
@@ -134,7 +134,7 @@ class EdgeSet implements KeyIndexableSet<Edge> {
 
 	/** Adds an edge to the graph. If either endpoint is not in the graph add it.
 	 *   If the edge is already in the graph return false and do nothing. 
-	 *  @return true if and only if the edge was sucessfully added.
+	 *  @return true if and only if the edge was successfully added.
 	 */
 	@Override
 	public boolean add(Edge e) {
