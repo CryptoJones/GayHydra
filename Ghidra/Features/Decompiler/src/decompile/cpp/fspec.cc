@@ -104,8 +104,8 @@ void ParamEntry::resolveJoin(list<ParamEntry> &curList)
     const ParamEntry *entry = findEntryByStorage(curList, joinrec->getPiece(i));
     if (entry != (const ParamEntry *)0) {
       groupSet.insert(groupSet.end(),entry->groupSet.begin(),entry->groupSet.end());
-      // For output <pentry>, if the most signifigant part overlaps with an earlier <pentry>
-      // the least signifigant part is marked for extra checks, and vice versa.
+      // For output <pentry>, if the most significant part overlaps with an earlier <pentry>
+      // the least significant part is marked for extra checks, and vice versa.
       flags |= (i==0) ? extracheck_low : extracheck_high;
     }
   }
@@ -135,8 +135,8 @@ void ParamEntry::resolveOverlap(list<ParamEntry> &curList)
     if (contains(entry)) {	// If this contains the intersecting entry
       if (entry.isOverlap()) continue;	// Don't count resources (already counted overlapped entry)
       overlapSet.insert(overlapSet.end(),entry.groupSet.begin(),entry.groupSet.end());
-      // For output <pentry>, if the most signifigant part overlaps with an earlier <pentry>
-      // the least signifigant part is marked for extra checks, and vice versa.
+      // For output <pentry>, if the most significant part overlaps with an earlier <pentry>
+      // the least significant part is marked for extra checks, and vice versa.
       if (addressbase == entry.addressbase)
 	flags |= spaceid->isBigEndian() ? extracheck_low : extracheck_high;
       else

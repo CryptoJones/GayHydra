@@ -3173,7 +3173,7 @@ Address parse_machaddr(istream &s,int4 &defaultsize,const TypeFactory &typegrp,b
 				// oversize is "standard size"
   if (oversize == -1)
     throw ParseError("Bad machine address");
-  defaultsize = (size==-1) ? oversize : size; // If not overriden use standard
+  defaultsize = (size==-1) ? oversize : size; // If not overridden use standard
   return res;
 }
 

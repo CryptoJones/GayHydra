@@ -142,7 +142,7 @@ public:
   const Address &getAddr(void) const { return addr; }			///< Get the starting address of the current instruction
   const Address &getNaddr(void) const { return naddr; }			///< Get the address of the next instruction
   const Address &getN2addr(void) const;					///< Get the address of the instruction after the next
-  const Address &getDestAddr(void) const { return calladdr; }		///< Get the destination address (inst_dest) for the overriden call
+  const Address &getDestAddr(void) const { return calladdr; }		///< Get the destination address (inst_dest) for the overridden call
   const Address &getRefAddr(void) const { return calladdr; }		///< Get the reference address (inst_ref) for the p-code snippet
   AddrSpace *getCurSpace(void) const { return addr.getSpace(); }	///< Get the address space of the current instruction
   AddrSpace *getConstSpace(void) const { return const_space; }		///< Get the address space for constants
