@@ -130,3 +130,21 @@
 - name: "sla-breach"
   description: "Item passed the Triage SLA without a first response. See TRIAGE_SLA.md."
   color: "b60205"
+
+# ---------------------------------------------------------------------
+# @Ignore-test deadline labels (Rec 28; see IGNORE_TEST_POLICY.md).
+# Applied to the GitHub Issue that an @Ignore("blocked-on: ... #N")
+# points at — after the deadline, the test is fixed or deleted, no
+# fourth option. `gradle ignoreAudit` Stage 2 will gate on these.
+
+- name: "ignore:30d"
+  description: "Linked @Ignore test must be fixed or deleted within 30 days. See IGNORE_TEST_POLICY.md."
+  color: "ee0701"
+
+- name: "ignore:90d"
+  description: "Linked @Ignore test must be fixed or deleted within 90 days. See IGNORE_TEST_POLICY.md."
+  color: "fbca04"
+
+- name: "ignore:1y"
+  description: "Linked @Ignore test must be fixed or deleted within 1 year. See IGNORE_TEST_POLICY.md."
+  color: "c2e0c6"

@@ -45,7 +45,8 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 | #28-4 | Tracking issues filed for the six | shipped (#159–#162, #178, etc.) |
 | #28-5 | Dead commented-out `//@Ignore` cleanup (7 lines) | shipped ([PR #295](https://github.com/CryptoJones/GayHydra/pull/295)) |
 | #28-6a | Redundant inner `@Ignore` cleanup (5 lines inside already-`@Ignore`'d classes) | shipped |
-| #28-6b+ | Active-`@Ignore` fix-or-delete sweep across the remaining 73 sites | open |
+| #28-6b | `ignore:30d` / `ignore:90d` / `ignore:1y` deadline labels declared in `.github/labels.yml` | shipped |
+| #28-6c+ | Apply deadline labels to the 13 existing tracking issues (depends on `sync-labels.yml` flipping to non-dry-run, tracked separately) + remaining 73-site fix-or-delete sweep | open |
 
 ## #28-6+ sweep heuristics
 
