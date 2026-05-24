@@ -174,7 +174,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				DomainFile domainFile = settings.project().getProjectData().getFile(projectPath);
 				if (domainFile == null) {
 					throw new LoadException(
-						"Cannot load only libraries for a non-existant program");
+						"Cannot load only libraries for a non-existent program");
 				}
 				if (!Program.class.isAssignableFrom(domainFile.getDomainObjectClass())) {
 					throw new LoadException("Cannot load only libraries for a non-program");

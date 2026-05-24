@@ -65,7 +65,7 @@ public class StructureDataType extends CompositeDataTypeImpl implements Structur
 	}
 
 	/**
-	 * Construct a new structure with the given name and length within the specified categry path.
+	 * Construct a new structure with the given name and length within the specified category path.
 	 * NOTE: A constructor form which accepts a {@link DataTypeManager} should be used when possible
 	 * since there may be performance benefits during datatype resolution.
 	 * @param path the category path indicating where this data type is located.
@@ -79,7 +79,7 @@ public class StructureDataType extends CompositeDataTypeImpl implements Structur
 
 	/**
 	 * Construct a new structure with the given name, length and datatype manager within the
-	 * specified categry path.
+	 * specified category path.
 	 * 
 	 * @param path the category path indicating where this data type is located.
 	 * @param name the name of the new structure

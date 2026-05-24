@@ -343,7 +343,7 @@ abstract class CompositeDB extends DataTypeDB implements CompositeInternal {
 	 * an datatype which is not-yet-defined (i.e., {@link DataType#isNotYetDefined()} is true) 
 	 * will always have a size of 1.  If an empty composite should be treated as 
 	 * fully specified, packing on the composite should be enabled to ensure that 
-	 * a zero-length component is used should the occassion arise (e.g., empty structure 
+	 * a zero-length component is used should the occasion arise (e.g., empty structure 
 	 * placed within union as a component).
 	 */
 	@Override

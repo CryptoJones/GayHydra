@@ -440,7 +440,7 @@ public class CreateStructureDialog extends ReusableDialogComponentProvider {
 		return compareStructuresByData(structureA, structureB);
 	}
 
-	// a simple comparision of the size of the given structures
+	// a simple comparison of the size of the given structures
 	private boolean compareStructuresBySize(Structure structureA, Structure structureB) {
 		return (structureA.getLength() == structureB.getLength());
 	}

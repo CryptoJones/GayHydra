@@ -627,7 +627,7 @@ class FunctionVariables {
 	 * @param param parameter to be examined and optionally modified
 	 * @param dt return datatype to be applied
 	 * @param create if true the specified param will not be affected and a new parameter
-	 * instance will be returned if strip performed, otherwise orginal param will be changed
+	 * instance will be returned if strip performed, otherwise original param will be changed
 	 * if possible and returned.
 	 * @return parameter with pointer stripped or original param if pointer not used.
 	 * Returned parameter will have unassigned storage if affected.

@@ -28,7 +28,7 @@ public class GhidraFileOpenDataFlavorHandlerService {
 
 		//
 		// Note: the order of the file drop flavors/handlers is intentional.  We wish to process
-		//       objects first which we know to be transfered from within the current JVM.  After
+		//       objects first which we know to be transferred from within the current JVM.  After
 		//       that, then process objects given to us from the OS or another JVM.
 		//
 

@@ -74,7 +74,7 @@ public class BitTree implements ShortKeySet, Serializable {
      * The BitTree constructor takes the maximum key value. The legal
      * keys for this set range from 0 to maxKey.
      * @param maxKey the maximum key value.
-     * @param isFull if true, then the set is initilized to contain all legal keys.
+     * @param isFull if true, then the set is initialized to contain all legal keys.
      */
     public BitTree(short maxKey, boolean isFull) {
         this.size = maxKey+1;

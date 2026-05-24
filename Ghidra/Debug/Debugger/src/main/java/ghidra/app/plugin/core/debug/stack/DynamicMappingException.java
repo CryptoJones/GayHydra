@@ -23,7 +23,7 @@ public class DynamicMappingException extends EvaluationException {
 	private final Address address;
 
 	public DynamicMappingException(Program program, Address address) {
-		super("Cannot map %s:%s to dynamic adress".formatted(program.getName(), address));
+		super("Cannot map %s:%s to dynamic address".formatted(program.getName(), address));
 		this.program = program;
 		this.address = address;
 	}

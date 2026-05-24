@@ -18,7 +18,7 @@ package ghidra.program.model.listing;
 
 /**
  * Exception thrown when attempting to replace one language in a program with another that
- * is not "address space" compatable.
+ * is not "address space" compatible.
  */
 public class IncompatibleLanguageException extends Exception {
 

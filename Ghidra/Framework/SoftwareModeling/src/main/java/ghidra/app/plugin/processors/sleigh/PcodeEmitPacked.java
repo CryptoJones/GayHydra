@@ -80,7 +80,7 @@ public class PcodeEmitPacked extends PcodeEmit {
 		}
 		for (LabelRef ref : labelref) {
 			if ((ref.labelIndex >= labeldef.size()) || (labeldef.get(ref.labelIndex) == null)) {
-				throw new SleighException("Reference to non-existant sleigh label");
+				throw new SleighException("Reference to non-existent sleigh label");
 			}
 			long res = (long) labeldef.get(ref.labelIndex) - (long) ref.opIndex;
 			if (ref.labelSize < 8) {

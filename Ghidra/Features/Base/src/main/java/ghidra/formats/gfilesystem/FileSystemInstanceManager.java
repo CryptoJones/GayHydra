@@ -212,7 +212,7 @@ class FileSystemInstanceManager implements FileSystemEventListener {
 	}
 
 	/**
-	 * Performs maintainence on the filesystem cache, closing() any filesystems
+	 * Performs maintenance on the filesystem cache, closing() any filesystems
 	 * that are not used anymore.
 	 */
 	public synchronized void cacheMaint() {

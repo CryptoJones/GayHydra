@@ -63,7 +63,7 @@ public class DataTypeTransferable implements Transferable, ClipboardOwner {
 
 	/**
 	 * Constructor
-	 * @param dt the dataType being transfered
+	 * @param dt the dataType being transferred
 	 */
 	public DataTypeTransferable(DataType dt) {
 		dataType = dt;

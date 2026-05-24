@@ -56,7 +56,7 @@ public class DragDropTreeTransferable implements Transferable, ClipboardOwner {
     
     /**
      * Constructs a new Transferable from the array of DragDropNodes
-     * @param nodes the array of DragDropNodes being transfered.
+     * @param nodes the array of DragDropNodes being transferred.
      */
     public DragDropTreeTransferable(DragDropNode []nodes) {
         dataList = new ArrayList<DragDropNode>(Arrays.asList(nodes));

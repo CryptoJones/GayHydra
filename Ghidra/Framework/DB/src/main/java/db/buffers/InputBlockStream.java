@@ -34,7 +34,7 @@ public interface InputBlockStream extends BlockStream {
 	BufferFileBlock readBlock() throws IOException;
 
 	/**
-	 * Get the total number of blocks to be transfered.
+	 * Get the total number of blocks to be transferred.
 	 * @return total block count
 	 */
 	@Override

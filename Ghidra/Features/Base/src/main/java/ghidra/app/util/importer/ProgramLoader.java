@@ -84,7 +84,7 @@ public class ProgramLoader {
 		 * <p>
 		 * NOTE: Any previously defined sources will be overwritten.
 		 * <p>
-		 * NOTE: Ownership of the given {@link ByteProvider} is not transfered to this 
+		 * NOTE: Ownership of the given {@link ByteProvider} is not transferred to this 
 		 * {@link Builder}, so it is the responsibility of the caller to properly 
 		 * {@link ByteProvider#close() close} it when done.
 		 * 
