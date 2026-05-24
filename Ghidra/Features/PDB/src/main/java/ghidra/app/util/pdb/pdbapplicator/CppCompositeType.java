@@ -866,7 +866,7 @@ public class CppCompositeType {
 	// the next parent of this class.
 	/**
 	 * (See non-javadoc above.)<p>
-	 * Returns string representation of source hierachy; e.g., "struct C : virtual A, B"<p>
+	 * Returns string representation of source hierarchy; e.g., "struct C : virtual A, B"<p>
 	 * @return the string
 	 * @throws PdbException upon issue trying to get virtual base table information from the
 	 *  program (if there is a program)

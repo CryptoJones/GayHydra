@@ -436,7 +436,7 @@ public class DBHandle {
 	 * 
 	 * @param errorHandler handler resposible for handling an IOException which may result during
 	 * transaction processing.  In general, a {@link RuntimeException} should be thrown by the 
-	 * handler to ensure continued processing is properly signaled/interupted.
+	 * handler to ensure continued processing is properly signaled/interrupted.
 	 * @return transaction object
 	 * @throws IllegalStateException if transaction is already active or this {@link DBHandle} has 
 	 * already been closed.

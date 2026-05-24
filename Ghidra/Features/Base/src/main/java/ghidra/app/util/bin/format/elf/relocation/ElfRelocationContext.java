@@ -250,7 +250,7 @@ public class ElfRelocationContext<H extends ElfRelocationHandler> {
 	/**
 	 * Get the Elf symbol which corresponds to the specified index.  Each relocation table
 	 * may correspond to a specific symbol table to which the specified symbolIndex will be
-	 * applied.  In the absense of a corresponding symbol table index 0 will return a special 
+	 * applied.  In the absence of a corresponding symbol table index 0 will return a special 
 	 * null symbol.
 	 * @param symbolIndex symbol index
 	 * @return Elf symbol which corresponds to symbol index or <B>null</B> if out of range

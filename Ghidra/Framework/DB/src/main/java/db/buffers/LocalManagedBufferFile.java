@@ -761,7 +761,7 @@ public class LocalManagedBufferFile extends LocalBufferFile implements ManagedBu
 
 	/**
 	 * Terminate background save if it is running.
-	 * This may be unsuccessful if this thread is interupted.
+	 * This may be unsuccessful if this thread is interrupted.
 	 * @param endUpdate if true and pre-save successfully terminated, 
 	 * notify buffer file manager that update has ended.
 	 */
