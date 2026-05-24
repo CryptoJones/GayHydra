@@ -26,7 +26,7 @@ import ghidra.program.model.pcode.Decoder;
 import ghidra.program.model.pcode.DecoderException;
 
 /**
- * A pattern which either matches or doesnt match a particular
+ * A pattern which either matches or does not match a particular
  * InstructionContext.  In particular, the bits comprising the
  * current instruction in the executable, and possible other
  * context bits
