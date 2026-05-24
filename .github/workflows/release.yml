@@ -343,3 +343,244 @@ EOF
           upload "${{ steps.artifacts.outputs.SBOM }}"
           upload "${{ steps.artifacts.outputs.SBOM }}.sig"
           upload "${{ steps.artifacts.outputs.SBOM }}.crt"
+
+  # ---------------------------------------------------------------------
+  # Mac (arm64) build — runs in parallel with the Linux job. Gated on
+  # the Linux job's release-entry creation so this job's upload finds
+  # an existing GitHub Release to attach to.
+  #
+  # Free on public repos (GitHub Actions billing FAQ: macOS runners
+  # are free for public repositories).
+  # ---------------------------------------------------------------------
+  build_sign_publish_mac:
+    needs: build_sign_publish
+    runs-on: macos-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Read JDK version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.0'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Install bison + flex (newer than macOS-shipped)
+        run: |
+          brew install bison flex
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra
+        run: gradle buildGhidra --parallel
+
+      - name: Locate release zip
+        id: artifacts
+        run: |
+          ZIP=$(ls build/dist/ghidra_*_mac_*.zip | head -1)
+          test -n "$ZIP" || { echo "no mac release zip produced"; exit 1; }
+          echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
+          echo "Built: $ZIP ($(stat -f%z "$ZIP") bytes)"
+
+      - name: Sign release zip (cosign keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature ${{ steps.artifacts.outputs.ZIP }}.sig \
+            --output-certificate ${{ steps.artifacts.outputs.ZIP }}.crt \
+            ${{ steps.artifacts.outputs.ZIP }}
+
+      - name: Upload signed mac artifacts to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          TAG=${REF#refs/tags/}
+          # Linux job's `build_sign_publish` already ensures the release
+          # entry exists (via the same gh release create idempotency
+          # added in #333). This job just attaches its assets.
+          gh release upload "$TAG" --clobber \
+            ${{ steps.artifacts.outputs.ZIP }} \
+            ${{ steps.artifacts.outputs.ZIP }}.sig \
+            ${{ steps.artifacts.outputs.ZIP }}.crt
+
+      - name: Mirror mac artifacts to Codeberg
+        env:
+          CB_TOKEN: ${{ secrets.CB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+          CB_REPO: CryptoJones/GayHydra
+        run: |
+          if [ -z "${CB_TOKEN:-}" ]; then
+            echo "::warning::CB_TOKEN secret not set; skipping mac Codeberg mirror."
+            exit 0
+          fi
+          set -euxo pipefail
+          TAG=${REF#refs/tags/}
+          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
+          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
+          upload() {
+            local file="$1"
+            local name
+            name="$(basename "$file")"
+            local existing
+            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+              "${CB_API}/releases/${REL_ID}/assets" \
+              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
+            if [ -n "$existing" ]; then
+              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
+                "${CB_API}/releases/${REL_ID}/assets/${existing}"
+            fi
+            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
+              -F "attachment=@${file};filename=${name}" \
+              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
+          }
+          upload "${{ steps.artifacts.outputs.ZIP }}"
+          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
+          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
+
+  # ---------------------------------------------------------------------
+  # Windows (x86_64) build — runs in parallel with linux + mac. Same
+  # gating on the Linux job's release-entry creation. Free on public
+  # repos (same GHA billing rule as macOS).
+  # ---------------------------------------------------------------------
+  build_sign_publish_windows:
+    needs: build_sign_publish
+    runs-on: windows-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Read JDK version
+        shell: bash
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.0'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Install winflexbison + Python (3.13 satisfies the supported list)
+        shell: powershell
+        run: |
+          choco install -y --no-progress --acceptlicense winflexbison python313
+
+      - name: Setup MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Fetch Dependencies
+        shell: cmd
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra
+        shell: cmd
+        run: gradle buildGhidra --parallel
+
+      - name: Locate release zip
+        id: artifacts
+        shell: bash
+        run: |
+          ZIP=$(ls build/dist/ghidra_*_windows_*.zip | head -1)
+          test -n "$ZIP" || { echo "no windows release zip produced"; exit 1; }
+          echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
+          echo "Built: $ZIP"
+
+      - name: Sign release zip (cosign keyless)
+        shell: bash
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature "${{ steps.artifacts.outputs.ZIP }}.sig" \
+            --output-certificate "${{ steps.artifacts.outputs.ZIP }}.crt" \
+            "${{ steps.artifacts.outputs.ZIP }}"
+
+      - name: Upload signed windows artifacts to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          TAG=${REF#refs/tags/}
+          gh release upload "$TAG" --clobber \
+            "${{ steps.artifacts.outputs.ZIP }}" \
+            "${{ steps.artifacts.outputs.ZIP }}.sig" \
+            "${{ steps.artifacts.outputs.ZIP }}.crt"
+
+      - name: Mirror windows artifacts to Codeberg
+        shell: bash
+        env:
+          CB_TOKEN: ${{ secrets.CB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+          CB_REPO: CryptoJones/GayHydra
+        run: |
+          if [ -z "${CB_TOKEN:-}" ]; then
+            echo "::warning::CB_TOKEN secret not set; skipping windows Codeberg mirror."
+            exit 0
+          fi
+          set -euxo pipefail
+          TAG=${REF#refs/tags/}
+          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
+          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
+          upload() {
+            local file="$1"
+            local name
+            name="$(basename "$file")"
+            local existing
+            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
+              "${CB_API}/releases/${REL_ID}/assets" \
+              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
+            if [ -n "$existing" ]; then
+              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
+                "${CB_API}/releases/${REL_ID}/assets/${existing}"
+            fi
+            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
+              -F "attachment=@${file};filename=${name}" \
+              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
+          }
+          upload "${{ steps.artifacts.outputs.ZIP }}"
+          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
+          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
