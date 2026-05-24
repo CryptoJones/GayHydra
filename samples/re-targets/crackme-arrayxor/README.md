@@ -63,4 +63,4 @@ DumpCrackme.java> RESULT: PASS — both arrays present in binary; XOR-decode rec
 
 The script scans raw initialized-memory bytes for the two 16-byte sequences. It's compilation-independent — works regardless of Go version, Ghidra Go-analyzer state, or function-bounds recognition (none of which are required, unlike the dropper's decompiler-level check).
 
-Currently NOT wired into `.github/workflows/release.yml` (the dropper smoke test runs there as the primary decompiler-sanity gate). Adding the crackme as a second gate is a one-block addition if a future regression in Ghidra's Go-data-segment recognition is worth catching at release-time.
+Wired into `.github/workflows/release.yml` as a secondary smoke test step (after the dropper's primary decompiler-sanity gate). Complementary signal — the dropper asserts the **decompiler** still recovers the XOR loop, this asserts Ghidra's **data-segment recognition** still finds the constant arrays. Either failing fails the release.

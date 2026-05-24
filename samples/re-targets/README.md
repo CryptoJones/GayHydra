@@ -12,7 +12,7 @@ Binaries (and source) intended to be reverse-engineered with GayHydra. Each samp
 | Sample | Language | Skill exercised | Smoke-tested in release.yml? |
 |---|---|---|---|
 | [`gayhydra-dropper/`](gayhydra-dropper/) | Go | XOR-with-constant string deobfuscation (key `0x5A`) | ✅ yes |
-| [`crackme-arrayxor/`](crackme-arrayxor/) | Go | Per-position XOR with a 16-byte key array — array-scoped deobfuscation (harder than constant XOR) | ❌ no (post-script ready; not yet wired) |
+| [`crackme-arrayxor/`](crackme-arrayxor/) | Go | Per-position XOR with a 16-byte key array — array-scoped deobfuscation (harder than constant XOR) | ✅ yes (data-segment signal, complementary to the dropper's decompiler-output signal) |
 
 ## Why these exist
 
