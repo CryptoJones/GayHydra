@@ -36,6 +36,24 @@ jobs:
           ref: ${{ github.event.inputs.tag || github.ref }}
           fetch-depth: 0
 
+      - name: Checkout decompiler-smoke from master (independent of tag)
+        # The decompiler-smoke sample was added in PR #19, after every
+        # v26.1.x tag. Re-running the workflow against an older tag
+        # would otherwise fail the smoke-test step because the tag's
+        # checked-out tree has no
+        # `samples/re-targets/decompiler-smoke/` directory. Pin the
+        # sample to master so the gate runs the same C source +
+        # post-script regardless of which tag's source the build came
+        # from — what we're testing is the *built prebuilt's*
+        # decompiler, not the tag's sample.
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: master-snapshot
+          sparse-checkout: |
+            samples/re-targets/decompiler-smoke
+          sparse-checkout-cone-mode: false
+
       - name: Read JDK version
         run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
 
@@ -131,14 +149,15 @@ jobs:
           sed -i 's|^VMARGS=-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory|#&|' \
             "$GAYHYDRA/support/launch.properties"
 
-          gcc -O0 -o /tmp/decompiler-smoke samples/re-targets/decompiler-smoke/main.c
+          SMOKE_SRC=master-snapshot/samples/re-targets/decompiler-smoke
+          gcc -O0 -o /tmp/decompiler-smoke "$SMOKE_SRC/main.c"
           file /tmp/decompiler-smoke
 
           PROJECT_DIR=$(mktemp -d)
           OUTPUT=$("$GAYHYDRA"/support/analyzeHeadless "$PROJECT_DIR" SmokeRE \
             -import /tmp/decompiler-smoke \
             -postScript AssertDecompiles.java \
-            -scriptPath samples/re-targets/decompiler-smoke/scripts \
+            -scriptPath "$SMOKE_SRC/scripts" \
             -deleteProject 2>&1) || {
               echo "$OUTPUT"
               echo "::error::analyzeHeadless exited non-zero (smoke-test infrastructure failure)"
