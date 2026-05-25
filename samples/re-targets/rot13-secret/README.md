@@ -1,6 +1,6 @@
 # rot13-secret
 
-A small Go program that prints a ROT13-decoded message at startup. Third RE training target after [`gayhydra-dropper`](../gayhydra-dropper/) (single-byte XOR) and [`crackme-arrayxor`](../crackme-arrayxor/) (array XOR). Uses ROT13 — a **non-XOR cipher** — to teach a different deobfuscation skill.
+A small Go program that prints a ROT13-decoded message at startup. RE training target using ROT13 — a **non-XOR cipher** — to teach a different deobfuscation skill from the prior [`gayhydra-dropper/`](../gayhydra-dropper/) (single-byte XOR; binary removed during the 2026-05-25 release backfill, only the README + post-script remain as historical record).
 
 ## Behavior
 
