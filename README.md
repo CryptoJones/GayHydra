@@ -286,6 +286,8 @@ not a cost.
 (*I would like Kara Nance's signature too, please.*) Pick the pronunciation that sounds least
 embarrassing out loud, commit to it, and never let anyone correct you.
 
+**Q:**
+
 <p align="center"><img src="WTF.png" alt="Discord user asks: &quot;what the actual fuck am I looking at here?&quot;"></p>
 
 **A:** I have no idea either. I got bored and wanted to troll the NSA and this is what I came
