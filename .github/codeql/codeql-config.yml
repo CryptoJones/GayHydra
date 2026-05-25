@@ -1,0 +1,28 @@
+name: GayHydra CodeQL config
+
+# Excludes:
+# - bundle_examples/ holds two intentionally-similar Ghidra script-bundle
+#   examples (`scripts_jar1/` and `scripts_jar2/`) that BOTH declare
+#   `package org.jarlib; class JarUtil`. CodeQL's Java extractor flags
+#   this as a duplicate-class warning ("1 duplicate classes filtered
+#   out") because it doesn't model Ghidra's bundle-loading semantics
+#   where the two are intentionally distinct runtime loads. They came
+#   from upstream NSA (commit "add example bundles extension", before
+#   the fork) and aren't a fork concern.
+# - GPL/ holds GPL-licensed components that live alongside the
+#   Apache-2.0 main tree. Scanning them mixes license-bucket results
+#   in ways that don't actually surface different vulnerabilities.
+#   Keep CodeQL focused on the Apache-2.0 surface.
+# - PyGhidra test data + sample/test inputs that aren't shipped code.
+paths-ignore:
+  - 'Ghidra/Extensions/bundle_examples/**'
+  - 'GPL/**'
+  - 'Ghidra/Features/PyGhidra/src/main/py/tests/data/**'
+  - '**/src/test/resources/**'
+
+# Use the GitHub-curated security-extended pack — broader than the
+# default but still curated for low false-positive rate. Matches what
+# default-setup used; this just makes it explicit so future changes
+# are reviewable in diff.
+queries:
+  - uses: security-extended
