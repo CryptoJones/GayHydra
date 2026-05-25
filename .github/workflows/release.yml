@@ -100,6 +100,58 @@ jobs:
             exit 1
           fi
 
+      - name: Decompiler smoke test (decompiler-smoke)
+        # End-to-end decompiler-correctness gate: extract the freshly
+        # built prebuilt, compile the tiny C source under
+        # samples/re-targets/decompiler-smoke/ stripped, run the
+        # headless analyzer with AssertDecompiles.java as a
+        # post-script, and assert the decompiler produced *some*
+        # non-empty C output for at least one function. Catches:
+        # analyzer crash on import, headless launch broken,
+        # decompiler exception on a trivial input, decompiler returns
+        # empty body. Does NOT assert specific constants — see
+        # samples/re-targets/decompiler-smoke/README.md for the
+        # rationale (the prior dropper gate's hard-coded 0x5A
+        # constant-match is what made the gate brittle and forced its
+        # removal during the v26.1.x release backfill).
+        run: |
+          set -euxo pipefail
+
+          EXTRACT_DIR=$(mktemp -d)
+          unzip -q "${{ steps.artifacts.outputs.ZIP }}" -d "$EXTRACT_DIR"
+          GAYHYDRA=$(ls -d "$EXTRACT_DIR"/ghidra_* | head -1)
+          test -n "$GAYHYDRA" || { echo "::error::no ghidra_* dir in $EXTRACT_DIR"; exit 1; }
+
+          # JDK 21.0.10+ workaround: ObjectInputFilter$Config.
+          # setSerialFilterFactory only honors one call; the JVM
+          # pre-installs via -Djdk.serialFilterFactory before Ghidra's
+          # programmatic install fires, so the second call dies with
+          # IllegalStateException. Drop the -D so Ghidra's runtime
+          # install is the first/only one.
+          sed -i 's|^VMARGS=-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory|#&|' \
+            "$GAYHYDRA/support/launch.properties"
+
+          gcc -O0 -o /tmp/decompiler-smoke samples/re-targets/decompiler-smoke/main.c
+          file /tmp/decompiler-smoke
+
+          PROJECT_DIR=$(mktemp -d)
+          OUTPUT=$("$GAYHYDRA"/support/analyzeHeadless "$PROJECT_DIR" SmokeRE \
+            -import /tmp/decompiler-smoke \
+            -postScript AssertDecompiles.java \
+            -scriptPath samples/re-targets/decompiler-smoke/scripts \
+            -deleteProject 2>&1) || {
+              echo "$OUTPUT"
+              echo "::error::analyzeHeadless exited non-zero (smoke-test infrastructure failure)"
+              exit 1
+            }
+          echo "$OUTPUT"
+
+          if ! echo "$OUTPUT" | grep -q "RESULT: PASS"; then
+            echo "::error::Decompiler smoke test FAILED — see RESULT line above for the failure reason"
+            echo "::error::See samples/re-targets/decompiler-smoke/README.md for what this gate asserts."
+            exit 1
+          fi
+
       - name: Sign release zip (cosign keyless)
         env:
           COSIGN_EXPERIMENTAL: "1"

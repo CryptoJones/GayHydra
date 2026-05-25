@@ -11,8 +11,9 @@ Binaries (and source) intended to be reverse-engineered with GayHydra. Each samp
 
 | Sample | Language | Skill exercised | Smoke-tested in release.yml? |
 |---|---|---|---|
+| [`decompiler-smoke/`](decompiler-smoke/) | C | Decompiler-correctness gate: assert the decompiler emits non-empty C for a known-trivial function. Deliberately low-specificity. | ✅ yes (release-time gate; replaces the prior constant-matching dropper test that kept false-negativing) |
 | [`gayhydra-dropper/`](gayhydra-dropper/) | _(binary removed; README + post-script retained as design notes)_ | XOR-with-constant string deobfuscation (key `0x5A`) | ❌ no (sample binary removed; the gate this fed was dropped to unblock the v26.1.x release backfill) |
-| [`rot13-secret/`](rot13-secret/) | Go | ROT13 — a **non-XOR** cipher. Recognizing the `LEA -base` / `ADD $0xd` / `SHR $0xd` (constant-modulo trick) pattern. | ❌ no (no current decompiler-correctness gate runs in `release.yml`) |
+| [`rot13-secret/`](rot13-secret/) | Go | ROT13 — a **non-XOR** cipher. Recognizing the `LEA -base` / `ADD $0xd` / `SHR $0xd` (constant-modulo trick) pattern. | ❌ no (training target only; not wired to `release.yml`) |
 
 ## Why these exist
 
@@ -24,7 +25,7 @@ Two reasons, per [`gayhydra-dropper/README.md`](gayhydra-dropper/README.md):
 
 The first dogfood run of the dropper sample against v26.1.6 caught three real regressions: Go 1.25/1.26 analyzer crash (NSA/ghidra#9219), JDK 21.0.10+ headless launch collision (NSA/ghidra#9220), and the cyclonedx-plugin schemaVersion enum/String mismatch (CryptoJones/GayHydra#245, lives in the prior repo).
 
-The dropper smoke test itself was removed from `release.yml` during the 2026-05-25 v26.1.x release-backfill effort — it had begun returning a stable false negative (XOR key not recovered in `main.main` decompilation) and was blocking every release publish. The dropper directory retains its README and `scripts/DumpDeobfuscate.java` as historical record of what the gate asserted; the binary (`main.go`) and Go module are gone.
+The dropper smoke test itself was removed from `release.yml` during the 2026-05-25 v26.1.x release-backfill effort — it had begun returning a stable false negative (XOR key not recovered in `main.main` decompilation) and was blocking every release publish. The dropper directory retains its README and `scripts/DumpDeobfuscate.java` as historical record of what the gate asserted; the binary (`main.go`) and Go module are gone. The same-day replacement (`decompiler-smoke/`) is deliberately weaker than the dropper test — it asserts only that the decompiler produced *some* non-empty C output, not that any specific constant survived — so it catches catastrophic regressions without flapping on cosmetic output-drift.
 
 ## Contributing a new sample
 
