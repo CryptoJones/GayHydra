@@ -177,11 +177,28 @@ jobs:
         run: |
           # Strip refs/tags/ prefix if present.
           TAG=${REF#refs/tags/}
-          # Tag-push doesn't auto-create a GitHub Release entry; create
-          # one if it doesn't exist yet so `gh release upload` has
-          # somewhere to attach assets. The first build for a given tag
-          # always hits this branch; subsequent workflow_dispatch
-          # re-runs against the same tag skip the create.
+          # CryptoJones/GayHydra defaults `gh release create` (and the
+          # underlying REST API POST) to `immutable: true` on the
+          # *published* release object — once a release is published,
+          # no further asset uploads are accepted (HTTP 422 "Cannot
+          # upload assets to an immutable release"). Workaround: do
+          # all asset uploads against a DRAFT release (drafts honor
+          # `immutable: false`), then publish the draft at the end of
+          # this step. The Mac and Windows jobs that depend on this
+          # one also upload before the publish flip, so their
+          # `gh release upload` calls likewise land on the draft.
+          # Aaron 2026-05-25: this is the unblock for the v26.1.x
+          # release-artifact backfill.
+          #
+          # If a pre-existing release entry has no artifacts yet (the
+          # bare entries hand-rolled during the deletion-incident
+          # recovery), delete it so we can recreate it as a draft.
+          # A release with assets is left alone — the workflow already
+          # ran successfully for it.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length' 2>/dev/null | grep -qx 0; then
+            echo "Deleting empty pre-existing release $TAG so we can recreate it as a draft."
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
+          fi
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             ZIP_NAME=$(basename "${{ steps.artifacts.outputs.ZIP }}")
             SBOM_NAME=$(basename "${{ steps.artifacts.outputs.SBOM }}")
@@ -232,6 +249,7 @@ jobs:
           EOF
             )
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --draft \
               --title "$TAG" \
               --notes "$NOTES"
           fi
@@ -545,3 +563,31 @@ jobs:
           upload "${{ steps.artifacts.outputs.ZIP }}"
           upload "${{ steps.artifacts.outputs.ZIP }}.sig"
           upload "${{ steps.artifacts.outputs.ZIP }}.crt"
+
+  # ---------------------------------------------------------------------
+  # Publish the draft release after Linux/Mac/Windows have all uploaded
+  # their signed artifacts. The draft-first flow (see the Upload step
+  # comment in build_sign_publish) is the workaround for the repo's
+  # default `immutable: true` on published releases — drafts are
+  # mutable, so we upload against the draft and only flip to published
+  # once every job has attached its assets.
+  # ---------------------------------------------------------------------
+  publish_release:
+    needs: [build_sign_publish, build_sign_publish_mac, build_sign_publish_windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Flip draft to published
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          TAG=${REF#refs/tags/}
+          # `gh release edit --draft=false` publishes the release and
+          # GitHub's API auto-flips `immutable` to true at the moment
+          # of publish. From here on the release is read-only — any
+          # further asset changes require deleting + recreating the
+          # release entry.
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
