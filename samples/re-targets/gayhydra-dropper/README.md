@@ -1,5 +1,7 @@
 # gayhydra-dropper
 
+> **Status (2026-05-25):** the binary (`main.go`, `go.mod`) and the `release.yml` smoke-test step that depended on it were removed during the v26.1.x release backfill — the gate was returning a stable false negative (XOR key not recovered in `main.main`) and was blocking every release publish. The post-script (`scripts/DumpDeobfuscate.java`) and the rest of this README are retained as the design record of what the gate asserted and what a future re-implementation would need to reproduce.
+
 A small Go program that enumerates mounted filesystems and drops a calling-card file (`1337.txt`) on each writable one. Its user-visible strings are XOR-obfuscated with single-byte key `0x5A` so the puzzle for a student is the deobfuscation, not the dispatch logic.
 
 ## Why this sample exists
