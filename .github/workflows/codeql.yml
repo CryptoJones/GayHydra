@@ -1,0 +1,107 @@
+name: CodeQL
+
+# Advanced CodeQL setup. Replaces the GitHub default-setup that has
+# been emitting two warnings against master since the new-fork move:
+#
+#   1. "1 duplicate classes filtered out" — `Ghidra/Extensions/
+#      bundle_examples/scripts_jar{1,2}/org/jarlib/JarUtil.java`
+#      both declare `package org.jarlib; class JarUtil`. They're
+#      intentional, came from upstream NSA, and `.github/codeql/
+#      codeql-config.yml`'s paths-ignore now excludes the
+#      bundle_examples tree.
+#
+#   2. "Required Gradle version not specified" — Ghidra doesn't
+#      check in a gradle-wrapper; default-setup's autobuilder
+#      can't determine the gradle version it should use. The
+#      java-kotlin job below pins gradle 8.5 (matching the rest
+#      of the workflow tree: release.yml, audit-datatests.yml)
+#      and uses a manual build command so the autobuilder doesn't
+#      need to guess.
+#
+# Maintainer note: when this workflow first runs, GitHub's UI may
+# still report default-setup as the active scanner. Disable default
+# setup once to switch over:
+#
+#   gh api -X PATCH /repos/CryptoJones/GayHydra/code-scanning/default-setup \
+#     -f state=not-configured
+#
+# After that, this advanced-setup workflow is the sole CodeQL run.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    # Match the default-setup weekly cadence (Monday 06:00 UTC).
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['actions', 'c-cpp', 'java-kotlin', 'python']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Ghidra JDK version
+        if: matrix.language == 'java-kotlin'
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Install C++ build deps
+        if: matrix.language == 'c-cpp'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Fetch Ghidra dependencies
+        if: matrix.language == 'java-kotlin'
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Manual Java build
+        if: matrix.language == 'java-kotlin'
+        # `gradle prepDev` compiles all Java/Kotlin source without
+        # producing a distribution zip — enough for CodeQL's tracer to
+        # pick up the .class files. Faster than `buildGhidra` and
+        # avoids the SBOM / signing / packaging steps that are
+        # irrelevant to static analysis.
+        run: gradle prepDev --parallel
+
+      - name: Autobuild (non-Java)
+        if: matrix.language != 'java-kotlin'
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
