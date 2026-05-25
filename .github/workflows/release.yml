@@ -2,6 +2,7 @@ name: Release (build + sign + publish)
 
 # Rec 17 #17-2: Sigstore Cosign keyless signing of release artifacts.
 # See docs/security/BINARY_SIGNING.md for the design + DD-006.
+# (Touched 2026-05-24 to force GHA re-index after the new-fork move.)
 #
 # Triggers on a tag push matching v*. Builds Ghidra, produces the
 # release zip (which bundles the upstream SBOM at the top of the
