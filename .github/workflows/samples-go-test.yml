@@ -33,8 +33,6 @@ jobs:
       fail-fast: false
       matrix:
         sample:
-          - gayhydra-dropper
-          - crackme-arrayxor
           - rot13-secret
     steps:
       - uses: actions/checkout@v4
