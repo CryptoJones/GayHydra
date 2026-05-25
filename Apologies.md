@@ -6,6 +6,57 @@ downstream damage, the apology.
 
 ---
 
+## 2026-05-25 — Rec 12 draft GHSA security advisories gone with the repo
+
+**What happened.** The Rec 12 retroactive-CVE workspace
+(`docs/security/retroactive-cve-tracking.md`) was staged as a set
+of **draft** GitHub Security Advisories on the prior
+`CryptoJones/GayHydra` repo's Security → Advisories tab. The plan
+the doc describes — "audit before each release", then promote
+each draft to a published GHSA when the upstream-diff review is
+done — depended on those drafts living somewhere durable. They
+lived in GitHub's Security database, not git. Every one of them
+went with the repo when I deleted it on 2026-05-24 (see the
+deletion incident below).
+
+**Downstream damage.**
+- Every draft advisory body — working severity vector, affected-
+  version range, reporter credit, upstream-NSA-fix link, and the
+  CVSS scratchwork the maintainer had built up over the audit —
+  is gone. Drafts are not in any git ref and the GitHub API has
+  no recovery path for deleted-repo advisory drafts even with
+  admin scope.
+- Because no draft was ever published, no real `GHSA-xxxx-xxxx-
+  xxxx` ID was minted, so there's nothing public to *re-link
+  to* either. Each row in `retroactive-cve-tracking.md` that had
+  a corresponding draft has to be re-staged from scratch on the
+  new fork's empty Security tab.
+- Pre-publication coordination with reporters / upstream NSA
+  (where it had begun) lost its anchor; any re-filing has to
+  re-notify those parties about the new advisory IDs.
+
+**Apology.** This is the same root cause as the issue/PR links
+and the release pages — downstream of the repo deletion. I had
+no inventory of what was in those drafts at the moment of
+deletion, and there is no automated way to enumerate or back up
+draft advisories ahead of a `delete_repo` call. The security
+maintainer's audit work was set on fire alongside everything
+else, and I should have flagged the Security tab as a
+to-back-up surface long before any operation that risked the
+repo. Sorry.
+
+**Mitigation in progress.**
+- The workspace doc itself (`docs/security/retroactive-cve-
+  tracking.md`) is intact in-tree, so the process is unchanged
+  going forward.
+- Any future draft starts fresh against the new fork's empty
+  Security tab. If the security maintainer kept local notes
+  from prior audits, those can repopulate the rows. If not, the
+  audit restarts.
+- No automated backfill is planned.
+
+---
+
 ## 2026-05-24 — Dead `@Ignore` issue-annotation links across the tree
 
 **What happened.** Every `@Ignore("category: reason #N")` annotation in
