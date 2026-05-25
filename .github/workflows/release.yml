@@ -139,9 +139,16 @@ jobs:
             # developer laptop. The regex covers both push (refs/tags/v*)
             # and workflow_dispatch invocations.
             # Heredoc body is indented to stay inside the YAML block
-            # scalar; the leading 12 spaces are stripped before NOTES is
-            # assigned so the rendered release notes have no left margin.
-            NOTES=$(sed 's/^            //' <<EOF
+            # scalar. YAML strips the common leading-indent (10 spaces
+            # here) before bash sees the script, so the body lines
+            # end up with 2 leading spaces in the actual shell
+            # interpretation — sed strips those before assigning
+            # NOTES. The closing EOF marker sits at the YAML base
+            # indent so bash sees it at column 0 (a heredoc terminated
+            # by `<<EOF` MUST be at column 0; `<<-EOF` strips tabs
+            # only, not spaces, which is why we go with the column-0
+            # alignment instead).
+            NOTES=$(sed 's/^  //' <<EOF
             Automated release. Sprint notes appended at sprint close — see [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/master/CHANGELOG.md).
 
             ## Verifying the artifacts (Rec 17, see [BINARY_SIGNING.md](https://github.com/${GITHUB_REPOSITORY}/blob/master/docs/security/BINARY_SIGNING.md))
@@ -170,7 +177,7 @@ jobs:
             \`\`\`
 
             A successful verify means the bytes you downloaded match what \`release.yml\` produced on a GitHub-hosted runner from this repo's source at this tag (modulo the workflow-vs-source caveat the SprintPlanning entry notes for early v26.1.x tags).
-            EOF
+          EOF
             )
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --title "$TAG" \
