@@ -15,7 +15,6 @@
  */
 package ghidra.pcode.emu.jit.gen;
 
-import static ghidra.lifecycle.Unfinished.TODO;
 import static org.junit.Assert.*;
 
 import java.util.List;
@@ -569,31 +568,6 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 				""");
 		tr.runErr(SleighLinkException.class, "Sleigh userop 'pcodeop_one' is not in the library");
 		assertEquals(0x00400000, tr.thread().getCounter().getOffset());
-	}
-
-	/**
-	 * I need to find an example of this:
-	 * 
-	 * <pre>
-	 *  *[register] OFFSET = ... ?
-	 * </pre>
-	 * 
-	 * <p>
-	 * Honestly, if this actually occurs frequently, we could be in trouble. We would need either:
-	 * 1) To re-write all the offending semantic blocks, or 2) Work out a way to re-write them
-	 * during JIT compilation. People tell me this is done by some vector instructions, which makes
-	 * me thing re-writing would be possible, since they should all fold to constants. If we're
-	 * lucky, the planned constant folding would just take care of these; however, I'd still want to
-	 * allocate them as locals, not just direct array access. For now, I'm just going to feign
-	 * ignorance. If it becomes a problem, then we can treat all register accesses like memory
-	 * within the entire passage containing one of these "indirect-register-access" ops.
-	 * 
-	 * @throws Exception because
-	 */
-	@Test
-	@Ignore("wip: AbstractToyJitCodeGenerator no-examples-yet #183")
-	public void testComputedOffsetsInRegisterSpace() throws Exception {
-		TODO();
 	}
 
 	@Test
@@ -3611,16 +3585,6 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 		tr.setLongMemVal(d1Dot0, LONG_CONST, 8);
 		tr.runFallthrough();
 		assertEquals(LONG_CONST, tr.getLongVnVal(temp2));
-	}
-
-	/**
-	 * This is more diagnostics, but at the least, I should document that it doesn't work as
-	 * expected, or perhaps just turn it completely off.
-	 */
-	@Test
-	@Ignore("wip: AbstractToyJitCodeGenerator TODO #183")
-	public void testUninitializedVsInitializedReads() {
-		TODO();
 	}
 
 	@Test
