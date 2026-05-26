@@ -60,7 +60,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **Quick wins:**
 
-- [ ] Flip `.github/workflows/sync-labels.yml`'s `dry-run` to `false` after Aaron reviews the first workflow run.
+- [x] ~~Flip `.github/workflows/sync-labels.yml`'s `dry-run` to `false` after Aaron reviews the first workflow run.~~ Shipped: Aaron confirmed 2026-05-26 that the dry-run output looked correct; flipped to live mode.
 - [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
 
 **External submissions:**
