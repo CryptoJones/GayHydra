@@ -171,18 +171,18 @@ can land at C++11 and C++20 later.
 
 ## Sequencing
 
-| PR | Scope |
-|---|---|
-| #31-1 (this PR) | This plan |
-| #31-2 | Stage 1 — `address.cc`, `space.cc`, `range.cc` |
-| #31-3 | Stage 2 — `marshal.cc`, `xml.cc` |
-| #31-4 | Stage 3 — `database.cc`, `comment.cc`, `cover.cc` |
-| #31-5 | Stage 4 — `type.cc`, `userop.cc` |
-| #31-6 | Stage 5 — pcode core |
-| #31-7 | Stage 6 — analysis passes |
-| #31-8 | Stage 7 — Sleigh runtime (parallel to #31-7) |
-| #31-9 | Stage 8 — mop-up |
-| #31-10 | CI lint enforcing "no raw new in cpp/" |
+| PR | Scope | Status |
+|---|---|---|
+| #31-1 | This plan | shipped |
+| #31-2 | Stage 1 — `address.cc`, `space.cc`, `rangeutil.cc` (audit's "range.cc" target) | shipped: the three files were already raw-`new`-free in tree; the `gradle cppRaiiAudit` per-file gate (see [`gradle/cppRaiiAudit.gradle`](../../gradle/cppRaiiAudit.gradle)) was added to fail CI on any regression. Wired into `.github/workflows/build-ghidra.yml` alongside `ignoreAudit` and `objectInputStreamAudit`. |
+| #31-3 | Stage 2 — `marshal.cc`, `xml.cc` | open |
+| #31-4 | Stage 3 — `database.cc`, `comment.cc`, `cover.cc` | open |
+| #31-5 | Stage 4 — `type.cc`, `userop.cc` | open |
+| #31-6 | Stage 5 — pcode core | open |
+| #31-7 | Stage 6 — analysis passes | open |
+| #31-8 | Stage 7 — Sleigh runtime (parallel to #31-7) | open |
+| #31-9 | Stage 8 — mop-up | open |
+| #31-10 | Tree-wide CI lint enforcing "no raw new in cpp/" | open — `cppRaiiAudit` foundation laid in #31-2 (per-file gate); #31-10 generalises to all `decompile/cpp/**.cc` |
 
 Each stage is reviewed by at least one decompiler maintainer
 (see [MAINTAINERS.md](../../MAINTAINERS.md)).

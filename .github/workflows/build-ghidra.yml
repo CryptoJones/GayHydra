@@ -102,6 +102,14 @@ jobs:
         # CI on any regression that reintroduces unfiltered deserialization.
         run: gradle objectInputStreamAudit
 
+      - name: Audit C++ RAII protected files (Rec 31 #31-2)
+        # Forbid raw `new` allocations in decompile/cpp/address.cc,
+        # space.cc, rangeutil.cc. Already RAII-clean (zero raw new);
+        # this gate fails CI on any regression that reintroduces a
+        # raw owning pointer in the protected set. Set extends as
+        # later RAII stages (#31-3+) convert more files.
+        run: gradle cppRaiiAudit
+
       - name: i18n lint (Docking)
         # Localization PoC: fail the build if a hardcoded UI literal
         # reappears in Ghidra/Framework/Docking outside the

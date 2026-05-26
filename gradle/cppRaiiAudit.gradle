@@ -1,0 +1,95 @@
+/* ###
+ * C++ RAII audit task — protected-file gate.
+ *
+ * Addresses Rec 31 #31-2 of the 2026-05-21 audit. See
+ * docs/decompiler/RAII_MIGRATION.md for the migration plan and
+ * docs/decompiler/CPP20_ADOPTION.md for the language-stage context.
+ *
+ * Walks a fixed list of decompiler C++ files asserting they contain
+ * no raw `new <ClassName>(...)` or `new <ClassName>[...]` allocations.
+ * The RAII idiom we want is `std::make_unique<T>(...)` (or `std::make_shared`,
+ * or stack/value allocation). Smart-pointer factories never produce raw
+ * pointers to leak across the API boundary, so the audit forbids the
+ * raw form anywhere in the protected set.
+ *
+ * The protected set is intentionally small. Sprint 6 #31-2 brings the
+ * first three foundation files under the gate; later stages (#31-3,
+ * #31-4, ...) extend the set as more files are RAII-converted. The
+ * gate is per-file allowlist — anything not on the list is unaffected.
+ * The tree-wide "no raw new in cpp/" lint (#31-10 in RAII_MIGRATION.md)
+ * is a later, broader form of this same idea.
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/cppRaiiAudit.gradle'
+ *
+ * The task is named `cppRaiiAudit` at the root and is invoked as a
+ * dedicated CI step in `.github/workflows/build-ghidra.yml`.
+ */
+
+import java.util.regex.Pattern
+
+// `new` keyword followed by an identifier and a `(`, `[`, or `<`
+// opener. The `\b` word boundary keeps us from matching `renewable`
+// or similar; the lookahead enforces an allocation site, not a
+// general `new` mention (e.g., in comments / strings that survive
+// the trim filter below).
+final Pattern RAW_NEW_PATTERN = Pattern.compile(
+    '\\bnew\\s+[A-Za-z_][A-Za-z0-9_:]*\\s*[(\\[<]')
+
+// Files under the RAII gate. Path-suffix match keeps the rule
+// independent of the repo's root layout. Sprint 6 #31-2 starts with
+// the address / space / rangeutil triangle that the audit named as
+// foundation files; subsequent stages extend the set.
+final Set<String> PROTECTED_FILES = [
+    'Ghidra/Features/Decompiler/src/decompile/cpp/address.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/space.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/rangeutil.cc',
+] as Set
+
+task cppRaiiAudit {
+    description = 'Verify protected decompiler C++ files contain no raw `new` allocations.'
+    group = 'verification'
+
+    doLast {
+        List<String> violations = []
+        List<String> missing = []
+        PROTECTED_FILES.each { String rel ->
+            File f = new File(rootDir, rel)
+            if (!f.exists()) {
+                missing.add(rel)
+                return
+            }
+            int lineNum = 0
+            f.eachLine('UTF-8') { String line ->
+                lineNum++
+                // Skip pure-comment lines — both `//` line-comments
+                // and `*` continuation lines inside `/* ... */` blocks.
+                // Same simple filter as objectInputStreamAudit; string-
+                // literal false positives can be fixed by the author.
+                String trimmed = line.trim()
+                if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+                    return
+                }
+                def m = RAW_NEW_PATTERN.matcher(line)
+                if (m.find()) {
+                    violations.add("${rel}:${lineNum} raw `new` allocation " +
+                        "(use std::make_unique<T> or std::make_shared<T>)")
+                }
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            logger.warn 'cppRaiiAudit: protected files missing from tree (audit list out of date):'
+            missing.each { logger.warn "  ${it}" }
+        }
+        if (!violations.isEmpty()) {
+            logger.error '== C++ RAII audit failures =='
+            violations.each { logger.error "  ${it}" }
+            throw new GradleException(
+                "${violations.size()} raw `new` allocation(s) in RAII-protected files. " +
+                "See docs/decompiler/RAII_MIGRATION.md (Rec 31 #31-2) — protected files " +
+                "must construct heap-owned objects via std::make_unique / std::make_shared.")
+        }
+        logger.lifecycle "cppRaiiAudit: ${PROTECTED_FILES.size()} protected file(s) clean."
+    }
+}
