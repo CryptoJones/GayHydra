@@ -2772,25 +2772,4 @@ public class CppCompositeTypeTest extends AbstractGenericTest {
 
 	}
 
-	//==============================================================================================
-	//==============================================================================================
-
-	/**
-	 * Test struct J5 - 32 - syntactics
-	 * @throws Exception upon error
-	 */
-//	@Test
-	@Ignore("wip: misc cluster — undocumented bare-ignore #192")
-	public void testJ5_32_syntactic_layout() throws Exception {
-//		SyntacticClass structJ5 = createSyntacticStructJ5(MsftVxtManager32);
-		// TODO: determine if we need a builder that inputs a SyntacticClass along with a
-		// data type manager (w/ data organization), along with layout options for creating
-		// data type (/class).
-		//structJ5.createLayoutFromSyntacticDescription(MsftVxtManager32, TaskMonitor.DUMMY);
-
-		//
-		//Composite composite = structJ5.getComposite();
-		//CompositeTestUtils.assertExpectedComposite(this, getExpectedJ5_32(), composite, true);
-	}
-
 }
