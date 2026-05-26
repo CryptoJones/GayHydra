@@ -43,7 +43,12 @@ generated from the GitHub Releases UI at sprint close.
 - **[#44](https://github.com/CryptoJones/GayHydra/pull/44)** `SprintPlanning.md` synced — Rec 28 #28-6+, Rec 32 #32-2, Rec 32 #32-3 rows marked shipped.
 - **[#54](https://github.com/CryptoJones/GayHydra/pull/54)** `SprintPlanning.md` Rec 31 #31-3 row updated to record marshal half shipped + `std::span` (#32-4) deviation explicitly acknowledged.
 
-**In flight (CI-pending or queued, not landed):** [#50](https://github.com/CryptoJones/GayHydra/pull/50) (CodeQL c-cpp manual build replacing autobuild), [#51](https://github.com/CryptoJones/GayHydra/pull/51) (xml.y `XmlScan::lvalue` `unique_ptr` migration — Stage 2B), [#52](https://github.com/CryptoJones/GayHydra/pull/52) (`xml_parse` `global_scan` `unique_ptr` lifetime — stacked on #51).
+**Originally listed as in flight, now resolved:**
+
+- **[#51](https://github.com/CryptoJones/GayHydra/pull/51)** xml.y `XmlScan::lvalue` `unique_ptr` migration (Stage 2B) — landed; all builds + C++ unit tests + ASan/UBSan green.
+- **[#73](https://github.com/CryptoJones/GayHydra/pull/73)** xml `xml_parse` `global_scan` `unique_ptr` lifetime — landed as a clean cherry-pick of [#52](https://github.com/CryptoJones/GayHydra/pull/52), which auto-closed when its stacked base disappeared after #51's squash-merge.
+- **[#74](https://github.com/CryptoJones/GayHydra/pull/74)** CodeQL c-cpp `binutils-dev` fix — landed as a clean cherry-pick of [#50](https://github.com/CryptoJones/GayHydra/pull/50)'s second commit. PR #50 auto-closed when PR #51's squash-merge accidentally included PR #50's *first* commit (the broken-binutils-dev one) because PR #51's branch was inadvertently based on the CodeQL fix branch instead of master. Master's CodeQL c-cpp job now passes (verified at 10m22s on #74's final run); the `cpp/autobuilder: No supported build system detected` preexisting failure that hit every PR is gone.
+- **[#75](https://github.com/CryptoJones/GayHydra/pull/75)** Apologies entry for the PR #51 squash-merge stacking mistake — root-causes the chain of events above and records the `git log --oneline master..HEAD` sanity check needed to prevent recurrence.
 
 
 Release-pipeline-hardening false starts during this sprint:
