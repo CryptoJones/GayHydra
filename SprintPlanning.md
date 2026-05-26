@@ -23,7 +23,7 @@ For the *why* behind individual choices, see
 
 **Open:**
 
-- [ ] **Rec 13/14 OSS-Fuzz submission** — blocked on [issue #262](https://github.com/CryptoJones/GayHydra/issues/262): replace placeholder `primary_contact` / `auto_ccs` in `.github/oss-fuzz/project.yaml` with real maintainer emails before the upstream PR. External-contact decision (whose inbox monitors OSS-Fuzz crash reports?) — needs Aaron to pick the addresses.
+- [ ] **Rec 13/14 OSS-Fuzz submission** — placeholder contact emails replaced 2026-05-26 (`primary_contact: cryptojones@owasp.org`, `auto_ccs: []` per Aaron's preference for a single inbox during ramp-up). Remaining work: open the PR against google/oss-fuzz as `projects/ghidra-decompiler/` (Rec 13). Rec 14 (`projects/ghidra-loader/` for JVM/Jazzer harnesses) is a separate follow-up that does not yet have an in-tree manifest.
 - [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
 - [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
 
