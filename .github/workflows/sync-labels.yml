@@ -27,9 +27,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           yaml-file: .github/labels.yml
-          # dry-run mode for the first landing of this workflow so
-          # we can verify the diff before any label is created or
-          # deleted from the live repo. Flip to false in a follow-up
-          # PR after Aaron has reviewed the dry-run output.
-          dry-run: true
+          # Live mode: dry-run was used for the initial landing so the
+          # diff could be eyeballed before any label was created or
+          # deleted from the live repo. Aaron confirmed 2026-05-26
+          # that the dry-run output looked correct, so the workflow
+          # now applies labels.yml changes directly.
+          dry-run: false
           skip-delete: false
