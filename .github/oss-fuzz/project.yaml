@@ -8,9 +8,10 @@
 homepage: "https://codeberg.org/CryptoJones/GayHydra"
 main_repo: "https://codeberg.org/CryptoJones/GayHydra"
 language: c++
-primary_contact: "security@example.invalid"   # replace before submission
-auto_ccs:
-  - "security@example.invalid"                # replace before submission
+primary_contact: "cryptojones@owasp.org"
+# auto_ccs left empty — single inbox for now (Aaron, 2026-05-26).
+# Add additional maintainer addresses here as the project grows.
+auto_ccs: []
 sanitizers:
   - address
   - undefined
