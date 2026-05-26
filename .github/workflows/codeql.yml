@@ -74,9 +74,15 @@ jobs:
 
       - name: Install C++ build deps
         if: matrix.language == 'c-cpp'
+        # bison + flex are needed to regenerate xml.cc / slghparse.cc /
+        # slghscan.cc from their .y / .l sources during the manual
+        # build below. The decompiler's actual link step (decomp_dbg)
+        # would want binutils-dev + libiberty-dev for BFD, but we don't
+        # link here — only compile to .o files for CodeQL to extract,
+        # which doesn't need BFD.
         run: |
           sudo apt-get update
-          sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
+          sudo apt-get install -y bison flex g++ make
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -97,8 +103,23 @@ jobs:
         # irrelevant to static analysis.
         run: gradle prepDev --parallel
 
-      - name: Autobuild (non-Java)
-        if: matrix.language != 'java-kotlin'
+      - name: Manual C++ build
+        if: matrix.language == 'c-cpp'
+        # Autobuild fails for this repo because the decompiler's
+        # Makefile lives at Ghidra/Features/Decompiler/src/decompile/cpp/
+        # rather than at the repo root, so `cpp/autobuilder.sh` reports
+        # "No supported build system detected" and exits 1. Build the
+        # static library `libdecomp_dbg.a` instead — that target
+        # compiles every C++ source file in the decompiler core (all
+        # LIBDECOMP_NAMES → com_dbg/*.o, then ar qc into the archive)
+        # without needing BFD at link time. CodeQL's tracer picks up
+        # the .o compile commands, which is what static analysis needs.
+        run: |
+          cd Ghidra/Features/Decompiler/src/decompile/cpp
+          make libdecomp_dbg.a
+
+      - name: Autobuild (other languages)
+        if: matrix.language != 'java-kotlin' && matrix.language != 'c-cpp'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
