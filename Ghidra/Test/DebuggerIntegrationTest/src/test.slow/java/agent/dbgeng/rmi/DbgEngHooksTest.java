@@ -21,7 +21,6 @@ import static org.junit.Assert.*;
 
 import java.util.*;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import ghidra.app.plugin.core.debug.utils.ManagedDomainObject;
@@ -189,13 +188,6 @@ public class DbgEngHooksTest extends AbstractDbgEngTraceRmiTest {
 
 	protected String frameIndex(TraceObject object) {
 		return getIndex(object, "Sessions[].Processes[].Threads[].Stack.Frames[]", 3);
-	}
-
-	@Test
-	@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
-	public void testOnSyscallMemory() throws Exception {
-		// TODO: Need a specimen
-		// FWIW, I've already seen this getting exercised in other tests.
 	}
 
 	/**
