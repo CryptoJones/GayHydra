@@ -20,16 +20,10 @@ import static org.junit.Assert.*;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import generic.Unique;
 import ghidra.app.plugin.core.debug.gui.AbstractGhidraHeadedDebuggerTest;
-import ghidra.app.plugin.core.debug.gui.listing.DebuggerListingPlugin;
-import ghidra.app.plugin.core.debug.gui.model.DebuggerModelPlugin;
-import ghidra.app.plugin.core.debug.gui.register.DebuggerRegistersPlugin;
-import ghidra.app.plugin.core.debug.gui.thread.DebuggerThreadsPlugin;
-import ghidra.app.plugin.core.debug.gui.time.DebuggerTimePlugin;
 import ghidra.app.util.Option;
 import ghidra.app.util.bin.ByteArrayProvider;
 import ghidra.app.util.bin.ByteProvider;
@@ -179,39 +173,6 @@ public class TenetLoaderTest extends AbstractGhidraHeadedDebuggerTest {
 
 		provider = new ByteArrayProvider("test.anythingelse", testFile.getBytes("utf8"));
 		assertEquals(0, loader.findSupportedLoadSpecs(provider).size());
-	}
-
-	/*
-	 * Automate loading a trace for manual testing purposes
-	 */
-	@Ignore("wip: TenetLoaderTest undocumented bare-ignore #193")
-	public void testManual() throws Exception {
-		final String testFile = """
-				slide=0x0
-				pc=0x1,r0=0x1234
-				pc=0x2,r1=0x4321
-				pc=0x3,r1=0x4321
-				pc=0x4,r1=0x4321
-				pc=0x5,r1=0x4321
-				pc=0x6,r1=0x4321
-				pc=0x7,r1=0x4321
-				pc=0x8,r1=0x4321
-				pc=0x9,r1=0x4321
-				pc=0xa,r1=0x4321
-				""";
-
-		addPlugin(tool, DebuggerRegistersPlugin.class);
-		addPlugin(tool, DebuggerModelPlugin.class);
-		addPlugin(tool, DebuggerThreadsPlugin.class);
-		addPlugin(tool, DebuggerListingPlugin.class);
-		addPlugin(tool, DebuggerTimePlugin.class);
-
-		final Trace trace = createTraceWithLoader(testFile);
-
-		traceManager.openTrace(trace);
-		traceManager.activateTrace(trace);
-
-		Thread.sleep(1000);
 	}
 
 	/*
