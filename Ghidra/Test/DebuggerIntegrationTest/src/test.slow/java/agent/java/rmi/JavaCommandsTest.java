@@ -49,7 +49,7 @@ import ghidra.trace.model.thread.TraceThread;
 import ghidra.trace.model.time.TraceSnapshot;
 import ghidra.util.Msg;
 
-@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
+@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #60")
 public class JavaCommandsTest extends AbstractJavaTraceRmiTest {
 
 	public static final String HWSETUP = """

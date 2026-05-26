@@ -353,7 +353,7 @@ public class DBTraceAddressSnapRangePropertyMapSpaceTest
 	}
 
 	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
+	@Ignore("wip: Debug/TraceModeling cluster #66")
 	public void testSaveAndLoad() throws IOException, CancelledException, VersionException {
 		MyEntry entry1;
 		try (Transaction tx = obj.openTransaction("Create entries")) {
@@ -372,7 +372,7 @@ public class DBTraceAddressSnapRangePropertyMapSpaceTest
 	}
 
 	@Test
-	@Ignore("blocked-on: DBTrace snap-range related to GP-479 #189")
+	@Ignore("blocked-on: DBTrace snap-range related to GP-479 #66")
 	public void testUndoThenRedo() throws IOException {
 		MyEntry entry1;
 		try (Transaction tx = obj.openTransaction("Create entries")) {

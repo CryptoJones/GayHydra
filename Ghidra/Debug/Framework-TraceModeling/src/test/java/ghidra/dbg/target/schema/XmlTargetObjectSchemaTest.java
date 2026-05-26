@@ -81,7 +81,7 @@ public class XmlTargetObjectSchemaTest {
 	}
 
 	@Test
-	@Ignore("blocked-on: XmlTargetObjectSchema null-intent design fix #189")
+	@Ignore("blocked-on: XmlTargetObjectSchema null-intent design fix #66")
 	public void testSearchWithMultipleImpls() throws Exception {
 		SchemaContext ctx = XmlSchemaContext.deserialize("""
 				<context>

@@ -33,7 +33,7 @@ public class dsPIC30FAssemblyTest extends AbstractAssemblyTest {
 	}
 
 	@Test
-	@Ignore("blocked-on: dsPIC30F W4 label-vs-register #160")
+	@Ignore("blocked-on: dsPIC30F W4 label-vs-register #56")
 	public void testAssemble_clr_b_W4() {
 		assertOneCompatRestExact("clr.b W4", "00:42:eb:00", 0x000100);
 	}

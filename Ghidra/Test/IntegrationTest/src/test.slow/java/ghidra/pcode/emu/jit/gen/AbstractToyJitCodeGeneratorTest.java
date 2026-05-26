@@ -218,7 +218,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	}
 
 	@Test
-	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #183")
+	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #63")
 	public void testReadMemDirectWithSpanWrapSpace() throws Exception {
 		long offset = -2;
 		Translation tr = translateSleigh(getLanguageID(), """
@@ -246,7 +246,7 @@ public abstract class AbstractToyJitCodeGeneratorTest extends AbstractJitCodeGen
 	}
 
 	@Test
-	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #183")
+	@Ignore("wip: AbstractToyJitCodeGenerator undefined-case #63")
 	public void testWriteMemDirectWithSpanWrapSpace() throws Exception {
 		long offset = -2;
 		Translation tr = translateSleigh(getLanguageID(), """
