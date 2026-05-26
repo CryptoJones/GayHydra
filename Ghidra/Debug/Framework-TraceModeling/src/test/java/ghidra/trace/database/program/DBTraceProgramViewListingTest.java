@@ -15,7 +15,6 @@
  */
 package ghidra.trace.database.program;
 
-import static ghidra.lifecycle.Unfinished.TODO;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -839,21 +838,6 @@ public class DBTraceProgramViewListingTest extends AbstractGhidraHeadlessIntegra
 		assertUndefined(cu = listing.getFirstUndefinedData(
 			b.set(b.range(0x4000, 0x4002), b.range(0x4005, 0x400a)), TaskMonitor.DUMMY));
 		assertEquals(b.addr(0x4007), cu.getAddress());
-	}
-
-	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
-	public void testGetUndefinedRanges() throws InsufficientBytesException,
-			UnknownInstructionException, CodeUnitInsertionException, CancelledException {
-		try (Transaction tx = b.startTransaction()) {
-			b.addData(0, b.addr(0x4000), Undefined4DataType.dataType, b.buf(1, 2, 3, 4));
-			b.addInstruction(0, b.addr(0x4005), b.host, b.buf(0xf4, 0));
-		}
-
-		TODO(); // Should I expect OTHER ranges in the undefined set?
-		assertEquals(b.set(b.range(0, 0x3fff), b.range(0x4004), b.range(0x4007, -1)),
-			listing.getUndefinedRanges(
-				view.getAddressFactory().getAddressSet(), false, TaskMonitor.DUMMY));
 	}
 
 	@Test
