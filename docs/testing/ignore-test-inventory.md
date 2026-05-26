@@ -23,11 +23,11 @@ Live count from `grep -rn '@Ignore("' Ghidra --include='*.java' | grep -v Repeat
 
 | Category | Count |
 |---|---|
-| `wip` | 39 |
+| `wip` | 37 |
 | `blocked-on` | 19 |
 | `manual-tool` | 1 |
 | `flaky` | 0 |
-| **Total properly-categorized** | **59** |
+| **Total properly-categorized** | **57** |
 
 The `manual-tool` count dropped from 10 → 8 and `flaky` from 3 → 0 in [PR #28-6a](#sequencing): five method-level `@Ignore` lines were removed because their enclosing classes are already `@Ignore`'d at class level (two in `JdiExperimentsTest`/`ProjectExperimentsTest`, three in `JavaMethodsTest`). The method annotations were dead — the class-level annotation skipped them first. Issue references (#178, #190, #193) remain valid; if the class-level ignores are ever lifted, those issues can be re-attached at the method level.
 
