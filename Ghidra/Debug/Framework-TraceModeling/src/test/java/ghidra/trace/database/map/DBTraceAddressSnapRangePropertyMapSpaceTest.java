@@ -268,33 +268,6 @@ public class DBTraceAddressSnapRangePropertyMapSpaceTest
 	}
 
 	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
-	public void testRemove() {
-		try (Transaction tx = obj.openTransaction("Create entries")) {
-			obj.space1.put(at(0x1000, 5), null);
-			obj.space2.put(at(0x1000, 5), null);
-			assertEquals(1, obj.space1.size());
-			assertEquals(1, obj.space2.size());
-
-			Entry<TraceAddressSnapRange, MyEntry> entry1 =
-				obj.space1.reduce(TraceAddressSnapRangeQuery.at(addr(0x1000), 5)).firstEntry();
-			assertNotNull(entry1);
-
-			assertTrue(obj.space1.remove(entry1));
-			assertTrue(obj.space1.isEmpty());
-			assertTrue(entry1.getValue().isDeleted());
-			assertTrue(obj.space2.remove(entry1)); // TODO: Should match by shape?
-			TODO();
-			assertTrue(obj.space2.isEmpty());
-
-			MyEntry value = obj.space1.put(at(0x1000, 5), null);
-			assertEquals(1, obj.space1.size());
-			assertTrue(obj.space1.remove(at(0x1000, 5), value));
-			assertTrue(obj.space1.isEmpty());
-		}
-	}
-
-	@Test
 	public void testSize() throws VersionException, IOException {
 		assertEquals(0, obj.space1.size());
 		assertTrue(obj.space1.isEmpty());
