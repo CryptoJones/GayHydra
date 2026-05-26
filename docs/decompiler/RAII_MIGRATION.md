@@ -175,7 +175,7 @@ can land at C++11 and C++20 later.
 |---|---|---|
 | #31-1 | This plan | shipped |
 | #31-2 | Stage 1 — `address.cc`, `space.cc`, `rangeutil.cc` (audit's "range.cc" target) | shipped: the three files were already raw-`new`-free in tree; the `gradle cppRaiiAudit` per-file gate (see [`gradle/cppRaiiAudit.gradle`](../../gradle/cppRaiiAudit.gradle)) was added to fail CI on any regression. Wired into `.github/workflows/build-ghidra.yml` alongside `ignoreAudit` and `objectInputStreamAudit`. |
-| #31-3 | Stage 2 — `marshal.cc`, `xml.cc` | open |
+| #31-3 | Stage 2 — `marshal.cc`, `xml.cc` | partial: marshal shipped ([PR #46](https://github.com/CryptoJones/GayHydra/pull/46)), xml.y/xml.cc in flight ([PR #51](https://github.com/CryptoJones/GayHydra/pull/51) + [PR #52](https://github.com/CryptoJones/GayHydra/pull/52)); semantic-action sites scoped in [RAII_STAGE_2C_XML.md](RAII_STAGE_2C_XML.md) |
 | #31-4 | Stage 3 — `database.cc`, `comment.cc`, `cover.cc` | open |
 | #31-5 | Stage 4 — `type.cc`, `userop.cc` | open |
 | #31-6 | Stage 5 — pcode core | open |
