@@ -2,7 +2,7 @@
 
 *Addresses Rec 28 #28-2 (the inventory). See [IGNORE_TEST_POLICY.md](IGNORE_TEST_POLICY.md) for the policy this inventory feeds.*
 
-Snapshot refreshed: 2026-05-22. Run `grep -rn '@Ignore' Ghidra --include='*.java'` for the live state; this file summarises the standing categories and the remaining sweep targets.
+Snapshot refreshed: 2026-05-26. Run `grep -rn '@Ignore' Ghidra --include='*.java'` for the live state; this file summarises the standing categories and the remaining sweep targets.
 
 ## The six audit-named tests — status
 
@@ -47,16 +47,16 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 | #28-6a | Redundant inner `@Ignore` cleanup (5 lines inside already-`@Ignore`'d classes) | shipped |
 | #28-6b | `ignore:30d` / `ignore:90d` / `ignore:1y` deadline labels declared in `.github/labels.yml` | shipped |
 | #28-6c | Deadline labels created in the live GitHub repo via API (bypasses `sync-labels.yml` dry-run gate) and applied to all 18 tracking issues currently referenced by an `@Ignore` annotation in-tree (#159, #160, #161, #162, #176, #177, #179, #180, #181, #182, #183, #187, #188, #189, #190, #191, #192, #193): `ignore:90d` on #178 (flaky `putFrames` race — fixable inside a sprint), `ignore:1y` on the others (long-running upstream blockers + Debugger RMI cluster work). Policy violation cleared. Stale titles on #187/#188/#192 (still said "bare @Ignore" though the annotations have been categorized) updated to reflect current state. | shipped |
-| #28-6d+ | Remaining 73-site fix-or-delete sweep across `manual-tool` (8), `blocked-on` (19), `wip` (46) buckets | open |
+| #28-6d+ | Remaining fix-or-delete sweep across `manual-tool`, `blocked-on`, `wip` buckets — author-declared-not-a-regression-test sub-bucket cleared (PRs #26–#34, #36–#41 deleted 17 such sites; counts now wip 31, blocked-on 19, manual-tool 1) | open (residual = real tests blocked-on upstream/cluster work) |
 
 ## #28-6+ sweep heuristics
 
-Suggested order for tackling the remaining 70 sites:
+Suggested order for tackling the remaining 51 sites:
 
-1. **`manual-tool` (1 site)** — `JitJvmTypeUtilsTest` is the only remaining manual-tool entry; it's "real test, ignored for infrastructure reason" (Java-version-bound) and needs an infra fix or move to `src/main/test-tools/` rather than deletion. The "author-declared not-a-regression-test" sub-bucket (experiment notebooks, codegen tools, developer-desk perf scratchpads) is now empty. Deleted so far: `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest`, `ProjectExperimentsTest`, `JdiExperimentsTest`, `CharsetInfoManagerTest.generateCharsetInfoFile`, `DebuggerMemoryBytesProviderTest.testPerformanceManuallyWithManyManySnaps`, `AbstractDBTraceMemoryManagerMemoryTest.testReplicateClassCastExceptionScenario`.
+1. **`manual-tool` (1 site)** — `JitJvmTypeUtilsTest` is the only remaining manual-tool entry; it's "real test, ignored for infrastructure reason" (Java-version-bound) and needs an infra fix or move to `src/main/test-tools/` rather than deletion. The "author-declared not-a-regression-test" sub-bucket (experiment notebooks, codegen tools, developer-desk perf scratchpads, empty `TODO()`-throw stubs, JFrame UI demos, manual harnesses, commented-body shells) is now empty across both `manual-tool` and `wip` buckets. Deleted (in order of PR): `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest`, `ProjectExperimentsTest`, `JdiExperimentsTest`, `CharsetInfoManagerTest.generateCharsetInfoFile`, `DebuggerMemoryBytesProviderTest.testPerformanceManuallyWithManyManySnaps`, `AbstractDBTraceMemoryManagerMemoryTest.testReplicateClassCastExceptionScenario`, `DebuggerOpinionsTest`, `DBTraceRegisterContextManagerTest`, `DemoFieldsTest`, `DebuggerManualTest`, `experiments/ToArrayTest`, `TenetLoaderTest.testManual`, `AbstractToyJitCodeGeneratorTest.testComputedOffsetsInRegisterSpace` + `.testUninitializedVsInitializedReads`, `CppCompositeTypeTest.testJ5_32_syntactic_layout`, `DBTraceCodeUnitTest.testFigureOutAssembly`, `DBTraceProgramViewListingTest.testGetUndefinedRanges`, `DBTraceAddressSnapRangePropertyMapSpaceTest.testRemove`, `DbgEngHooksTest.testOnSyscallMemory`, `GdbHooksTest.testOnSyscallMemory`.
 2. **`flaky` (0 sites)** — historical bucket; all three former sites in `JavaMethodsTest` (issue #178) were collapsed in [PR #28-6a](#sequencing) when the enclosing class's class-level `@Ignore` was recognised as already covering them.
 3. **`blocked-on` (19 sites)** — the dependent issue list is the next sweep target. Closing the upstream blocker for any of these unblocks the test.
-4. **`wip` (46 sites)** — largest bucket; mostly Debugger RMI integration work. Sweep last; many will resolve as the Debugger RMI work matures.
+4. **`wip` (31 sites)** — largest residual bucket. Composition: Debugger RMI integration work (3 class-level `JavaHooksTest` / `JavaMethodsTest` / `JavaCommandsTest`; assorted method-level for #180/#191), real-but-unfinished demangler + parser corpus (`MDMangBaseTest` ×9 for #187, `SymbolPathParserTest` ×1 for #161), real-but-unfinished DFP NaN cases (`HexagonPcodeUseropLibraryTest` ×4 for #188), and other documented future-aspiration tests (`DecompilerTaintTest`, `HTMLDataTypeRepresentationTest`, etc.). All have real bodies; none are author-declared-not-a-regression-test. Sweep last; many will resolve as the Debugger RMI / demangler / emulation work matures.
 
 ---
 
