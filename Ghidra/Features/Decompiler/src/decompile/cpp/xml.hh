@@ -21,13 +21,17 @@
 #include "types.h"
 #include <fstream>
 #include <iomanip>
+#include <memory>
 #include <string>
 #include <vector>
 #include <map>
 
 namespace ghidra {
 
+using std::make_unique;
+using std::move;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 using std::map;
 using std::istream;
