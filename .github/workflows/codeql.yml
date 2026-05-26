@@ -76,13 +76,14 @@ jobs:
         if: matrix.language == 'c-cpp'
         # bison + flex are needed to regenerate xml.cc / slghparse.cc /
         # slghscan.cc from their .y / .l sources during the manual
-        # build below. The decompiler's actual link step (decomp_dbg)
-        # would want binutils-dev + libiberty-dev for BFD, but we don't
-        # link here — only compile to .o files for CodeQL to extract,
-        # which doesn't need BFD.
+        # build below. binutils-dev + libiberty-dev provide bfd.h —
+        # we don't *link* against libbfd (libdecomp_dbg.a is a static
+        # archive, no link step), but `analyzesigs.cc` and
+        # `loadimage_bfd.cc` `#include <bfd.h>` and therefore need
+        # the header at compile time.
         run: |
           sudo apt-get update
-          sudo apt-get install -y bison flex g++ make
+          sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
