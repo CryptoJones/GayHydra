@@ -41,9 +41,13 @@ final Pattern RAW_NEW_PATTERN = Pattern.compile(
 // the address / space / rangeutil triangle that the audit named as
 // foundation files; subsequent stages extend the set.
 final Set<String> PROTECTED_FILES = [
+    // Rec 31 Stage 1 (#31-2)
     'Ghidra/Features/Decompiler/src/decompile/cpp/address.cc',
     'Ghidra/Features/Decompiler/src/decompile/cpp/space.cc',
     'Ghidra/Features/Decompiler/src/decompile/cpp/rangeutil.cc',
+    // Rec 31 Stage 2 (#31-3) — marshal half
+    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.hh',
 ] as Set
 
 task cppRaiiAudit {
