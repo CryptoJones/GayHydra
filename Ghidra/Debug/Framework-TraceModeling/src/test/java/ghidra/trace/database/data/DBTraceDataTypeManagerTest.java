@@ -120,7 +120,7 @@ public class DBTraceDataTypeManagerTest extends AbstractGhidraHeadlessIntegratio
 	}
 
 	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
+	@Ignore("wip: Debug/TraceModeling cluster #66")
 	public void testAddRemoveUndoThenGet() throws IOException {
 		StructureDataType mine = getTestDataType();
 		DataTypePath minePath = mine.getDataTypePath();
@@ -158,7 +158,7 @@ public class DBTraceDataTypeManagerTest extends AbstractGhidraHeadlessIntegratio
 	}
 
 	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
+	@Ignore("wip: Debug/TraceModeling cluster #66")
 	public void testReplaceDataType() throws DataTypeDependencyException {
 		StructureDataType mineA = getTestDataType();
 		DataTypePath mineAPath = mineA.getDataTypePath();

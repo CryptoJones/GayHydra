@@ -157,7 +157,7 @@ public class TraceRmiLaunchDialogTest extends AbstractGhidraHeadedDebuggerTest {
 	}
 
 	@Test
-	@Ignore("wip: Debugger plugin cluster #191")
+	@Ignore("wip: Debugger plugin cluster #67")
 	public void testIntLoadHexValue() throws Throwable {
 		/**
 		 * TODO: This is a bit out of order. However, the dialog cannot load/decode from the state

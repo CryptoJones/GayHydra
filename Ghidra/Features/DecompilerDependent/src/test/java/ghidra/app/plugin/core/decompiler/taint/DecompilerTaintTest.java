@@ -132,7 +132,7 @@ public class DecompilerTaintTest extends AbstractGhidraHeadedIntegrationTest {
 
 	// NB: This test is VERY slow. I do not recommend running it on a regular basis.
 	//  Each of the 22 paired examples above takes close to a minute to run, so...
-	@Ignore("wip: misc cluster — undocumented bare-ignore #192")
+	@Ignore("wip: misc cluster — undocumented bare-ignore #68")
 	@Test
 	public void testWinmine() throws Exception {
 		int nf = 0;

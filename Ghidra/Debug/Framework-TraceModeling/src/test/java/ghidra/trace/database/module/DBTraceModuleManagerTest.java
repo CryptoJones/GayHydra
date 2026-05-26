@@ -340,7 +340,7 @@ public class DBTraceModuleManagerTest extends AbstractGhidraHeadlessIntegrationT
 	}
 
 	@Test
-	@Ignore("blocked-on: write-back cache undo unsupported #189")
+	@Ignore("blocked-on: write-back cache undo unsupported #66")
 	public void testUndoIdentitiesPreserved() throws Exception {
 		TraceModule mod1;
 		try (Transaction tx = b.startTransaction()) {
@@ -362,7 +362,7 @@ public class DBTraceModuleManagerTest extends AbstractGhidraHeadlessIntegrationT
 	}
 
 	@Test
-	@Ignore("blocked-on: write-back cache undo unsupported #189")
+	@Ignore("blocked-on: write-back cache undo unsupported #66")
 	public void testUndoThenRedo() throws Exception {
 		TraceModule mod1;
 		TraceModule mod2;

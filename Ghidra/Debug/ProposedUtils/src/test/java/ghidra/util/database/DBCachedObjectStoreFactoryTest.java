@@ -727,7 +727,7 @@ public class DBCachedObjectStoreFactoryTest {
 	}
 
 	@Test
-	@Ignore("wip: DBCachedObjectStoreFactory test correctness review #193")
+	@Ignore("wip: DBCachedObjectStoreFactory test correctness review #69")
 	public void testCodecs() throws IOException, VersionException {
 
 		DBHandle handle = new DBHandle();
