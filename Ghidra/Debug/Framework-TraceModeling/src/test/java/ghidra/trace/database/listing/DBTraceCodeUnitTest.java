@@ -24,7 +24,6 @@ import java.util.*;
 import org.junit.*;
 
 import db.*;
-import ghidra.app.plugin.assembler.*;
 import ghidra.docking.settings.Settings;
 import ghidra.program.model.address.*;
 import ghidra.program.model.data.*;
@@ -846,14 +845,6 @@ public class DBTraceCodeUnitTest extends AbstractGhidraHeadlessIntegrationTest {
 		assertEquals(0xfeeb, lil.getLong(0));
 		assertEquals(new BigInteger("feeb", 16), lil.getBigInteger(0, 2, false));
 		assertEquals(new BigInteger("-115", 16), lil.getBigInteger(0, 2, true));
-	}
-
-	@Test
-	@Ignore("wip: Debug/TraceModeling cluster #189")
-	public void testFigureOutAssembly() throws AssemblySyntaxException, AssemblySemanticException {
-		Assembler asm = Assemblers.getAssembler(b.language);
-		System.out.println(
-			NumericUtilities.convertBytesToString(asm.assembleLine(b.addr(0x4024), "call 0x4004")));
 	}
 
 	@Test
