@@ -17,11 +17,15 @@
  * Regression test for Rec 20: confirm the RMI deserialization filter
  * is installed by default and rejects classes outside the allowlist.
  *
- * The filter is installed via the JVM system property
- *   -Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory
- * which is set in Ghidra/RuntimeScripts/Common/support/launch.properties.
+ * The filter is installed lazily by
+ * HeadlessGhidraApplicationConfiguration.initializeApplication via
+ * GhidraSerialFilterFactory.getOrInstallInstance during application
+ * initialization. The eager -Djdk.serialFilterFactory=... VMARG that
+ * Rec 20 originally added to launch.properties was removed in issue
+ * #80 after a JDK 21.0.10+ "set exactly once" interaction surfaced
+ * (see Apologies.md 2026-05-26 / NSA/ghidra#9220 for the chain).
  *
- * This test invokes the factory directly (independent of the launch
+ * This test invokes the factory directly (independent of any launch
  * property) and asserts:
  *   1. The factory loads the patterns from client.rmi.serial.filter.
  *   2. A known-bad class (one not on the allowlist) is rejected.
