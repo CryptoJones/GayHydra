@@ -77,7 +77,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 - [x] ~~**Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`~~ — already shipped (see `gradle/javaProject.gradle` default `lintOpts`).
 - [x] ~~**Rec 26 Stage 2:** `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING~~ — already shipped (see `gradle/errorprone.gradle`).
 - [x] ~~**Rec 28 #28-5:** dead commented-out `//@Ignore` cleanup~~ — [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) removed 7 dead lines in `MDMangBaseTest` + `CompositeMemberTest`. Active-`@Ignore` sweep continues as #28-6+.
-- [ ] **Rec 28 #28-6+:** active-`@Ignore` fix-or-delete sweep across the remaining 78 properly-categorized sites (46 `wip` / 19 `blocked-on` / 10 `manual-tool` / 3 `flaky`).
+- [x] ~~**Rec 28 #28-6+:** active-`@Ignore` fix-or-delete sweep — author-declared-not-a-regression-test sub-bucket cleared (PRs #26–#34, #36–#41 deleted 17 such sites); `ignoreAudit` task graduated to Stage 2 strict-by-default via [PR #43](https://github.com/CryptoJones/GayHydra/pull/43). Residual = 51 properly-categorized real tests (31 `wip` / 19 `blocked-on` / 1 `manual-tool`) all blocked on real upstream/cluster work; fix-the-real-blocker not delete-the-stub from here.~~
 
 **Carried (still deferred):**
 
@@ -142,10 +142,10 @@ first implementation tier.
 
 ## Sprint 6 — Decompiler Foundations: C++14/20 + RAII Stage 1–2
 
-- [ ] **Rec 32 PR #32-2:** bump `-std=c++11` → `-std=c++14` in `decompile/cpp/Makefile`. CI green on all 3 platforms.
+- [x] ~~**Rec 32 PR #32-2:** bump `-std=c++11` → `-std=c++14` in `decompile/cpp/Makefile`.~~ Shipped: [PR #310](https://github.com/CryptoJones/GayHydra/pull/310).
+- [x] ~~**Rec 32 PR #32-3:** bump to `-std=c++20`.~~ Shipped: rolled in with [PR #314](https://github.com/CryptoJones/GayHydra/pull/314); same three sites as #32-2 (`buildNatives.gradle` Gcc/Clang blocks, `decompile/cpp/Makefile`, `decompile/cpp/fuzz/Makefile.fuzz`), flag-only change. Toolchain floor recorded in `docs/decompiler/CPP20_ADOPTION.md` (gcc ≥10, clang ≥12, MSVC 2019 16.10+/2022).
 - [ ] **Rec 31 PR #31-2:** RAII Stage 1 — convert `address.cc`, `space.cc`, `range.cc` to `unique_ptr`. CI lint: no raw `new` in these files.
 - [ ] **Rec 31 PR #31-3 + Rec 32 PR #32-4:** RAII Stage 2 (`marshal.cc`, `xml.cc`) paired with `std::span` adoption in their parameter pairs. Joint review.
-- [ ] **Rec 32 PR #32-3:** bump to `-std=c++20`. CI gate.
 
 ---
 
