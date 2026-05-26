@@ -6,6 +6,72 @@ downstream damage, the apology.
 
 ---
 
+## 2026-05-26 — PR #51 squash-merge accidentally landed PR #50's broken first commit
+
+**What happened.** I was driving the `xml.y` RAII Stage 2B work
+([PR #51](https://github.com/CryptoJones/GayHydra/pull/51)) on a branch that I thought was based on master but
+was actually still based on the in-flight CodeQL-fix branch
+(`ci/codeql-c-cpp-manual-build`). I created PR #51's branch right
+after pushing PR #50's first commit and didn't `git checkout master`
+in between. So PR #51's branch held two commits: the CodeQL fix (the
+*broken* first attempt that removed `binutils-dev`) and the actual
+lvalue RAII change.
+
+When PR #51 squash-merged, GitHub combined **both** commits into one
+squashed commit on master. The squashed commit landed:
+
+  - the intended `XmlScan::lvalue` `unique_ptr` migration (good)
+  - the broken CodeQL config that removes `binutils-dev` (bad)
+
+PR #50's *second* commit (`65eee71c`, the fix-forward that added
+`binutils-dev` back) was still sitting in its own branch, never
+merged. PR #50 then couldn't auto-merge because its first commit
+was now on master, producing an unresolvable conflict (master has
+the first attempt, PR #50 wants to replay both first and second).
+
+**Downstream damage.**
+
+- Master at `f41d8fc444` shipped a CodeQL c-cpp job that fails with
+  `bfd.h: No such file or directory` instead of the prior
+  `cpp/autobuilder: No supported build system detected`. Same red
+  signal, different reason — c-cpp was already failing on every PR
+  before #50/#51, so the net effect is "still red, slightly
+  different log."
+- PR #50 had to be closed as orphaned.
+- A replacement PR ([#74](https://github.com/CryptoJones/GayHydra/pull/74)) had to be opened to cherry-pick only
+  the binutils-dev-fix commit onto current master.
+- Cost: one extra PR for the maintainer to review, plus a minor
+  conceptual smudge in the merge graph (the lvalue PR's squash
+  body says "* ci(codeql): manual c-cpp build replaces autobuild"
+  in its commit log — because both commits' messages got
+  concatenated into the squash).
+
+A parallel mistake happened with [PR #52](https://github.com/CryptoJones/GayHydra/pull/52) (xml `global_scan` RAII)
+which was also stacked on PR #51's branch. When PR #51 squashed,
+the lvalue commit's content was on master, but PR #52's branch
+contained that same content as a separate commit. PR #52 then
+couldn't merge cleanly and GitHub auto-closed it; recovered as
+[PR #73](https://github.com/CryptoJones/GayHydra/pull/73) by cherry-picking the global_scan commit onto a fresh
+branch off master.
+
+**Apology.** The "stacked PR" technique that the dual-remote-pr
+skill supports works when the inner PR has merged before the outer
+one is opened; I tried to do both in parallel and didn't verify
+that PR #51's branch was actually based on master. The right check
+before pushing a new "based on master" PR is `git log --oneline
+master..HEAD` — if more than the intended commits show up, the
+branch is mis-based. I skipped that. The cost was an extra PR plus
+the temporary master-broken-CodeQL state. Sorry.
+
+**Mitigation in progress.** PR #74 ships the binutils-dev fix as
+a clean cherry-pick. After it merges, master's CodeQL c-cpp job
+will pass (verified on the pre-orphan PR #50 last green run at
+`13m12s`). Adding a feedback memory ([[feedback-verify-pr-base]])
+so future stacked-PR work runs the `git log --oneline master..HEAD`
+sanity check before pushing.
+
+---
+
 ## 2026-05-25 — Rec 12 draft GHSA security advisories gone with the repo
 
 **What happened.** The Rec 12 retroactive-CVE workspace
