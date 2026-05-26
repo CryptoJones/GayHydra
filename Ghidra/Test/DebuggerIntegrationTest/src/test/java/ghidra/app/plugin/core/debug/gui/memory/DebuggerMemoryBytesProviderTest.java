@@ -16,7 +16,6 @@
 package ghidra.app.plugin.core.debug.gui.memory;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -63,9 +62,7 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.trace.database.ToyDBTraceBuilder;
 import ghidra.trace.database.ToyDBTraceBuilder.ToySchemaBuilder;
 import ghidra.trace.database.memory.DBTraceMemoryManager;
-import ghidra.trace.database.memory.DBTraceMemorySpace;
 import ghidra.trace.database.stack.DBTraceStackManager;
-import ghidra.trace.database.time.DBTraceTimeManager;
 import ghidra.trace.model.Lifespan;
 import ghidra.trace.model.memory.*;
 import ghidra.trace.model.modules.TraceModule;
@@ -73,7 +70,6 @@ import ghidra.trace.model.stack.TraceStack;
 import ghidra.trace.model.target.TraceObject;
 import ghidra.trace.model.target.schema.SchemaContext;
 import ghidra.trace.model.thread.TraceThread;
-import ghidra.util.SystemUtilities;
 
 @Category(NightlyCategory.class)
 public class DebuggerMemoryBytesProviderTest extends AbstractGhidraHeadedDebuggerIntegrationTest {
@@ -1246,36 +1242,5 @@ public class DebuggerMemoryBytesProviderTest extends AbstractGhidraHeadedDebugge
 		performAction(actionEdit);
 
 		rmiCx.withdrawTarget(tool, tb.trace);
-	}
-
-	@Test
-	@Ignore("manual-tool: DebuggerMemoryBytesProvider enable-manually #191")
-	public void testPerformanceManuallyWithManyManySnaps() throws Exception {
-		assumeFalse(SystemUtilities.isInTestingBatchMode());
-		createAndOpenTrace();
-
-		// LATER (GP-5594): 100_000 without checkStateMapIntegrity will crash.
-		final long snapCount = 100_000;
-		try (Transaction tx = tb.startTransaction()) {
-			tb.createRootObject(SCHEMA_CTX);
-			tb.trace.getMemoryManager()
-					.addRegion("Processes[1].Memory[exe:.text]", Lifespan.nowOn(0L),
-						tb.range(0x55550000, 0x5555ffff), TraceMemoryFlag.READ,
-						TraceMemoryFlag.EXECUTE);
-			DBTraceTimeManager time = tb.trace.getTimeManager();
-			DBTraceMemorySpace space = tb.trace.getMemoryManager()
-					.getForSpace(tb.host.getAddressFactory().getDefaultAddressSpace(), true);
-			for (int i = 0; i < snapCount; i++) {
-				time.getSnapshot(i, true);
-				space.putBytes(i, tb.addr(0x55550000 + (i & 0xffff)), tb.buf(i & 0xff));
-				if (i % 1000 == 0) {
-					space.checkStateMapIntegrity();
-				}
-			}
-		}
-		traceManager.activateTrace(tb.trace);
-		traceManager.activateSnap(snapCount - 1);
-
-		Thread.sleep(1); // breakpoint here
 	}
 }

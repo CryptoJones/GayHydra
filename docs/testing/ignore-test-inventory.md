@@ -25,9 +25,9 @@ Live count from `grep -rn '@Ignore("' Ghidra --include='*.java' | grep -v Repeat
 |---|---|
 | `wip` | 46 |
 | `blocked-on` | 19 |
-| `manual-tool` | 3 |
+| `manual-tool` | 2 |
 | `flaky` | 0 |
-| **Total properly-categorized** | **68** |
+| **Total properly-categorized** | **67** |
 
 The `manual-tool` count dropped from 10 → 8 and `flaky` from 3 → 0 in [PR #28-6a](#sequencing): five method-level `@Ignore` lines were removed because their enclosing classes are already `@Ignore`'d at class level (two in `JdiExperimentsTest`/`ProjectExperimentsTest`, three in `JavaMethodsTest`). The method annotations were dead — the class-level annotation skipped them first. Issue references (#178, #190, #193) remain valid; if the class-level ignores are ever lifted, those issues can be re-attached at the method level.
 
@@ -53,7 +53,7 @@ After [PR #295](https://github.com/CryptoJones/GayHydra/pull/295) the in-tree co
 
 Suggested order for tackling the remaining 70 sites:
 
-1. **`manual-tool` (3 sites)** — split into "real test, ignored for infrastructure reason" (e.g. `JitJvmTypeUtilsTest` is Java-version-bound) and "author-declared not-a-regression-test" (the experiment notebooks and codegen tools). The first group needs an infra fix or move to `src/main/test-tools/`; the second can be deleted. Deleted so far: `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest`, `ProjectExperimentsTest`, `JdiExperimentsTest`, `CharsetInfoManagerTest.generateCharsetInfoFile`.
+1. **`manual-tool` (2 sites)** — split into "real test, ignored for infrastructure reason" (e.g. `JitJvmTypeUtilsTest` is Java-version-bound) and "author-declared not-a-regression-test" (the experiment notebooks, codegen tools, and developer-desk perf scratchpads). The first group needs an infra fix or move to `src/main/test-tools/`; the second can be deleted. Deleted so far: `JitMpIntPerformanceExperiment`, `TraceRmiPerformanceTest`, `ProjectExperimentsTest`, `JdiExperimentsTest`, `CharsetInfoManagerTest.generateCharsetInfoFile`, `DebuggerMemoryBytesProviderTest.testPerformanceManuallyWithManyManySnaps`.
 2. **`flaky` (0 sites)** — historical bucket; all three former sites in `JavaMethodsTest` (issue #178) were collapsed in [PR #28-6a](#sequencing) when the enclosing class's class-level `@Ignore` was recognised as already covering them.
 3. **`blocked-on` (19 sites)** — the dependent issue list is the next sweep target. Closing the upstream blocker for any of these unblocks the test.
 4. **`wip` (46 sites)** — largest bucket; mostly Debugger RMI integration work. Sweep last; many will resolve as the Debugger RMI work matures.
