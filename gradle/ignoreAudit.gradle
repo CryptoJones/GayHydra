@@ -96,12 +96,15 @@ task ignoreAudit {
                 }
             }
         }
-        // Stage 1: warn-only mode while the existing in-tree backlog is
-        // being swept (Rec 28 #28-5..#28-8). Flip to fail-on-violation
-        // by passing -PignoreAuditStrict=true once the warning count
-        // drops to zero. See docs/testing/IGNORE_TEST_POLICY.md.
-        boolean strict = project.hasProperty('ignoreAuditStrict') &&
-            project.property('ignoreAuditStrict') == 'true'
+        // Stage 2: strict-by-default. The Rec 28 #28-5..#28-6d+ sweep
+        // cleared every author-declared-not-a-regression-test stub; the
+        // surviving @Ignore annotations all carry a category + tracking
+        // issue ref, so the audit currently finds zero violations. New
+        // @Ignore additions that lack the policy form will fail CI.
+        // Override with -PignoreAuditStrict=false to fall back to
+        // warn-only mode for triage. See docs/testing/IGNORE_TEST_POLICY.md.
+        boolean strict = !(project.hasProperty('ignoreAuditStrict') &&
+            project.property('ignoreAuditStrict') == 'false')
 
         if (!violations.isEmpty()) {
             if (strict) {
