@@ -114,8 +114,13 @@ invokes during outer deserialization. There are two outer paths:
 - **RMI:** the JVM's RMI machinery constructs the
   `ObjectInputStream`. The GP-6719 filter at
   `Framework/FileSystem/data/client.rmi.serial.filter` is
-  installed via the `jdk.serialFilterFactory` system property
-  (`GhidraSerialFilterFactory`) and gates class resolution. The
+  installed by `GhidraSerialFilterFactory.getOrInstallInstance`,
+  called lazily from `HeadlessGhidraApplicationConfiguration.
+  initializeApplication`. The eager `-Djdk.serialFilterFactory=...`
+  VMARG approach was removed (issue #80 / NSA/ghidra#9220 chain;
+  JDK 21.0.10+ tightens `setSerialFilterFactory` to allow exactly
+  one call). The filter still gates class resolution; the
+  install path is just deferred to application initialization. The
   Class B types are explicitly listed in the allowlist via
   `ghidra.framework.store.*` and `ghidra.framework.remote.*`
   patterns. Rec 20 verifies the filter is default-on; #19-3 adds

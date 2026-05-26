@@ -39,6 +39,10 @@ generated from the GitHub Releases UI at sprint close.
 - **[#47](https://github.com/CryptoJones/GayHydra/pull/47)** `sync-labels.yml` `dry-run: true` → `false`. The declarative `.github/labels.yml` now actually applies label add/remove/edit to the live repo.
 - **Branch sweep** (no PR): 16 merged remote feature branches (`sprint-1`..`sprint-8` × 2 remotes) and 10 merged local branches deleted.
 
+**Rec 20 — RMI serial-filter VMARG removed (issue #80, follow-up to mis-filed NSA/ghidra#9220).**
+
+- The upstream NSA/ghidra maintainer correctly pointed out that the `-Djdk.serialFilterFactory=...` line I attributed to upstream's `launch.properties` only exists in our fork (added in our Rec 20 commit `1a64b67e`). On JDK 21.0.10+ that eager VMARG conflicts with the lazy `GhidraSerialFilterFactory.getOrInstallInstance` install path via the JDK's "set exactly once" tightening. Fix: remove the VMARG from `launch.properties`; the filter is still installed at application initialization (matches upstream's behavior). `GhidraSerialFilterDefaultTest`'s class doc updated; `docs/security/JAVA_DESERIALIZATION_AUDIT.md` and `samples/re-targets/gayhydra-dropper/README.md` corrected to describe the new install path. Apologies entry + memory `feedback_verify_upstream_state.md` track the lesson learned.
+
 **Doc sync from 2026-05-26 self-audit.**
 
 - **[#44](https://github.com/CryptoJones/GayHydra/pull/44)** `SprintPlanning.md` synced — Rec 28 #28-6+, Rec 32 #32-2, Rec 32 #32-3 rows marked shipped.
