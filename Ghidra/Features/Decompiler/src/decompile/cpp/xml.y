@@ -54,7 +54,7 @@ public:
 private:
   mode curmode;			///< The current scanning mode
   istream &s;			///< The stream being scanned
-  string *lvalue;		///< Current string being built
+  unique_ptr<string> lvalue;	///< Current string being built; nullptr when no token in progress
   int4 lookahead[4];	///< Lookahead into the byte stream
   int4 pos;				///< Current position in the lookahead buffer
   bool endofstream;		///< Has end of stream been reached
@@ -100,7 +100,7 @@ public:
   ~XmlScan(void);						///< Destructor
   void setmode(mode m) { curmode = m; }	///< Set the scanning mode
   int4 nexttoken(void);					///< Get the next token
-  string *lval(void) { string *ret = lvalue; lvalue = (string *)0; return ret; }	///< Return the last \e lvalue string
+  string *lval(void) { return lvalue.release(); }	///< Transfer ownership of the last \e lvalue string to the caller (typically yylval on the bison value stack); leaves lvalue null. Caller deletes.
 };
 
 /// \brief A parsed name/value pair
@@ -223,7 +223,7 @@ XmlScan::XmlScan(istream &t) : s(t)
 
 {
   curmode = SingleMode;
-  lvalue = (string *)0;
+  // lvalue (unique_ptr) default-constructs to nullptr; no explicit init needed.
   pos = 0;
   endofstream = false;
   getxmlchar(); getxmlchar(); getxmlchar(); getxmlchar(); // Fill lookahead buffer
@@ -238,8 +238,7 @@ XmlScan::~XmlScan(void)
 void XmlScan::clearlvalue(void)
 
 {
-  if (lvalue != (string *)0)
-    delete lvalue;
+  lvalue.reset();
 }
 
 int4 XmlScan::scanSingle(void)
@@ -257,7 +256,7 @@ int4 XmlScan::scanCharData(void)
 
 {
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
   
   while(next(0) != -1) {		// look for '<' '&' or ']]>'
     if (next(0) == '<') break;
@@ -277,7 +276,7 @@ int4 XmlScan::scanCData(void)
 
 {
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
 
   while(next(0) != -1) {	// Look for "]]>" and non-Char
     if (next(0)==']')
@@ -295,7 +294,7 @@ int4 XmlScan::scanCharRef(void)
 {
   int4 v;
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
   if (next(0) == 'x') {
     *lvalue += getxmlchar();
     while(next(0) != -1) {
@@ -326,7 +325,7 @@ int4 XmlScan::scanAttValue(int4 quote)
 
 {
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
   while(next(0) != -1) {
     if (next(0) == quote) break;
     if (next(0) == '<') break;
@@ -342,7 +341,7 @@ int4 XmlScan::scanComment(void)
 
 {
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
 
   while(next(0) != -1) {
     if (next(0)=='-')
@@ -358,7 +357,7 @@ int4 XmlScan::scanName(void)
 
 {
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
 
   if (!isInitialNameChar(next(0)))
     return scanSingle();
@@ -379,7 +378,7 @@ int4 XmlScan::scanSName(void)
     getxmlchar();
   }
   clearlvalue();
-  lvalue = new string();
+  lvalue = make_unique<string>();
   if (!isInitialNameChar(next(0))) {	// First non-whitespace is not Name char
     if (whitecount > 0)
       return ' ';
