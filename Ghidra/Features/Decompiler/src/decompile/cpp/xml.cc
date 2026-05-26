@@ -1787,7 +1787,7 @@ yyreduce:
 
   case 61:
 
-    { string *tmp=new string(); *tmp += (yyvsp[0].i); print_content(*tmp); delete tmp; global_scan->setmode(XmlScan::CharDataMode); }
+    { string tmp; tmp += (yyvsp[0].i); print_content(tmp); global_scan->setmode(XmlScan::CharDataMode); }
 
     break;
 
