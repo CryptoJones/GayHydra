@@ -682,9 +682,10 @@ void PackedDecode::endIngest(int4 bufPos)
     endPos.end = (*endPos.seqIter).end;
     // Make sure there is at least one character after ingested buffer
     if (bufPos == BUFFER_SIZE) {
-      // Last buffer was entirely filled
-      uint1 *endbuf = new uint1[1];		// Add one more buffer
-      inStream.emplace_back(endbuf,endbuf + 1);
+      // Last buffer was entirely filled — append a 1-byte tail chunk
+      auto owned = make_unique<uint1[]>(1);
+      uint1 *endbuf = owned.get();
+      inStream.emplace_back(move(owned),endbuf,endbuf + 1);
       bufPos = 0;
     }
     uint1 *buf = inStream.back().start;
@@ -698,10 +699,8 @@ void PackedDecode::endIngest(int4 bufPos)
 PackedDecode::~PackedDecode(void)
 
 {
-  list<ByteChunk>::const_iterator iter;
-  for(iter=inStream.begin();iter!=inStream.end();++iter) {
-    delete [] (*iter).start;
-  }
+  // inStream's chunks own their buffers via ByteChunk::storage (unique_ptr<uint1[]>),
+  // which cleans up automatically on chunk destruction. No manual delete[] needed.
 }
 
 void PackedDecode::ingestStream(istream &s)

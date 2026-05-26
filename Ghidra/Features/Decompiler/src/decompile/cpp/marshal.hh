@@ -19,11 +19,15 @@
 #include "xml.hh"
 #include "opcodes.hh"
 #include <list>
+#include <memory>
 #include <unordered_map>
 
 namespace ghidra {
 
 using std::list;
+using std::make_unique;
+using std::move;
+using std::unique_ptr;
 using std::unordered_map;
 
 /// \brief An annotation for a data element to being transferred to/from a stream
@@ -513,13 +517,22 @@ class PackedDecode : public Decoder {
 public:
   static const int4 BUFFER_SIZE;	///< The size, in bytes, of a single cached chunk of the input stream
 private:
-  /// \brief A bounded array of bytes
+  /// \brief A bounded array of bytes, owning its storage
+  ///
+  /// The chunk owns the underlying buffer via \b storage and exposes a [start,end)
+  /// window into it. The window typically covers the entire buffer; callers that
+  /// need a sub-range (e.g. the 1-byte padding tail in endIngest) pass an
+  /// explicit end pointer at construction. The unique_ptr cleans up on chunk
+  /// destruction, so PackedDecode's destructor no longer walks inStream.
+  /// Move-only — list::emplace_back constructs in place, so no copies needed.
   class ByteChunk {
     friend class PackedDecode;
-    uint1 *start;			///< Start of the byte array
-    uint1 *end;				///< End of the byte array
+    unique_ptr<uint1[]> storage;	///< Owning storage for the byte array
+    uint1 *start;			///< Start of the valid window (points into storage)
+    uint1 *end;				///< End of the valid window (one past the last valid byte)
   public:
-    ByteChunk(uint1 *s,uint1 *e) { start = s; end = e; }	///< Constructor
+    ByteChunk(unique_ptr<uint1[]> buf,uint1 *s,uint1 *e) :
+      storage(move(buf)), start(s), end(e) {}				///< Constructor
   };
   /// \brief An iterator into input stream
   class Position {
@@ -651,8 +664,9 @@ inline void PackedDecode::advancePosition(Position &pos,uint4 skip)
 inline uint1 *PackedDecode::allocateNextInputBuffer(int4 pad)
 
 {
-  uint1 *buf = new uint1[BUFFER_SIZE + pad];
-  inStream.emplace_back(buf,buf+BUFFER_SIZE);
+  auto owned = make_unique<uint1[]>(BUFFER_SIZE + pad);
+  uint1 *buf = owned.get();
+  inStream.emplace_back(move(owned),buf,buf+BUFFER_SIZE);
   return buf;
 }
 
