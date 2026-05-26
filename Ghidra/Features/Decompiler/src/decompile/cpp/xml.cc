@@ -2380,13 +2380,14 @@ int4 xml_parse(istream &i,ContentHandler *hand,int4 dbg)
 #if YYDEBUG
   yydebug = dbg;
 #endif
-  global_scan = new XmlScan(i);
+  auto scan = make_unique<XmlScan>(i);
+  global_scan = scan.get();		// raw observer pointer for yyparse / yylex / grammar actions
   handler = hand;
   handler->startDocument();
   int4 res = yyparse();
   if (res == 0)
     handler->endDocument();
-  delete global_scan;
+  global_scan = (XmlScan *)0;		// scan goes out of scope below — null the observer first
   return res;
 }
 
