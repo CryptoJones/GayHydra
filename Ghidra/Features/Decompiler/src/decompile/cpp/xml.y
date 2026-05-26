@@ -205,7 +205,7 @@ ETag: etagbrace NAME '>' { $$ = $2; }
 content: { global_scan->setmode(XmlScan::CharDataMode); }
 	 | content CHARDATA { print_content( *$2 ); delete $2; global_scan->setmode(XmlScan::CharDataMode); }
 	 | content element { global_scan->setmode(XmlScan::CharDataMode); }
-	 | content Reference { string *tmp=new string(); *tmp += $2; print_content(*tmp); delete tmp; global_scan->setmode(XmlScan::CharDataMode); }
+	 | content Reference { string tmp; tmp += $2; print_content(tmp); global_scan->setmode(XmlScan::CharDataMode); }
 	 | content CDSect { print_content( *$2 ); delete $2; global_scan->setmode(XmlScan::CharDataMode); }
 	 | content PI { global_scan->setmode(XmlScan::CharDataMode); }
 	 | content Comment { global_scan->setmode(XmlScan::CharDataMode); };

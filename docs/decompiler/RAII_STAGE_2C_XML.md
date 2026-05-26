@@ -104,7 +104,7 @@ Option A is the right *eventual* destination but its scope is "rewrite the xml p
 
 ## Concrete next actions (in order)
 
-1. **PR — Stage 2C-min (Option B):** convert `xml.y:208`'s `string *tmp = new string(); ... delete tmp;` to a stack-local; mirror in `xml.cc:1790`. Add `xml.y` / `xml.cc` to `cppRaiiAudit`'s `PROTECTED_FILES` with an exception comment for the bison `%union` semantic-action sites. After this, `cppRaiiAudit` would gate any *new* raw `new` introduced in those files but accepts the five existing bison-mediated sites.
+1. **PR — Stage 2C-min (Option B):** convert `xml.y:208`'s `string *tmp = new string(); ... delete tmp;` to a stack-local; mirror in `xml.cc:1790`. ~~Add `xml.y` / `xml.cc` to `cppRaiiAudit`'s `PROTECTED_FILES`~~ deferred — adding to PROTECTED_FILES needs `cppRaiiAudit`'s regex enhanced to accept a per-file line-range exclusion (the five bison-mediated sites). Stack-local conversion shipped without the audit-gate add; track in the next sweep.
 
 2. **PR — Element parse-tree ownership:** the `xml.y:538` `new Element(cur)` is parse-tree owned by the parent's `children` vector. Convert `Element::children` to `vector<unique_ptr<Element>>` and update the few callers. This is independent of the `%union` question.
 
