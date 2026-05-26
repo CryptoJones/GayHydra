@@ -155,7 +155,7 @@ public:
 };
 
 class Element;
-typedef vector<Element *> List;		///< A list of XML elements
+typedef vector<unique_ptr<Element>> List;	///< A list of XML elements; parent owns each child
 
 /// \brief An XML element.  A node in the DOM tree.
 ///
@@ -184,8 +184,10 @@ public:
 
   /// \brief Add a new child Element to the model, with \b this as the parent
   ///
+  /// Takes ownership of \b child. The unique_ptr cleans up automatically
+  /// when \b this Element is destroyed.
   /// \param child is the new child Element
-  void addChild(Element *child) { children.push_back(child); }
+  void addChild(unique_ptr<Element> child) { children.push_back(move(child)); }
 
   /// \brief Add a new name/value attribute pair to \b this element
   ///
@@ -219,7 +221,7 @@ public:
 class Document : public Element {
 public:
   Document(void) : Element((Element *)0) {}	///< Construct an (empty) document
-  Element *getRoot(void) const { return *children.begin(); }	///< Get the root Element of the document
+  Element *getRoot(void) const { return children.front().get(); }	///< Get the root Element of the document (observer; ownership stays in the children vector)
 };
 
 /// \brief A SAX interface implementation for constructing an in-memory DOM model.

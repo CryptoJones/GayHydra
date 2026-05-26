@@ -113,14 +113,14 @@ void RawBinaryArchitecture::restoreXml(DocumentStorage &store)
   iter = list.begin();
   if (iter != list.end()) {
     if ((*iter)->getName() == "coretypes") {
-      store.registerTag(*iter);
+      store.registerTag(iter->get());
       ++iter;
     }
   }
   init(store);			// Load the image and configure
 
   if (iter != list.end()) {
-    store.registerTag(*iter);
+    store.registerTag(iter->get());
     SleighArchitecture::restoreXml(store);
   }
 }
