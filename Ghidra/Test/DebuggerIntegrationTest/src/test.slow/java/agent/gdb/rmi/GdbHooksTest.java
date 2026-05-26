@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNotNull;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -251,13 +250,6 @@ public class GdbHooksTest extends AbstractGdbTraceRmiTest {
 			waitForPass(() -> assertEquals("0", frameIndex(traceManager.getCurrentObject())),
 				RUN_TIMEOUT_MS, RETRY_MS);
 		}
-	}
-
-	@Test
-	@Ignore("wip: Debugger RMI integration tests — undocumented bare-ignore #179")
-	public void testOnSyscallMemory() throws Exception {
-		// TODO: Need a specimen
-		// FWIW, I've already seen this getting exercised in other tests.
 	}
 
 	@Test
