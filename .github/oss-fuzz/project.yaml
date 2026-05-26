@@ -1,9 +1,11 @@
-# OSS-Fuzz project manifest.
+# OSS-Fuzz project manifest for GayHydra, a maintained fork of NSA's
+# Ghidra reverse engineering platform. Fuzzes the decompiler's C++
+# parsers (XML + PackedDecode) — first thing user-controlled input
+# hits, historically the source of OOB-read CVEs in Ghidra's
+# decompiler core.
 #
-# To go live: copy this file (plus Dockerfile and build.sh in this
-# directory) to projects/ghidra-decompiler/ in google/oss-fuzz.
-#
-# See docs/security/OSS_FUZZ.md.
+# See https://codeberg.org/CryptoJones/GayHydra/src/branch/master/docs/security/OSS_FUZZ.md
+# for the in-tree harness sources and rationale.
 
 homepage: "https://codeberg.org/CryptoJones/GayHydra"
 main_repo: "https://codeberg.org/CryptoJones/GayHydra"
