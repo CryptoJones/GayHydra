@@ -142,7 +142,7 @@ void FunctionTestCollection::restoreXmlCommands(const Element *el)
   List::const_iterator iter;
 
   for(iter=list.begin();iter!=list.end();++iter) {
-    const Element *subel = *iter;
+    const Element *subel = iter->get();
     commands.push_back(stripNewlines(subel->getContent()));
   }
 }
@@ -271,7 +271,7 @@ void FunctionTestCollection::restoreXml(DocumentStorage &store,const Element *el
   bool sawTests = false;
   bool sawProgram = false;
   while(iter != list.end()) {
-    const Element *subel = *iter;
+    const Element *subel = iter->get();
     ++iter;
     if (subel->getName() == "script") {
       sawScript = true;

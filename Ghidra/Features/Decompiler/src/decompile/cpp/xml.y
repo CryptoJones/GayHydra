@@ -536,8 +536,9 @@ int4 xml_parse(istream &i,ContentHandler *hand,int4 dbg)
 void TreeHandler::startElement(const string &namespaceURI,const string &localName,
 			       const string &qualifiedName,const Attributes &atts)
 {
-  Element *newel = new Element(cur);
-  cur->addChild(newel);
+  auto owned = make_unique<Element>(cur);
+  Element *newel = owned.get();				// raw observer for the rest of this scope + cur
+  cur->addChild(move(owned));				// parent takes ownership
   cur = newel;
   newel->setName(localName);
   for(int4 i=0;i<atts.getLength();++i)
@@ -556,14 +557,7 @@ void TreeHandler::characters(const char *text,int4 start,int4 length)
   cur->addContent(text,start,length);
 }
 
-Element::~Element(void)
-
-{
-  List::iterator iter;
-  
-  for(iter=children.begin();iter!=children.end();++iter)
-    delete *iter;
-}
+Element::~Element(void) = default;	///< children's unique_ptr<Element> cleans up automatically
 
 const string &Element::getAttributeValue(const string &nm) const
 

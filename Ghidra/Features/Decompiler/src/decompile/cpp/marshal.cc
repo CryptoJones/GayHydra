@@ -137,7 +137,7 @@ uint4 XmlDecode::peekElement(void)
     List::const_iterator iter = iterStack.back();
     if (iter == el->getChildren().end())
       return 0;
-    el = *iter;
+    el = iter->get();
   }
   return ElementId::find(el->getName(),scope);
 }
@@ -157,7 +157,7 @@ uint4 XmlDecode::openElement(void)
     List::const_iterator iter = iterStack.back();
     if (iter == el->getChildren().end())
       return 0;				// Element already fully traversed
-    el = *iter;
+    el = iter->get();
     iterStack.back() = ++iter;
   }
   elStack.push_back(el);
@@ -180,7 +180,7 @@ uint4 XmlDecode::openElement(const ElementId &elemId)
     el = elStack.back();
     List::const_iterator iter = iterStack.back();
     if (iter != el->getChildren().end()) {
-      el = *iter;
+      el = iter->get();
       iterStack.back() = ++iter;
     }
     else

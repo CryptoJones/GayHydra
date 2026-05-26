@@ -3841,7 +3841,7 @@ static int4 run_xml(const string &filein,SleighCompile &compiler)
     const List &list(el->getChildren());
     List::const_iterator iter;
     for(iter=list.begin();iter!=list.end();++iter) {
-      el = *iter;
+      el = iter->get();
       if (el->getName() == "processorfile") {
 	specfileout = el->getContent();
 	int4 num = el->getNumAttributes();
