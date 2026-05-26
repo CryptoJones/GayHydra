@@ -6,6 +6,64 @@ downstream damage, the apology.
 
 ---
 
+## 2026-05-26 — Upstream NSA/ghidra#9220 mis-attributed our fork's bug to upstream
+
+**What happened.** I filed [NSA/ghidra#9220](https://github.com/NationalSecurityAgency/ghidra/issues/9220)
+("`GhidraSerialFilterFactory` headless launch fails on JDK 21.0.10+")
+against upstream NSA/ghidra. The issue's Summary §1 claimed:
+
+> "`support/launch.properties` sets `-Djdk.serialFilterFactory=...` as a JVM arg."
+
+The upstream maintainer (`ghidra1`) responded on
+[2026-05-26 17:34Z](https://github.com/NationalSecurityAgency/ghidra/issues/9220#issuecomment-4546949243):
+
+> "I am confused by your first Summary statement — `support/launch.properties` does not set
+> `jdk.serialFilterFactory`."
+
+They were right. The `VMARGS=-Djdk.serialFilterFactory=...` line at
+`Ghidra/RuntimeScripts/Common/support/launch.properties:159` was added
+on **our fork** in commit `1a64b67ef8` ("Rec 20: enable RMI serial.filter
+by default + regression test", 2026-05-21), not in upstream NSA/ghidra.
+I conflated our fork's state with theirs and filed the bug against
+the wrong project.
+
+`GhidraSerialFilterFactory.getOrInstallInstance` in upstream is designed
+exactly as the maintainer described: it caches `filterFactoryRef`
+populated by the JVM-invoked public constructor when `-Djdk.serialFilterFactory=...`
+is set externally, and returns the cached instance instead of calling
+`setSerialFilterFactory` again. The "already installed" failure only
+occurs when the factory is set MORE THAN ONCE programmatically — not
+the case I described.
+
+**Downstream damage.**
+- A reviewer cycle of upstream maintainer time spent triaging an
+  inaccurate report.
+- The issue is now associated with the project's GitHub-author record
+  (`cryptojones@owasp.org`) as a low-quality submission, which costs
+  trust for future legitimate upstream interaction.
+- The actual bug, which **does** exist on our fork (because Rec 20
+  added the VMARG without the corresponding `getOrInstallInstance`
+  guard for the JVM-eager-init path), was not actually tracked
+  anywhere until this Apologies entry.
+
+**Apology.** I should have verified the upstream file state by
+reading upstream's `launch.properties` (or by recognizing that the
+line was added in a recent in-tree commit on our fork) before
+filing externally. Apologized on the issue thread; requested
+closure as not-a-bug-upstream. The fix belongs on our fork's side.
+
+**Mitigation in progress.**
+- Apology comment posted on [NSA/ghidra#9220](https://github.com/NationalSecurityAgency/ghidra/issues/9220#issuecomment-4548844559).
+- Filing a tracking issue on our repo to fix our `launch.properties`
+  + `GhidraSerialFilterFactory` interaction on JDK 21.0.10+ (either
+  remove the VMARG and rely on existing delayed init, or guard the
+  programmatic `getOrInstallInstance` call). Adding a feedback memory
+  ([[feedback-verify-upstream-state]]) so future upstream issue
+  filings explicitly check whether the cited line was added by our
+  fork before claiming it as upstream behavior.
+
+---
+
 ## 2026-05-26 — PR #51 squash-merge accidentally landed PR #50's broken first commit
 
 **What happened.** I was driving the `xml.y` RAII Stage 2B work
