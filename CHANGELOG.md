@@ -8,9 +8,43 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.10 (Sprint 11 close). Tracked per-PR in
+Work toward v26.1.11 (Sprint 11 close). Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+### 2026-05-26 — Rec 28 closeout, Rec 31 Stage 1+2A, OSS-Fuzz upstream submission
+
+**Rec 28 — `@Ignore` policy enforcement (Stage 2 strict).**
+
+- **[#43](https://github.com/CryptoJones/GayHydra/pull/43)** `gradle ignoreAudit` flipped Stage 1 → Stage 2 — strict-by-default both in CI and locally. The Rec 28 sweep cleared every author-declared-not-a-regression-test stub; the surviving 51 annotations all carry a category prefix + `#N` ref, so the audit finds zero violations.
+- **[#26](https://github.com/CryptoJones/GayHydra/pull/26)–[#34](https://github.com/CryptoJones/GayHydra/pull/34), [#36](https://github.com/CryptoJones/GayHydra/pull/36)–[#41](https://github.com/CryptoJones/GayHydra/pull/41)** 17 author-declared-not-a-regression-test deletions: `JdiExperimentsTest`, `CharsetInfoManagerTest.generateCharsetInfoFile`, `DebuggerMemoryBytesProviderTest.testPerformanceManuallyWithManyManySnaps`, `AbstractDBTraceMemoryManagerMemoryTest.testReplicateClassCastExceptionScenario`, `DebuggerOpinionsTest`, `DBTraceRegisterContextManagerTest`, `DemoFieldsTest`, `DebuggerManualTest`, `experiments/ToArrayTest`, `TenetLoaderTest.testManual`, `AbstractToyJitCodeGeneratorTest.testComputedOffsetsInRegisterSpace`/`.testUninitializedVsInitializedReads`, `CppCompositeTypeTest.testJ5_32_syntactic_layout`, `DBTraceCodeUnitTest.testFigureOutAssembly`, `DBTraceProgramViewListingTest.testGetUndefinedRanges`, `DBTraceAddressSnapRangePropertyMapSpaceTest.testRemove`, `DbgEngHooksTest.testOnSyscallMemory`, `GdbHooksTest.testOnSyscallMemory`. Each PR documents the specific deletion rationale (empty `TODO()` stub, manual JFrame demo, println-only exploration, commented-body shell, etc.).
+- **[#70](https://github.com/CryptoJones/GayHydra/pull/70)** Re-filed 15 GitHub tracking issues destroyed in the 2026-05-24 deletion incident as new repo issues [#55](https://github.com/CryptoJones/GayHydra/issues/55)–[#69](https://github.com/CryptoJones/GayHydra/issues/69) with `ignore:1y` + `lane:*` labels. Repointed 51 in-tree `@Ignore` annotations across 21 test files to the new issue numbers (Android OAT/ART source files referencing the same `#N` in unrelated contexts left untouched).
+- **[#42](https://github.com/CryptoJones/GayHydra/pull/42), [#53](https://github.com/CryptoJones/GayHydra/pull/53)** `docs/testing/ignore-test-inventory.md` refreshed; `#28-6c` row made honest about post-deletion artifact loss.
+
+**Rec 31 — RAII migration.**
+
+- **[#45](https://github.com/CryptoJones/GayHydra/pull/45)** New `gradle cppRaiiAudit` per-file gate. Forbids raw `new <ClassName>(...)` in `Ghidra/Features/Decompiler/src/decompile/cpp/{address,space,rangeutil}.cc` — those files were already raw-`new`-free; the gate prevents regression. Wired into `.github/workflows/build-ghidra.yml`.
+- **[#46](https://github.com/CryptoJones/GayHydra/pull/46)** Stage 2A — `marshal.cc` `ByteChunk` now owns its buffer via `unique_ptr<uint1[]>`. Eliminates the manual `delete[]` cleanup loop in `~PackedDecode`; replaces raw `new uint1[N]` with `make_unique<uint1[]>(N)`. `marshal.cc` + `marshal.hh` added to `cppRaiiAudit`'s `PROTECTED_FILES`. C++ unit tests + ASan/UBSan green.
+- **[#71](https://github.com/CryptoJones/GayHydra/pull/71)** Stage 2C design doc (`docs/decompiler/RAII_STAGE_2C_XML.md`). Discovery during the session: `xml.y`'s bison `%union` is fundamentally incompatible with `unique_ptr` (C-style unions can't hold non-trivially-destructible types); the semantic-action sites need either `%define api.value.type variant` (wholesale parser rewrite) or a documented exception in `cppRaiiAudit`. Recommendation: small Stage 2C-min PR for the one obvious code-smell, with the variant-mode rewrite as its own strategic sprint.
+
+**Rec 13/14 — OSS-Fuzz upstream submission.**
+
+- **[#48](https://github.com/CryptoJones/GayHydra/pull/48)** Replaced `security@example.invalid` placeholders with `cryptojones@owasp.org` as `primary_contact`; `auto_ccs: []` during ramp-up.
+- **[#49](https://github.com/CryptoJones/GayHydra/pull/49)** In-tree `.github/oss-fuzz/{Dockerfile,build.sh,project.yaml}` synced byte-for-byte with the upstream PR branch. Apache 2.0 license headers added to `Dockerfile` + `build.sh` per `dpebot`'s `header-check` convention. New `.github/oss-fuzz/README.md` documents the staging workflow.
+- **Upstream** [google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545) — new project `ghidra-decompiler` submitted with two harnesses (`fuzz_xml`, `fuzz_marshal`), AS/UBSan, libfuzzer/AFL/honggfuzz. All automated checks pass (`header-check`, `cla/google`, `check-changes`); ready for OSS-Fuzz maintainer review.
+
+**CI / housekeeping.**
+
+- **[#47](https://github.com/CryptoJones/GayHydra/pull/47)** `sync-labels.yml` `dry-run: true` → `false`. The declarative `.github/labels.yml` now actually applies label add/remove/edit to the live repo.
+- **Branch sweep** (no PR): 16 merged remote feature branches (`sprint-1`..`sprint-8` × 2 remotes) and 10 merged local branches deleted.
+
+**Doc sync from 2026-05-26 self-audit.**
+
+- **[#44](https://github.com/CryptoJones/GayHydra/pull/44)** `SprintPlanning.md` synced — Rec 28 #28-6+, Rec 32 #32-2, Rec 32 #32-3 rows marked shipped.
+- **[#54](https://github.com/CryptoJones/GayHydra/pull/54)** `SprintPlanning.md` Rec 31 #31-3 row updated to record marshal half shipped + `std::span` (#32-4) deviation explicitly acknowledged.
+
+**In flight (CI-pending or queued, not landed):** [#50](https://github.com/CryptoJones/GayHydra/pull/50) (CodeQL c-cpp manual build replacing autobuild), [#51](https://github.com/CryptoJones/GayHydra/pull/51) (xml.y `XmlScan::lvalue` `unique_ptr` migration — Stage 2B), [#52](https://github.com/CryptoJones/GayHydra/pull/52) (`xml_parse` `global_scan` `unique_ptr` lifetime — stacked on #51).
+
 
 Release-pipeline-hardening false starts during this sprint:
 
