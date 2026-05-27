@@ -152,6 +152,9 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/userop.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/emulateutil.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/override.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata_block.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata_op.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata_varnode.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
         // `state[i] = new ConstructState(MAX_OPERAND);` — the
