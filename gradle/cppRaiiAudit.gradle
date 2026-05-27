@@ -57,6 +57,14 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     // Rec 31 Stage 2 (#31-3) — marshal half
     'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.hh': [],
+    // Rec 31 Stage 3 — `cover.cc` is the audit's named Stage 3 file
+    // (alongside `database.cc` + `comment.cc`, both of which still
+    // have raw-`new` sites that need code migration before joining).
+    // `cover.cc` + `cover.hh` were already raw-`new`-free in tree —
+    // adding the gate prevents regression while the rest of Stage 3
+    // is migrated. Same regression-guard pattern as Stage 1 (#31-2).
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cover.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cover.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
     // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
     // semantic-action sites listed below are pinned until Stage 2C
