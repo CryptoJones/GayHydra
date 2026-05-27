@@ -112,7 +112,7 @@ private:
   parse_state parsestate;		///< Overall state of the parse
   AddrSpace *const_space;		///< Address space for constants
   uint1 buf[MAX_INSTRUCTION_LEN];	///< Buffer of bytes in the instruction stream
-  uintm *context;			///< Pointer to local context
+  unique_ptr<uintm[]> context;		///< Pointer to local context
   int4 contextsize;			///< Number of entries in local context array
   ContextCache *contcache;   		///< Interface for getting/setting context
   vector<ContextSet> contextcommit;	///< Changes to SLEIGH context slated by this instruction

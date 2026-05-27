@@ -137,6 +137,18 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/database.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/userop.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
+        // `state[i] = new ConstructState(MAX_OPERAND);` — the
+        // `vector<ConstructState *> state` member is raw-pointer-typed
+        // because the `insert(it, count, val)` overload requires
+        // CopyAssignable (unique_ptr is move-only). Migrating `state`
+        // to `vector<unique_ptr<ConstructState>>` needs a `std::rotate`
+        // refactor in `expandState` — separate sprint. These two sites
+        // are the only raw-`new`s remaining post the `context` array
+        // migration to `unique_ptr<uintm[]>`.
+        [87, 87],
+        [263, 263],
+    ],
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
