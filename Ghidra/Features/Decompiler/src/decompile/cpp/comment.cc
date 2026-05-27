@@ -179,9 +179,9 @@ void CommentDatabaseInternal::addComment(uint4 tp,const Address &fad,
 					 const Address &ad,
 					 const string &txt)
 {
-  Comment *newcom = new Comment(tp,fad,ad,65535,txt);
+  auto newcom = make_unique<Comment>(tp,fad,ad,65535,txt);
   // Find first element greater
-  CommentSet::iterator iter = commentset.lower_bound(newcom);
+  CommentSet::iterator iter = commentset.lower_bound(newcom.get());
   // turn into last element less than
   if (iter != commentset.begin())
     --iter;
@@ -190,22 +190,21 @@ void CommentDatabaseInternal::addComment(uint4 tp,const Address &fad,
     if (((*iter)->getAddr() == ad)&&((*iter)->getFuncAddr()==fad))
       newcom->uniq = (*iter)->getUniq() + 1;
   }
-  commentset.insert(newcom);
+  commentset.insert(newcom.release());
 }
 
 bool CommentDatabaseInternal::addCommentNoDuplicate(uint4 tp,const Address &fad,
 						    const Address &ad,const string &txt)
 {
-  Comment *newcom = new Comment(tp,fad,ad,65535,txt);
+  auto newcom = make_unique<Comment>(tp,fad,ad,65535,txt);
 
   // Find first element greater
-  CommentSet::iterator iter = commentset.lower_bound(newcom);
+  CommentSet::iterator iter = commentset.lower_bound(newcom.get());
   newcom->uniq = 0;		// Set the uniq AFTER the search
   while(iter != commentset.begin()) {
     --iter;
     if (((*iter)->getAddr()==ad)&&((*iter)->getFuncAddr()==fad)) {
-      if ((*iter)->getText() == txt) { // Matching text, don't store it
-	delete newcom;
+      if ((*iter)->getText() == txt) { // Matching text, don't store it; unique_ptr auto-destroys newcom
 	return false;
       }
       if (newcom->uniq == 0)
@@ -214,7 +213,7 @@ bool CommentDatabaseInternal::addCommentNoDuplicate(uint4 tp,const Address &fad,
     else
       break;
   }
-  commentset.insert(newcom);
+  commentset.insert(newcom.release());
   return true;
 }
 
