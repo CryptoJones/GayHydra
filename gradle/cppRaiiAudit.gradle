@@ -36,19 +36,47 @@ import java.util.regex.Pattern
 final Pattern RAW_NEW_PATTERN = Pattern.compile(
     '\\bnew\\s+[A-Za-z_][A-Za-z0-9_:]*\\s*[(\\[<]')
 
-// Files under the RAII gate. Path-suffix match keeps the rule
-// independent of the repo's root layout. Sprint 6 #31-2 starts with
-// the address / space / rangeutil triangle that the audit named as
-// foundation files; subsequent stages extend the set.
-final Set<String> PROTECTED_FILES = [
+// Files under the RAII gate. Map of repo-relative path -> list of
+// [startLine, endLine] (1-based, inclusive) line ranges to exclude
+// from the audit. An empty list means "audit every line." Path-suffix
+// match keeps the rule independent of the repo's root layout.
+//
+// Sprint 6 #31-2 starts with the address / space / rangeutil triangle
+// that the audit named as foundation files; subsequent stages extend
+// the set. Exclusions exist for bison-generated semantic actions whose
+// raw-pointer ownership is mediated by the parser's `%union` + the
+// `%destructor { delete $$; }` directive — those are the parser's
+// value-stack contract, not user-level raw ownership, and they're
+// pinned until Stage 2C Option A (variant-API rewrite) lands. See
+// docs/decompiler/RAII_STAGE_2C_XML.md for the full design.
+final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     // Rec 31 Stage 1 (#31-2)
-    'Ghidra/Features/Decompiler/src/decompile/cpp/address.cc',
-    'Ghidra/Features/Decompiler/src/decompile/cpp/space.cc',
-    'Ghidra/Features/Decompiler/src/decompile/cpp/rangeutil.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/address.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/space.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/rangeutil.cc': [],
     // Rec 31 Stage 2 (#31-3) — marshal half
-    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.cc',
-    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.hh',
-] as Set
+    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.hh': [],
+    // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
+    // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
+    // semantic-action sites listed below are pinned until Stage 2C
+    // Option A.
+    'Ghidra/Features/Decompiler/src/decompile/cpp/xml.y': [
+        [150, 150],  // attsinglemid: `$$ = new string;`
+        [153, 153],  // attdoublemid: `$$ = new string;`
+        [198, 198],  // stagstart:    `$$ = new Attributes($2);`
+        [200, 200],  // SAttribute:   `$$ = new NameValue;`
+    ],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/xml.cc': [
+        // Bison-generated `case N:` blocks inside `yyparse`'s big
+        // switch — parallel to the xml.y sites above. Line numbers
+        // are stable against the bison-3.0.4 output committed in tree.
+        [1598, 1598],
+        [1616, 1616],
+        [1736, 1736],
+        [1748, 1748],
+    ],
+]
 
 task cppRaiiAudit {
     description = 'Verify protected decompiler C++ files contain no raw `new` allocations.'
@@ -57,7 +85,7 @@ task cppRaiiAudit {
     doLast {
         List<String> violations = []
         List<String> missing = []
-        PROTECTED_FILES.each { String rel ->
+        PROTECTED_FILES.each { rel, excludeRanges ->
             File f = new File(rootDir, rel)
             if (!f.exists()) {
                 missing.add(rel)
@@ -72,6 +100,18 @@ task cppRaiiAudit {
                 // literal false positives can be fixed by the author.
                 String trimmed = line.trim()
                 if (trimmed.startsWith('//') || trimmed.startsWith('*')) {
+                    return
+                }
+                // Per-file line-range exclusions for grandfathered
+                // sites (e.g. bison `%union` semantic actions).
+                boolean excluded = false
+                for (range in excludeRanges) {
+                    if (lineNum >= range[0] && lineNum <= range[1]) {
+                        excluded = true
+                        break
+                    }
+                }
+                if (excluded) {
                     return
                 }
                 def m = RAW_NEW_PATTERN.matcher(line)
