@@ -3200,9 +3200,7 @@ void TypeCode::setPrototype(TypeFactory *tfact,const PrototypePieces &sig,Dataty
 {
   factory = tfact;
   flags |= variable_length;
-  if (proto != (FuncProto *)0)
-    delete proto;
-  proto = new FuncProto();
+  proto = make_unique<FuncProto>();
   proto->setInternal(sig.model,voidtype);
 
   proto->updateAllTypes(sig);
@@ -3216,14 +3214,13 @@ void TypeCode::setPrototype(TypeFactory *tfact,const PrototypePieces &sig,Dataty
 void TypeCode::setPrototype(TypeFactory *typegrp,const FuncProto *fp)
 
 {
-  if (proto != (FuncProto *)0) {
-    delete proto;
-    proto = (FuncProto *)0;
+  if (proto) {
+    proto.reset();
     factory = (TypeFactory *)0;
   }
   if (fp != (const FuncProto *)0) {
     factory = typegrp;
-    proto = new FuncProto();
+    proto = make_unique<FuncProto>();
     proto->copy(*fp);
   }
 }
@@ -3231,10 +3228,9 @@ void TypeCode::setPrototype(TypeFactory *typegrp,const FuncProto *fp)
 TypeCode::TypeCode(const TypeCode &op) : Datatype(op)
 
 {
-  proto = (FuncProto *)0;
   factory = op.factory;
-  if (op.proto != (FuncProto *)0) {
-    proto = new FuncProto();
+  if (op.proto) {
+    proto = make_unique<FuncProto>();
     proto->copy(*op.proto);
   }
 }
@@ -3242,17 +3238,11 @@ TypeCode::TypeCode(const TypeCode &op) : Datatype(op)
 TypeCode::TypeCode(void) : Datatype(1,1,TYPE_CODE)
 
 {
-  proto = (FuncProto *)0;
   factory = (TypeFactory *)0;
   flags |= type_incomplete;
 }
 
-TypeCode::~TypeCode(void)
-
-{
-  if (proto != (FuncProto *)0)
-    delete proto;
-}
+TypeCode::~TypeCode(void) = default;	///< proto's unique_ptr auto-cleans
 
 void TypeCode::printRaw(ostream &s) const
 
@@ -3273,11 +3263,11 @@ void TypeCode::printRaw(ostream &s) const
 int4 TypeCode::compareBasic(const TypeCode *op) const
 
 {
-  if (proto == (FuncProto *)0) {
-    if (op->proto == (FuncProto *)0) return 0;
+  if (!proto) {
+    if (!op->proto) return 0;
     return 1;
   }
-  if (op->proto == (FuncProto *)0)
+  if (!op->proto)
     return -1;
 
   if (!proto->hasModel()) {
@@ -3379,7 +3369,7 @@ void TypeCode::encode(Encoder &encoder) const
   }
   encoder.openElement(ELEM_TYPE);
   encodeBasic(metatype,-1,encoder);
-  if (proto != (FuncProto *)0)
+  if (proto)
     proto->encode(encoder);
   encoder.closeElement(ELEM_TYPE);
 }
@@ -3406,7 +3396,7 @@ void TypeCode::decodePrototype(Decoder &decoder,bool isConstructor,bool isDestru
   if (decoder.peekElement() != 0) {
     Architecture *glb = typegrp.getArch();
     factory = &typegrp;
-    proto = new FuncProto();
+    proto = make_unique<FuncProto>();
     proto->setInternal( glb->defaultfp, typegrp.getTypeVoid() );
     proto->decode(decoder,glb);
     proto->setConstructor(isConstructor);
@@ -4292,7 +4282,7 @@ void TypeFactory::resolveIncompleteTypedefs(void)
       else if (dt->getMetatype() == TYPE_CODE) {
 	TypeCode *prevCode = (TypeCode *)dt;
 	TypeCode *defedCode = (TypeCode *)defedType;
-	setPrototype(defedCode->proto, prevCode, defedCode->flags);
+	setPrototype(defedCode->proto.get(), prevCode, defedCode->flags);
 	iter = incompleteTypedef.erase(iter);
       }
       else
@@ -4966,7 +4956,7 @@ Datatype *TypeFactory::decodeCode(Decoder &decoder,bool isConstructor,bool isDes
       throw LowlevelError("Redefinition of code data-type: " + tc.name);
   }
   else {	// If there was a placeholder stub
-    setPrototype(tc.proto, (TypeCode *)ct, tc.flags);
+    setPrototype(tc.proto.get(), (TypeCode *)ct, tc.flags);
   }
   resolveIncompleteTypedefs();
 //  decoder.closeElement(elemId);

@@ -771,7 +771,7 @@ class PrototypePieces;
 class TypeCode : public Datatype {
 protected:
   friend class TypeFactory;
-  FuncProto *proto;		///< If non-null, this describes the prototype of the underlying function
+  unique_ptr<FuncProto> proto;	///< If non-null, this describes the prototype of the underlying function
   TypeFactory *factory;		///< Factory owning \b this
   void setPrototype(TypeFactory *tfact,const PrototypePieces &sig,Datatype *voidtype);	///< Establish a function pointer
   void setPrototype(TypeFactory *typegrp,const FuncProto *fp);	///< Set a particular function prototype on \b this
@@ -781,7 +781,7 @@ public:
   TypeCode(const TypeCode &op);		///< Construct from another TypeCode
   TypeCode(void);			///< Construct an incomplete TypeCode
   int4 compareBasic(const TypeCode *op) const;	///< Compare surface characteristics of two TypeCodes
-  const FuncProto *getPrototype(void) const { return proto; }	///< Get the function prototype
+  const FuncProto *getPrototype(void) const { return proto.get(); }	///< Get the function prototype
   virtual ~TypeCode(void);
   virtual void printRaw(ostream &s) const;
   virtual Datatype *getSubType(int8 off,int8 *newoff) const;
