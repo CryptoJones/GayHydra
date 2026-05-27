@@ -97,6 +97,38 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/dynamic.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/multiprecision.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/multiprecision.hh': [],
+    // Rec 31 Stage 4-8 audit-gate — second batch of already-clean files
+    // (zero raw-`new` allocations under the audit's filter after the
+    // trailing-comment strip in PR #93). Mostly Stage 6 (analysis pass
+    // .cc files) + Stage 5/6/8 headers, plus a few big Stage 8 mop-up
+    // files (`ruleaction.cc` is 11k lines and already clean). These are
+    // regression guards while migration continues elsewhere.
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cast.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cast.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/callgraph.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/callgraph.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/condexe.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/constseq.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/double.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/heritage.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/heritage.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/merge.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/merge.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/prefersplit.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/prefersplit.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/subflow.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/bitfield.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ruleaction.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/op.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/varnode.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/flow.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/action.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/database.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/userop.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/translate.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
     // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
     // semantic-action sites listed below are pinned until Stage 2C
