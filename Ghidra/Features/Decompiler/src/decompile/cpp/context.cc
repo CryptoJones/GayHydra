@@ -60,19 +60,18 @@ ParserContext::ParserContext(ContextCache *ccache,Translate *trans)
   translate = trans;
   if (ccache != (ContextCache *)0) {
     contextsize = ccache->getDatabase()->getContextSize();
-    context = new uintm[ contextsize ];
+    context = make_unique<uintm[]>(contextsize);
   }
   else {
     contextsize = 0;
-    context = (uintm *)0;
+    // context's unique_ptr default-constructs to nullptr.
   }
 }
 
 ParserContext::~ParserContext(void)
 
 {
-  if (context != (uintm *)0)
-    delete [] context;
+  // context's unique_ptr<uintm[]> auto-cleans.
   for(int4 i=0;i<state.size();++i)
     delete state[i];
 }
