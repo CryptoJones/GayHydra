@@ -1,7 +1,10 @@
 # Decompiler Fuzz Harnesses
 
-Scaffold for Rec 13. See [`docs/security/OSS_FUZZ.md`](../../../../../../../docs/security/OSS_FUZZ.md)
-for the full integration plan.
+Rec 13. See [`docs/security/OSS_FUZZ.md`](../../../../../../../docs/security/OSS_FUZZ.md)
+for the per-harness rationale. Note: the OSS-Fuzz upstream submission
+was rejected 2026-05-26 ([google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545));
+the harnesses below stand on their own and run locally / via our own
+CI.
 
 ## Harnesses
 
@@ -22,21 +25,12 @@ Requires:
 - Decompiler object files (`make -C ..` produces them; see the
   parent `Makefile`).
 
-## Build (OSS-Fuzz)
-
-OSS-Fuzz uses `.github/oss-fuzz/build.sh` and `Dockerfile`. See
-[`docs/security/OSS_FUZZ.md`](../../../../../../../docs/security/OSS_FUZZ.md#oss-fuzz-submission-checklist)
-for the submission checklist.
-
 ## Seeds
 
-Place per-target seed corpora under `seeds/<target>/`. The OSS-Fuzz
-`build.sh` packages them into `${OUT}/${target}_seed_corpus.zip`
-automatically.
+Place per-target seed corpora under `seeds/<target>/`.
 
 ## Adding a new harness
 
 1. Write `fuzz_<name>.cc` here with the libFuzzer contract.
 2. Add a `<name>_OBJS` rule plus an `all:` dep in `Makefile.fuzz`.
-3. Append it to the for-loop in `.github/oss-fuzz/build.sh`.
-4. Add the target row to the table in `OSS_FUZZ.md`.
+3. Add the target row to the table in `OSS_FUZZ.md`.
