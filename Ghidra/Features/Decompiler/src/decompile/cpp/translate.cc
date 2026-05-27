@@ -260,15 +260,15 @@ AddrSpace *AddrSpaceManager::decodeSpace(Decoder &decoder,const Translate *trans
   uint4 elemId = decoder.peekElement();
   unique_ptr<AddrSpace> res;
   if (elemId == ELEM_SPACE_BASE)
-    res.reset(new SpacebaseSpace(this,trans));
+    res = make_unique<SpacebaseSpace>(this,trans);
   else if (elemId == ELEM_SPACE_UNIQUE)
-    res.reset(new UniqueSpace(this,trans));
+    res = make_unique<UniqueSpace>(this,trans);
   else if (elemId == ELEM_SPACE_OTHER)
-    res.reset(new OtherSpace(this,trans));
+    res = make_unique<OtherSpace>(this,trans);
   else if (elemId == ELEM_SPACE_OVERLAY)
-    res.reset(new OverlaySpace(this,trans));
+    res = make_unique<OverlaySpace>(this,trans);
   else
-    res.reset(new AddrSpace(this,trans,IPTR_PROCESSOR));
+    res = make_unique<AddrSpace>(this,trans,IPTR_PROCESSOR);
 
   res->decode(decoder);
   return res.release();
@@ -286,7 +286,7 @@ void AddrSpaceManager::decodeSpaces(Decoder &decoder,const Translate *trans)
 
 {
   // The first space should always be the constant space
-  insertSpace(new ConstantSpace(this,trans));
+  insertSpace(make_unique<ConstantSpace>(this,trans).release());
 
   uint4 elemId = decoder.openElement(ELEM_SPACES);
   string defname = decoder.readString(ATTRIB_DEFAULTSPACE);
@@ -688,7 +688,8 @@ JoinRecord *AddrSpaceManager::findAddJoin(const vector<VarnodeData> &pieces,uint
   if (iter != splitset.end())		// If already in the set
     return *iter;
 
-  JoinRecord *newjoin = new JoinRecord();
+  auto owned = make_unique<JoinRecord>();
+  JoinRecord *newjoin = owned.get();
   newjoin->pieces = pieces;
   
   uint4 roundsize = (totalsize + 15) & ~((uint4)0xf);	// Next biggest multiple of 16
@@ -698,6 +699,7 @@ JoinRecord *AddrSpaceManager::findAddJoin(const vector<VarnodeData> &pieces,uint
   joinallocate += roundsize;
   newjoin->unified.size = totalsize;
   splitset.insert(newjoin);
+  owned.release(); // ownership transferred to splitset
   splitlist.push_back(newjoin);
   return splitlist.back();
 }
