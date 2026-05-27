@@ -65,8 +65,8 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **External submissions:**
 
-- [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
-- [ ] **Rec 14:** same for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).
+- [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.~~ Rejected 2026-05-26 by Google; see canonical row in Sprint 10. Wrapper deleted in [PR #84](https://github.com/CryptoJones/GayHydra/pull/84); harnesses retained for local + own-CI fuzzing.
+- [x] ~~**Rec 14:** same for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).~~ Deferred indefinitely — same OSS-Fuzz policy rejection.
 
 **Code-touching implementation:**
 
@@ -99,8 +99,8 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 - [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork.
-- [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.
-- [ ] **Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).
+- [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
+- [x] ~~**Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).~~ Deferred indefinitely — same policy rejection.
 - [x] ~~**Rec 17 #17-3:** add Cosign verification commands to release-notes template.~~ Shipped. The `gh release create` step in `.github/workflows/release.yml`'s upload block now emits a templated body containing the `cosign verify-blob` commands for both the zip and the bundled SBOM, plus a pointer to [`BINARY_SIGNING.md`](docs/security/BINARY_SIGNING.md). Identity-regex matches both push and `workflow_dispatch` invocations of `release.yml`.
 - [ ] **Rec 19 #19-2:** first SafeObjectInput migration — `ItemDeserializer` + `CodeUnitInfo` (Class A sites — attacker-reachable).
 - [ ] **Rec 21:** SBOM build-sanity gate (≥10 components or fail).
@@ -121,8 +121,8 @@ first implementation tier.
 
 - [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`); fill in CVSS + affected ranges.
-- [ ] **Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`; verify first trial-run on their infrastructure.
-- [ ] **Rec 14:** add `projects/ghidra-loader/` JVM project to OSS-Fuzz once Rec 13 is green.
+- [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`; verify first trial-run on their infrastructure.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
+- [x] ~~**Rec 14:** add `projects/ghidra-loader/` JVM project to OSS-Fuzz once Rec 13 is green.~~ Deferred indefinitely — same policy rejection.
 - [ ] **Rec 18 PR #18-2:** `ItemDeserializer` hardening — declared-size precheck + running-counter cap + clean-up on failure (closes [upstream #1481](https://github.com/NationalSecurityAgency/ghidra/issues/1481)). Coordinate-disclose with NSA before publishing.
 - [ ] **Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + depth/byte caps + unit tests.
 
