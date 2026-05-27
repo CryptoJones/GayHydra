@@ -130,6 +130,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     // collapses to automatic. type.hh still has 15 raw-`new` sites
     // for Datatype-subclass `clone()` methods — its own migration PR.
     'Ghidra/Features/Decompiler/src/decompile/cpp/type.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/funcdata.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/flow.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/flow.hh': [],
