@@ -37,7 +37,7 @@ RawBinaryArchitectureCapability::~RawBinaryArchitectureCapability(void)
 Architecture *RawBinaryArchitectureCapability::buildArchitecture(const string &filename,const string &target,ostream *estream)
 
 {
-  return new RawBinaryArchitecture(filename,target,estream);
+  return make_unique<RawBinaryArchitecture>(filename,target,estream).release();
 }
 
 bool RawBinaryArchitectureCapability::isFileMatch(const string &filename) const
@@ -56,7 +56,7 @@ void RawBinaryArchitecture::buildLoader(DocumentStorage &store)
 
 {
   collectSpecFiles(*errorstream);
-  unique_ptr<RawLoadImage> ldr(new RawLoadImage(getFilename()));
+  auto ldr = make_unique<RawLoadImage>(getFilename());
   ldr->open();
   if (adjustvma != 0)
     ldr->adjustVma(adjustvma);
