@@ -34,7 +34,8 @@ generated from the GitHub Releases UI at sprint close.
 
 - **[#48](https://github.com/CryptoJones/GayHydra/pull/48)** Replaced `security@example.invalid` placeholders with `cryptojones@owasp.org` as `primary_contact`; `auto_ccs: []` during ramp-up.
 - **[#49](https://github.com/CryptoJones/GayHydra/pull/49)** In-tree `.github/oss-fuzz/{Dockerfile,build.sh,project.yaml}` synced byte-for-byte with the upstream PR branch. Apache 2.0 license headers added to `Dockerfile` + `build.sh` per `dpebot`'s `header-check` convention. New `.github/oss-fuzz/README.md` documents the staging workflow.
-- **Upstream** [google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545) — new project `ghidra-decompiler` submitted with two harnesses (`fuzz_xml`, `fuzz_marshal`), AS/UBSan, libfuzzer/AFL/honggfuzz. All automated checks pass (`header-check`, `cla/google`, `check-changes`); ready for OSS-Fuzz maintainer review.
+- **Upstream** [google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545) — new project `ghidra-decompiler` submitted with two harnesses (`fuzz_xml`, `fuzz_marshal`), AS/UBSan, libfuzzer/AFL/honggfuzz. All automated checks passed (`header-check`, `cla/google`, `check-changes`).
+- **Upstream rejection** — same PR closed 2026-05-26 22:49 UTC by Google collaborator DavidKorczynski with the review *"I don't think a fork of Ghidra is a great match with OSS-Fuzz. We prefer projects with large user bases, so I suspect Ghidra itself would be an interesting match."* Soft policy reject (not a fixable submission defect); the reviewer's suggested path of submitting upstream NSA/ghidra is out-of-scope for this fork. Rec 13/14 is re-scoped: the in-tree `.github/oss-fuzz/{Dockerfile,build.sh,project.yaml}` + the two harnesses stay as our own continuous-fuzzing infrastructure (runnable locally and via our own CI) rather than as a Google-hosted submission.
 
 **CI / housekeeping.**
 
