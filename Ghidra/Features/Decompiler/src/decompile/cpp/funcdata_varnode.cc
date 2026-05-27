@@ -54,7 +54,7 @@ HighVariable *Funcdata::assignHigh(Varnode *vn)
     if (vn->getType()->hasWarning())
       issueDatatypeWarning(vn->getType());
     if (!vn->isAnnotation()) {
-      return new HighVariable(vn);
+      return make_unique<HighVariable>(vn).release();
     }
   }
   return (HighVariable *)0;
@@ -603,7 +603,7 @@ bool Funcdata::descend2Undef(Varnode *vn)
 void Funcdata::initActiveOutput(void)
 
 {
-  activeoutput = new ParamActive(false);
+  activeoutput = make_unique<ParamActive>(false).release();
   int4 maxdelay = funcp.getMaxOutputDelay();
   if (maxdelay > 0)
     maxdelay = 3;

@@ -822,9 +822,10 @@ void Funcdata::truncatedFlow(const Funcdata *fd,const FlowInfo *flow)
     PcodeOp *newop = findOp(indop->getSeqNum());
     if (newop == (PcodeOp *)0)
       throw LowlevelError("Could not trace jumptable across partial clone");
-    JumpTable *jtclone = new JumpTable(*jiter);
+    auto owned = make_unique<JumpTable>(*jiter);
+    JumpTable *jtclone = owned.get();
     jtclone->setIndirectOp(newop);
-    jumpvec.push_back(jtclone);
+    jumpvec.push_back(owned.release());
   }
 
   FlowInfo partialflow(*this,obank,bblocks,qlst,flow); // Clone the flow
@@ -896,8 +897,7 @@ int4 Funcdata::inlineFlow(Funcdata *inlinefd,FlowInfo &flow,PcodeOp *callop)
     res = 1;
     vector<JumpTable *>::const_iterator jiter; // Clone any jumptables from inline piece
     for(jiter=inlinefd->jumpvec.begin();jiter!=inlinefd->jumpvec.end();++jiter) {
-      JumpTable *jtclone = new JumpTable(*jiter);
-      jumpvec.push_back(jtclone);
+      jumpvec.push_back(make_unique<JumpTable>(*jiter).release());
     }
     flow.inlineClone(inlineflow,retaddr);
 

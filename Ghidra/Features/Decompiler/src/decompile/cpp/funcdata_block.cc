@@ -488,8 +488,9 @@ JumpTable *Funcdata::installJumpTable(const Address &addr)
     if (jt->getOpAddress() == addr)
       throw LowlevelError("Trying to install over existing jumptable");
   }
-  JumpTable *newjt = new JumpTable(addr);
-  jumpvec.push_back(newjt);
+  auto owned = make_unique<JumpTable>(addr);
+  JumpTable *newjt = owned.get();
+  jumpvec.push_back(owned.release());
   return newjt;
 }
 
@@ -685,8 +686,9 @@ JumpTable *Funcdata::recoverJumpTable(Funcdata &partial,PcodeOp *op,FlowInfo *fl
     return (JumpTable *)0;
   //  if (trialjt.is_twostage())
   //    warning("Jumptable maybe incomplete. Second-stage recovery not implemented",trialjt.Opaddress());
-  jt = new JumpTable(&trialjt); // Make the jumptable permanent
-  jumpvec.push_back(jt);
+  auto owned = make_unique<JumpTable>(&trialjt); // Make the jumptable permanent
+  jt = owned.get();
+  jumpvec.push_back(owned.release());
   jt->setIndirectOp(op);		// Relink table back to original op
   return jt;
 }
