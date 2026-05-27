@@ -385,7 +385,7 @@ public:
 /// existing Element as the root of the data to transfer, or the ingestStream() method can be invoked
 /// to read the XML document from an input stream, in which case the decoder manages the Document object.
 class XmlDecode : public Decoder {
-  Document *document;				///< An ingested XML document, owned by \b this decoder
+  unique_ptr<Document> document;		///< An ingested XML document, owned by \b this decoder (null when constructed with a preparsed root)
   const Element *rootElement;			///< The root XML element to be decoded
   vector<const Element *> elStack;		///< Stack of currently \e open elements
   vector<List::const_iterator> iterStack;	///< Index of next child for each \e open element
@@ -394,9 +394,9 @@ class XmlDecode : public Decoder {
   int4 findMatchingAttribute(const Element *el,const string &attribName);
 public:
   XmlDecode(const AddrSpaceManager *spc,const Element *root,int4 sc=0) : Decoder(spc) {
-    document = (Document *)0; rootElement = root; attributeIndex = -1; scope = sc; }	///< Constructor with preparsed root
+    rootElement = root; attributeIndex = -1; scope = sc; }	///< Constructor with preparsed root (document stays null; ownership lives elsewhere)
   XmlDecode(const AddrSpaceManager *spc,int4 sc=0) : Decoder(spc) {
-    document = (Document *)0; rootElement = (const Element *)0; attributeIndex = -1; scope=sc; }	///< Constructor for use with ingestStream
+    rootElement = (const Element *)0; attributeIndex = -1; scope=sc; }	///< Constructor for use with ingestStream (document is populated by ingestStream)
   const Element *getCurrentXmlElement(void) const { return elStack.back(); }	///< Get pointer to underlying XML element object
   virtual ~XmlDecode(void);
   virtual void ingestStream(istream &s);

@@ -294,13 +294,7 @@ InjectPayloadDynamic::InjectPayloadDynamic(Architecture *g,InjectPayload *base)
     output.push_back(base->getOutput(i));
 }
 
-InjectPayloadDynamic::~InjectPayloadDynamic(void)
-
-{
-  map<Address,Document *>::iterator iter;
-  for(iter=addrMap.begin();iter!=addrMap.end();++iter)
-    delete (*iter).second;
-}
+InjectPayloadDynamic::~InjectPayloadDynamic(void) = default;	///< addrMap's unique_ptr<Document> values auto-clean
 
 /// \brief Decode a specific p-code sequence and the context in which it applied
 ///
@@ -313,11 +307,10 @@ void InjectPayloadDynamic::decodeEntry(Decoder &decoder)
   uint4 subId = decoder.openElement(ELEM_PAYLOAD);
   istringstream s(decoder.readString(ATTRIB_CONTENT));
   try {
-    Document *doc = xml_tree(s);
-    map<Address,Document *>::iterator iter = addrMap.find(addr);
-    if (iter != addrMap.end())
-      delete (*iter).second;		// Delete any preexisting document
-    addrMap[addr] = doc;
+    // map::operator[] = move(doc) replaces any existing entry; the
+    // dropped unique_ptr auto-deletes the old Document. No manual
+    // delete needed.
+    addrMap[addr] = xml_tree(s);
   }
   catch(DecoderError &err) {
     throw LowlevelError("Error decoding dynamic payload");
@@ -328,10 +321,10 @@ void InjectPayloadDynamic::decodeEntry(Decoder &decoder)
 void InjectPayloadDynamic::inject(InjectContext &context,PcodeEmit &emit) const
 
 {
-  map<Address,Document *>::const_iterator eiter = addrMap.find(context.baseaddr);
+  map<Address,unique_ptr<Document>>::const_iterator eiter = addrMap.find(context.baseaddr);
   if (eiter == addrMap.end())
     throw LowlevelError("Missing dynamic inject");
-  const Element *el = (*eiter).second->getRoot();
+  const Element *el = eiter->second->getRoot();		// unique_ptr's operator-> reaches through
   XmlDecode decoder(glb->translate,el);
   uint4 rootId = decoder.openElement(ELEM_INST);
   Address addr = Address::decode(decoder);

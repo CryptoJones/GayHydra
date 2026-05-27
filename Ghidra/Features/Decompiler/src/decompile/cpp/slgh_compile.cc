@@ -3823,7 +3823,7 @@ static int4 run_xml(const string &filein,SleighCompile &compiler)
 
 {
   ifstream s(filein);
-  Document *doc;
+  unique_ptr<Document> doc;
   string specfileout;
   string specfilein;
 
@@ -3860,7 +3860,7 @@ static int4 run_xml(const string &filein,SleighCompile &compiler)
     }
     if (iter==list.end()) break;
   }
-  delete doc;
+  // doc's unique_ptr<Document> auto-cleans when it goes out of scope.
 
   if (specfilein.size() == 0) {
     cerr << "Input slaspec file was not specified in " << filein << endl;

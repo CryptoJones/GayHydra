@@ -97,7 +97,7 @@ protected:
 /// for objects where InjectPayload::isDynamic() returns \b true.
 class InjectPayloadDynamic : public InjectPayload {
   Architecture *glb;				///< The architecture owning \b this payload
-  map<Address,Document *> addrMap;		///< Map from address to specific inject
+  map<Address,unique_ptr<Document>> addrMap;	///< Map from address to specific inject (owning)
 public:
   InjectPayloadDynamic(Architecture *g,InjectPayload *base);
   virtual ~InjectPayloadDynamic(void);
