@@ -73,6 +73,29 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     // now automatic via `unique_ptr` destruction on early return.
     'Ghidra/Features/Decompiler/src/decompile/cpp/comment.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/comment.hh': [],
+    // Rec 31 Stage 3-5 / 8 mop-up — already-clean files batch-added
+    // as regression guards. These files have zero raw-`new` allocation
+    // sites under the audit's filter; the gate prevents new ones from
+    // sneaking in while the migration continues elsewhere.
+    'Ghidra/Features/Decompiler/src/decompile/cpp/paramid.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/paramid.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/pcoderaw.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/pcoderaw.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/expression.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/expression.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/float.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/float.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_translate.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_translate.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ifaceterm.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ifaceterm.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/opcodes.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/filemanage.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/filemanage.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/dynamic.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/dynamic.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/multiprecision.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/multiprecision.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
     // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
     // semantic-action sites listed below are pinned until Stage 2C
