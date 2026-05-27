@@ -136,7 +136,7 @@ public:
   RuleSubvarAnd(const string &g) : Rule( g, 0, "subvar_and") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarAnd(getGroup());
+    return make_unique<RuleSubvarAnd>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -148,7 +148,7 @@ public:
   RuleSubvarSubpiece(const string &g) : Rule( g, 0, "subvar_subpiece") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarSubpiece(getGroup());
+    return make_unique<RuleSubvarSubpiece>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -165,7 +165,7 @@ public:
   RuleSubvarCompZero(const string &g) : Rule( g, 0, "subvar_compzero") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarCompZero(getGroup());
+    return make_unique<RuleSubvarCompZero>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -181,7 +181,7 @@ public:
   RuleSubvarShift(const string &g) : Rule( g, 0, "subvar_shift") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarShift(getGroup());
+    return make_unique<RuleSubvarShift>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -193,7 +193,7 @@ public:
   RuleSubvarZext(const string &g) : Rule( g, 0, "subvar_zext") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarZext(getGroup());
+    return make_unique<RuleSubvarZext>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -206,7 +206,7 @@ public:
   RuleSubvarSext(const string &g) : Rule( g, 0, "subvar_sext") { isaggressive = false; }	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubvarSext(getGroup());
+    return make_unique<RuleSubvarSext>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -242,7 +242,7 @@ public:
   RuleSplitFlow(const string &g) : Rule( g, 0, "splitflow") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSplitFlow(getGroup());
+    return make_unique<RuleSplitFlow>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -319,7 +319,7 @@ public:
   RuleSplitCopy(const string &g) : Rule( g, 0, "splitcopy") {}		///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSplitCopy(getGroup());
+    return make_unique<RuleSplitCopy>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -334,7 +334,7 @@ public:
   RuleSplitLoad(const string &g) : Rule( g, 0, "splitload") {}		///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSplitLoad(getGroup());
+    return make_unique<RuleSplitLoad>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -349,7 +349,7 @@ public:
   RuleSplitStore(const string &g) : Rule( g, 0, "splitstore") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSplitStore(getGroup());
+    return make_unique<RuleSplitStore>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -367,7 +367,7 @@ public:
   RuleDumptyHumpLate(const string &g) : Rule( g, 0, "dumptyhumplate") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleDumptyHumpLate(getGroup());
+    return make_unique<RuleDumptyHumpLate>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -413,7 +413,7 @@ public:
   RuleSubfloatConvert(const string &g) : Rule( g, 0, "subfloat_convert") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleSubfloatConvert(getGroup());
+    return make_unique<RuleSubfloatConvert>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

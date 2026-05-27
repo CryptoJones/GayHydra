@@ -135,7 +135,7 @@ public:
   ActionConditionalExe(const string &g) : Action(0,"conditionalexe",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionConditionalExe(getGroup());
+    return make_unique<ActionConditionalExe>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -189,7 +189,7 @@ public:
   RuleOrPredicate(const string &g) : Rule(g, 0, "orpredicate") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleOrPredicate(getGroup());
+    return make_unique<RuleOrPredicate>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

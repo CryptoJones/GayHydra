@@ -324,7 +324,7 @@ public:
   RuleDoubleIn(const string &g) : Rule(g, 0, "doublein") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleDoubleIn(getGroup());
+    return make_unique<RuleDoubleIn>(getGroup()).release();
   }
   virtual void reset(Funcdata &data);
   virtual void getOpList(vector<uint4> &oplist) const;
@@ -338,7 +338,7 @@ public:
   RuleDoubleOut(const string &g) : Rule(g, 0, "doubleout") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleDoubleOut(getGroup());
+    return make_unique<RuleDoubleOut>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -350,7 +350,7 @@ public:
   RuleDoubleLoad(const string &g) : Rule( g, 0, "doubleload") {}
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleDoubleLoad(getGroup());
+    return make_unique<RuleDoubleLoad>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -363,7 +363,7 @@ public:
   RuleDoubleStore(const string &g) : Rule( g, 0, "doublestore") {}
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleDoubleStore(getGroup());
+    return make_unique<RuleDoubleStore>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

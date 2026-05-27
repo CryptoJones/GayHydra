@@ -181,7 +181,7 @@ public:
   RuleBitFieldStore(const string &g) : Rule( g, 0, "bitfield_store") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleBitFieldStore(getGroup());
+    return make_unique<RuleBitFieldStore>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -193,7 +193,7 @@ public:
   RuleBitFieldOut(const string &g) : Rule( g, 0, "bitfield_out") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleBitFieldOut(getGroup());
+    return make_unique<RuleBitFieldOut>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -205,7 +205,7 @@ public:
   RuleBitFieldLoad(const string &g) : Rule( g, 0, "bitfield_load") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleBitFieldLoad(getGroup());
+    return make_unique<RuleBitFieldLoad>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -217,7 +217,7 @@ public:
   RuleBitFieldIn(const string &g) : Rule( g, 0, "bitfield_in") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleBitFieldIn(getGroup());
+    return make_unique<RuleBitFieldIn>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -239,7 +239,7 @@ public:
   RulePullAbsorb(const string &g) : Rule( g, 0, "pull_absorb") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RulePullAbsorb(getGroup());
+    return make_unique<RulePullAbsorb>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -256,7 +256,7 @@ public:
   RuleInsertAbsorb(const string &g) : Rule( g, 0, "insert_absorb") {}	///< Constructor
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
-    return new RuleInsertAbsorb(getGroup());
+    return make_unique<RuleInsertAbsorb>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
