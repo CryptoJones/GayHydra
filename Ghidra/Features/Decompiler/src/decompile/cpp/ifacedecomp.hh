@@ -97,7 +97,7 @@ protected:
 public:
   virtual void setData(IfaceStatus *root,IfaceData *data) { status = root; dcp = (IfaceDecompData *)data; }
   virtual string getModule(void) const { return "decompile"; }
-  virtual IfaceData *createData(void) { return new IfaceDecompData(); }
+  virtual IfaceData *createData(void) { return make_unique<IfaceDecompData>().release(); }
 
   /// \brief Perform the per-function aspect of \b this command.
   ///

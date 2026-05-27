@@ -153,7 +153,7 @@ protected:
 public:
   virtual void setData(IfaceStatus *root,IfaceData *data);
   virtual string getModule(void) const { return "codedata"; }
-  virtual IfaceData *createData(void) { return new CodeDataAnalysis(); }
+  virtual IfaceData *createData(void) { return make_unique<CodeDataAnalysis>().release(); }
 };
 
 class IfcCodeDataInit : public IfaceCodeDataCommand {
