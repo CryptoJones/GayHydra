@@ -904,8 +904,7 @@ void MapState::addRange(uintb st,Datatype *ct,uint4 fl,RangeHint::RangeType rt,i
   intb sst = (intb)AddrSpace::byteToAddress(st,spaceid->getWordSize());
   sst = sign_extend(sst,spaceid->getAddrSize()*8-1);
   sst = (intb)AddrSpace::addressToByte(sst,spaceid->getWordSize());
-  RangeHint *newRange = new RangeHint(st,sz,sst,ct,fl,rt,hi);
-  maplist.push_back(newRange);
+  maplist.push_back(make_unique<RangeHint>(st,sz,sst,ct,fl,rt,hi).release());
 #ifdef OPACTION_DEBUG
   if (debugon) {
     ostringstream s;
@@ -1072,8 +1071,7 @@ bool MapState::initialize(void)
   sst = sign_extend(sst,spaceid->getAddrSize()*8-1);
   sst = (intb)AddrSpace::addressToByte(sst,spaceid->getWordSize());
   // Add extra range to bound any final open entry
-  RangeHint *termRange = new RangeHint(high,1,sst,defaultType,0,RangeHint::endpoint,-2);
-  maplist.push_back(termRange);
+  maplist.push_back(make_unique<RangeHint>(high,1,sst,defaultType,0,RangeHint::endpoint,-2).release());
 
   stable_sort(maplist.begin(),maplist.end(),RangeHint::compareRanges);
   reconcileDatatypes();

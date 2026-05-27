@@ -114,18 +114,20 @@ PcodeEmitCache::PcodeEmitCache(vector<PcodeOpRaw *> &ocache,vector<VarnodeData *
 VarnodeData *PcodeEmitCache::createVarnode(const VarnodeData *var)
 
 {
-  VarnodeData *res = new VarnodeData();
+  auto owned = make_unique<VarnodeData>();
+  VarnodeData *res = owned.get();
   *res = *var;
-  varcache.push_back(res);
+  varcache.push_back(owned.release());
   return res;
 }
 
 void PcodeEmitCache::dump(const Address &addr,OpCode opc,VarnodeData *outvar,VarnodeData *vars,int4 isize)
 
 {
-  PcodeOpRaw *op = new PcodeOpRaw();
+  auto owned = make_unique<PcodeOpRaw>();
+  PcodeOpRaw *op = owned.get();
   op->setSeqNum(addr,uniq);
-  opcache.push_back(op);
+  opcache.push_back(owned.release());
   op->setBehavior( inst[opc] );
   uniq += 1;
   if (outvar != (VarnodeData *)0) {
