@@ -151,7 +151,7 @@ public:
   RuleGeneric(const string &g,const string &nm,const vector<OpCode> &sops,int4 opi,ConstraintGroup *c);
   virtual ~RuleGeneric(void) { delete constraint; }
   virtual Rule *clone(const ActionGroupList &grouplist) const {
-    if (!grouplist.contains(getGroup())) return (Rule *)0; return new RuleGeneric(getGroup(),getName(),starterops,opinit,(ConstraintGroup *)constraint->clone()); }
+    if (!grouplist.contains(getGroup())) return (Rule *)0; return make_unique<RuleGeneric>(getGroup(),getName(),starterops,opinit,(ConstraintGroup *)constraint->clone()).release(); }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
   static RuleGeneric *build(const string &nm,const string &gp,const string &content);
