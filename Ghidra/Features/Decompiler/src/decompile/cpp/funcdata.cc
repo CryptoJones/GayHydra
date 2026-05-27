@@ -63,7 +63,7 @@ Funcdata::Funcdata(const string &nm,const string &disp,Scope *scope,const Addres
       id = 0x57AB12CD;
       id = (id << 32) | (addr.getOffset() & 0xffffffff);
     }
-    ScopeLocal *newMap = new ScopeLocal(id,stackid,this,glb);
+    ScopeLocal *newMap = make_unique<ScopeLocal>(id,stackid,this,glb).release();
     glb->symboltab->attachScope(newMap,scope);		// This may throw and delete newMap
     localmap = newMap;
     funcp.setScope(localmap,baseaddr+ -1);
@@ -612,7 +612,7 @@ void Funcdata::decodeJumpTable(Decoder &decoder)
 {
   uint4 elemId = decoder.openElement(ELEM_JUMPTABLELIST);
   while(decoder.peekElement() != 0) {
-    unique_ptr<JumpTable> jt(new JumpTable());
+    auto jt = make_unique<JumpTable>();
     jt->decode(decoder);
     jumpvec.push_back(jt.release());
   }
@@ -801,7 +801,7 @@ uint8 Funcdata::decode(Decoder &decoder)
     if (subId == ELEM_LOCALDB) {
       if (localmap != (ScopeLocal *)0)
 	throw LowlevelError("Pre-existing local scope when restoring: "+name);
-      ScopeLocal *newMap = new ScopeLocal(id,stackid,this,glb);
+      ScopeLocal *newMap = make_unique<ScopeLocal>(id,stackid,this,glb).release();
       glb->symboltab->decodeScope(decoder,newMap);	// May delete newMap and throw
       localmap = newMap;
     }
@@ -810,7 +810,7 @@ uint8 Funcdata::decode(Decoder &decoder)
     else if (subId == ELEM_PROTOTYPE) {
       if (localmap == (ScopeLocal *)0) {
 	// If we haven't seen a <localdb> tag yet, assume we have a default local scope
-	ScopeLocal *newMap = new ScopeLocal(id,stackid,this,glb);
+	ScopeLocal *newMap = make_unique<ScopeLocal>(id,stackid,this,glb).release();
 	Scope *scope = glb->symboltab->getGlobalScope();
 	glb->symboltab->attachScope(newMap,scope);	// May delete newMap and throw
 	localmap = newMap;
@@ -824,7 +824,7 @@ uint8 Funcdata::decode(Decoder &decoder)
   decoder.closeElement(elemId);
   if (localmap == (ScopeLocal *)0) { // Seen neither <localdb> or <prototype>
     // This is a function shell, so we provide default locals
-    ScopeLocal *newMap = new ScopeLocal(id,stackid,this,glb);
+    ScopeLocal *newMap = make_unique<ScopeLocal>(id,stackid,this,glb).release();
     Scope *scope = glb->symboltab->getGlobalScope();
     glb->symboltab->attachScope(newMap,scope);		// May delete newMap and throw
     localmap = newMap;
