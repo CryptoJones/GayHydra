@@ -520,7 +520,14 @@ jobs:
         id: artifacts
         shell: bash
         run: |
-          ZIP=$(ls build/dist/ghidra_*_windows_*.zip | head -1)
+          # getCurrentPlatformName() (see gradle/root/distribution.gradle:32 +
+          # currentPlatform usage at line 688) returns "win_x86_64" — *not*
+          # "windows_x86_64" — so the zip is named
+          # ghidra_<ver>_<DISTRO_PREFIX>_<date>_win_x86_64.zip. The earlier
+          # `_windows_*` glob never matched and the step exit-1'd, which
+          # transitively skipped publish_release and stranded every release
+          # as a draft (v26.1.6/8/9/10 backlog).
+          ZIP=$(ls build/dist/ghidra_*_win_*.zip | head -1)
           test -n "$ZIP" || { echo "no windows release zip produced"; exit 1; }
           echo "ZIP=$ZIP" >> $GITHUB_OUTPUT
           echo "Built: $ZIP"
