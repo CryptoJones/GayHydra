@@ -323,21 +323,21 @@ public:
   object can be immediately instantiated.
 
   \code
-  LoadImageBfd *loader;
-  ContextDatabase *context;
-  Translate *trans;
+  unique_ptr<LoadImageBfd> loader;
+  unique_ptr<ContextDatabase> context;
+  unique_ptr<Translate> trans;
 
   // Set up the loadimage
   // Providing an executable name and architecture
   string loadimagename = "x86testcode";
   string bfdtarget= "default";
 
-  loader = new LoadImageBfd(loadimagename,bfdtarget);
+  loader = make_unique<LoadImageBfd>(loadimagename,bfdtarget);
   loader->open();       // Load the executable from file
 
-  context = new ContextInternal();   // Create a processor context
+  context = make_unique<ContextInternal>();   // Create a processor context
 
-  trans = new Sleigh(loader,context);  // Instantiate the translator
+  trans = make_unique<Sleigh>(loader.get(),context.get());  // Instantiate the translator
   \endcode
 
   Once the Sleigh object is in hand, the only required
@@ -380,7 +380,7 @@ public:
   assembly via the Translate::printAssembly() method.
 
   \code
-  AssemblyEmit *assememit = new AssemblyRaw();
+  auto assememit = make_unique<AssemblyRaw>();
 
   Address addr(trans->getDefaultCodeSpace(),0x80484c0);
   int4 length;                  // Length of instruction in bytes
@@ -453,7 +453,7 @@ public:
   Translate::oneInstruction() const method.
 
   \code
-  PcodeEmit *pcodeemit = new PcodeRawOut();
+  auto pcodeemit = make_unique<PcodeRawOut>();
 
   Address addr(trans->getDefaultCodeSpace(),0x80484c0);
   int4 length;                   // Length of instruction in bytes
@@ -511,8 +511,8 @@ public:
 
   \code
     ...
-    context = new ContextInternal();
-    trans = new Sleigh(loader,context);
+    context = make_unique<ContextInternal>();
+    trans = make_unique<Sleigh>(loader.get(),context.get());
     DocumentStorage docstorage;
     Element *root = docstorage.openDocument("specfiles/x86.sla")->getRoot();
     docstorage.registerTag(root);
