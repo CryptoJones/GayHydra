@@ -680,9 +680,9 @@ void FlowInfo::queryCall(FuncCallSpecs &fspecs)
 bool FlowInfo::setupCallSpecs(PcodeOp *op,FuncCallSpecs *fc)
 
 {
-  FuncCallSpecs *res;
-  res = new FuncCallSpecs(op);
-  qlst.push_back(res);
+  auto owned = make_unique<FuncCallSpecs>(op);
+  FuncCallSpecs *res = owned.get();
+  qlst.push_back(owned.release());
   data.opSetInput(op,data.newVarnodeCallSpecs(res),0);
 
   data.getOverride().applyPrototype(data,*res);
@@ -704,9 +704,9 @@ bool FlowInfo::setupCallSpecs(PcodeOp *op,FuncCallSpecs *fc)
 bool FlowInfo::setupCallindSpecs(PcodeOp *op,FuncCallSpecs *fc)
 
 {
-  FuncCallSpecs *res;
-  res = new FuncCallSpecs(op);
-  qlst.push_back(res);
+  auto owned = make_unique<FuncCallSpecs>(op);
+  FuncCallSpecs *res = owned.get();
+  qlst.push_back(owned.release());
 
   data.getOverride().applyIndirect(data,*res);
   if (fc != (FuncCallSpecs *)0 && fc->getEntryAddress() == res->getEntryAddress())
