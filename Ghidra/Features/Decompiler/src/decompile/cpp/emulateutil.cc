@@ -312,7 +312,7 @@ EmulateSnippet::~EmulateSnippet(void)
 PcodeEmit *EmulateSnippet::buildEmitter(const vector<OpBehavior *> &inst,uintb uniqReserve)
 
 {
-  return new PcodeEmitCache(opList,varList,inst,uniqReserve);
+  return make_unique<PcodeEmitCache>(opList,varList,inst,uniqReserve).release();
 }
 
 /// \brief Check for p-code that is deemed illegal for a \e snippet
