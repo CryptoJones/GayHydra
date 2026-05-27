@@ -109,12 +109,7 @@ void ElementId::initialize(void)
   thelist.shrink_to_fit();
 }
 
-XmlDecode::~XmlDecode(void)
-
-{
-  if (document != (Document *)0)
-    delete document;
-}
+XmlDecode::~XmlDecode(void) = default;	///< document's unique_ptr<Document> auto-cleans
 
 void XmlDecode::ingestStream(istream &s)
 

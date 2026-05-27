@@ -262,7 +262,7 @@ public:
 /// or a filename via openDocument().  If they are explicitly registered, specific
 /// XML Elements can be looked up by name via getTag().
 class DocumentStorage {
-  vector<Document *> doclist;		///< The list of documents held by this container
+  vector<unique_ptr<Document>> doclist;	///< The list of documents held by this container (owning)
   map<string,const Element *> tagmap;	///< The map from name to registered XML elements
 public:
   ~DocumentStorage(void);		///< Destructor
@@ -320,7 +320,7 @@ extern int4 xml_parse(istream &i,ContentHandler *hand,int4 dbg=0);
 /// DOM representation of the XML document.
 /// \param i is the given stream
 /// \return the in-memory XML document
-extern Document *xml_tree(istream &i);
+extern unique_ptr<Document> xml_tree(istream &i);
 
 /// \brief Send the given character array to a stream, escaping characters with special XML meaning
 ///
