@@ -397,7 +397,7 @@ void UserOpManage::initialize(Architecture *g)
   glb->translate->getUserOpNames(basicops);
   for(uint4 i=0;i<basicops.size();++i) {
     if (basicops[i].size()==0) continue;
-    UserPcodeOp *userop = new UnspecializedPcodeOp(basicops[i],glb,i);
+    UserPcodeOp *userop = make_unique<UnspecializedPcodeOp>(basicops[i],glb,i).release();
     registerOp(userop);
   }
 }
@@ -438,13 +438,13 @@ UserPcodeOp *UserOpManage::registerBuiltin(uint4 i)
   UserPcodeOp *res;
   switch(i) {
     case UserPcodeOp::BUILTIN_STRINGDATA:
-      res = new InternalStringOp(glb);
+      res = make_unique<InternalStringOp>(glb).release();
       break;
     case UserPcodeOp::BUILTIN_VOLATILE_READ:
-      res = new VolatileReadOp("read_volatile",glb,false);
+      res = make_unique<VolatileReadOp>("read_volatile",glb,false).release();
       break;
     case UserPcodeOp::BUILTIN_VOLATILE_WRITE:
-      res = new VolatileWriteOp("write_volatile",glb,false);
+      res = make_unique<VolatileWriteOp>("write_volatile",glb,false).release();
       break;
     case UserPcodeOp::BUILTIN_MEMCPY:
     {
@@ -453,7 +453,7 @@ UserPcodeOp *UserOpManage::registerBuiltin(uint4 i)
       Datatype *vType = glb->types->getTypeVoid();
       Datatype *ptrType = glb->types->getTypePointer(ptrSize,vType,wordSize);
       Datatype *intType = glb->types->getBase(4,TYPE_INT);
-      res = new DatatypeUserOp("builtin_memcpy",glb,UserPcodeOp::BUILTIN_MEMCPY,ptrType,ptrType,ptrType,intType);
+      res = make_unique<DatatypeUserOp>("builtin_memcpy",glb,UserPcodeOp::BUILTIN_MEMCPY,ptrType,ptrType,ptrType,intType).release();
       break;
     }
     case UserPcodeOp::BUILTIN_STRNCPY:		// Copy "char" elements
@@ -463,7 +463,7 @@ UserPcodeOp *UserOpManage::registerBuiltin(uint4 i)
       Datatype *cType = glb->types->getTypeChar(glb->types->getSizeOfChar());
       Datatype *ptrType = glb->types->getTypePointer(ptrSize,cType,wordSize);
       Datatype *intType = glb->types->getBase(4,TYPE_INT);
-      res = new DatatypeUserOp("builtin_strncpy",glb,UserPcodeOp::BUILTIN_STRNCPY,ptrType,ptrType,ptrType,intType);
+      res = make_unique<DatatypeUserOp>("builtin_strncpy",glb,UserPcodeOp::BUILTIN_STRNCPY,ptrType,ptrType,ptrType,intType).release();
       break;
     }
     case UserPcodeOp::BUILTIN_WCSNCPY:		// Copy "wchar_t" elements
@@ -473,7 +473,7 @@ UserPcodeOp *UserOpManage::registerBuiltin(uint4 i)
       Datatype *cType = glb->types->getTypeChar(glb->types->getSizeOfWChar());
       Datatype *ptrType = glb->types->getTypePointer(ptrSize,cType,wordSize);
       Datatype *intType = glb->types->getBase(4,TYPE_INT);
-      res = new DatatypeUserOp("builtin_wcsncpy",glb,UserPcodeOp::BUILTIN_WCSNCPY,ptrType,ptrType,ptrType,intType);
+      res = make_unique<DatatypeUserOp>("builtin_wcsncpy",glb,UserPcodeOp::BUILTIN_WCSNCPY,ptrType,ptrType,ptrType,intType).release();
       break;
     }
     default:
@@ -534,7 +534,7 @@ void UserOpManage::registerOp(UserPcodeOp *op)
 void UserOpManage::decodeSegmentOp(Decoder &decoder,Architecture *glb)
 
 {
-  unique_ptr<UserPcodeOp> s_op(new SegmentOp("",glb,useroplist.size()));
+  auto s_op = make_unique<SegmentOp>("",glb,useroplist.size());
   s_op->decode(decoder);
   registerOp(s_op.release());
 }
@@ -571,9 +571,9 @@ void UserOpManage::decodeVolatile(Decoder &decoder,Architecture *glb)
     throw LowlevelError("read_volatile user-op registered more than once");
   if (builtinmap.find(UserPcodeOp::BUILTIN_VOLATILE_WRITE) != builtinmap.end())
     throw LowlevelError("write_volatile user-op registered more than once");
-  VolatileReadOp *vr_op = new VolatileReadOp(readOpName,glb,functionalDisplay);
+  VolatileReadOp *vr_op = make_unique<VolatileReadOp>(readOpName,glb,functionalDisplay).release();
   builtinmap[UserPcodeOp::BUILTIN_VOLATILE_READ] = vr_op;
-  VolatileWriteOp *vw_op = new VolatileWriteOp(writeOpName,glb,functionalDisplay);
+  VolatileWriteOp *vw_op = make_unique<VolatileWriteOp>(writeOpName,glb,functionalDisplay).release();
   builtinmap[UserPcodeOp::BUILTIN_VOLATILE_WRITE] = vw_op;
 }
 
@@ -584,7 +584,7 @@ void UserOpManage::decodeVolatile(Decoder &decoder,Architecture *glb)
 void UserOpManage::decodeCallOtherFixup(Decoder &decoder,Architecture *glb)
 
 {
-  unique_ptr<UserPcodeOp> op(new InjectedUserOp("",glb,0,0));
+  auto op = make_unique<InjectedUserOp>("",glb,0,0);
   op->decode(decoder);
   registerOp(op.release());
 }
@@ -596,7 +596,7 @@ void UserOpManage::decodeCallOtherFixup(Decoder &decoder,Architecture *glb)
 void UserOpManage::decodeJumpAssist(Decoder &decoder,Architecture *glb)
 
 {
-  unique_ptr<UserPcodeOp> op(new JumpAssistOp(glb));
+  auto op = make_unique<JumpAssistOp>(glb);
   op->decode(decoder);
   registerOp(op.release());
 }
@@ -621,7 +621,7 @@ void UserOpManage::manualCallOtherFixup(const string &useropname,const string &o
     throw LowlevelError("Cannot fixup userop: "+useropname);
 
   int4 injectid = glb->pcodeinjectlib->manualCallOtherFixup(useropname,outname,inname,snippet);
-  InjectedUserOp *op = new InjectedUserOp(useropname,glb,userop->getIndex(),injectid);
+  InjectedUserOp *op = make_unique<InjectedUserOp>(useropname,glb,userop->getIndex(),injectid).release();
   registerOp(op);
 }
 
