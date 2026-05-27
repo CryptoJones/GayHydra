@@ -157,6 +157,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
         [87, 87],
         [263, 263],
     ],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/translate.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
