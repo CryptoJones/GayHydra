@@ -21,7 +21,7 @@ namespace ghidra {
 Scope *ScopeGhidra::buildSubScope(uint8 id,const string &nm)
 
 {
-  return new ScopeGhidraNamespace(id,nm,ghidra);
+  return make_unique<ScopeGhidraNamespace>(id,nm,ghidra).release();
 }
 
 /// \param g is the Architecture and connection to the Ghidra client
@@ -30,7 +30,7 @@ ScopeGhidra::ScopeGhidra(ArchitectureGhidra *g)
   : Scope(0,"",g,this)
 {
   ghidra = g;
-  cache = new ScopeInternal(0,"",g,this);
+  cache = make_unique<ScopeInternal>(0,"",g,this).release();
   cacheDirty = false;
 }
 

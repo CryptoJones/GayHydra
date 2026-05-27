@@ -33,7 +33,7 @@ PrintJavaCapability::PrintJavaCapability(void)
 PrintLanguage *PrintJavaCapability::buildLanguage(Architecture *glb)
 
 {
-  return new PrintJava(glb,name);
+  return make_unique<PrintJava>(glb,name).release();
 }
 
 PrintJava::PrintJava(Architecture *glb,const string &nm) : PrintC(glb,nm)
@@ -44,7 +44,7 @@ PrintJava::PrintJava(Architecture *glb,const string &nm) : PrintC(glb,nm)
   if (castStrategy != (CastStrategy *)0)
     delete castStrategy;
 
-  castStrategy = new CastStrategyJava();
+  castStrategy = make_unique<CastStrategyJava>().release();
 }
 
 void PrintJava::resetDefaults(void)

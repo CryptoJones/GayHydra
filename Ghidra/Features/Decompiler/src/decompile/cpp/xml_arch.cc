@@ -37,7 +37,7 @@ XmlArchitectureCapability::~XmlArchitectureCapability(void)
 Architecture *XmlArchitectureCapability::buildArchitecture(const string &filename,const string &target,ostream *estream)
 
 {
-  return new XmlArchitecture(filename,target,estream);
+  return make_unique<XmlArchitecture>(filename,target,estream).release();
 }
 
 bool XmlArchitectureCapability::isFileMatch(const string &filename) const
@@ -75,7 +75,7 @@ void XmlArchitecture::buildLoader(DocumentStorage &store)
   }
   if (el == (const Element *)0)
     throw LowlevelError("Could not find binaryimage tag");
-  loader = new LoadImageXml(getFilename(),el);
+  loader = make_unique<LoadImageXml>(getFilename(),el).release();
 }
 
 /// Read in image information (which uses translator)

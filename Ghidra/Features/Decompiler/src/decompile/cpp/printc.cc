@@ -115,7 +115,7 @@ PrintCCapability::PrintCCapability(void)
 PrintLanguage *PrintCCapability::buildLanguage(Architecture *glb)
 
 {
-  return new PrintC(glb,name);
+  return make_unique<PrintC>(glb,name).release();
 }
 
 /// \param g is the Architecture owning this c-language emitter
@@ -133,7 +133,7 @@ PrintC::PrintC(Architecture *g,const string &nm) : PrintLanguage(g,nm)
   equal.negate = &not_equal;
   not_equal.negate = &equal;
 
-  castStrategy = new CastStrategyC();
+  castStrategy = make_unique<CastStrategyC>().release();
   resetDefaultsPrintC();
 }
 
