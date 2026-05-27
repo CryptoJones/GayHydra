@@ -398,7 +398,7 @@ Action *ActionGroup::clone(const ActionGroupList &grouplist) const
     ac = (*iter)->clone(grouplist);
     if (ac != (Action *)0) {
       if (res == (ActionGroup *)0)
-	res = new ActionGroup(flags,getName());
+	res = make_unique<ActionGroup>(flags,getName()).release();
       res->addAction(ac);
     }
   }
@@ -536,7 +536,7 @@ Action *ActionRestartGroup::clone(const ActionGroupList &grouplist) const
     ac = (*iter)->clone(grouplist);
     if (ac != (Action *)0) {
       if (res == (ActionGroup *)0)
-	res = new ActionRestartGroup(flags,getName(),maxrestarts);
+	res = make_unique<ActionRestartGroup>(flags,getName(),maxrestarts).release();
       res->addAction(ac);
     }
   }
@@ -906,7 +906,7 @@ Action *ActionPool::clone(const ActionGroupList &grouplist) const
     rl = (*iter)->clone(grouplist);
     if (rl != (Rule *)0) {
       if (res == (ActionPool *)0)
-	res = new ActionPool(flags,getName());
+	res = make_unique<ActionPool>(flags,getName()).release();
       res->addRule(rl);
     }
   }
