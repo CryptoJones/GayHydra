@@ -971,8 +971,10 @@ void PcodeOpBank::clearCodeLists(void)
 PcodeOp *PcodeOpBank::create(int4 inputs,const Address &pc)
 
 {
-  PcodeOp *op = new PcodeOp(inputs,SeqNum(pc,uniqid++));
+  auto owned = make_unique<PcodeOp>(inputs,SeqNum(pc,uniqid++));
+  PcodeOp *op = owned.get();
   optree[op->getSeqNum()] = op;
+  owned.release(); // ownership transferred to optree
   op->setFlag(PcodeOp::dead);		// Start out life as dead
   op->insertiter = deadlist.insert(deadlist.end(),op);
   return op;
@@ -987,12 +989,13 @@ PcodeOp *PcodeOpBank::create(int4 inputs,const Address &pc)
 PcodeOp *PcodeOpBank::create(int4 inputs,const SeqNum &sq)
 
 {
-  PcodeOp *op;
-  op = new PcodeOp(inputs,sq);
+  auto owned = make_unique<PcodeOp>(inputs,sq);
+  PcodeOp *op = owned.get();
   if (sq.getTime() >= uniqid)
     uniqid = sq.getTime() + 1;
 
   optree[op->getSeqNum()] = op;
+  owned.release(); // ownership transferred to optree
   op->setFlag(PcodeOp::dead);		// Start out life as dead
   op->insertiter = deadlist.insert(deadlist.end(),op);
   return op;

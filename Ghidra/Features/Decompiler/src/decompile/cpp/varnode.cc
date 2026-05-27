@@ -1275,10 +1275,12 @@ void VarnodeBank::clear(void)
 Varnode *VarnodeBank::create(int4 s,const Address &m,Datatype *ct)
 
 {
-  Varnode *vn = new Varnode(s,m,ct);
-  
+  auto owned = make_unique<Varnode>(s,m,ct);
+  Varnode *vn = owned.get();
+
   vn->create_index = create_index++;
   vn->lociter = loc_tree.insert(vn).first; // Frees can always be inserted without duplication
+  owned.release(); // ownership transferred to loc_tree
   vn->defiter = def_tree.insert(vn).first;
   return vn;
 }
@@ -1436,10 +1438,10 @@ Varnode *VarnodeBank::setDef(Varnode *vn,PcodeOp *op)
 Varnode *VarnodeBank::createDef(int4 s,const Address &m, Datatype *ct,PcodeOp *op)
 
 {
-  Varnode *vn = new Varnode(s,m,ct);
-  vn->create_index = create_index++;
-  vn->setDef(op);
-  return xref(vn);
+  auto owned = make_unique<Varnode>(s,m,ct);
+  owned->create_index = create_index++;
+  owned->setDef(op);
+  return xref(owned.release()); // xref takes ownership (stores in trees or deletes on duplicate)
 }
 
 /// The new Varnode will be assigned from the \e unique space, and
