@@ -112,16 +112,15 @@ const int4 CompressBuffer::OUT_BUFFER_SIZE = 4096;
 CompressBuffer::CompressBuffer(ostream &s,int4 level)
   : outStream(s), compressor(level)
 {
-  inBuffer = new uint1[IN_BUFFER_SIZE];
-  outBuffer = new uint1[OUT_BUFFER_SIZE];
-  setp((char *)inBuffer,(char *)inBuffer + IN_BUFFER_SIZE-1);
+  inBuffer = make_unique<uint1[]>(IN_BUFFER_SIZE);
+  outBuffer = make_unique<uint1[]>(OUT_BUFFER_SIZE);
+  setp((char *)inBuffer.get(),(char *)inBuffer.get() + IN_BUFFER_SIZE-1);
 }
 
 CompressBuffer::~CompressBuffer(void)
 
 {
-  delete [] inBuffer;
-  delete [] outBuffer;
+  // inBuffer / outBuffer auto-cleaned by their unique_ptr destructors.
 }
 
 /// The compressor is called repeatedly and its output is written to the backing stream
@@ -135,8 +134,8 @@ void CompressBuffer::flushInput(bool lastBuffer)
   int4 outAvail;
   do {
     outAvail = OUT_BUFFER_SIZE;
-    outAvail = compressor.deflate(outBuffer,outAvail,lastBuffer);
-    outStream.write((char *)outBuffer,OUT_BUFFER_SIZE-outAvail);
+    outAvail = compressor.deflate(outBuffer.get(),outAvail,lastBuffer);
+    outStream.write((char *)outBuffer.get(),OUT_BUFFER_SIZE-outAvail);
   } while(outAvail == 0);
   pbump(-len);
 }

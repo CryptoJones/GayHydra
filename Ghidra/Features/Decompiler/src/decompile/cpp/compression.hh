@@ -83,8 +83,8 @@ class CompressBuffer : public std::streambuf {
   static const int4 IN_BUFFER_SIZE;	///< Number of bytes in the \e input buffer
   static const int4 OUT_BUFFER_SIZE;	///< Number of bytes in the \e output buffer
   ostream &outStream;			///< The backing stream receiving compressed bytes
-  uint1 *inBuffer;			///< The \e input buffer
-  uint1 *outBuffer;			///< The \e output buffer
+  unique_ptr<uint1[]> inBuffer;		///< The \e input buffer
+  unique_ptr<uint1[]> outBuffer;	///< The \e output buffer
   Compress compressor;			///< Compressor state
 protected:
   void flushInput(bool lastBuffer);	///< Compress the current set of bytes in the \e input buffer
