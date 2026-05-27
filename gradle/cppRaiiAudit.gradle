@@ -90,6 +90,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/ifaceterm.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/ifaceterm.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/opcodes.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/opcodes.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/filemanage.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/filemanage.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/dynamic.cc': [],
@@ -153,7 +154,19 @@ task cppRaiiAudit {
                 if (excluded) {
                     return
                 }
-                def m = RAW_NEW_PATTERN.matcher(line)
+                // Strip trailing `//` line-comments before applying
+                // the regex. Catches false positives like
+                //   CPUI_NEW = 69,   ///< Allocate a new object (new)
+                // where the leading-`//`-startswith filter doesn't
+                // help because the `//` is not at the start of the
+                // trimmed line. `//` inside string literals would be
+                // wrongly truncated, but the truncation only causes
+                // false *negatives* if `new T(` appears inside the
+                // string — string-literal `new` matches were already
+                // documented as author-fixable false positives.
+                int commentIdx = line.indexOf('//')
+                String codeOnly = (commentIdx >= 0) ? line.substring(0, commentIdx) : line
+                def m = RAW_NEW_PATTERN.matcher(codeOnly)
                 if (m.find()) {
                     violations.add("${rel}:${lineNum} raw `new` allocation " +
                         "(use std::make_unique<T> or std::make_shared<T>)")
