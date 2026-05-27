@@ -58,13 +58,21 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/marshal.hh': [],
     // Rec 31 Stage 3 — `cover.cc` is the audit's named Stage 3 file
-    // (alongside `database.cc` + `comment.cc`, both of which still
-    // have raw-`new` sites that need code migration before joining).
-    // `cover.cc` + `cover.hh` were already raw-`new`-free in tree —
-    // adding the gate prevents regression while the rest of Stage 3
-    // is migrated. Same regression-guard pattern as Stage 1 (#31-2).
+    // (alongside `database.cc` + `comment.cc`). `cover.cc` + `cover.hh`
+    // were already raw-`new`-free in tree — adding the gate prevents
+    // regression while the rest of Stage 3 is migrated. Same
+    // regression-guard pattern as Stage 1 (#31-2).
     'Ghidra/Features/Decompiler/src/decompile/cpp/cover.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/cover.hh': [],
+    // Rec 31 Stage 3 — `comment.cc`'s two `new Comment(...)` sites in
+    // `CommentDatabaseInternal::addComment` /
+    // `CommentDatabaseInternal::addCommentNoDuplicate` migrated to
+    // `make_unique<Comment>(...)` with `.release()` at the
+    // `commentset.insert(...)` ownership-transfer point. The manual
+    // `delete newcom; return false;` in the duplicate-check branch is
+    // now automatic via `unique_ptr` destruction on early return.
+    'Ghidra/Features/Decompiler/src/decompile/cpp/comment.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/comment.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
     // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
     // semantic-action sites listed below are pinned until Stage 2C
