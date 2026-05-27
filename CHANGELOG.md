@@ -116,7 +116,7 @@ Highlights since v26.1.7:
   "Release pipeline hardening" in
   [SprintPlanning.md](SprintPlanning.md).
 
-## Released sprints (v26.1.1 – v26.1.10)
+## Released sprints (v26.1.1 – v26.1.11)
 
 Per-sprint release notes live on the
 [GitHub Releases page](https://github.com/CryptoJones/GayHydra/releases)
@@ -124,6 +124,7 @@ Per-sprint release notes live on the
 Each `26.1.x` tag corresponds to a Sprint close per the cadence
 documented in [SprintHistory.md](SprintHistory.md):
 
+- **v26.1.11** — Sprint 10 close (code-side) + Rec 31 RAII Stage 2A / 2B / 2C complete + Stage 3 first migrations. Stage 2A `marshal.cc` buffer ownership (#46), Stage 2B `xml.cc` lvalue + global_scan (#51, #73), Stage 2C-min `xml.y` stack-local (#77), Stage 2C step 2 `Element` parse-tree ownership (#78), Stage 2C step 3 `Document` return-value (#82), Stage 2C audit-gate (#87). Stage 3 first files: `cover.cc` gate (#89), `comment.cc` migration + gate (#90). Rec 28 closeout (Stage 2 strict-by-default, #43). Rec 13/14 OSS-Fuzz upstream submission + rejection + wrapper rip-out (google/oss-fuzz#15545, #48, #49, #84). Rec 20 RMI VMARG fix (#81). release.yml Windows zip glob fix (#88) — unblocks the matrix's `publish_release` job that's been silently skipped since v26.1.6, leaving every release stuck as a draft. **v26.1.11 is the first release expected to actually appear on the public Releases page** (v26.1.6/8/9/10 backlogged in drafts under "Immutable Releases" tag lockout). First-released `_win_x86_64.zip` artifact: this release closes out the cross-platform-coverage Sprint-10 entry.
 - **v26.1.10** — Sprint 9 close + Sprint 10 first half: datatests
   re-enabled (#244, #250–256), Rec 25/26 Stage 3 prep (#247, #249,
   #261, #265–270), SBOM hotfix (#245), RE training sample +
