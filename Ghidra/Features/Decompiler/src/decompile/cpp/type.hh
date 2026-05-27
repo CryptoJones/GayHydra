@@ -393,7 +393,7 @@ public:
   TypeBase(int4 s,type_metatype m) : Datatype(s,-1,m) {}
   /// Construct TypeBase from a size, meta-type, and name
   TypeBase(int4 s,type_metatype m,const string &n) : Datatype(s,-1,m) { name = n; displayName = n; }
-  virtual Datatype *clone(void) const { return new TypeBase(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeBase>(*this).release(); }
 };
 
 /// \brief Base type for character data-types: i.e. char
@@ -408,7 +408,7 @@ public:
   TypeChar(const TypeChar &op) : TypeBase(op) { flags |= Datatype::chartype; }
   /// Construct a char (always 1-byte) given a name
   TypeChar(const string &n) : TypeBase(1,TYPE_INT,n) { flags |= Datatype::chartype; submeta = SUB_INT_CHAR; }
-  virtual Datatype *clone(void) const { return new TypeChar(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeChar>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
 };
 
@@ -424,7 +424,7 @@ public:
   TypeUnicode(void) : TypeBase(0,TYPE_INT) {} ///< For use with decode
   TypeUnicode(const TypeUnicode &op) : TypeBase(op) {}	///< Construct from another TypeUnicode
   TypeUnicode(const string &nm,int4 sz,type_metatype m);	///< Construct given name,size, meta-type
-  virtual Datatype *clone(void) const { return new TypeUnicode(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeUnicode>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
 };
 
@@ -441,7 +441,7 @@ public:
   TypeVoid(const TypeVoid &op) : Datatype(op) { flags |= Datatype::coretype; }
   /// Constructor
   TypeVoid(void) : Datatype(0,1,TYPE_VOID) { name = "void"; displayName = name; flags |= Datatype::coretype; }
-  virtual Datatype *clone(void) const { return new TypeVoid(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeVoid>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
 };
 
@@ -479,7 +479,7 @@ public:
   virtual void printNameBase(ostream &s) const { s << 'p'; ptrto->printNameBase(s); }
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypePointer(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypePointer>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual TypePointer *downChain(int8 &off,TypePointer *&par,int8 &parOff,bool allowArrayWrap,TypeFactory &typegrp);
   virtual bool isPtrsubMatching(int8 off,int8 extra,int8 multiplier) const;
@@ -515,7 +515,7 @@ public:
   virtual void printNameBase(ostream &s) const { s << 'a'; arrayof->printNameBase(s); }
   virtual int4 compare(const Datatype &op,int4 level) const; // For tree structure
   virtual int4 compareDependency(const Datatype &op) const; // For tree structure
-  virtual Datatype *clone(void) const { return new TypeArray(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeArray>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual Datatype *resolveInFlow(PcodeOp *op,int4 slot);
   virtual Datatype* findResolve(const PcodeOp *op,int4 slot);
@@ -556,7 +556,7 @@ public:
   virtual void getMatches(uintb val,Representation &rep) const;	///< Recover the named representation
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypeEnum(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeEnum>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   static void assignValues(map<uintb,string> &nmap,const vector<string> &namelist,vector<uintb> &vallist,
 			   const vector<bool> &assignlist,const TypeEnum *te);
@@ -601,7 +601,7 @@ public:
   virtual Datatype *getDepend(int4 index) const { return field[index].type; }
   virtual int4 compare(const Datatype &op,int4 level) const; // For tree structure
   virtual int4 compareDependency(const Datatype &op) const; // For tree structure
-  virtual Datatype *clone(void) const { return new TypeStruct(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeStruct>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual Datatype *resolveInFlow(PcodeOp *op,int4 slot);
   virtual Datatype* findResolve(const PcodeOp *op,int4 slot);
@@ -630,7 +630,7 @@ public:
   virtual Datatype *getDepend(int4 index) const { return field[index].type; }
   virtual int4 compare(const Datatype &op,int4 level) const; // For tree structure
   virtual int4 compareDependency(const Datatype &op) const; // For tree structure
-  virtual Datatype *clone(void) const { return new TypeUnion(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeUnion>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual Datatype *resolveInFlow(PcodeOp *op,int4 slot);
   virtual Datatype* findResolve(const PcodeOp *op,int4 slot);
@@ -655,7 +655,7 @@ public:
   virtual void getMatches(uintb val,Representation &rep) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypePartialEnum(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypePartialEnum>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual Datatype *getStripped(void) const { return stripped; }
   virtual Datatype *getPartialBase(void) const { return parent; }
@@ -678,7 +678,7 @@ public:
   virtual int4 getHoleSize(int4 off) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypePartialStruct(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypePartialStruct>(*this).release(); }
   virtual Datatype *getStripped(void) const { return stripped; }
   virtual Datatype *getPartialBase(void) const { return container; }
 };
@@ -706,7 +706,7 @@ public:
   virtual Datatype *getDepend(int4 index) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypePartialUnion(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypePartialUnion>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual Datatype *getStripped(void) const { return stripped; }
   virtual Datatype *resolveInFlow(PcodeOp *op,int4 slot);
@@ -754,7 +754,7 @@ public:
   virtual Datatype *getPtrInto(int4 &off) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypePointerRel(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypePointerRel>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
   virtual TypePointer *downChain(int8 &off,TypePointer *&par,int8 &parOff,bool allowArrayWrap,TypeFactory &typegrp);
   virtual bool isPtrsubMatching(int8 off,int8 extra,int8 multiplier) const;
@@ -787,7 +787,7 @@ public:
   virtual Datatype *getSubType(int8 off,int8 *newoff) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const;
-  virtual Datatype *clone(void) const { return new TypeCode(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeCode>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
 };
 
@@ -819,7 +819,7 @@ public:
   virtual int8 nearestArrayedComponentBackward(int8 off,int8 max,int8 *newoff,int8 *elSize) const;
   virtual int4 compare(const Datatype &op,int4 level) const;
   virtual int4 compareDependency(const Datatype &op) const; // For tree structure
-  virtual Datatype *clone(void) const { return new TypeSpacebase(*this); }
+  virtual Datatype *clone(void) const { return make_unique<TypeSpacebase>(*this).release(); }
   virtual void encode(Encoder &encoder) const;
 };
 
