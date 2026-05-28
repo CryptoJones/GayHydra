@@ -8,9 +8,27 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.13. Tracked per-PR in
+Work toward v26.1.14. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.1.13] — 2026-05-28
+
+Rec 31 RAII migration sprint close — the decompiler C++ tree is
+now **226/229 files (99%)** under the `cppRaiiAudit` gate, up from
+120/229 at v26.1.12. The four remaining unprotected files are
+bison/flex-generated (`grammar.cc`, `pcodeparse.cc`, `slghparse.cc`,
+`slghscan.cc`); their migration is blocked on the bison `%union`
+variant-mode rewrite tracked in
+[`docs/decompiler/RAII_STAGE_2C_XML.md`](docs/decompiler/RAII_STAGE_2C_XML.md).
+
+This release also includes a `--full`-mode fix for
+`scripts/local-precheck.sh` (PR #136) that makes the pre-push test
+gate usable on every release branch, plus the Symbol-hierarchy
+destructor accessibility unblocking that made `database.cc`
+migratable (PR #157).
 
 ### 2026-05-28 — Rec 31 header-companion batch
 
