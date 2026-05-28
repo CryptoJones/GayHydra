@@ -189,16 +189,13 @@ Translate *SleighArchitecture::buildTranslator(DocumentStorage &store)
 PcodeInjectLibrary *SleighArchitecture::buildPcodeInjectLibrary(void)
 
 { // Build the pcode injector based on sleigh
-  PcodeInjectLibrary *res;
-
-  res = new PcodeInjectLibrarySleigh(this);
-  return res;
+  return make_unique<PcodeInjectLibrarySleigh>(this).release();
 }
 
 void SleighArchitecture::buildTypegrp(DocumentStorage &store)
 
 {
-  types = new TypeFactory(this); // Initialize the object
+  types = make_unique<TypeFactory>(this).release(); // Initialize the object
 }
 
 void SleighArchitecture::buildCoreTypes(DocumentStorage &store)
@@ -241,25 +238,25 @@ void SleighArchitecture::buildCoreTypes(DocumentStorage &store)
 void SleighArchitecture::buildCommentDB(DocumentStorage &store)
 
 {
-  commentdb = new CommentDatabaseInternal();
+  commentdb = make_unique<CommentDatabaseInternal>().release();
 }
 
 void SleighArchitecture::buildStringManager(DocumentStorage &store)
 
 {
-  stringManager = new StringManagerUnicode(this,2048);
+  stringManager = make_unique<StringManagerUnicode>(this,2048).release();
 }
 
 void SleighArchitecture::buildConstantPool(DocumentStorage &store)
 
 {
-  cpool = new ConstantPoolInternal();
+  cpool = make_unique<ConstantPoolInternal>().release();
 }
 
 void SleighArchitecture::buildContext(DocumentStorage &store)
 
 {
-  context = new ContextInternal();
+  context = make_unique<ContextInternal>().release();
 }
 
 void SleighArchitecture::buildSymbols(DocumentStorage &store)
