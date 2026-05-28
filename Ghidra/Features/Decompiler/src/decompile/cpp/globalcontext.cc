@@ -259,8 +259,8 @@ void ContextInternal::FreeArray::reset(int4 sz)
   uintm *newarray = (uintm *)0;
   uintm *newmask = (uintm *)0;
   if (sz != 0) {
-    newarray = new uintm[sz];
-    newmask = new uintm[sz];
+    newarray = make_unique<uintm[]>(sz).release();
+    newmask = make_unique<uintm[]>(sz).release();
     int4 min;
     if (sz > size) {
       min = size;
@@ -299,8 +299,8 @@ ContextInternal::FreeArray &ContextInternal::FreeArray::operator=(const FreeArra
   mask = (uintm *)0;
   size = op2.size;
   if (size != 0) {
-    array = new uintm[size];
-    mask = new uintm[size];
+    array = make_unique<uintm[]>(size).release();
+    mask = make_unique<uintm[]>(size).release();
     for(int4 i=0;i<size;++i) {
       array[i] = op2.array[i];		// Copy value at split point
       mask[i] = 0;			// but not fact that value is being set
