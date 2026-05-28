@@ -564,7 +564,7 @@ void IfcOpenfile::execute(istream &s)
   if (filename.empty())
     throw IfaceParseError("No filename specified");
 
-  status->fileoptr = new ofstream;
+  status->fileoptr = std::make_unique<ofstream>().release();
   ((ofstream *)status->fileoptr)->open(filename.c_str());
   if (!*status->fileoptr) {
     delete status->fileoptr;
@@ -586,7 +586,7 @@ void IfcOpenfileAppend::execute(istream &s)
   if (filename.empty())
     throw IfaceParseError("No filename specified");
 
-  status->fileoptr = new ofstream;
+  status->fileoptr = std::make_unique<ofstream>().release();
   ((ofstream *)status->fileoptr)->open(filename.c_str(),ios_base::app); // Open for appending
   if (!*status->fileoptr) {
     delete status->fileoptr;

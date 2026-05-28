@@ -28,13 +28,16 @@
 
 import java.util.regex.Pattern
 
-// `new` keyword followed by an identifier and a `(`, `[`, or `<`
-// opener. The `\b` word boundary keeps us from matching `renewable`
-// or similar; the lookahead enforces an allocation site, not a
-// general `new` mention (e.g., in comments / strings that survive
-// the trim filter below).
+// `new` keyword followed by an identifier and a `(`, `[`, `<`, or
+// `;` terminator. The `\b` word boundary keeps us from matching
+// `renewable` or similar; the terminator enforces an allocation
+// site, not a general `new` mention (e.g., in comments / strings
+// that survive the trim filter below). `;` catches the no-parens
+// default-construct form (`new T;`) — previously a false-negative
+// that let `new ofstream`, `new Cover`, `new uintb`, etc. escape
+// the audit even in protected files.
 final Pattern RAW_NEW_PATTERN = Pattern.compile(
-    '\\bnew\\s+[A-Za-z_][A-Za-z0-9_:]*\\s*[(\\[<]')
+    '\\bnew\\s+[A-Za-z_][A-Za-z0-9_:]*\\s*[(\\[<;]')
 
 // Files under the RAII gate. Map of repo-relative path -> list of
 // [startLine, endLine] (1-based, inclusive) line ranges to exclude

@@ -28,7 +28,7 @@ UnifyDatatype::UnifyDatatype(uint4 tp)
   case block_type:
     break;
   case const_type:
-    storespot.cn = new uintb;
+    storespot.cn = make_unique<uintb>().release();
     break;
   default:
     throw LowlevelError("Bad unify datatype");
@@ -45,7 +45,7 @@ UnifyDatatype::UnifyDatatype(const UnifyDatatype &op2)
   case block_type:
     break;
   case const_type:
-    storespot.cn = new uintb; // Copy needs its own memory
+    storespot.cn = make_unique<uintb>().release(); // Copy needs its own memory
     break;
   default:
     throw LowlevelError("Bad unify datatype");
@@ -73,7 +73,7 @@ UnifyDatatype &UnifyDatatype::operator=(const UnifyDatatype &op2)
   case block_type:
     break;
   case const_type:
-    storespot.cn = new uintb; // Copy needs its own memory
+    storespot.cn = make_unique<uintb>().release(); // Copy needs its own memory
     break;
   default:
     throw LowlevelError("Bad unify datatype");
