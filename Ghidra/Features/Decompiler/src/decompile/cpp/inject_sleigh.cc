@@ -351,9 +351,10 @@ InjectPayloadDynamic *PcodeInjectLibrarySleigh::forceDebugDynamic(int4 injectid)
 
 {
   InjectPayload *oldPayload = injection[injectid];
-  InjectPayloadDynamic *newPayload = new InjectPayloadDynamic(glb,oldPayload);
+  auto owned = make_unique<InjectPayloadDynamic>(glb,oldPayload);
   delete oldPayload;
-  injection[injectid] = newPayload;
+  InjectPayloadDynamic *newPayload = owned.get();
+  injection[injectid] = owned.release();
   return newPayload;
 }
 
@@ -374,7 +375,7 @@ void PcodeInjectLibrarySleigh::parseInject(InjectPayload *payload)
       throw LowlevelError("Registering pcode snippet before language is instantiated");
   }
   if (contextCache.pos == (ParserContext *)0) {	// Make sure we have a context
-    contextCache.pos = new ParserContext((ContextCache *)0,(Translate *)0);
+    contextCache.pos = make_unique<ParserContext>((ContextCache *)0,(Translate *)0).release();
     contextCache.pos->initialize(slgh->getConstantSpace(),8);
   }
   PcodeSnippet compiler(slgh);
@@ -413,13 +414,13 @@ int4 PcodeInjectLibrarySleigh::allocateInject(const string &sourceName,const str
 {
   int4 injectid = injection.size();
   if (type == InjectPayload::CALLFIXUP_TYPE)
-    injection.push_back(new InjectPayloadCallfixup(sourceName));
+    injection.push_back(make_unique<InjectPayloadCallfixup>(sourceName).release());
   else if (type == InjectPayload::CALLOTHERFIXUP_TYPE)
-    injection.push_back(new InjectPayloadCallother(sourceName));
+    injection.push_back(make_unique<InjectPayloadCallother>(sourceName).release());
   else if (type == InjectPayload::EXECUTABLEPCODE_TYPE)
-    injection.push_back(new ExecutablePcodeSleigh(glb,sourceName,name));
+    injection.push_back(make_unique<ExecutablePcodeSleigh>(glb,sourceName,name).release());
   else
-    injection.push_back(new InjectPayloadSleigh(sourceName,name,type));
+    injection.push_back(make_unique<InjectPayloadSleigh>(sourceName,name,type).release());
   return injectid;
 }
 
@@ -428,9 +429,9 @@ void PcodeInjectLibrarySleigh::registerInject(int4 injectid)
 {
   InjectPayload *payload = injection[injectid];
   if (payload->isDynamic()) {
-    InjectPayload *sub = new InjectPayloadDynamic(glb,payload);
+    auto owned = make_unique<InjectPayloadDynamic>(glb,payload);
     delete payload;
-    payload = sub;
+    payload = owned.release();
     injection[injectid] = payload;
   }
   switch(payload->getType()) {
