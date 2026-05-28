@@ -43,9 +43,9 @@ void connect_to_console(Funcdata *fd)
 
 {
   if (remote == (RemoteSocket *)0) {
-    remote = new RemoteSocket();
+    remote = make_unique<RemoteSocket>().release();
     if (remote->open("/tmp/ghidrasocket")) {
-      ghidra_dcp = new IfaceTerm("[ghidradbg]> ",*remote->getInputStream(),*remote->getOutputStream());
+      ghidra_dcp = make_unique<IfaceTerm>("[ghidradbg]> ",*remote->getInputStream(),*remote->getOutputStream()).release();
       IfaceCapability::registerAllCommands(ghidra_dcp);
     }
   }
@@ -184,7 +184,7 @@ void RegisterProgram::rawAction(void)
       open = i;			// Found open slot
     }
   }
-  ghidra = new ArchitectureGhidra(pspec,cspec,tspec,corespec,sin,sout);
+  ghidra = make_unique<ArchitectureGhidra>(pspec,cspec,tspec,corespec,sin,sout).release();
   pspec.clear();
   cspec.clear();
   tspec.clear();
@@ -421,7 +421,7 @@ void SetOptions::loadParameters(void)
   GhidraCommand::loadParameters();
   if (decoder != (Decoder *)0)
     delete decoder;
-  decoder = new PackedDecode(ghidra);
+  decoder = make_unique<PackedDecode>(ghidra).release();
   ArchitectureGhidra::readStringStream(sin, *decoder);
 }
 
@@ -496,13 +496,13 @@ void GhidraCapability::shutDown(void)
 void GhidraDecompCapability::initialize(void)
 
 {
-  commandmap["registerProgram"] = new RegisterProgram();
-  commandmap["deregisterProgram"] = new DeregisterProgram();
-  commandmap["flushNative"] = new FlushNative();
-  commandmap["decompileAt"] = new DecompileAt();
-  commandmap["structureGraph"] = new StructureGraph();
-  commandmap["setAction"] = new SetAction();
-  commandmap["setOptions"] = new SetOptions();
+  commandmap["registerProgram"] = make_unique<RegisterProgram>().release();
+  commandmap["deregisterProgram"] = make_unique<DeregisterProgram>().release();
+  commandmap["flushNative"] = make_unique<FlushNative>().release();
+  commandmap["decompileAt"] = make_unique<DecompileAt>().release();
+  commandmap["structureGraph"] = make_unique<StructureGraph>().release();
+  commandmap["setAction"] = make_unique<SetAction>().release();
+  commandmap["setOptions"] = make_unique<SetOptions>().release();
 }
 
 /// Catch the signal so the OS doesn't pop up a dialog
