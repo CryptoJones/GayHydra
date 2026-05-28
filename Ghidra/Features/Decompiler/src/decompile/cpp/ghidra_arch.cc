@@ -283,26 +283,26 @@ void ArchitectureGhidra::postSpecFile(void)
 void ArchitectureGhidra::buildLoader(DocumentStorage &store)
 
 {
-  loader = new LoadImageGhidra(this);
+  loader = make_unique<LoadImageGhidra>(this).release();
 }
 
 PcodeInjectLibrary *ArchitectureGhidra::buildPcodeInjectLibrary(void)
 
 {
-  return new PcodeInjectLibraryGhidra(this);
+  return make_unique<PcodeInjectLibraryGhidra>(this).release();
 }
 
 Translate *ArchitectureGhidra::buildTranslator(DocumentStorage &store)
 
 {
-  return new GhidraTranslate(this);
+  return make_unique<GhidraTranslate>(this).release();
 }
 
 Scope *ArchitectureGhidra::buildDatabase(DocumentStorage &store)
 
 {
-  symboltab = new Database(this,false);
-  Scope *globalscope = new ScopeGhidra(this);
+  symboltab = make_unique<Database>(this,false).release();
+  Scope *globalscope = make_unique<ScopeGhidra>(this).release();
   symboltab->attachScope(globalscope,(Scope *)0);
   return globalscope;
 }
@@ -310,7 +310,7 @@ Scope *ArchitectureGhidra::buildDatabase(DocumentStorage &store)
 void ArchitectureGhidra::buildTypegrp(DocumentStorage &store)
 
 {
-  types = new TypeFactoryGhidra(this);
+  types = make_unique<TypeFactoryGhidra>(this).release();
 }
 
 void ArchitectureGhidra::buildCoreTypes(DocumentStorage &store)
@@ -351,25 +351,25 @@ void ArchitectureGhidra::buildCoreTypes(DocumentStorage &store)
 void ArchitectureGhidra::buildCommentDB(DocumentStorage &store)
 
 {
-  commentdb = new CommentDatabaseGhidra(this);
+  commentdb = make_unique<CommentDatabaseGhidra>(this).release();
 }
 
 void ArchitectureGhidra::buildStringManager(DocumentStorage &store)
 
 {
-  stringManager = new GhidraStringManager(this,2048);
+  stringManager = make_unique<GhidraStringManager>(this,2048).release();
 }
 
 void ArchitectureGhidra::buildConstantPool(DocumentStorage &store)
 
 {
-  cpool = new ConstantPoolGhidra(this);
+  cpool = make_unique<ConstantPoolGhidra>(this).release();
 }
 
 void ArchitectureGhidra::buildContext(DocumentStorage &store)
 
 {
-  context = new ContextGhidra(this);
+  context = make_unique<ContextGhidra>(this).release();
 }
 
 void ArchitectureGhidra::buildSymbols(DocumentStorage &store)
@@ -736,14 +736,13 @@ void ArchitectureGhidra::getBytes(uint1 *buf,int4 size,const Address &inaddr)
   readToResponse(sin);
   int4 type = readToAnyBurst(sin);
   if (type == 12) {
-    uint1 *dblbuf = new uint1[size * 2];
-    sin.read((char *)dblbuf,size*2);
+    auto dblbuf = make_unique<uint1[]>(size * 2);
+    sin.read((char *)dblbuf.get(),size*2);
     if (sin.gcount() != size*2)
       throw JavaError("alignment","Could not read expected number of bytes");
     for (int4 i=0; i < size; i++) {
       buf[i] = ((dblbuf[i*2]-'A') << 4) | (dblbuf[i*2 + 1]-'A');
     }
-    delete [] dblbuf;
   }
   else if ((type&1)==1) {
     ostringstream errmsg;
@@ -797,12 +796,11 @@ void ArchitectureGhidra::getStringData(vector<uint1> &buffer,const Address &addr
     size ^= ((c-0x20)<<6);
     isTrunc = (sin.get() != 0);
     buffer.reserve(size);
-    uint1 *dblbuf = new uint1[size * 2];
-    sin.read((char *)dblbuf,size*2);
+    auto dblbuf = make_unique<uint1[]>(size * 2);
+    sin.read((char *)dblbuf.get(),size*2);
     for (int4 i=0; i < size; i++) {
       buffer.push_back(((dblbuf[i*2]-'A') << 4) | (dblbuf[i*2 + 1]-'A'));
     }
-    delete [] dblbuf;
     type = readToAnyBurst(sin);
     if (type != 13)
       throw JavaError("alignment","Expecting byte alignment end");
