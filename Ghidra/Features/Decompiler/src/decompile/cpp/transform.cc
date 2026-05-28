@@ -370,8 +370,9 @@ void TransformManager::clearVarnodeMarks(void)
 TransformVar *TransformManager::newPreexistingVarnode(Varnode *vn)
 
 {
-  TransformVar *res = new TransformVar[1];
-  pieceMap[vn->getCreateIndex()] = res;	// Enter preexisting Varnode into map, so we don't make another placeholder
+  auto owned = make_unique<TransformVar[]>(1);
+  TransformVar *res = owned.get();
+  pieceMap[vn->getCreateIndex()] = owned.release();	// Enter preexisting Varnode into map, so we don't make another placeholder
 
   // value of 0 treats this as "piece" of itself at offset 0, allows getPiece() to find it
   res->initialize(TransformVar::preexisting,vn,vn->getSize()*8,vn->getSize(),0);
@@ -426,8 +427,9 @@ TransformVar *TransformManager::newIop(Varnode *vn)
 TransformVar *TransformManager::newPiece(Varnode *vn,int4 bitSize,int4 lsbOffset)
 
 {
-  TransformVar *res = new TransformVar[1];
-  pieceMap[vn->getCreateIndex()] = res;
+  auto owned = make_unique<TransformVar[]>(1);
+  TransformVar *res = owned.get();
+  pieceMap[vn->getCreateIndex()] = owned.release();
   int4 byteSize = (bitSize + 7) / 8;
   uint4 type = preserveAddress(vn, bitSize, lsbOffset) ? TransformVar::piece : TransformVar::piece_temp;
   res->initialize(type, vn, bitSize, byteSize, lsbOffset);
@@ -446,8 +448,9 @@ TransformVar *TransformManager::newSplit(Varnode *vn,const LaneDescription &desc
 
 {
   int4 num = description.getNumLanes();
-  TransformVar *res = new TransformVar[num];
-  pieceMap[vn->getCreateIndex()] = res;
+  auto owned = make_unique<TransformVar[]>(num);
+  TransformVar *res = owned.get();
+  pieceMap[vn->getCreateIndex()] = owned.release();
   for(int4 i=0;i<num;++i) {
     int4 bitpos = description.getPosition(i) * 8;
     TransformVar *newVar = &res[i];
@@ -481,8 +484,9 @@ TransformVar *TransformManager::newSplit(Varnode *vn,const LaneDescription &desc
 TransformVar *TransformManager::newSplit(Varnode *vn,const LaneDescription &description,int4 numLanes,int4 startLane)
 
 {
-  TransformVar *res = new TransformVar[numLanes];
-  pieceMap[vn->getCreateIndex()] = res;
+  auto owned = make_unique<TransformVar[]>(numLanes);
+  TransformVar *res = owned.get();
+  pieceMap[vn->getCreateIndex()] = owned.release();
   int4 baseBitPos = description.getPosition(startLane) * 8;
   for(int4 i=0;i<numLanes;++i) {
     int4 bitpos = description.getPosition(startLane + i) * 8 - baseBitPos;
