@@ -8,9 +8,18 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.11 (Sprint 11 close). Tracked per-PR in
+Work toward v26.1.13. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.1.12] — 2026-05-28
+
+Build-break recovery release closing out the PR #98 fallout.
+Bundles the four hotfixes (#127, #129, #130, #259) that re-greened
+master after the Rec 31 `ParserContext::context` migration broke the
+header-include chain.
 
 ### 2026-05-27 — local pre-push precheck for decompiler C++
 
