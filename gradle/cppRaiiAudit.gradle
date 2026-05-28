@@ -329,6 +329,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/typegrp_ghidra.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/unionresolve.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/unionresolve.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/unify.cc': [],
 ]
 
 task cppRaiiAudit {
