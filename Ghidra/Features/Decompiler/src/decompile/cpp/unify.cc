@@ -259,7 +259,7 @@ RHSConstant *ConstantExpression::clone(void)
   RHSConstant *ecopy2 = (RHSConstant *)0;
   if (expr2 != (RHSConstant *)0)
     ecopy2 = expr2->clone();
-  return new ConstantExpression(ecopy1,ecopy2,opc);
+  return make_unique<ConstantExpression>(ecopy1,ecopy2,opc).release();
 }
 
 uintb ConstantExpression::getConstant(UnifyState &state) const
@@ -386,7 +386,7 @@ void UnifyConstraint::buildTraverseState(UnifyState &state)
 {				// Build the default boolean traversal state
   if (uniqid != state.numTraverse())
     throw LowlevelError("Traverse id does not match index");
-  TraverseConstraint *newt = new TraverseCountState(uniqid);
+  TraverseConstraint *newt = make_unique<TraverseCountState>(uniqid).release();
   state.registerTraverseConstraint(newt);
 }
 
@@ -430,7 +430,7 @@ UnifyConstraint *ConstraintVarConst::clone(void) const
   RHSConstant *newexprsz = (RHSConstant *)0;
   if (exprsz != (RHSConstant *)0)
     newexprsz = exprsz->clone();
-  res = (new ConstraintVarConst(varindex,expr->clone(),newexprsz))->copyid(this);
+  res = make_unique<ConstraintVarConst>(varindex,expr->clone(),newexprsz).release()->copyid(this);
   return res;
 }
 
@@ -827,7 +827,7 @@ void ConstraintDescend::buildTraverseState(UnifyState &state)
 {
   if (uniqid != state.numTraverse())
     throw LowlevelError("Traverse id does not match index");
-  TraverseConstraint *newt = new TraverseDescendState(uniqid);
+  TraverseConstraint *newt = make_unique<TraverseDescendState>(uniqid).release();
   state.registerTraverseConstraint(newt);
 }
 
@@ -1016,7 +1016,7 @@ void ConstraintGroup::mergeIn(ConstraintGroup *b)
 UnifyConstraint *ConstraintGroup::clone(void) const
 
 {
-  ConstraintGroup *res = new ConstraintGroup();
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
   for(int4 i=0;i<constraintlist.size();++i) {
     UnifyConstraint *subconst = constraintlist[i]->clone();
     res->constraintlist.push_back(subconst);
@@ -1094,7 +1094,7 @@ void ConstraintGroup::buildTraverseState(UnifyState &state)
 {
   if (uniqid != state.numTraverse())
     throw LowlevelError("Traverse id does not match index");
-  TraverseGroupState *basetrav = new TraverseGroupState(uniqid);
+  TraverseGroupState *basetrav = make_unique<TraverseGroupState>(uniqid).release();
   state.registerTraverseConstraint(basetrav);
 
   for(int4 i=0;i<constraintlist.size();++i) {
@@ -1141,7 +1141,7 @@ void ConstraintGroup::removeDummy(void)
 UnifyConstraint *ConstraintOr::clone(void) const
 
 {
-  ConstraintOr *res = new ConstraintOr();
+  ConstraintOr *res = make_unique<ConstraintOr>().release();
   for(int4 i=0;i<constraintlist.size();++i) {
     UnifyConstraint *subconst = constraintlist[i]->clone();
     res->constraintlist.push_back(subconst);
@@ -1186,7 +1186,7 @@ void ConstraintOr::buildTraverseState(UnifyState &state)
 {
   if (uniqid != state.numTraverse())
     throw LowlevelError("Traverse id does not match index in or");
-  TraverseCountState *trav = new TraverseCountState(uniqid);
+  TraverseCountState *trav = make_unique<TraverseCountState>(uniqid).release();
   state.registerTraverseConstraint(trav);
 
   for(int4 i=0;i<constraintlist.size();++i) {
@@ -1363,7 +1363,7 @@ UnifyConstraint *ConstraintSetInputConstVal::clone(void) const
   if (exprsz != (RHSConstant *)0)
     newexprsz = exprsz->clone();
   UnifyConstraint *res;
-  res = (new ConstraintSetInputConstVal(opindex,slot->clone(),val->clone(),newexprsz))->copyid(this);
+  res = make_unique<ConstraintSetInputConstVal>(opindex,slot->clone(),val->clone(),newexprsz).release()->copyid(this);
   return res;
 }
 
