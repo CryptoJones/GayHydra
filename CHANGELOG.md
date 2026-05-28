@@ -12,6 +12,10 @@ Work toward v26.1.16. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Precheck SLEIGH-compile leg (closes the v26.1.15 disclosed blind spot)
+
+- **`scripts/local-precheck.sh --full` now also runs `gradle :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp`.** Closes the blind spot disclosed in [PR #164](https://github.com/CryptoJones/GayHydra/pull/164): the `cpp/Makefile`'s `decomp_test_dbg` target does not include `slgh_compile.cc` (or `pcodecompile.cc`, `rulecompile.cc`, several other SLEIGH-compiler entry points), which is why PR #156 shipped with `--full` green but broke `release.yml` on the gradle SLEIGH-compile path. New leg runs after unittests + datatests in `--full` mode (Linux only — task name is per-OS). Verified by tampering: reverted `~EquationAnd` to `protected:` and confirmed the new leg fails with the exact CI error (`error: 'virtual ghidra::EquationAnd::~EquationAnd()' is protected`), then restored. DevGuide.md "Local pre-push precheck" section updated to enumerate the three `--full` legs. Also moves the `gradle_cmd` detection out of the .sla-missing conditional so the new leg has the variable in scope even when `.sla` files are already cached.
+
 ---
 
 ## [v26.1.15] — 2026-05-28
