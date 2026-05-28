@@ -292,6 +292,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_arch.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_context.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_context.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_process.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/ghidra_process.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/grammar.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/graph.cc': [],
