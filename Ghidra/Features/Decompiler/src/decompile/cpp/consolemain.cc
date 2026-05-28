@@ -208,14 +208,14 @@ int main(int argc,char **argv)
 
   int4 retval = 2;
   try {
-    unique_ptr<IfaceStatus> status(new IfaceTerm("[decomp]> ",cin,cout)); // Set up interface
+    auto status = make_unique<IfaceTerm>("[decomp]> ",cin,cout); // Set up interface
     IfaceCapability::registerAllCommands(status.get());	// Register commands for decompiler and all modules
 
     // Extra commands specific to the console application
-    status->registerCom(new IfcLoadFile(),"load","file");
-    status->registerCom(new IfcAddpath(),"addpath");
-    status->registerCom(new IfcSave(),"save");
-    status->registerCom(new IfcRestore(),"restore");
+    status->registerCom(make_unique<IfcLoadFile>().release(),"load","file");
+    status->registerCom(make_unique<IfcAddpath>().release(),"addpath");
+    status->registerCom(make_unique<IfcSave>().release(),"save");
+    status->registerCom(make_unique<IfcRestore>().release(),"restore");
 
     if (initscript != (const char *)0) {
       try {

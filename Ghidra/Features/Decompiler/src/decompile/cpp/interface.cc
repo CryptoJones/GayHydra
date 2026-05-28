@@ -97,11 +97,11 @@ bool RemoteSocket::open(const string &filename)
   }
 
   fdopen(fileDescriptor, "r");
-  inbuf = new __gnu_cxx::stdio_filebuf<char>(fileDescriptor,ios::in);
+  inbuf = make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::in).release();
   fdopen(fileDescriptor, "w");
-  outbuf = new __gnu_cxx::stdio_filebuf<char>(fileDescriptor,ios::out);
-  inStream = new istream(inbuf);
-  outStream = new ostream(outbuf);
+  outbuf = make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::out).release();
+  inStream = make_unique<istream>(inbuf).release();
+  outStream = make_unique<ostream>(outbuf).release();
   isOpen = true;
   return true;
 }
@@ -144,12 +144,11 @@ IfaceStatus::IfaceStatus(const string &prmpt,ostream &os,int4 mxhist)
 void IfaceStatus::pushScript(const string &filename,const string &newprompt)
 
 {
-  ifstream *s = new ifstream(filename.c_str());
-  if (!*s) {
-    delete s;
-    throw IfaceParseError("Unable to open script file: "+filename);
+  auto owned = make_unique<ifstream>(filename.c_str());
+  if (!*owned) {
+    throw IfaceParseError("Unable to open script file: "+filename);  // unique_ptr auto-destroys
   }
-  pushScript(s,newprompt);
+  pushScript(owned.release(),newprompt);
 }
 
 /// \brief Provide a new input stream to execute, with an associated command prompt
