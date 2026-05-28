@@ -8,9 +8,27 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.15. Tracked per-PR in
+Work toward v26.1.16. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.1.15] — 2026-05-28
+
+Hotfix release. v26.1.13 and v26.1.14 `release.yml` runs both
+failed on `compileSleighLinux_x86_64ExecutableSleighCpp` with
+`'virtual ghidra::EquationAnd::~EquationAnd()' is protected`
+(triggered by PR #156's `make_unique<EquationAnd>(...)` at
+`slgh_compile.cc:159`). v26.1.15 includes
+[PR #164](https://github.com/CryptoJones/GayHydra/pull/164)
+making the three `Equation*` dtors public, plus the DD-0004
+docs entry that landed between v26.1.14 and this release.
+
+The v26.1.13 and v26.1.14 GH Release entries do **not** exist
+(the workflow that creates them never completed). v26.1.15 is
+the first release after v26.1.12 to actually ship signed
+binaries.
 
 ### 2026-05-28 — Rec 31 build-break hotfix (v26.1.13 + v26.1.14 release-pipeline recovery)
 
