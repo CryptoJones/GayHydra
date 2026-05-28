@@ -26,86 +26,86 @@ void TypeOp::registerInstructions(vector<TypeOp *> &inst,TypeFactory *tlst,
 {
   inst.insert(inst.end(),CPUI_MAX,(TypeOp *)0);
 
-  inst[CPUI_COPY] = new TypeOpCopy(tlst);
-  inst[CPUI_LOAD] = new TypeOpLoad(tlst);
-  inst[CPUI_STORE] = new TypeOpStore(tlst);
-  inst[CPUI_BRANCH] = new TypeOpBranch(tlst);
-  inst[CPUI_CBRANCH] = new TypeOpCbranch(tlst);
-  inst[CPUI_BRANCHIND] = new TypeOpBranchind(tlst);
-  inst[CPUI_CALL] = new TypeOpCall(tlst);
-  inst[CPUI_CALLIND] = new TypeOpCallind(tlst);
-  inst[CPUI_CALLOTHER] = new TypeOpCallother(tlst);
-  inst[CPUI_RETURN] = new TypeOpReturn(tlst);
+  inst[CPUI_COPY] = make_unique<TypeOpCopy>(tlst).release();
+  inst[CPUI_LOAD] = make_unique<TypeOpLoad>(tlst).release();
+  inst[CPUI_STORE] = make_unique<TypeOpStore>(tlst).release();
+  inst[CPUI_BRANCH] = make_unique<TypeOpBranch>(tlst).release();
+  inst[CPUI_CBRANCH] = make_unique<TypeOpCbranch>(tlst).release();
+  inst[CPUI_BRANCHIND] = make_unique<TypeOpBranchind>(tlst).release();
+  inst[CPUI_CALL] = make_unique<TypeOpCall>(tlst).release();
+  inst[CPUI_CALLIND] = make_unique<TypeOpCallind>(tlst).release();
+  inst[CPUI_CALLOTHER] = make_unique<TypeOpCallother>(tlst).release();
+  inst[CPUI_RETURN] = make_unique<TypeOpReturn>(tlst).release();
 
-  inst[CPUI_MULTIEQUAL] = new TypeOpMulti(tlst);
-  inst[CPUI_INDIRECT] = new TypeOpIndirect(tlst);
+  inst[CPUI_MULTIEQUAL] = make_unique<TypeOpMulti>(tlst).release();
+  inst[CPUI_INDIRECT] = make_unique<TypeOpIndirect>(tlst).release();
 
-  inst[CPUI_PIECE] = new TypeOpPiece(tlst);
-  inst[CPUI_SUBPIECE] = new TypeOpSubpiece(tlst);
-  inst[CPUI_INT_EQUAL] = new TypeOpEqual(tlst);
-  inst[CPUI_INT_NOTEQUAL] = new TypeOpNotEqual(tlst);
-  inst[CPUI_INT_SLESS] = new TypeOpIntSless(tlst);
-  inst[CPUI_INT_SLESSEQUAL] = new TypeOpIntSlessEqual(tlst);
-  inst[CPUI_INT_LESS] = new TypeOpIntLess(tlst);
-  inst[CPUI_INT_LESSEQUAL] = new TypeOpIntLessEqual(tlst);
-  inst[CPUI_INT_ZEXT] = new TypeOpIntZext(tlst);
-  inst[CPUI_INT_SEXT] = new TypeOpIntSext(tlst);
-  inst[CPUI_INT_ADD] = new TypeOpIntAdd(tlst);
-  inst[CPUI_INT_SUB] = new TypeOpIntSub(tlst);
-  inst[CPUI_INT_CARRY] = new TypeOpIntCarry(tlst);
-  inst[CPUI_INT_SCARRY] = new TypeOpIntScarry(tlst);
-  inst[CPUI_INT_SBORROW] = new TypeOpIntSborrow(tlst);
-  inst[CPUI_INT_2COMP] = new TypeOpInt2Comp(tlst);
-  inst[CPUI_INT_NEGATE] = new TypeOpIntNegate(tlst);
-  inst[CPUI_INT_XOR] = new TypeOpIntXor(tlst);
-  inst[CPUI_INT_AND] = new TypeOpIntAnd(tlst);
-  inst[CPUI_INT_OR] = new TypeOpIntOr(tlst);
-  inst[CPUI_INT_LEFT] = new TypeOpIntLeft(tlst);
-  inst[CPUI_INT_RIGHT] = new TypeOpIntRight(tlst);
-  inst[CPUI_INT_SRIGHT] = new TypeOpIntSright(tlst);
-  inst[CPUI_INT_MULT] = new TypeOpIntMult(tlst);
-  inst[CPUI_INT_DIV] = new TypeOpIntDiv(tlst);
-  inst[CPUI_INT_SDIV] = new TypeOpIntSdiv(tlst);
-  inst[CPUI_INT_REM] = new TypeOpIntRem(tlst);
-  inst[CPUI_INT_SREM] = new TypeOpIntSrem(tlst);
+  inst[CPUI_PIECE] = make_unique<TypeOpPiece>(tlst).release();
+  inst[CPUI_SUBPIECE] = make_unique<TypeOpSubpiece>(tlst).release();
+  inst[CPUI_INT_EQUAL] = make_unique<TypeOpEqual>(tlst).release();
+  inst[CPUI_INT_NOTEQUAL] = make_unique<TypeOpNotEqual>(tlst).release();
+  inst[CPUI_INT_SLESS] = make_unique<TypeOpIntSless>(tlst).release();
+  inst[CPUI_INT_SLESSEQUAL] = make_unique<TypeOpIntSlessEqual>(tlst).release();
+  inst[CPUI_INT_LESS] = make_unique<TypeOpIntLess>(tlst).release();
+  inst[CPUI_INT_LESSEQUAL] = make_unique<TypeOpIntLessEqual>(tlst).release();
+  inst[CPUI_INT_ZEXT] = make_unique<TypeOpIntZext>(tlst).release();
+  inst[CPUI_INT_SEXT] = make_unique<TypeOpIntSext>(tlst).release();
+  inst[CPUI_INT_ADD] = make_unique<TypeOpIntAdd>(tlst).release();
+  inst[CPUI_INT_SUB] = make_unique<TypeOpIntSub>(tlst).release();
+  inst[CPUI_INT_CARRY] = make_unique<TypeOpIntCarry>(tlst).release();
+  inst[CPUI_INT_SCARRY] = make_unique<TypeOpIntScarry>(tlst).release();
+  inst[CPUI_INT_SBORROW] = make_unique<TypeOpIntSborrow>(tlst).release();
+  inst[CPUI_INT_2COMP] = make_unique<TypeOpInt2Comp>(tlst).release();
+  inst[CPUI_INT_NEGATE] = make_unique<TypeOpIntNegate>(tlst).release();
+  inst[CPUI_INT_XOR] = make_unique<TypeOpIntXor>(tlst).release();
+  inst[CPUI_INT_AND] = make_unique<TypeOpIntAnd>(tlst).release();
+  inst[CPUI_INT_OR] = make_unique<TypeOpIntOr>(tlst).release();
+  inst[CPUI_INT_LEFT] = make_unique<TypeOpIntLeft>(tlst).release();
+  inst[CPUI_INT_RIGHT] = make_unique<TypeOpIntRight>(tlst).release();
+  inst[CPUI_INT_SRIGHT] = make_unique<TypeOpIntSright>(tlst).release();
+  inst[CPUI_INT_MULT] = make_unique<TypeOpIntMult>(tlst).release();
+  inst[CPUI_INT_DIV] = make_unique<TypeOpIntDiv>(tlst).release();
+  inst[CPUI_INT_SDIV] = make_unique<TypeOpIntSdiv>(tlst).release();
+  inst[CPUI_INT_REM] = make_unique<TypeOpIntRem>(tlst).release();
+  inst[CPUI_INT_SREM] = make_unique<TypeOpIntSrem>(tlst).release();
 
-  inst[CPUI_BOOL_NEGATE] = new TypeOpBoolNegate(tlst);
-  inst[CPUI_BOOL_XOR] = new TypeOpBoolXor(tlst);
-  inst[CPUI_BOOL_AND] = new TypeOpBoolAnd(tlst);
-  inst[CPUI_BOOL_OR] = new TypeOpBoolOr(tlst);
+  inst[CPUI_BOOL_NEGATE] = make_unique<TypeOpBoolNegate>(tlst).release();
+  inst[CPUI_BOOL_XOR] = make_unique<TypeOpBoolXor>(tlst).release();
+  inst[CPUI_BOOL_AND] = make_unique<TypeOpBoolAnd>(tlst).release();
+  inst[CPUI_BOOL_OR] = make_unique<TypeOpBoolOr>(tlst).release();
 
-  inst[CPUI_CAST] = new TypeOpCast(tlst);
-  inst[CPUI_PTRADD] = new TypeOpPtradd(tlst);
-  inst[CPUI_PTRSUB] = new TypeOpPtrsub(tlst);
+  inst[CPUI_CAST] = make_unique<TypeOpCast>(tlst).release();
+  inst[CPUI_PTRADD] = make_unique<TypeOpPtradd>(tlst).release();
+  inst[CPUI_PTRSUB] = make_unique<TypeOpPtrsub>(tlst).release();
 
-  inst[CPUI_FLOAT_EQUAL] = new TypeOpFloatEqual(tlst,trans);
-  inst[CPUI_FLOAT_NOTEQUAL] = new TypeOpFloatNotEqual(tlst,trans);
-  inst[CPUI_FLOAT_LESS] = new TypeOpFloatLess(tlst,trans);
-  inst[CPUI_FLOAT_LESSEQUAL] = new TypeOpFloatLessEqual(tlst,trans);
-  inst[CPUI_FLOAT_NAN] = new TypeOpFloatNan(tlst,trans);
+  inst[CPUI_FLOAT_EQUAL] = make_unique<TypeOpFloatEqual>(tlst,trans).release();
+  inst[CPUI_FLOAT_NOTEQUAL] = make_unique<TypeOpFloatNotEqual>(tlst,trans).release();
+  inst[CPUI_FLOAT_LESS] = make_unique<TypeOpFloatLess>(tlst,trans).release();
+  inst[CPUI_FLOAT_LESSEQUAL] = make_unique<TypeOpFloatLessEqual>(tlst,trans).release();
+  inst[CPUI_FLOAT_NAN] = make_unique<TypeOpFloatNan>(tlst,trans).release();
 
-  inst[CPUI_FLOAT_ADD] = new TypeOpFloatAdd(tlst,trans);
-  inst[CPUI_FLOAT_DIV] = new TypeOpFloatDiv(tlst,trans);
-  inst[CPUI_FLOAT_MULT] = new TypeOpFloatMult(tlst,trans);
-  inst[CPUI_FLOAT_SUB] = new TypeOpFloatSub(tlst,trans);
-  inst[CPUI_FLOAT_NEG] = new TypeOpFloatNeg(tlst,trans);
-  inst[CPUI_FLOAT_ABS] = new TypeOpFloatAbs(tlst,trans);
-  inst[CPUI_FLOAT_SQRT] = new TypeOpFloatSqrt(tlst,trans);
+  inst[CPUI_FLOAT_ADD] = make_unique<TypeOpFloatAdd>(tlst,trans).release();
+  inst[CPUI_FLOAT_DIV] = make_unique<TypeOpFloatDiv>(tlst,trans).release();
+  inst[CPUI_FLOAT_MULT] = make_unique<TypeOpFloatMult>(tlst,trans).release();
+  inst[CPUI_FLOAT_SUB] = make_unique<TypeOpFloatSub>(tlst,trans).release();
+  inst[CPUI_FLOAT_NEG] = make_unique<TypeOpFloatNeg>(tlst,trans).release();
+  inst[CPUI_FLOAT_ABS] = make_unique<TypeOpFloatAbs>(tlst,trans).release();
+  inst[CPUI_FLOAT_SQRT] = make_unique<TypeOpFloatSqrt>(tlst,trans).release();
 
-  inst[CPUI_FLOAT_INT2FLOAT] = new TypeOpFloatInt2Float(tlst,trans);
-  inst[CPUI_FLOAT_FLOAT2FLOAT] = new TypeOpFloatFloat2Float(tlst,trans);
-  inst[CPUI_FLOAT_TRUNC] = new TypeOpFloatTrunc(tlst,trans);
-  inst[CPUI_FLOAT_CEIL] = new TypeOpFloatCeil(tlst,trans);
-  inst[CPUI_FLOAT_FLOOR] = new TypeOpFloatFloor(tlst,trans);
-  inst[CPUI_FLOAT_ROUND] = new TypeOpFloatRound(tlst,trans);
-  inst[CPUI_SEGMENTOP] = new TypeOpSegment(tlst);
-  inst[CPUI_CPOOLREF] = new TypeOpCpoolref(tlst);
-  inst[CPUI_NEW] = new TypeOpNew(tlst);
-  inst[CPUI_INSERT] = new TypeOpInsert(tlst);
-  inst[CPUI_ZPULL] = new TypeOpZpull(tlst);
-  inst[CPUI_POPCOUNT] = new TypeOpPopcount(tlst);
-  inst[CPUI_LZCOUNT] = new TypeOpLzcount(tlst);
-  inst[CPUI_SPULL] = new TypeOpSpull(tlst);
+  inst[CPUI_FLOAT_INT2FLOAT] = make_unique<TypeOpFloatInt2Float>(tlst,trans).release();
+  inst[CPUI_FLOAT_FLOAT2FLOAT] = make_unique<TypeOpFloatFloat2Float>(tlst,trans).release();
+  inst[CPUI_FLOAT_TRUNC] = make_unique<TypeOpFloatTrunc>(tlst,trans).release();
+  inst[CPUI_FLOAT_CEIL] = make_unique<TypeOpFloatCeil>(tlst,trans).release();
+  inst[CPUI_FLOAT_FLOOR] = make_unique<TypeOpFloatFloor>(tlst,trans).release();
+  inst[CPUI_FLOAT_ROUND] = make_unique<TypeOpFloatRound>(tlst,trans).release();
+  inst[CPUI_SEGMENTOP] = make_unique<TypeOpSegment>(tlst).release();
+  inst[CPUI_CPOOLREF] = make_unique<TypeOpCpoolref>(tlst).release();
+  inst[CPUI_NEW] = make_unique<TypeOpNew>(tlst).release();
+  inst[CPUI_INSERT] = make_unique<TypeOpInsert>(tlst).release();
+  inst[CPUI_ZPULL] = make_unique<TypeOpZpull>(tlst).release();
+  inst[CPUI_POPCOUNT] = make_unique<TypeOpPopcount>(tlst).release();
+  inst[CPUI_LZCOUNT] = make_unique<TypeOpLzcount>(tlst).release();
+  inst[CPUI_SPULL] = make_unique<TypeOpSpull>(tlst).release();
 }
 
 /// Change basic data-type info (signed vs unsigned) and operator names ( '>>' vs '>>>' )
@@ -392,7 +392,7 @@ TypeOpCopy::TypeOpCopy(TypeFactory *t) : TypeOp(t,CPUI_COPY,"copy")
 
 {
   opflags = PcodeOp::unary | PcodeOp::nocollapse;
-  behave = new OpBehaviorCopy();
+  behave = make_unique<OpBehaviorCopy>().release();
 }
 
 Datatype *TypeOpCopy::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -435,7 +435,7 @@ TypeOpLoad::TypeOpLoad(TypeFactory *t) : TypeOp(t,CPUI_LOAD,"load")
 
 {
   opflags = PcodeOp::special | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_LOAD,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_LOAD,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpLoad::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -515,7 +515,7 @@ TypeOpStore::TypeOpStore(TypeFactory *t) : TypeOp(t,CPUI_STORE,"store")
 
 {
   opflags = PcodeOp::special | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_STORE,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_STORE,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpStore::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -586,7 +586,7 @@ TypeOpBranch::TypeOpBranch(TypeFactory *t) : TypeOp(t,CPUI_BRANCH,"goto")
 
 {
   opflags = (PcodeOp::special|PcodeOp::branch|PcodeOp::coderef|PcodeOp::nocollapse);
-  behave = new OpBehavior(CPUI_BRANCH,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_BRANCH,false,true).release(); // Dummy behavior
 }
 
 void TypeOpBranch::printRaw(ostream &s,const PcodeOp *op)
@@ -605,7 +605,7 @@ TypeOpCbranch::TypeOpCbranch(TypeFactory *t) : TypeOp(t,CPUI_CBRANCH,"goto")
 
 {
   opflags = (PcodeOp::special|PcodeOp::branch|PcodeOp::coderef|PcodeOp::nocollapse);
-  behave = new OpBehavior(CPUI_CBRANCH,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CBRANCH,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpCbranch::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -649,7 +649,7 @@ TypeOpBranchind::TypeOpBranchind(TypeFactory *t) : TypeOp(t,CPUI_BRANCHIND,"swit
 
 {
   opflags = PcodeOp::special|PcodeOp::branch|PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_BRANCHIND,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_BRANCHIND,false,true).release(); // Dummy behavior
 }
 
 void TypeOpBranchind::printRaw(ostream &s,const PcodeOp *op)
@@ -663,7 +663,7 @@ TypeOpCall::TypeOpCall(TypeFactory *t) : TypeOp(t,CPUI_CALL,"call")
 
 {
   opflags = (PcodeOp::special|PcodeOp::call|PcodeOp::has_callspec|PcodeOp::coderef|PcodeOp::nocollapse);
-  behave = new OpBehavior(CPUI_CALL,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CALL,false,true).release(); // Dummy behavior
 }
 
 void TypeOpCall::printRaw(ostream &s,const PcodeOp *op)
@@ -741,7 +741,7 @@ TypeOpCallind::TypeOpCallind(TypeFactory *t) : TypeOp(t,CPUI_CALLIND,"callind")
 
 {
   opflags = PcodeOp::special|PcodeOp::call|PcodeOp::has_callspec|PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_CALLIND,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CALLIND,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpCallind::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -814,7 +814,7 @@ TypeOpCallother::TypeOpCallother(TypeFactory *t) : TypeOp(t,CPUI_CALLOTHER,"sysc
 
 {
   opflags = PcodeOp::special|PcodeOp::call|PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_CALLOTHER,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CALLOTHER,false,true).release(); // Dummy behavior
 }
 
 void TypeOpCallother::printRaw(ostream &s,const PcodeOp *op)
@@ -878,7 +878,7 @@ TypeOpReturn::TypeOpReturn(TypeFactory *t) : TypeOp(t,CPUI_RETURN,"return")
 
 {
   opflags = PcodeOp::special|PcodeOp::returns|PcodeOp::nocollapse|PcodeOp::return_copy;
-  behave = new OpBehavior(CPUI_RETURN,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_RETURN,false,true).release(); // Dummy behavior
 }
 
 void TypeOpReturn::printRaw(ostream &s,const PcodeOp *op)
@@ -928,7 +928,7 @@ TypeOpEqual::TypeOpEqual(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput | PcodeOp::commutative;
   addlflags = inherits_sign;
-  behave = new OpBehaviorEqual();
+  behave = make_unique<OpBehaviorEqual>().release();
 }
 
 Datatype *TypeOpEqual::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -992,7 +992,7 @@ TypeOpNotEqual::TypeOpNotEqual(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput | PcodeOp::commutative;
   addlflags = inherits_sign;
-  behave = new OpBehaviorNotEqual();
+  behave = make_unique<OpBehaviorNotEqual>().release();
 }
 
 Datatype *TypeOpNotEqual::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1019,7 +1019,7 @@ TypeOpIntSless::TypeOpIntSless(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = inherits_sign;
-  behave = new OpBehaviorIntSless();
+  behave = make_unique<OpBehaviorIntSless>().release();
 }
 
 void TypeOpIntSless::printRaw(ostream &s,const PcodeOp *op)
@@ -1055,7 +1055,7 @@ TypeOpIntSlessEqual::TypeOpIntSlessEqual(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = inherits_sign;
-  behave = new OpBehaviorIntSlessEqual();
+  behave = make_unique<OpBehaviorIntSlessEqual>().release();
 }
 
 void TypeOpIntSlessEqual::printRaw(ostream &s,const PcodeOp *op)
@@ -1091,7 +1091,7 @@ TypeOpIntLess::TypeOpIntLess(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = inherits_sign;
-  behave = new OpBehaviorIntLess();
+  behave = make_unique<OpBehaviorIntLess>().release();
 }
 
 Datatype *TypeOpIntLess::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1115,7 +1115,7 @@ TypeOpIntLessEqual::TypeOpIntLessEqual(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = inherits_sign;
-  behave = new OpBehaviorIntLessEqual();
+  behave = make_unique<OpBehaviorIntLessEqual>().release();
 }
 
 Datatype *TypeOpIntLessEqual::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1138,7 +1138,7 @@ TypeOpIntZext::TypeOpIntZext(TypeFactory *t)
   : TypeOpFunc(t,CPUI_INT_ZEXT,"ZEXT",TYPE_UINT,TYPE_UINT)
 {
   opflags = PcodeOp::unary;
-  behave = new OpBehaviorIntZext();
+  behave = make_unique<OpBehaviorIntZext>().release();
 }
 
 string TypeOpIntZext::getOperatorName(const PcodeOp *op) const
@@ -1164,7 +1164,7 @@ TypeOpIntSext::TypeOpIntSext(TypeFactory *t)
   : TypeOpFunc(t,CPUI_INT_SEXT,"SEXT",TYPE_INT,TYPE_INT)
 {
   opflags = PcodeOp::unary;
-  behave = new OpBehaviorIntSext();
+  behave = make_unique<OpBehaviorIntSext>().release();
 }
 
 string TypeOpIntSext::getOperatorName(const PcodeOp *op) const
@@ -1191,7 +1191,7 @@ TypeOpIntAdd::TypeOpIntAdd(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorIntAdd();
+  behave = make_unique<OpBehaviorIntAdd>().release();
 }
 
 Datatype *TypeOpIntAdd::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1342,7 +1342,7 @@ TypeOpIntSub::TypeOpIntSub(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorIntSub();
+  behave = make_unique<OpBehaviorIntSub>().release();
 }
 
 Datatype *TypeOpIntSub::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1356,7 +1356,7 @@ TypeOpIntCarry::TypeOpIntCarry(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative | PcodeOp::booloutput;
   addlflags = arithmetic_op;
-  behave = new OpBehaviorIntCarry();
+  behave = make_unique<OpBehaviorIntCarry>().release();
 }
 
 string TypeOpIntCarry::getOperatorName(const PcodeOp *op) const
@@ -1372,7 +1372,7 @@ TypeOpIntScarry::TypeOpIntScarry(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative | PcodeOp::booloutput;
   addlflags = arithmetic_op;
-  behave = new OpBehaviorIntScarry();
+  behave = make_unique<OpBehaviorIntScarry>().release();
 }
 
 string TypeOpIntScarry::getOperatorName(const PcodeOp *op) const
@@ -1388,7 +1388,7 @@ TypeOpIntSborrow::TypeOpIntSborrow(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = arithmetic_op;
-  behave = new OpBehaviorIntSborrow();
+  behave = make_unique<OpBehaviorIntSborrow>().release();
 }
 
 string TypeOpIntSborrow::getOperatorName(const PcodeOp *op) const
@@ -1404,7 +1404,7 @@ TypeOpInt2Comp::TypeOpInt2Comp(TypeFactory *t)
 {
   opflags = PcodeOp::unary;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorInt2Comp();
+  behave = make_unique<OpBehaviorInt2Comp>().release();
 }
 
 Datatype *TypeOpInt2Comp::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1418,7 +1418,7 @@ TypeOpIntNegate::TypeOpIntNegate(TypeFactory *t)
 {
   opflags = PcodeOp::unary;
   addlflags = logical_op | inherits_sign;
-  behave = new OpBehaviorIntNegate();
+  behave = make_unique<OpBehaviorIntNegate>().release();
 }
 
 Datatype *TypeOpIntNegate::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1432,7 +1432,7 @@ TypeOpIntXor::TypeOpIntXor(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = logical_op | inherits_sign;
-  behave = new OpBehaviorIntXor();
+  behave = make_unique<OpBehaviorIntXor>().release();
 }
 
 Datatype *TypeOpIntXor::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1465,7 +1465,7 @@ TypeOpIntAnd::TypeOpIntAnd(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = logical_op | inherits_sign;
-  behave = new OpBehaviorIntAnd();
+  behave = make_unique<OpBehaviorIntAnd>().release();
 }
 
 Datatype *TypeOpIntAnd::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1498,7 +1498,7 @@ TypeOpIntOr::TypeOpIntOr(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = logical_op | inherits_sign;
-  behave = new OpBehaviorIntOr();
+  behave = make_unique<OpBehaviorIntOr>().release();
 }
 
 Datatype *TypeOpIntOr::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1526,7 +1526,7 @@ TypeOpIntLeft::TypeOpIntLeft(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = inherits_sign | inherits_sign_zero | shift_op;
-  behave = new OpBehaviorIntLeft();
+  behave = make_unique<OpBehaviorIntLeft>().release();
 }
 
 Datatype *TypeOpIntLeft::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -1551,7 +1551,7 @@ TypeOpIntRight::TypeOpIntRight(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = inherits_sign | inherits_sign_zero | shift_op;
-  behave = new OpBehaviorIntRight();
+  behave = make_unique<OpBehaviorIntRight>().release();
 }
 
 Datatype *TypeOpIntRight::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -1591,7 +1591,7 @@ TypeOpIntSright::TypeOpIntSright(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = inherits_sign | inherits_sign_zero | shift_op;
-  behave = new OpBehaviorIntSright();
+  behave = make_unique<OpBehaviorIntSright>().release();
 }
 
 void TypeOpIntSright::printRaw(ostream &s,const PcodeOp *op)
@@ -1641,7 +1641,7 @@ TypeOpIntMult::TypeOpIntMult(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorIntMult();
+  behave = make_unique<OpBehaviorIntMult>().release();
 }
 
 Datatype *TypeOpIntMult::getOutputToken(const PcodeOp *op,CastStrategy *castStrategy) const
@@ -1655,7 +1655,7 @@ TypeOpIntDiv::TypeOpIntDiv(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorIntDiv();
+  behave = make_unique<OpBehaviorIntDiv>().release();
 }
 
 Datatype *TypeOpIntDiv::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1675,7 +1675,7 @@ TypeOpIntSdiv::TypeOpIntSdiv(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = arithmetic_op | inherits_sign;
-  behave = new OpBehaviorIntSdiv();
+  behave = make_unique<OpBehaviorIntSdiv>().release();
 }
 
 Datatype *TypeOpIntSdiv::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1705,7 +1705,7 @@ TypeOpIntRem::TypeOpIntRem(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = arithmetic_op | inherits_sign | inherits_sign_zero;
-  behave = new OpBehaviorIntRem();
+  behave = make_unique<OpBehaviorIntRem>().release();
 }
 
 Datatype *TypeOpIntRem::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -1725,7 +1725,7 @@ TypeOpIntSrem::TypeOpIntSrem(TypeFactory *t)
 {
   opflags = PcodeOp::binary;
   addlflags = arithmetic_op | inherits_sign | inherits_sign_zero;
-  behave = new OpBehaviorIntSrem();
+  behave = make_unique<OpBehaviorIntSrem>().release();
 }
 
 void TypeOpIntSrem::printRaw(ostream &s,const PcodeOp *op)
@@ -1755,7 +1755,7 @@ TypeOpBoolNegate::TypeOpBoolNegate(TypeFactory *t)
 {
   opflags = PcodeOp::unary | PcodeOp::booloutput;
   addlflags = logical_op;
-  behave = new OpBehaviorBoolNegate();
+  behave = make_unique<OpBehaviorBoolNegate>().release();
 }
 
 TypeOpBoolXor::TypeOpBoolXor(TypeFactory *t)
@@ -1763,7 +1763,7 @@ TypeOpBoolXor::TypeOpBoolXor(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative | PcodeOp::booloutput;
   addlflags = logical_op;
-  behave = new OpBehaviorBoolXor();
+  behave = make_unique<OpBehaviorBoolXor>().release();
 }
 
 TypeOpBoolAnd::TypeOpBoolAnd(TypeFactory *t)
@@ -1771,7 +1771,7 @@ TypeOpBoolAnd::TypeOpBoolAnd(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative | PcodeOp::booloutput;
   addlflags = logical_op;
-  behave = new OpBehaviorBoolAnd();
+  behave = make_unique<OpBehaviorBoolAnd>().release();
 }
 
 TypeOpBoolOr::TypeOpBoolOr(TypeFactory *t)
@@ -1779,7 +1779,7 @@ TypeOpBoolOr::TypeOpBoolOr(TypeFactory *t)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative | PcodeOp::booloutput;
   addlflags = logical_op;
-  behave = new OpBehaviorBoolOr();
+  behave = make_unique<OpBehaviorBoolOr>().release();
 }
 
 TypeOpFloatEqual::TypeOpFloatEqual(TypeFactory *t,const Translate *trans)
@@ -1787,7 +1787,7 @@ TypeOpFloatEqual::TypeOpFloatEqual(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput | PcodeOp::commutative;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatEqual(trans);
+  behave = make_unique<OpBehaviorFloatEqual>(trans).release();
 }
 
 void TypeOpFloatEqual::printRaw(ostream &s,const PcodeOp *op)
@@ -1805,7 +1805,7 @@ TypeOpFloatNotEqual::TypeOpFloatNotEqual(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput | PcodeOp::commutative;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatNotEqual(trans);
+  behave = make_unique<OpBehaviorFloatNotEqual>(trans).release();
 }
 
 void TypeOpFloatNotEqual::printRaw(ostream &s,const PcodeOp *op)
@@ -1823,7 +1823,7 @@ TypeOpFloatLess::TypeOpFloatLess(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatLess(trans);
+  behave = make_unique<OpBehaviorFloatLess>(trans).release();
 }
 
 void TypeOpFloatLess::printRaw(ostream &s,const PcodeOp *op)
@@ -1841,7 +1841,7 @@ TypeOpFloatLessEqual::TypeOpFloatLessEqual(TypeFactory *t,const Translate *trans
 {
   opflags = PcodeOp::binary | PcodeOp::booloutput;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatLessEqual(trans);
+  behave = make_unique<OpBehaviorFloatLessEqual>(trans).release();
 }
 
 void TypeOpFloatLessEqual::printRaw(ostream &s,const PcodeOp *op)
@@ -1859,7 +1859,7 @@ TypeOpFloatNan::TypeOpFloatNan(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary | PcodeOp::booloutput;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatNan(trans);
+  behave = make_unique<OpBehaviorFloatNan>(trans).release();
 }
 
 TypeOpFloatAdd::TypeOpFloatAdd(TypeFactory *t,const Translate *trans)
@@ -1867,7 +1867,7 @@ TypeOpFloatAdd::TypeOpFloatAdd(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatAdd(trans);
+  behave = make_unique<OpBehaviorFloatAdd>(trans).release();
 }
 
 void TypeOpFloatAdd::printRaw(ostream &s,const PcodeOp *op)
@@ -1885,7 +1885,7 @@ TypeOpFloatDiv::TypeOpFloatDiv(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatDiv(trans);
+  behave = make_unique<OpBehaviorFloatDiv>(trans).release();
 }
 
 void TypeOpFloatDiv::printRaw(ostream &s,const PcodeOp *op)
@@ -1903,7 +1903,7 @@ TypeOpFloatMult::TypeOpFloatMult(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary | PcodeOp::commutative;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatMult(trans);
+  behave = make_unique<OpBehaviorFloatMult>(trans).release();
 }
 
 void TypeOpFloatMult::printRaw(ostream &s,const PcodeOp *op)
@@ -1921,7 +1921,7 @@ TypeOpFloatSub::TypeOpFloatSub(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::binary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatSub(trans);
+  behave = make_unique<OpBehaviorFloatSub>(trans).release();
 }
 
 void TypeOpFloatSub::printRaw(ostream &s,const PcodeOp *op)
@@ -1939,7 +1939,7 @@ TypeOpFloatNeg::TypeOpFloatNeg(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatNeg(trans);
+  behave = make_unique<OpBehaviorFloatNeg>(trans).release();
 }
 
 void TypeOpFloatNeg::printRaw(ostream &s,const PcodeOp *op)
@@ -1955,7 +1955,7 @@ TypeOpFloatAbs::TypeOpFloatAbs(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatAbs(trans);
+  behave = make_unique<OpBehaviorFloatAbs>(trans).release();
 }
 
 TypeOpFloatSqrt::TypeOpFloatSqrt(TypeFactory *t,const Translate *trans)
@@ -1963,7 +1963,7 @@ TypeOpFloatSqrt::TypeOpFloatSqrt(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatSqrt(trans);
+  behave = make_unique<OpBehaviorFloatSqrt>(trans).release();
 }
 
 TypeOpFloatInt2Float::TypeOpFloatInt2Float(TypeFactory *t,const Translate *trans)
@@ -1971,7 +1971,7 @@ TypeOpFloatInt2Float::TypeOpFloatInt2Float(TypeFactory *t,const Translate *trans
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatInt2Float(trans);
+  behave = make_unique<OpBehaviorFloatInt2Float>(trans).release();
 }
 
 Datatype *TypeOpFloatInt2Float::getInputCast(const PcodeOp *op,int4 slot,const CastStrategy *castStrategy) const
@@ -2036,7 +2036,7 @@ TypeOpFloatFloat2Float::TypeOpFloatFloat2Float(TypeFactory *t,const Translate *t
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatFloat2Float(trans);
+  behave = make_unique<OpBehaviorFloatFloat2Float>(trans).release();
 }
 
 TypeOpFloatTrunc::TypeOpFloatTrunc(TypeFactory *t,const Translate *trans)
@@ -2044,7 +2044,7 @@ TypeOpFloatTrunc::TypeOpFloatTrunc(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatTrunc(trans);
+  behave = make_unique<OpBehaviorFloatTrunc>(trans).release();
 }
 
 TypeOpFloatCeil::TypeOpFloatCeil(TypeFactory *t,const Translate *trans)
@@ -2052,7 +2052,7 @@ TypeOpFloatCeil::TypeOpFloatCeil(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatCeil(trans);
+  behave = make_unique<OpBehaviorFloatCeil>(trans).release();
 }
 
 TypeOpFloatFloor::TypeOpFloatFloor(TypeFactory *t,const Translate *trans)
@@ -2060,7 +2060,7 @@ TypeOpFloatFloor::TypeOpFloatFloor(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatFloor(trans);
+  behave = make_unique<OpBehaviorFloatFloor>(trans).release();
 }
 
 TypeOpFloatRound::TypeOpFloatRound(TypeFactory *t,const Translate *trans)
@@ -2068,14 +2068,14 @@ TypeOpFloatRound::TypeOpFloatRound(TypeFactory *t,const Translate *trans)
 {
   opflags = PcodeOp::unary;
   addlflags = floatingpoint_op;
-  behave = new OpBehaviorFloatRound(trans);
+  behave = make_unique<OpBehaviorFloatRound>(trans).release();
 }
 
 TypeOpMulti::TypeOpMulti(TypeFactory *t) : TypeOp(t,CPUI_MULTIEQUAL,"?")
 
 {
   opflags = PcodeOp::special | PcodeOp::marker|PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_MULTIEQUAL,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_MULTIEQUAL,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpMulti::propagateType(Datatype *alttype,PcodeOp *op,Varnode *invn,Varnode *outvn,
@@ -2116,7 +2116,7 @@ TypeOpIndirect::TypeOpIndirect(TypeFactory *t) : TypeOp(t,CPUI_INDIRECT,"[]")
 
 {
   opflags = PcodeOp::special | PcodeOp::marker | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_INDIRECT,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_INDIRECT,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpIndirect::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -2168,7 +2168,7 @@ TypeOpPiece::TypeOpPiece(TypeFactory *t)
   : TypeOpFunc(t,CPUI_PIECE,"CONCAT",TYPE_UNKNOWN,TYPE_UNKNOWN)
 {
   opflags = PcodeOp::binary;
-  behave = new OpBehaviorPiece();
+  behave = make_unique<OpBehaviorPiece>().release();
   nearPointerSize = 0;
   farPointerSize = t->getSizeOfAltPointer();
   if (farPointerSize != 0)
@@ -2247,7 +2247,7 @@ TypeOpSubpiece::TypeOpSubpiece(TypeFactory *t)
   : TypeOpFunc(t,CPUI_SUBPIECE,"SUB",TYPE_UNKNOWN,TYPE_UNKNOWN)
 {
   opflags = PcodeOp::binary;
-  behave = new OpBehaviorSubpiece();
+  behave = make_unique<OpBehaviorSubpiece>().release();
   nearPointerSize = 0;
   farPointerSize = t->getSizeOfAltPointer();
   if (farPointerSize != 0)
@@ -2340,7 +2340,7 @@ TypeOpCast::TypeOpCast(TypeFactory *t) : TypeOp(t,CPUI_CAST,"(cast)")
 
 {
   opflags = PcodeOp::unary | PcodeOp::special | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_CAST,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CAST,false,true).release(); // Dummy behavior
 }
 
 void TypeOpCast::printRaw(ostream &s,const PcodeOp *op)
@@ -2356,7 +2356,7 @@ TypeOpPtradd::TypeOpPtradd(TypeFactory *t) : TypeOp(t,CPUI_PTRADD,"+")
 {
   opflags = PcodeOp::ternary | PcodeOp::nocollapse;
   addlflags = arithmetic_op;
-  behave = new OpBehaviorPtradd();
+  behave = make_unique<OpBehaviorPtradd>().release();
 }
 
 Datatype *TypeOpPtradd::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -2432,7 +2432,7 @@ TypeOpPtrsub::TypeOpPtrsub(TypeFactory *t) : TypeOp(t,CPUI_PTRSUB,"->")
 				// allow this to be commutative.
   opflags = PcodeOp::binary|PcodeOp::nocollapse;
   addlflags = arithmetic_op;
-  behave = new OpBehaviorPtrsub();
+  behave = make_unique<OpBehaviorPtrsub>().release();
 }
 
 Datatype *TypeOpPtrsub::getOutputLocal(const PcodeOp *op) const
@@ -2521,7 +2521,7 @@ TypeOpSegment::TypeOpSegment(TypeFactory *t) : TypeOp(t,CPUI_SEGMENTOP,"segmento
 
 {
   opflags = PcodeOp::special | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_SEGMENTOP,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_SEGMENTOP,false,true).release(); // Dummy behavior
 }
 
 void TypeOpSegment::printRaw(ostream &s,const PcodeOp *op)
@@ -2575,7 +2575,7 @@ TypeOpCpoolref::TypeOpCpoolref(TypeFactory *t) : TypeOp(t,CPUI_CPOOLREF,"cpoolre
 {
   cpool = t->getArch()->cpool;
   opflags = PcodeOp::special | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_CPOOLREF,false,true); // Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_CPOOLREF,false,true).release(); // Dummy behavior
 }
 
 Datatype *TypeOpCpoolref::getOutputLocal(const PcodeOp *op) const
@@ -2625,7 +2625,7 @@ TypeOpNew::TypeOpNew(TypeFactory *t) : TypeOp(t,CPUI_NEW,"new")
 
 {
   opflags = PcodeOp::special | PcodeOp::call | PcodeOp::nocollapse;
-  behave = new OpBehavior(CPUI_NEW,false,true);		// Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_NEW,false,true).release();		// Dummy behavior
 }
 
 Datatype *TypeOpNew::propagateType(Datatype *alttype,PcodeOp *op,Varnode *invn,Varnode *outvn,
@@ -2659,7 +2659,7 @@ TypeOpInsert::TypeOpInsert(TypeFactory *t)
   : TypeOpFunc(t,CPUI_INSERT,"INSERT",TYPE_UNKNOWN,TYPE_INT)
 {
   opflags = PcodeOp::ternary;
-  behave = new OpBehavior(CPUI_INSERT,false);	// Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_INSERT,false).release();	// Dummy behavior
 }
 
 Datatype *TypeOpInsert::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -2686,7 +2686,7 @@ TypeOpZpull::TypeOpZpull(TypeFactory *t)
   : TypeOpFunc(t,CPUI_ZPULL,"ZPULL",TYPE_UINT,TYPE_INT)
 {
   opflags = PcodeOp::ternary;
-  behave = new OpBehavior(CPUI_ZPULL,false);	// Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_ZPULL,false).release();	// Dummy behavior
 }
 
 Datatype *TypeOpZpull::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -2713,7 +2713,7 @@ TypeOpSpull::TypeOpSpull(TypeFactory *t)
   : TypeOpFunc(t,CPUI_SPULL,"SPULL",TYPE_INT,TYPE_INT)
 {
   opflags = PcodeOp::ternary;
-  behave = new OpBehavior(CPUI_SPULL,false);	// Dummy behavior
+  behave = make_unique<OpBehavior>(CPUI_SPULL,false).release();	// Dummy behavior
 }
 
 Datatype *TypeOpSpull::getInputLocal(const PcodeOp *op,int4 slot) const
@@ -2740,14 +2740,14 @@ TypeOpPopcount::TypeOpPopcount(TypeFactory *t)
   : TypeOpFunc(t,CPUI_POPCOUNT,"POPCOUNT",TYPE_INT,TYPE_UNKNOWN)
 {
   opflags = PcodeOp::unary;
-  behave = new OpBehaviorPopcount();
+  behave = make_unique<OpBehaviorPopcount>().release();
 }
 
 TypeOpLzcount::TypeOpLzcount(TypeFactory *t)
   : TypeOpFunc(t,CPUI_LZCOUNT,"LZCOUNT",TYPE_INT,TYPE_UNKNOWN)
 {
   opflags = PcodeOp::unary;
-  behave = new OpBehaviorLzcount();
+  behave = make_unique<OpBehaviorLzcount>().release();
 }
 
 } // End namespace ghidra
