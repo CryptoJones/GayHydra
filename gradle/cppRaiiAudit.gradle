@@ -331,6 +331,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleigh_arch.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleigh_arch.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleighexample.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slgh_compile.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/slgh_compile.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/slghparse.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/slghpatexpress.cc': [],

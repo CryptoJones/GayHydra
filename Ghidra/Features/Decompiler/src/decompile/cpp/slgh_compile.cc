@@ -156,7 +156,7 @@ PatternEquation *WithBlock::collectAndPrependPattern(const list<WithBlock> &stac
   for(iter=stack.begin();iter!=stack.end();++iter) {
     PatternEquation *witheq = (*iter).pateq;
     if (witheq != (PatternEquation *)0)
-      pateq = new EquationAnd(witheq, pateq);
+      pateq = make_unique<EquationAnd>(witheq, pateq).release();
   }
   return pateq;
 }
@@ -178,7 +178,7 @@ vector<ContextChange *> *WithBlock::collectAndPrependContext(const list<WithBloc
     const vector<ContextChange *> &changelist( (*iter).contvec );
     if (changelist.size() == 0) continue;
     if (res == (vector<ContextChange *> *)0)
-      res = new vector<ContextChange *>();
+      res = make_unique<vector<ContextChange *>>().release();
     for(int4 i=0;i<changelist.size();++i) {
       res->push_back(changelist[i]->clone());
     }
@@ -186,7 +186,7 @@ vector<ContextChange *> *WithBlock::collectAndPrependContext(const list<WithBloc
   if (contvec != (vector<ContextChange *> *)0) {
     if (contvec->size() != 0) {
       if (res == (vector<ContextChange *> *)0)
-	res = new vector<ContextChange *>();
+	res = make_unique<vector<ContextChange *>>().release();
       for(int4 i=0;i<contvec->size();++i)
 	res->push_back((*contvec)[i]);		// lay claim to contvecs pointer
     }
@@ -1597,14 +1597,14 @@ void ConsistencyChecker::applyOptimization(Constructor *ct,const OptimizeRecord 
   if (rec.opttype == 0) { // If read op is COPY
     int4 readop = rec.readop;
     OpTpl *op = ctempl->getOpvec()[ readop ];
-    VarnodeTpl *vnout = new VarnodeTpl(*op->getOut()); // Make COPY output
+    VarnodeTpl *vnout = make_unique<VarnodeTpl>(*op->getOut()).release(); // Make COPY output
     ctempl->setOutput(vnout,rec.writeop); // become write output
     deleteops.push_back(readop); // and then delete the read (COPY)
   }
   else if (rec.opttype == 1) { // If write op is COPY
     int4 writeop = rec.writeop;
     OpTpl *op = ctempl->getOpvec()[ writeop ];
-    VarnodeTpl *vnin = new VarnodeTpl(*op->getIn(0));	// Make COPY input
+    VarnodeTpl *vnin = make_unique<VarnodeTpl>(*op->getIn(0)).release();	// Make COPY input
     ctempl->setInput(vnin,rec.readop,rec.inslot); // become read input
     deleteops.push_back(writeop); // and then delete the write (COPY)
   }
@@ -1814,7 +1814,7 @@ void MacroBuilder::setMacroOp(OpTpl *macroop)
   free();
   for(int4 i=1;i<macroop->numInput();++i) {
     vn = macroop->getIn(i);
-    hand = new HandleTpl(vn);
+    hand = make_unique<HandleTpl>(vn).release();
     params.push_back(hand);
   }
 }
@@ -1863,20 +1863,20 @@ bool MacroBuilder::transferOp(OpTpl *op,vector<HandleTpl *> &params)
       uintb newtemp = slgh->getUniqueAddr(); // Generate a new temporary location
 
       // Generate a SUBPIECE op that implements the offset_plus
-      OpTpl *subpieceop = new OpTpl(CPUI_SUBPIECE);
-      VarnodeTpl *newvn = new VarnodeTpl(ConstTpl(slgh->getUniqueSpace()),ConstTpl(ConstTpl::real,newtemp),
-					 ConstTpl(ConstTpl::real,realsize));
+      OpTpl *subpieceop = make_unique<OpTpl>(CPUI_SUBPIECE).release();
+      VarnodeTpl *newvn = make_unique<VarnodeTpl>(ConstTpl(slgh->getUniqueSpace()),ConstTpl(ConstTpl::real,newtemp),
+					 ConstTpl(ConstTpl::real,realsize)).release();
       subpieceop->setOutput(newvn);
       HandleTpl *hand = params[handleIndex];
-      VarnodeTpl *origvn = new VarnodeTpl( hand->getSpace(), hand->getPtrOffset(), hand->getSize() );
+      VarnodeTpl *origvn = make_unique<VarnodeTpl>( hand->getSpace(), hand->getPtrOffset(), hand->getSize() ).release();
       subpieceop->addInput(origvn);
-      VarnodeTpl *plusvn = new VarnodeTpl( ConstTpl(slgh->getConstantSpace()), ConstTpl(ConstTpl::real,plus),
-					   ConstTpl(ConstTpl::real, 4) );
+      VarnodeTpl *plusvn = make_unique<VarnodeTpl>( ConstTpl(slgh->getConstantSpace()), ConstTpl(ConstTpl::real,plus),
+					   ConstTpl(ConstTpl::real, 4) ).release();
       subpieceop->addInput(plusvn);
       outvec.push_back(subpieceop);
 
       delete vn;		// Replace original varnode
-      op->setInput(new VarnodeTpl( *newvn ), i); // with output of subpiece
+      op->setInput(make_unique<VarnodeTpl>( *newvn ).release(), i); // with output of subpiece
     }
   }
   outvec.push_back(op);
@@ -1889,15 +1889,15 @@ void MacroBuilder::dump(OpTpl *op)
   OpTpl *clone;
   VarnodeTpl *v_clone,*vn;
   
-  clone = new OpTpl(op->getOpcode());
+  clone = make_unique<OpTpl>(op->getOpcode()).release();
   vn = op->getOut();
   if (vn != (VarnodeTpl *)0) {
-    v_clone = new VarnodeTpl(*vn);
+    v_clone = make_unique<VarnodeTpl>(*vn).release();
     clone->setOutput(v_clone);
   }
   for(int4 i=0;i<op->numInput();++i) {
     vn = op->getIn(i);
-    v_clone = new VarnodeTpl(*vn);
+    v_clone = make_unique<VarnodeTpl>(*vn).release();
     if (v_clone->isRelative()) {
       // Adjust relative index, depending on the labelbase
       uintb val = v_clone->getOffset().getReal() + getLabelBase();
@@ -1918,8 +1918,8 @@ void MacroBuilder::setLabel(OpTpl *op)
   OpTpl *clone;
   VarnodeTpl *v_clone;
 
-  clone = new OpTpl(op->getOpcode());
-  v_clone = new VarnodeTpl( *op->getIn(0) ); // Clone the label index
+  clone = make_unique<OpTpl>(op->getOpcode()).release();
+  v_clone = make_unique<VarnodeTpl>( *op->getIn(0) ).release(); // Clone the label index
   // Make adjustment to macro local value so that it is parent local
   uintb val = v_clone->getOffset().getReal() + getLabelBase();
   v_clone->setOffset(val);
@@ -1985,25 +1985,25 @@ void SleighCompile::predefinedSymbols(void)
   symtab.addScope();		// Create global scope
 
 				// Some predefined symbols
-  root = new SubtableSymbol("instruction"); // Base constructors
+  root = make_unique<SubtableSymbol>("instruction").release(); // Base constructors
   symtab.addSymbol(root);
-  insertSpace(new ConstantSpace(this,this));
-  SpaceSymbol *spacesym = new SpaceSymbol(getConstantSpace()); // Constant space
+  insertSpace(make_unique<ConstantSpace>(this,this).release());
+  SpaceSymbol *spacesym = make_unique<SpaceSymbol>(getConstantSpace()).release(); // Constant space
   symtab.addSymbol(spacesym);
-  OtherSpace *otherSpace = new OtherSpace(this,this,OtherSpace::INDEX);
+  OtherSpace *otherSpace = make_unique<OtherSpace>(this,this,OtherSpace::INDEX).release();
   insertSpace(otherSpace);
-  spacesym = new SpaceSymbol(otherSpace);
+  spacesym = make_unique<SpaceSymbol>(otherSpace).release();
   symtab.addSymbol(spacesym);
-  insertSpace(new UniqueSpace(this,this,numSpaces(),0));
-  spacesym = new SpaceSymbol(getUniqueSpace()); // Temporary register space
+  insertSpace(make_unique<UniqueSpace>(this,this,numSpaces(),0).release());
+  spacesym = make_unique<SpaceSymbol>(getUniqueSpace()).release(); // Temporary register space
   symtab.addSymbol(spacesym);
-  StartSymbol *startsym = new StartSymbol("inst_start",getConstantSpace());
+  StartSymbol *startsym = make_unique<StartSymbol>("inst_start",getConstantSpace()).release();
   symtab.addSymbol(startsym);
-  EndSymbol *endsym = new EndSymbol("inst_next",getConstantSpace());
+  EndSymbol *endsym = make_unique<EndSymbol>("inst_next",getConstantSpace()).release();
   symtab.addSymbol(endsym);
-  Next2Symbol *next2sym = new Next2Symbol("inst_next2",getConstantSpace());
+  Next2Symbol *next2sym = make_unique<Next2Symbol>("inst_next2",getConstantSpace()).release();
   symtab.addSymbol(next2sym);
-  EpsilonSymbol *epsilon = new EpsilonSymbol("epsilon",getConstantSpace());
+  EpsilonSymbol *epsilon = make_unique<EpsilonSymbol>("epsilon",getConstantSpace()).release();
   symtab.addSymbol(epsilon);
   pcode.setConstantSpace(getConstantSpace());
   pcode.setUniqueSpace(getUniqueSpace());
@@ -2070,8 +2070,8 @@ int4 SleighCompile::calcContextVarLayout(int4 start,int4 sz,int4 numbits)
       qual = contexttable[i+start].qual;
       uint4 l = qual->low - min + low;
       uint4 h = numbits-1-(max-qual->high);
-      ContextField *field = new ContextField(qual->signext,l,h);
-      addSymbol(new ContextSymbol(qual->name,field,sym,qual->low,qual->high,qual->flow));
+      ContextField *field = make_unique<ContextField>(qual->signext,l,h).release();
+      addSymbol(make_unique<ContextSymbol>(qual->name,field,sym,qual->low,qual->high,qual->flow).release());
     }
     
   }
@@ -2653,10 +2653,10 @@ TokenSymbol *SleighCompile::defineToken(string *name,uintb *sz,int4 endian)
     isBig = isBigEndian();
   else
     isBig = (endian > 0);
-  Token *newtoken = new Token(*name,size,isBig,tokentable.size());
+  Token *newtoken = make_unique<Token>(*name,size,isBig,tokentable.size()).release();
   tokentable.push_back(newtoken);
   delete name;
-  TokenSymbol *res = new TokenSymbol(newtoken);
+  TokenSymbol *res = make_unique<TokenSymbol>(newtoken).release();
   addSymbol(res);
   return res;
 }
@@ -2678,8 +2678,8 @@ void SleighCompile::addTokenField(TokenSymbol *sym,FieldQuality *qual)
     s << "Field '" << qual->name << "' high must be less than token size";
     reportError(getCurrentLocation(), s.str());
   }
-  TokenField *field = new TokenField(sym->getToken(),qual->signext,qual->low,qual->high);
-  addSymbol(new ValueSymbol(qual->name,field));
+  TokenField *field = make_unique<TokenField>(sym->getToken(),qual->signext,qual->low,qual->high).release();
+  addSymbol(make_unique<ValueSymbol>(qual->name,field).release());
   delete qual;
 }
 
@@ -2720,8 +2720,8 @@ void SleighCompile::newSpace(SpaceQuality *qual)
   }
 
   int4 delay = (qual->type == SpaceQuality::registertype) ? 0 : 1;
-  AddrSpace *spc = new AddrSpace(this,this,IPTR_PROCESSOR,qual->name,isBigEndian(),
-				 qual->size,qual->wordsize,numSpaces(),AddrSpace::hasphysical,delay,delay);
+  AddrSpace *spc = make_unique<AddrSpace>(this,this,IPTR_PROCESSOR,qual->name,isBigEndian(),
+				 qual->size,qual->wordsize,numSpaces(),AddrSpace::hasphysical,delay,delay).release();
   insertSpace(spc);
   if (qual->isdefault) {
     if (getDefaultCodeSpace() != (AddrSpace *)0)
@@ -2732,7 +2732,7 @@ void SleighCompile::newSpace(SpaceQuality *qual)
     }
   }
   delete qual;
-  addSymbol( new SpaceSymbol(spc) );
+  addSymbol( make_unique<SpaceSymbol>(spc).release() );
 }
 
 /// \brief Start a new named p-code section and define the associated section symbol
@@ -2742,7 +2742,7 @@ void SleighCompile::newSpace(SpaceQuality *qual)
 SectionSymbol *SleighCompile::newSectionSymbol(const string &nm)
 
 {
-  SectionSymbol *sym = new SectionSymbol(nm,sections.size());
+  SectionSymbol *sym = make_unique<SectionSymbol>(nm,sections.size()).release();
   try {
     symtab.addGlobalSymbol(sym);
   } catch(SleighError &err) {
@@ -2780,7 +2780,7 @@ void SleighCompile::defineVarnodes(SpaceSymbol *spacesym,uintb *off,uintb *size,
   uintb myoff = *off;
   for(int4 i=0;i<names->size();++i) {
     if ((*names)[i] != "_")
-      addSymbol( new VarnodeSymbol((*names)[i],spc,myoff,*size) );
+      addSymbol( make_unique<VarnodeSymbol>((*names)[i],spc,myoff,*size).release() );
     myoff += *size;
   }
   delete names;
@@ -2820,10 +2820,10 @@ void SleighCompile::defineBitrange(string *name,VarnodeSymbol *sym,uint4 bitoffs
       newoffset += (size-bitoffset-numb)/8;
     else
       newoffset += bitoffset/8;
-    addSymbol( new VarnodeSymbol(namecopy,newspace,newoffset,newsize) );
+    addSymbol( make_unique<VarnodeSymbol>(namecopy,newspace,newoffset,newsize).release() );
   }
   else				// Otherwise define the special symbol
-    addSymbol( new BitrangeSymbol(namecopy,sym,bitoffset,numb) );
+    addSymbol( make_unique<BitrangeSymbol>(namecopy,sym,bitoffset,numb).release() );
 }
 
 /// \brief Define a list of new user-defined operators
@@ -2834,7 +2834,7 @@ void SleighCompile::addUserOp(vector<string> *names)
 
 {
   for(int4 i=0;i<names->size();++i) {
-    UserOpSymbol *sym = new UserOpSymbol((*names)[i]);
+    UserOpSymbol *sym = make_unique<UserOpSymbol>((*names)[i]).release();
     sym->setIndex(userop_count++);
     addSymbol( sym );
   }
@@ -2885,7 +2885,7 @@ void SleighCompile::attachValues(vector<SleighSymbol *> *symlist,vector<intb> *n
       msg << "' (range 0.." << patval->maxValue() << ") is wrong size for list (of " << numlist->size() << " entries)";
       reportError(getCurrentLocation(), msg.str());
     }
-    symtab.replaceSymbol(sym, new ValueMapSymbol(sym->getName(),patval,*numlist));
+    symtab.replaceSymbol(sym, make_unique<ValueMapSymbol>(sym->getName(),patval,*numlist).release());
   }
   delete numlist;
   delete symlist;
@@ -2913,7 +2913,7 @@ void SleighCompile::attachNames(vector<SleighSymbol *> *symlist,vector<string> *
       msg << "' (range 0.." << patval->maxValue() << ") is wrong size for list (of " << names->size() << " entries)";
       reportError(getCurrentLocation(), msg.str());
     }
-    symtab.replaceSymbol(sym,new NameSymbol(sym->getName(),patval,*names));
+    symtab.replaceSymbol(sym,make_unique<NameSymbol>(sym->getName(),patval,*names).release());
   }
   delete names;
   delete symlist;
@@ -2955,7 +2955,7 @@ void SleighCompile::attachVarnodes(vector<SleighSymbol *> *symlist,vector<Sleigh
 	}
       }
     }
-    symtab.replaceSymbol(sym,new VarnodeListSymbol(sym->getName(),patval,*varlist));
+    symtab.replaceSymbol(sym,make_unique<VarnodeListSymbol>(sym->getName(),patval,*varlist).release());
   }
   delete varlist;
   delete symlist;
@@ -2968,7 +2968,7 @@ void SleighCompile::attachVarnodes(vector<SleighSymbol *> *symlist,vector<Sleigh
 SubtableSymbol *SleighCompile::newTable(string *nm)
 
 {
-  SubtableSymbol *sym = new SubtableSymbol(*nm);
+  SubtableSymbol *sym = make_unique<SubtableSymbol>(*nm).release();
   addSymbol(sym);
   tables.push_back(sym);
   delete nm;
@@ -2985,7 +2985,7 @@ void SleighCompile::newOperand(Constructor *ct,string *nm)
 
 {
   int4 index = ct->getNumOperands();
-  OperandSymbol *sym = new OperandSymbol(*nm,index,ct);
+  OperandSymbol *sym = make_unique<OperandSymbol>(*nm,index,ct).release();
   addSymbol(sym);
   ct->addOperand(sym);
   delete nm;
@@ -3004,7 +3004,7 @@ PatternEquation *SleighCompile::constrainOperand(OperandSymbol *sym,PatternExpre
   FamilySymbol *famsym = dynamic_cast<FamilySymbol *>(sym->getDefiningSymbol());
   if (famsym != (FamilySymbol *)0) { // Operand already defined as family symbol
 				// This equation must be a constraint
-    res = new EqualEquation(famsym->getPatternValue(),patexp);
+    res = make_unique<EqualEquation>(famsym->getPatternValue(),patexp).release();
   }
   else {			// Operand is currently undefined, so we can't constrain
     PatternExpression::release(patexp);
@@ -3045,10 +3045,10 @@ PatternEquation *SleighCompile::defineInvisibleOperand(TripleSymbol *sym)
 
 {
   int4 index = curct->getNumOperands();
-  OperandSymbol *opsym = new OperandSymbol(sym->getName(),index,curct);
+  OperandSymbol *opsym = make_unique<OperandSymbol>(sym->getName(),index,curct).release();
   addSymbol(opsym);
   curct->addInvisibleOperand(opsym);
-  PatternEquation *res = new OperandEquation(opsym->getIndex());
+  PatternEquation *res = make_unique<OperandEquation>(opsym->getIndex()).release();
   SleighSymbol::symbol_type tp = sym->getType();
   try {
     if ((tp==SleighSymbol::value_symbol)||(tp==SleighSymbol::context_symbol)) {
@@ -3099,7 +3099,7 @@ void SleighCompile::selfDefine(OperandSymbol *sym)
 ConstructTpl *SleighCompile::setResultVarnode(ConstructTpl *ct,VarnodeTpl *vn)
 
 {
-  HandleTpl *res = new HandleTpl(vn);
+  HandleTpl *res = make_unique<HandleTpl>(vn).release();
   delete vn;
   ct->setResult(res);
   return ct;
@@ -3115,8 +3115,8 @@ ConstructTpl *SleighCompile::setResultVarnode(ConstructTpl *ct,VarnodeTpl *vn)
 ConstructTpl *SleighCompile::setResultStarVarnode(ConstructTpl *ct,StarQuality *star,VarnodeTpl *vn)
 
 {
-  HandleTpl *res = new HandleTpl(star->id,ConstTpl(ConstTpl::real,star->size),vn,
-				   getUniqueSpace(),getUniqueAddr());
+  HandleTpl *res = make_unique<HandleTpl>(star->id,ConstTpl(ConstTpl::real,star->size),vn,
+				   getUniqueSpace(),getUniqueAddr()).release();
   delete star;
   delete vn;
   ct->setResult(res);
@@ -3147,7 +3147,7 @@ bool SleighCompile::contextMod(vector<ContextChange *> *vec,ContextSymbol *sym,P
   }
   // Otherwise we generate a "temporary" change to context instruction  (ContextOp)
   ContextField *field = (ContextField *)sym->getPatternValue();
-  ContextOp *op = new ContextOp(field->getStartBit(),field->getEndBit(),pe);
+  ContextOp *op = make_unique<ContextOp>(field->getStartBit(),field->getEndBit(),pe).release();
   vec->push_back(op);
   return true;
 }
@@ -3166,7 +3166,7 @@ void SleighCompile::contextSet(vector<ContextChange *> *vec,TripleSymbol *sym,
 
 {
   ContextField *field = (ContextField *)cvar->getPatternValue();
-  ContextCommit *op = new ContextCommit(sym,field->getStartBit(),field->getEndBit(),cvar->getFlow());
+  ContextCommit *op = make_unique<ContextCommit>(sym,field->getStartBit(),field->getEndBit(),cvar->getFlow()).release();
   vec->push_back(op);
 }
 
@@ -3181,13 +3181,13 @@ MacroSymbol *SleighCompile::createMacro(string *name,vector<string> *params)
 
 {
   curct = (Constructor *)0;	// Not currently defining a Constructor
-  curmacro = new MacroSymbol(*name,macrotable.size());
+  curmacro = make_unique<MacroSymbol>(*name,macrotable.size()).release();
   delete name;
   addSymbol(curmacro);
   symtab.addScope();		// New scope for the body of the macro definition
   pcode.resetLabelCount();	// Macros have their own labels
   for(int4 i=0;i<params->size();++i) {
-    OperandSymbol *oper = new OperandSymbol((*params)[i],i,(Constructor *)0);
+    OperandSymbol *oper = make_unique<OperandSymbol>((*params)[i],i,(Constructor *)0).release();
     addSymbol(oper);
     curmacro->addOperand(oper);
   }
@@ -3239,13 +3239,13 @@ vector<OpTpl *> *SleighCompile::createMacroUse(MacroSymbol *sym,vector<ExprTree 
     bool tooManyParams = param->size() > sym->getNumOperands();
     string errmsg = "Invocation of macro '" + sym->getName() + "' passes too " + (tooManyParams ? "many" : "few") + " parameters";
     reportError(getCurrentLocation(), errmsg);
-    return new vector<OpTpl *>;
+    return make_unique<vector<OpTpl *>>().release();
   }
   compareMacroParams(sym,*param);
-  OpTpl *op = new OpTpl(MACROBUILD);
-  VarnodeTpl *idvn = new VarnodeTpl(ConstTpl(getConstantSpace()),
+  OpTpl *op = make_unique<OpTpl>(MACROBUILD).release();
+  VarnodeTpl *idvn = make_unique<VarnodeTpl>(ConstTpl(getConstantSpace()),
 				      ConstTpl(ConstTpl::real,sym->getIndex()),
-				      ConstTpl(ConstTpl::real,4));
+				      ConstTpl(ConstTpl::real,4)).release();
   op->addInput(idvn);
   return ExprTree::appendParams(op,param);
 }
@@ -3257,7 +3257,7 @@ vector<OpTpl *> *SleighCompile::createMacroUse(MacroSymbol *sym,vector<ExprTree 
 SectionVector *SleighCompile::standaloneSection(ConstructTpl *main)
 
 {
-  SectionVector *res = new SectionVector(main,symtab.getCurrentScope());
+  SectionVector *res = make_unique<SectionVector>(main,symtab.getCurrentScope()).release();
   return res;
 }
 
@@ -3278,7 +3278,7 @@ SectionVector *SleighCompile::firstNamedSection(ConstructTpl *main,SectionSymbol
   if (parscope != symtab.getGlobalScope())
     throw LowlevelError("firstNamedSection called when not in Constructor scope"); // Unrecoverable error
   symtab.addScope();		// Add new scope under the Constructor scope
-  SectionVector *res = new SectionVector(main,curscope);
+  SectionVector *res = make_unique<SectionVector>(main,curscope).release();
   res->setNextIndex(sym->getTemplateId());
   return res;
 }
@@ -3331,12 +3331,12 @@ vector<OpTpl *> *SleighCompile::createCrossBuild(VarnodeTpl *addr,SectionSymbol 
 
 {
   unique_allocatemask = 1;
-  vector<OpTpl *> *res = new vector<OpTpl *>();
-  VarnodeTpl *sectionid = new VarnodeTpl(ConstTpl(getConstantSpace()),
+  vector<OpTpl *> *res = make_unique<vector<OpTpl *>>().release();
+  VarnodeTpl *sectionid = make_unique<VarnodeTpl>(ConstTpl(getConstantSpace()),
                                          ConstTpl(ConstTpl::real,sym->getTemplateId()),
-                                         ConstTpl(ConstTpl::real,4));
+                                         ConstTpl(ConstTpl::real,4)).release();
   // This is simply a single pcodeop (template), where the opcode indicates the crossbuild directive
-  OpTpl *op = new OpTpl( CROSSBUILD );
+  OpTpl *op = make_unique<OpTpl>( CROSSBUILD ).release();
   op->addInput(addr);		// The first input is the VarnodeTpl representing the address
   op->addInput(sectionid);	// The second input is the indexed representing the named pcode section to build
   res->push_back(op);
@@ -3351,7 +3351,7 @@ vector<OpTpl *> *SleighCompile::createCrossBuild(VarnodeTpl *addr,SectionSymbol 
 ConstructTpl *SleighCompile::enterSection(void)
 
 {
-  ConstructTpl *tpl = new ConstructTpl();
+  ConstructTpl *tpl = make_unique<ConstructTpl>().release();
   pcode.resetLabelCount();	// Macros have their own labels
   return tpl;
 }
@@ -3369,7 +3369,7 @@ Constructor *SleighCompile::createConstructor(SubtableSymbol *sym)
   if (sym == (SubtableSymbol *)0)
     sym = root;
   curmacro = (MacroSymbol *)0;	// Not currently defining a macro
-  curct = new Constructor(sym);
+  curct = make_unique<Constructor>(sym).release();
   curct->setLineno(lineno.back());
   ctorLocationMap[curct] = *getCurrentLocation();
   sym->addConstructor(curct);
