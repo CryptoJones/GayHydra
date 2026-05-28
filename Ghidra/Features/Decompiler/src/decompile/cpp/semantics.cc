@@ -716,12 +716,13 @@ void OpTpl::decode(Decoder &decoder)
     output = (VarnodeTpl *)0;
   }
   else {
-    output = new VarnodeTpl();
+    output = make_unique<VarnodeTpl>().release();
     output->decode(decoder);
   }
   while(decoder.peekElement() != 0) {
-    VarnodeTpl *vn = new VarnodeTpl();
-    input.push_back(vn);
+    auto owned = make_unique<VarnodeTpl>();
+    VarnodeTpl *vn = owned.get();
+    input.push_back(owned.release());
     vn->decode(decoder);
   }
   decoder.closeElement(el);
@@ -779,10 +780,10 @@ int4 ConstructTpl::fillinBuild(vector<int4> &check,AddrSpace *const_space)
   }
   for(int4 i=0;i<check.size();++i) {
     if (check[i] == 0) {	// Didn't see a BUILD statement
-      op = new OpTpl(BUILD);
-      indvn = new VarnodeTpl(ConstTpl(const_space),
+      op = make_unique<OpTpl>(BUILD).release();
+      indvn = make_unique<VarnodeTpl>(ConstTpl(const_space),
 			      ConstTpl(ConstTpl::real,i),
-			      ConstTpl(ConstTpl::real,4));
+			      ConstTpl(ConstTpl::real,4)).release();
       op->addInput(indvn);
       vec.insert(vec.begin(),op);
     }
@@ -910,12 +911,13 @@ int4 ConstructTpl::decode(Decoder &decoder)
     result = (HandleTpl *)0;
   }
   else {
-    result = new HandleTpl();
+    result = make_unique<HandleTpl>().release();
     result->decode(decoder);
   }
   while(decoder.peekElement() != 0) {
-    OpTpl *op = new OpTpl();
-    vec.push_back(op);
+    auto owned = make_unique<OpTpl>();
+    OpTpl *op = owned.get();
+    vec.push_back(owned.release());
     op->decode(decoder);
   }
   decoder.closeElement(el);
