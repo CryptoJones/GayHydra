@@ -34,130 +34,130 @@ IfaceDecompCapability::IfaceDecompCapability(void)
 void IfaceDecompCapability::registerCommands(IfaceStatus *status)
 
 {
-  status->registerCom(new IfcComment(),"//"); //Note: A space must follow this when used.
-  status->registerCom(new IfcComment(),"#"); //Note: A space must follow this when used.
-  status->registerCom(new IfcComment(),"%"); //Note: A space must follow this when used.
-  status->registerCom(new IfcQuit(),"quit");
-  status->registerCom(new IfcHistory(),"history");
-  status->registerCom(new IfcOpenfile(),"openfile", "write");
-  status->registerCom(new IfcOpenfileAppend(),"openfile","append");
-  status->registerCom(new IfcClosefile(),"closefile");
-  status->registerCom(new IfcEcho(),"echo");
+  status->registerCom(make_unique<IfcComment>().release(),"//"); //Note: A space must follow this when used.
+  status->registerCom(make_unique<IfcComment>().release(),"#"); //Note: A space must follow this when used.
+  status->registerCom(make_unique<IfcComment>().release(),"%"); //Note: A space must follow this when used.
+  status->registerCom(make_unique<IfcQuit>().release(),"quit");
+  status->registerCom(make_unique<IfcHistory>().release(),"history");
+  status->registerCom(make_unique<IfcOpenfile>().release(),"openfile", "write");
+  status->registerCom(make_unique<IfcOpenfileAppend>().release(),"openfile","append");
+  status->registerCom(make_unique<IfcClosefile>().release(),"closefile");
+  status->registerCom(make_unique<IfcEcho>().release(),"echo");
 
-  status->registerCom(new IfcSource(),"source");
-  status->registerCom(new IfcOption(),"option");
-  status->registerCom(new IfcParseFile(),"parse","file");
-  status->registerCom(new IfcParseLine(),"parse","line");
-  status->registerCom(new IfcAdjustVma(),"adjust","vma");
-  status->registerCom(new IfcFuncload(),"load","function");
-  status->registerCom(new IfcAddrrangeLoad(),"load","addr");
-  status->registerCom(new IfcReadSymbols(),"read","symbols");
-  status->registerCom(new IfcCleararch(),"clear","architecture");
-  status->registerCom(new IfcMapaddress(),"map","address");
-  status->registerCom(new IfcMaphash(),"map","hash");
-  status->registerCom(new IfcMapParam(),"map","param");
-  status->registerCom(new IfcMapReturn(),"map","return");
-  status->registerCom(new IfcMapfunction(),"map","function");
-  status->registerCom(new IfcMapexternalref(),"map","externalref");
-  status->registerCom(new IfcMaplabel(),"map","label");
-  status->registerCom(new IfcMapconvert(),"map","convert");
-  status->registerCom(new IfcMapunionfacet(), "map", "unionfacet");
-  status->registerCom(new IfcPrintdisasm(),"disassemble");
-  status->registerCom(new IfcDecompile(),"decompile");
-  status->registerCom(new IfcDump(),"dump");
-  status->registerCom(new IfcDumpbinary(),"binary");
-  status->registerCom(new IfcForcegoto(),"force","goto");
-  status->registerCom(new IfcForceFormat(),"force","varnode");
-  status->registerCom(new IfcForceDatatypeFormat(),"force","datatype");
-  status->registerCom(new IfcProtooverride(),"override","prototype");
-  status->registerCom(new IfcJumpOverride(),"override","jumptable");
-  status->registerCom(new IfcFlowOverride(),"override","flow");
-  status->registerCom(new IfcDeadcodedelay(),"deadcode","delay");
-  status->registerCom(new IfcGlobalAdd(),"global","add");
-  status->registerCom(new IfcGlobalRemove(),"global","remove");
-  status->registerCom(new IfcGlobalify(),"global","spaces");
-  status->registerCom(new IfcGlobalRegisters(),"global","registers");
-  status->registerCom(new IfcGraphDataflow(),"graph","dataflow");
-  status->registerCom(new IfcGraphControlflow(),"graph","controlflow");
-  status->registerCom(new IfcGraphDom(),"graph","dom");
-  status->registerCom(new IfcPrintLanguage(),"print","language");
-  status->registerCom(new IfcPrintCStruct(),"print","C");
-  status->registerCom(new IfcPrintCFlat(),"print","C","flat");
-  status->registerCom(new IfcPrintCGlobals(),"print","C","globals");
-  status->registerCom(new IfcPrintCTypes(),"print","C","types");
-  status->registerCom(new IfcPrintCXml(),"print","C","xml");
-  status->registerCom(new IfcPrintParamMeasures(),"print","parammeasures");
-  status->registerCom(new IfcProduceC(),"produce","C");
-  status->registerCom(new IfcProducePrototypes(),"produce","prototypes");
-  status->registerCom(new IfcPrintRaw(),"print","raw");
-  status->registerCom(new IfcPrintInputs(),"print","inputs");
-  status->registerCom(new IfcPrintInputsAll(),"print","inputs","all");
-  status->registerCom(new IfcListaction(),"list","action");
-  status->registerCom(new IfcListOverride(),"list","override");
-  status->registerCom(new IfcListprototypes(),"list","prototypes");
-  status->registerCom(new IfcSetcontextrange(),"set","context");
-  status->registerCom(new IfcSettrackedrange(),"set","track");
-  status->registerCom(new IfcBreakstart(),"break","start");
-  status->registerCom(new IfcBreakaction(),"break","action");
-  status->registerCom(new IfcPrintSpaces(),"print","spaces");
-  status->registerCom(new IfcPrintHigh(),"print","high");
-  status->registerCom(new IfcPrintTree(),"print","tree","varnode");
-  status->registerCom(new IfcPrintBlocktree(),"print","tree","block");
-  status->registerCom(new IfcPrintLocalrange(),"print","localrange");
-  status->registerCom(new IfcPrintMap(),"print","map");
-  status->registerCom(new IfcPrintVarnode(),"print","varnode");
-  status->registerCom(new IfcPrintCover(),"print","cover","high");
-  status->registerCom(new IfcVarnodeCover(),"print","cover","varnode");
-  status->registerCom(new IfcVarnodehighCover(),"print","cover","varnodehigh");
-  status->registerCom(new IfcPrintExtrapop(),"print","extrapop");
-  status->registerCom(new IfcPrintActionstats(),"print","actionstats");
-  status->registerCom(new IfcResetActionstats(),"reset","actionstats");
-  status->registerCom(new IfcCountPcode(),"count","pcode");
-  status->registerCom(new IfcTypeVarnode(),"type","varnode");
-  status->registerCom(new IfcNameVarnode(),"name","varnode");
-  status->registerCom(new IfcRename(),"rename");
-  status->registerCom(new IfcRetype(),"retype");
-  status->registerCom(new IfcRemove(),"remove");
-  status->registerCom(new IfcIsolate(),"isolate");
-  status->registerCom(new IfcLockPrototype(),"prototype","lock");
-  status->registerCom(new IfcUnlockPrototype(),"prototype","unlock");
-  status->registerCom(new IfcCommentInstr(),"comment","instruction");
-  status->registerCom(new IfcDuplicateHash(),"duplicate","hash");
-  status->registerCom(new IfcCallGraphBuild(),"callgraph","build");
-  status->registerCom(new IfcCallGraphBuildQuick(),"callgraph","build","quick");
-  status->registerCom(new IfcCallGraphDump(),"callgraph","dump");
-  status->registerCom(new IfcCallGraphLoad(),"callgraph","load");
-  status->registerCom(new IfcCallGraphList(),"callgraph","list");
-  status->registerCom(new IfcCallFixup(),"fixup","call");
-  status->registerCom(new IfcCallOtherFixup(),"fixup","callother");
-  status->registerCom(new IfcFixupApply(),"fixup","apply");
-  status->registerCom(new IfcVolatile(),"volatile");
-  status->registerCom(new IfcReadonly(),"readonly");
-  status->registerCom(new IfcPointerSetting(),"pointer","setting");
-  status->registerCom(new IfcPreferSplit(),"prefersplit");
-  status->registerCom(new IfcStructureBlocks(),"structure","blocks");
-  status->registerCom(new IfcAnalyzeRange(), "analyze","range");
-  status->registerCom(new IfcLoadTestFile(), "load","test","file");
-  status->registerCom(new IfcListTestCommands(), "list","test","commands");
-  status->registerCom(new IfcExecuteTestCommand(), "execute","test","command");
+  status->registerCom(make_unique<IfcSource>().release(),"source");
+  status->registerCom(make_unique<IfcOption>().release(),"option");
+  status->registerCom(make_unique<IfcParseFile>().release(),"parse","file");
+  status->registerCom(make_unique<IfcParseLine>().release(),"parse","line");
+  status->registerCom(make_unique<IfcAdjustVma>().release(),"adjust","vma");
+  status->registerCom(make_unique<IfcFuncload>().release(),"load","function");
+  status->registerCom(make_unique<IfcAddrrangeLoad>().release(),"load","addr");
+  status->registerCom(make_unique<IfcReadSymbols>().release(),"read","symbols");
+  status->registerCom(make_unique<IfcCleararch>().release(),"clear","architecture");
+  status->registerCom(make_unique<IfcMapaddress>().release(),"map","address");
+  status->registerCom(make_unique<IfcMaphash>().release(),"map","hash");
+  status->registerCom(make_unique<IfcMapParam>().release(),"map","param");
+  status->registerCom(make_unique<IfcMapReturn>().release(),"map","return");
+  status->registerCom(make_unique<IfcMapfunction>().release(),"map","function");
+  status->registerCom(make_unique<IfcMapexternalref>().release(),"map","externalref");
+  status->registerCom(make_unique<IfcMaplabel>().release(),"map","label");
+  status->registerCom(make_unique<IfcMapconvert>().release(),"map","convert");
+  status->registerCom(make_unique<IfcMapunionfacet>().release(), "map", "unionfacet");
+  status->registerCom(make_unique<IfcPrintdisasm>().release(),"disassemble");
+  status->registerCom(make_unique<IfcDecompile>().release(),"decompile");
+  status->registerCom(make_unique<IfcDump>().release(),"dump");
+  status->registerCom(make_unique<IfcDumpbinary>().release(),"binary");
+  status->registerCom(make_unique<IfcForcegoto>().release(),"force","goto");
+  status->registerCom(make_unique<IfcForceFormat>().release(),"force","varnode");
+  status->registerCom(make_unique<IfcForceDatatypeFormat>().release(),"force","datatype");
+  status->registerCom(make_unique<IfcProtooverride>().release(),"override","prototype");
+  status->registerCom(make_unique<IfcJumpOverride>().release(),"override","jumptable");
+  status->registerCom(make_unique<IfcFlowOverride>().release(),"override","flow");
+  status->registerCom(make_unique<IfcDeadcodedelay>().release(),"deadcode","delay");
+  status->registerCom(make_unique<IfcGlobalAdd>().release(),"global","add");
+  status->registerCom(make_unique<IfcGlobalRemove>().release(),"global","remove");
+  status->registerCom(make_unique<IfcGlobalify>().release(),"global","spaces");
+  status->registerCom(make_unique<IfcGlobalRegisters>().release(),"global","registers");
+  status->registerCom(make_unique<IfcGraphDataflow>().release(),"graph","dataflow");
+  status->registerCom(make_unique<IfcGraphControlflow>().release(),"graph","controlflow");
+  status->registerCom(make_unique<IfcGraphDom>().release(),"graph","dom");
+  status->registerCom(make_unique<IfcPrintLanguage>().release(),"print","language");
+  status->registerCom(make_unique<IfcPrintCStruct>().release(),"print","C");
+  status->registerCom(make_unique<IfcPrintCFlat>().release(),"print","C","flat");
+  status->registerCom(make_unique<IfcPrintCGlobals>().release(),"print","C","globals");
+  status->registerCom(make_unique<IfcPrintCTypes>().release(),"print","C","types");
+  status->registerCom(make_unique<IfcPrintCXml>().release(),"print","C","xml");
+  status->registerCom(make_unique<IfcPrintParamMeasures>().release(),"print","parammeasures");
+  status->registerCom(make_unique<IfcProduceC>().release(),"produce","C");
+  status->registerCom(make_unique<IfcProducePrototypes>().release(),"produce","prototypes");
+  status->registerCom(make_unique<IfcPrintRaw>().release(),"print","raw");
+  status->registerCom(make_unique<IfcPrintInputs>().release(),"print","inputs");
+  status->registerCom(make_unique<IfcPrintInputsAll>().release(),"print","inputs","all");
+  status->registerCom(make_unique<IfcListaction>().release(),"list","action");
+  status->registerCom(make_unique<IfcListOverride>().release(),"list","override");
+  status->registerCom(make_unique<IfcListprototypes>().release(),"list","prototypes");
+  status->registerCom(make_unique<IfcSetcontextrange>().release(),"set","context");
+  status->registerCom(make_unique<IfcSettrackedrange>().release(),"set","track");
+  status->registerCom(make_unique<IfcBreakstart>().release(),"break","start");
+  status->registerCom(make_unique<IfcBreakaction>().release(),"break","action");
+  status->registerCom(make_unique<IfcPrintSpaces>().release(),"print","spaces");
+  status->registerCom(make_unique<IfcPrintHigh>().release(),"print","high");
+  status->registerCom(make_unique<IfcPrintTree>().release(),"print","tree","varnode");
+  status->registerCom(make_unique<IfcPrintBlocktree>().release(),"print","tree","block");
+  status->registerCom(make_unique<IfcPrintLocalrange>().release(),"print","localrange");
+  status->registerCom(make_unique<IfcPrintMap>().release(),"print","map");
+  status->registerCom(make_unique<IfcPrintVarnode>().release(),"print","varnode");
+  status->registerCom(make_unique<IfcPrintCover>().release(),"print","cover","high");
+  status->registerCom(make_unique<IfcVarnodeCover>().release(),"print","cover","varnode");
+  status->registerCom(make_unique<IfcVarnodehighCover>().release(),"print","cover","varnodehigh");
+  status->registerCom(make_unique<IfcPrintExtrapop>().release(),"print","extrapop");
+  status->registerCom(make_unique<IfcPrintActionstats>().release(),"print","actionstats");
+  status->registerCom(make_unique<IfcResetActionstats>().release(),"reset","actionstats");
+  status->registerCom(make_unique<IfcCountPcode>().release(),"count","pcode");
+  status->registerCom(make_unique<IfcTypeVarnode>().release(),"type","varnode");
+  status->registerCom(make_unique<IfcNameVarnode>().release(),"name","varnode");
+  status->registerCom(make_unique<IfcRename>().release(),"rename");
+  status->registerCom(make_unique<IfcRetype>().release(),"retype");
+  status->registerCom(make_unique<IfcRemove>().release(),"remove");
+  status->registerCom(make_unique<IfcIsolate>().release(),"isolate");
+  status->registerCom(make_unique<IfcLockPrototype>().release(),"prototype","lock");
+  status->registerCom(make_unique<IfcUnlockPrototype>().release(),"prototype","unlock");
+  status->registerCom(make_unique<IfcCommentInstr>().release(),"comment","instruction");
+  status->registerCom(make_unique<IfcDuplicateHash>().release(),"duplicate","hash");
+  status->registerCom(make_unique<IfcCallGraphBuild>().release(),"callgraph","build");
+  status->registerCom(make_unique<IfcCallGraphBuildQuick>().release(),"callgraph","build","quick");
+  status->registerCom(make_unique<IfcCallGraphDump>().release(),"callgraph","dump");
+  status->registerCom(make_unique<IfcCallGraphLoad>().release(),"callgraph","load");
+  status->registerCom(make_unique<IfcCallGraphList>().release(),"callgraph","list");
+  status->registerCom(make_unique<IfcCallFixup>().release(),"fixup","call");
+  status->registerCom(make_unique<IfcCallOtherFixup>().release(),"fixup","callother");
+  status->registerCom(make_unique<IfcFixupApply>().release(),"fixup","apply");
+  status->registerCom(make_unique<IfcVolatile>().release(),"volatile");
+  status->registerCom(make_unique<IfcReadonly>().release(),"readonly");
+  status->registerCom(make_unique<IfcPointerSetting>().release(),"pointer","setting");
+  status->registerCom(make_unique<IfcPreferSplit>().release(),"prefersplit");
+  status->registerCom(make_unique<IfcStructureBlocks>().release(),"structure","blocks");
+  status->registerCom(make_unique<IfcAnalyzeRange>().release(), "analyze","range");
+  status->registerCom(make_unique<IfcLoadTestFile>().release(), "load","test","file");
+  status->registerCom(make_unique<IfcListTestCommands>().release(), "list","test","commands");
+  status->registerCom(make_unique<IfcExecuteTestCommand>().release(), "execute","test","command");
 #ifdef CPUI_RULECOMPILE
-  status->registerCom(new IfcParseRule(),"parse","rule");
-  status->registerCom(new IfcExperimentalRules(),"experimental","rules");
+  status->registerCom(make_unique<IfcParseRule>().release(),"parse","rule");
+  status->registerCom(make_unique<IfcExperimentalRules>().release(),"experimental","rules");
 #endif
-  status->registerCom(new IfcContinue(),"continue");
+  status->registerCom(make_unique<IfcContinue>().release(),"continue");
 #ifdef OPACTION_DEBUG
-  status->registerCom(new IfcDebugAction(),"debug","action");
-  status->registerCom(new IfcTraceBreak(),"trace","break");
-  status->registerCom(new IfcTraceAddress(),"trace","address");
-  status->registerCom(new IfcTraceEnable(),"trace","enable");
-  status->registerCom(new IfcTraceDisable(),"trace","disable");
-  status->registerCom(new IfcTraceClear(),"trace","clear");
-  status->registerCom(new IfcTraceList(),"trace","list");
-  status->registerCom(new IfcBreakjump(),"break","jumptable");
+  status->registerCom(make_unique<IfcDebugAction>().release(),"debug","action");
+  status->registerCom(make_unique<IfcTraceBreak>().release(),"trace","break");
+  status->registerCom(make_unique<IfcTraceAddress>().release(),"trace","address");
+  status->registerCom(make_unique<IfcTraceEnable>().release(),"trace","enable");
+  status->registerCom(make_unique<IfcTraceDisable>().release(),"trace","disable");
+  status->registerCom(make_unique<IfcTraceClear>().release(),"trace","clear");
+  status->registerCom(make_unique<IfcTraceList>().release(),"trace","list");
+  status->registerCom(make_unique<IfcBreakjump>().release(),"break","jumptable");
 #endif
 
 #ifdef TYPEPROP_DEBUG
-  status->registerCom(new IfcTracePropagation(),"trace","propagation");
+  status->registerCom(make_unique<IfcTracePropagation>().release(),"trace","propagation");
 #endif
 }
 
@@ -255,7 +255,7 @@ void IfaceDecompData::allocateCallGraph(void)
 {
   if (cgraph != (CallGraph *)0)
     delete cgraph;
-  cgraph = new CallGraph(conf);
+  cgraph = make_unique<CallGraph>(conf).release();
 }
 
 /// This is called if a command throws a low-level error.
@@ -1856,7 +1856,7 @@ void IfcProtooverride::execute(istream &s)
   PrototypePieces pieces;
   parse_protopieces(pieces,s,dcp->conf); // Parse the prototype from stream
 
-  unique_ptr<FuncProto> newproto(new FuncProto());
+  auto newproto = make_unique<FuncProto>();
 
   // Make proto whose storage is internal, not backed by a real scope
   newproto->setInternal(pieces.model,dcp->conf->types->getTypeVoid());
@@ -3372,7 +3372,7 @@ void IfcLoadTestFile::execute(istream &s)
   if (dcp->conf != (Architecture *)0)
     throw IfaceExecutionError("Load image already present");
   s >> filename;
-  dcp->testCollection = new FunctionTestCollection(status);
+  dcp->testCollection = make_unique<FunctionTestCollection>(status).release();
   dcp->testCollection->loadTest(filename);
 #ifdef OPACTION_DEBUG
   dcp->conf->setDebugStream(status->fileoptr);
@@ -3424,7 +3424,7 @@ void IfcExecuteTestCommand::execute(istream &s)
   for(int4 i=first;i<=last;++i) {
     s1 << dcp->testCollection->getCommand(i) << endl;
   }
-  istringstream *s2 = new istringstream(s1.str());
+  istringstream *s2 = make_unique<istringstream>(s1.str()).release();
   status->pushScript(s2, "test> ");
 }
 
