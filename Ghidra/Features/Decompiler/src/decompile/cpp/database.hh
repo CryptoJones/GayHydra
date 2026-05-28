@@ -190,11 +190,11 @@ protected:
   mutable const Scope *depthScope;	///< Scope associated with current depth resolution
   mutable int4 depthResolution;	///< Number of namespace elements required to resolve symbol in current scope
   uint4 wholeCount;		///< Number of SymbolEntries that map to the whole Symbol
-  virtual ~Symbol(void) {}	///< Destructor
   void setDisplayFormat(uint4 val);	///< Set the display format for \b this Symbol
   void checkSizeTypeLock(void);	///< Calculate if \b size_typelock property is on
   void setThisPointer(bool val);	///< Toggle whether \b this is the "this" pointer for a class method
 public:
+  virtual ~Symbol(void) {}	///< Destructor (public to allow std::make_unique<Symbol> from non-friend code)
   /// \brief Possible display (dispflag) properties for a Symbol
   enum {
     force_hex = 1,		///< Force hexadecimal printing of constant symbol
@@ -283,9 +283,9 @@ inline bool SymbolEntry::isAddrTied(void) const {
 class FunctionSymbol : public Symbol {
   Funcdata *fd;				///< The underlying meta-data object for the function
   int4 consumeSize;			///< Minimum number of bytes to consume with the start address
-  virtual ~FunctionSymbol(void);
   void buildType(void);			///< Build the data-type associated with \b this Symbol
 public:
+  virtual ~FunctionSymbol(void);	///< Destructor (public to allow std::make_unique<FunctionSymbol> from non-friend code)
   FunctionSymbol(Scope *sc,const string &nm,int4 size);	///< Construct given the name
   FunctionSymbol(Scope *sc,int4 size);			///< Constructor for use with decode
   Funcdata *getFunction(void);				///< Get the underlying Funcdata object
@@ -347,8 +347,8 @@ public:
 class ExternRefSymbol : public Symbol {
   Address refaddr;			///< The \e placeholder address for meta-data
   void buildNameType(void);		///< Create a name and data-type for the Symbol
-  virtual ~ExternRefSymbol(void) {}
 public:
+  virtual ~ExternRefSymbol(void) {}	///< Destructor (public to allow std::make_unique<ExternRefSymbol> from non-friend code)
   ExternRefSymbol(Scope *sc,const Address &ref,const string &nm);	///< Construct given a \e placeholder address
   ExternRefSymbol(Scope *sc) : Symbol(sc) {} 				///< For use with decode
   const Address &getRefAddr(void) const { return refaddr; }		///< Return the \e placeholder address

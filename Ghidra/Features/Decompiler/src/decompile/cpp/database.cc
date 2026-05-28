@@ -559,7 +559,7 @@ Funcdata *FunctionSymbol::getFunction(void)
 {
   if (fd != (Funcdata *)0) return fd;
   SymbolEntry *entry = getFirstWholeMap();
-  fd = new Funcdata(name,displayName,scope,entry->getAddr(),this);
+  fd = make_unique<Funcdata>(name,displayName,scope,entry->getAddr(),this).release();
   return fd;
 }
 
@@ -582,7 +582,7 @@ void FunctionSymbol::decode(Decoder &decoder)
 {
   uint4 elemId = decoder.peekElement();
   if (elemId == ELEM_FUNCTION) {
-    fd = new Funcdata("","",scope,Address(),this);
+    fd = make_unique<Funcdata>("","",scope,Address(),this).release();
     try {
       symbolId = fd->decode(decoder);
     } catch(RecovError &err) {
@@ -1516,7 +1516,7 @@ Symbol *Scope::addSymbol(const string &nm,Datatype *ct)
 {
   Symbol *sym;
 
-  sym = new Symbol(owner,nm,ct);
+  sym = make_unique<Symbol>(owner,nm,ct).release();
   addSymbolInternal(sym);		// Let this scope lay claim to the new object
   return sym;
 }
@@ -1539,7 +1539,7 @@ SymbolEntry *Scope::addSymbol(const string &nm,Datatype *ct,
 
   if (ct->hasStripped())
     ct = ct->getStripped();
-  sym = new Symbol(owner,nm,ct);
+  sym = make_unique<Symbol>(owner,nm,ct).release();
   addSymbolInternal(sym);
   return addMapPoint(sym,addr,usepoint);
 }
@@ -1572,19 +1572,19 @@ Symbol *Scope::addMapSym(Decoder &decoder)
   uint4 subId = decoder.peekElement();
   Symbol *sym;
   if (subId == ELEM_SYMBOL)
-    sym = new Symbol(owner);
+    sym = make_unique<Symbol>(owner).release();
   else if (subId == ELEM_EQUATESYMBOL)
-    sym = new EquateSymbol(owner);
+    sym = make_unique<EquateSymbol>(owner).release();
   else if (subId == ELEM_FUNCTION)
-    sym = new FunctionSymbol(owner,glb->min_funcsymbol_size);
+    sym = make_unique<FunctionSymbol>(owner,glb->min_funcsymbol_size).release();
   else if (subId == ELEM_FUNCTIONSHELL)
-    sym = new FunctionSymbol(owner,glb->min_funcsymbol_size);
+    sym = make_unique<FunctionSymbol>(owner,glb->min_funcsymbol_size).release();
   else if (subId == ELEM_LABELSYM)
-    sym = new LabSymbol(owner);
+    sym = make_unique<LabSymbol>(owner).release();
   else if (subId == ELEM_EXTERNREFSYMBOL)
-    sym = new ExternRefSymbol(owner);
+    sym = make_unique<ExternRefSymbol>(owner).release();
   else if (subId == ELEM_FACETSYMBOL)
-    sym = new UnionFacetSymbol(owner);
+    sym = make_unique<UnionFacetSymbol>(owner).release();
   else
     throw LowlevelError("Unknown symbol type");
   try {		// Protect against duplicate scope errors
@@ -1627,7 +1627,7 @@ FunctionSymbol *Scope::addFunction(const Address &addr,const string &nm)
     errmsg += " overlaps object: "+overlap->getSymbol()->getName();
     glb->printMessage(errmsg);
   }
-  sym = new FunctionSymbol(owner,nm,glb->min_funcsymbol_size);
+  sym = make_unique<FunctionSymbol>(owner,nm,glb->min_funcsymbol_size).release();
   addSymbolInternal(sym);
   // Map symbol to base address of function
   // there is no limit on the applicability of this map within scope
@@ -1648,7 +1648,7 @@ ExternRefSymbol *Scope::addExternalRef(const Address &addr,const Address &refadd
 {
   ExternRefSymbol *sym;
 
-  sym = new ExternRefSymbol(owner,refaddr,nm);
+  sym = make_unique<ExternRefSymbol>(owner,refaddr,nm).release();
   addSymbolInternal(sym);
   // Map symbol to given address
   // there is no limit on applicability of this map within scope
@@ -1676,7 +1676,7 @@ LabSymbol *Scope::addCodeLabel(const Address &addr,const string &nm)
     errmsg += " overlaps object: "+overlap->getSymbol()->getName();
     glb->printMessage(errmsg);
   }
-  sym = new LabSymbol(owner,nm);
+  sym = make_unique<LabSymbol>(owner,nm).release();
   addSymbolInternal(sym);
   addMapPoint(sym,addr,Address());
   return sym;
@@ -1696,7 +1696,7 @@ Symbol *Scope::addDynamicSymbol(const string &nm,Datatype *ct,const Address &cad
 {
   Symbol *sym;
 
-  sym = new Symbol(owner,nm,ct);
+  sym = make_unique<Symbol>(owner,nm,ct).release();
   addSymbolInternal(sym);
   RangeList rnglist;
   if (!caddr.isInvalid())
@@ -1718,7 +1718,7 @@ Symbol *Scope::addEquateSymbol(const string &nm,uint4 format,uintb value,const A
 {
   Symbol *sym;
 
-  sym = new EquateSymbol(owner,nm,format,value);
+  sym = make_unique<EquateSymbol>(owner,nm,format,value).release();
   addSymbolInternal(sym);
   RangeList rnglist;
   if (!addr.isInvalid())
@@ -1741,7 +1741,7 @@ Symbol *Scope::addEquateSymbol(const string &nm,uint4 format,uintb value,const A
 Symbol *Scope::addUnionFacetSymbol(const string &nm,Datatype *dt,int4 fieldNum,const Address &addr,uint8 hash)
 
 {
-  Symbol *sym = new UnionFacetSymbol(owner,nm,dt,fieldNum);
+  Symbol *sym = make_unique<UnionFacetSymbol>(owner,nm,dt,fieldNum).release();
   addSymbolInternal(sym);
   RangeList rnglist;
   if (!addr.isInvalid())
@@ -1808,7 +1808,7 @@ bool Scope::isReadOnly(const Address &addr,int4 size,const Address &usepoint) co
 Scope *ScopeInternal::buildSubScope(uint8 id,const string &nm)
 
 {
-  return new ScopeInternal(id,nm,glb);
+  return make_unique<ScopeInternal>(id,nm,glb).release();
 }
 
 void ScopeInternal::addSymbolInternal(Symbol *sym)
@@ -1851,7 +1851,7 @@ SymbolEntry *ScopeInternal::addMapInternal(Symbol *sym,uint4 exfl,const Address 
   AddrSpace *spc = addr.getSpace();
   EntryMap *rangemap = maptable[spc->getIndex()];
   if (rangemap == (EntryMap *)0) {
-    rangemap = new EntryMap();
+    rangemap = make_unique<EntryMap>().release();
     maptable[spc->getIndex()] = rangemap;
   }
   // Insert the new map

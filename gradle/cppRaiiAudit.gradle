@@ -143,6 +143,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/flow.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/action.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/action.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/database.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/database.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleigh.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/codedata.cc': [],
