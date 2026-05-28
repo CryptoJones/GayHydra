@@ -12,6 +12,10 @@ Work toward v26.1.14. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Rec 31 audit-regex tightening
+
+- **Rec 31 — `cppRaiiAudit` regex now catches no-parens `new T;` (post-v26.1.13 follow-up).** The old regex `\bnew\s+[A-Za-z_][A-Za-z0-9_:]*\s*[(\[<]` required an opening `(`, `[`, or `<` after the type identifier, so the default-construct-no-parens form `new T;` slipped through silently. That false-negative was documented in [PR #135](https://github.com/CryptoJones/GayHydra/pull/135)'s `analyzesigs.cc:144` `new ofstream;` site and similar. Adding `;` to the terminator class — `[(\[<;]` — closes the gap. A tree-wide grep surfaced **nine hand-written sites** that were escaping the audit in already-protected files: `varnode.cc:260` (`cover = new Cover;`), `analyzesigs.cc:144` + `interface.cc:567`/`589` (`status->fileoptr = new ofstream;`), `unify.cc:31`/`48`/`76` (`storespot.cn = new uintb;`), `prettyprint.cc:1253`/`1255` (`lowlevel = new EmitMarkup;` / `new EmitNoMarkup;`). All nine migrate to `make_unique<T>().release()` (interface.cc uses `std::make_unique<...>` per its [PR #130](https://github.com/CryptoJones/GayHydra/pull/130) `#include <memory>` chain). Bison-generated escapes in `xml.cc`, `pcodeparse.cc`, `slghparse.cc` are unaffected — they were already either gated by line-range exclusion (`xml.cc`) or out-of-scope (`pcodeparse.cc`, `slghparse.cc` are not in `PROTECTED_FILES`). `gradle cppRaiiAudit` reports 226 protected files clean. Local `--full` precheck green (204/204 + 677/677).
+
 ---
 
 ## [v26.1.13] — 2026-05-28

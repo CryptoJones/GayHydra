@@ -257,7 +257,7 @@ void Varnode::calcCover(void) const
   if (hasCover()) {
     if (cover != (Cover *)0)
       delete cover;
-    cover = new Cover;
+    cover = make_unique<Cover>().release();
     setFlags(Varnode::coverdirty);
   }
 }

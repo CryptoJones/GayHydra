@@ -1250,9 +1250,9 @@ void EmitPrettyPrint::setMarkup(bool val)
   ostream *t = lowlevel->getOutputStream();
   delete lowlevel;
   if (val)
-    lowlevel = new EmitMarkup;
+    lowlevel = make_unique<EmitMarkup>().release();
   else
-    lowlevel = new EmitNoMarkup;
+    lowlevel = make_unique<EmitNoMarkup>().release();
   lowlevel->setOutputStream(t);
 }
 

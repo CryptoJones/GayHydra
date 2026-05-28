@@ -141,7 +141,7 @@ void IfcSaveAllSignatures::execute(istream &s)
   smanage->initializeFromStream(s); // configure the manager;
 
   ostream *saveoldfileptr = status->fileoptr;
-  status->fileoptr = new ofstream;
+  status->fileoptr = make_unique<ofstream>().release();
   ((ofstream *)status->fileoptr)->open(sigfilename.c_str());
   if (!*status->fileoptr) {
     delete status->fileoptr;
