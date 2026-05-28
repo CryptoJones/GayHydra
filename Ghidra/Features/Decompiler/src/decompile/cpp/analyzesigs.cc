@@ -30,11 +30,11 @@ IfaceAnalyzeSigsCapability::IfaceAnalyzeSigsCapability(void)
 void IfaceAnalyzeSigsCapability::registerCommands(IfaceStatus *status)
 
 {
-  status->registerCom(new IfcSignatureSettings(), "signature", "settings");
-  status->registerCom(new IfcPrintSignatures(),"print","signatures");
-  status->registerCom(new IfcSaveSignatures(),"save","signatures");
-  status->registerCom(new IfcSaveAllSignatures(),"saveall","signatures");
-  status->registerCom(new IfcProduceSignatures(),"produce","signatures");
+  status->registerCom(make_unique<IfcSignatureSettings>().release(), "signature", "settings");
+  status->registerCom(make_unique<IfcPrintSignatures>().release(),"print","signatures");
+  status->registerCom(make_unique<IfcSaveSignatures>().release(),"save","signatures");
+  status->registerCom(make_unique<IfcSaveAllSignatures>().release(),"saveall","signatures");
+  status->registerCom(make_unique<IfcProduceSignatures>().release(),"produce","signatures");
 }
 
 /// \class IfcSignatureSettings
@@ -137,7 +137,7 @@ void IfcSaveAllSignatures::execute(istream &s)
 
   if (smanage != (GraphSigManager *)0)
     delete smanage;
-  smanage = new GraphSigManager();
+  smanage = make_unique<GraphSigManager>().release();
   smanage->initializeFromStream(s); // configure the manager;
 
   ostream *saveoldfileptr = status->fileoptr;
