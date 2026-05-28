@@ -209,6 +209,43 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.hh': [],
+    // Rec 31 header-companion batch — 31 already-clean .hh files whose
+    // `.cc` counterparts are already gated. Adding the headers closes
+    // the companion gap so any future regression in these headers
+    // (raw `new` re-introduction during refactors) fails CI. All files
+    // verified zero hits under RAW_NEW_PATTERN with trailing-comment
+    // strip applied. Same regression-guard pattern as Stage 4-8 batch.
+    'Ghidra/Features/Decompiler/src/decompile/cpp/address.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/bfd_arch.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cpool.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/database_ghidra.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/emulate.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/emulateutil.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/globalcontext.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/inject_ghidra.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage_bfd.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/memstate.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/opbehavior.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/options.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/override.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/printc.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/printjava.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/printlanguage.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/rangeutil.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/raw_arch.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/signature_ghidra.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slaformat.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/sleighbase.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/space.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/string_ghidra.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/stringmanage.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/testfunction.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/transform.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/typeop.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/variable.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/varmap.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/xml.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/xml_arch.hh': [],
     // Rec 31 Stage 2C (#31-3) — xml.y / xml.cc epilogue (raw-`new`-free
     // after PRs #46 / #51 / #73 / #77 / #78 / #82). Bison `%union`
     // semantic-action sites listed below are pinned until Stage 2C
