@@ -1180,7 +1180,7 @@ void ParamListStandard::addResolverRange(AddrSpace *spc,uintb first,uintb last,P
   }
   ParamEntryResolver *resolver = resolverMap[index];
   if (resolver == (ParamEntryResolver *)0) {
-    resolver = new ParamEntryResolver();
+    resolver = make_unique<ParamEntryResolver>().release();
     resolverMap[spc->getIndex()] = resolver;
   }
   ParamEntryResolver::inittype initData(position,paramEntry);
@@ -1512,7 +1512,7 @@ void ParamListStandard::decode(Decoder &decoder,vector<EffectRecord> &effectlist
 ParamList *ParamListStandard::clone(void) const
 
 {
-  ParamList *res = new ParamListStandard(*this);
+  ParamList *res = make_unique<ParamListStandard>(*this).release();
   return res;
 }
 
@@ -1535,7 +1535,7 @@ void ParamListRegisterOut::assignMap(const PrototypePieces &proto,TypeFactory &t
 ParamList *ParamListRegisterOut::clone(void) const
 
 {
-  ParamList *res = new ParamListRegisterOut(*this);
+  ParamList *res = make_unique<ParamListRegisterOut>(*this).release();
   return res;
 }
 
@@ -1562,7 +1562,7 @@ void ParamListRegister::fillinMap(ParamActive *active) const
 ParamList *ParamListRegister::clone(void) const
 
 {
-  ParamList *res = new ParamListRegister( *this );
+  ParamList *res = make_unique<ParamListRegister>( *this ).release();
   return res;
 }
 
@@ -1783,7 +1783,7 @@ void ParamListStandardOut::decode(Decoder &decoder,vector<EffectRecord> &effectl
 ParamList *ParamListStandardOut::clone(void) const
 
 {
-  ParamList *res = new ParamListStandardOut( *this );
+  ParamList *res = make_unique<ParamListStandardOut>( *this ).release();
   return res;
 }
 
@@ -1835,7 +1835,7 @@ void ParamListMerged::foldIn(const ParamListStandard &op2)
 ParamList *ParamListMerged::clone(void) const
 
 {
-  ParamList *res = new ParamListMerged(*this);
+  ParamList *res = make_unique<ParamListMerged>(*this).release();
   return res;
 }
 
@@ -2324,12 +2324,12 @@ void ProtoModel::buildParamList(const string &strategy)
 
 {
   if ((strategy == "")||(strategy == "standard")) {
-    input = new ParamListStandard();
-    output = new ParamListStandardOut();
+    input = make_unique<ParamListStandard>().release();
+    output = make_unique<ParamListStandardOut>().release();
   }
   else if (strategy == "register") {
-    input = new ParamListRegister();
-    output = new ParamListRegisterOut();
+    input = make_unique<ParamListRegister>().release();
+    output = make_unique<ParamListRegisterOut>().release();
   }
   else
     throw LowlevelError("Unknown strategy type: "+strategy);
@@ -2839,8 +2839,8 @@ void ProtoModelMerged::foldIn(ProtoModel *model)
       (model->input->getType() != ParamList::p_register))
     throw LowlevelError("Can only resolve between standard prototype models");
   if (input == (ParamList *)0) { // First fold in
-    input = new ParamListMerged();
-    output = new ParamListStandardOut(*(ParamListStandardOut *)model->output);
+    input = make_unique<ParamListMerged>().release();
+    output = make_unique<ParamListStandardOut>(*(ParamListStandardOut *)model->output).release();
     ((ParamListMerged *)input)->foldIn(*(ParamListStandard *)model->input); // Fold in the parameter lists
     extrapop = model->extrapop;
     effectlist = model->effectlist;
@@ -2974,7 +2974,7 @@ void ParameterBasic::resetSizeLockType(TypeFactory *factory)
 ProtoParameter *ParameterBasic::clone(void) const
 
 {
-  ParameterBasic *res = new ParameterBasic(name,addr,type,flags);
+  ParameterBasic *res = make_unique<ParameterBasic>(name,addr,type,flags).release();
   return res;
 }
 
@@ -3139,7 +3139,7 @@ ParameterSymbol *ProtoStoreSymbol::getSymbolBacked(int4 i)
     return res;
   if (inparam[i] != (ProtoParameter *)0)
     delete inparam[i];
-  res = new ParameterSymbol();
+  res = make_unique<ParameterSymbol>().release();
   inparam[i] = res;
   return res;
 }
@@ -3258,7 +3258,7 @@ ProtoParameter *ProtoStoreSymbol::setOutput(const ParameterPieces &piece)
 {
   if (outparam != (ProtoParameter *)0)
     delete outparam;
-  outparam = new ParameterBasic("",piece.addr,piece.type,piece.flags);
+  outparam = make_unique<ParameterBasic>("",piece.addr,piece.type,piece.flags).release();
   return outparam;
 }
 
@@ -3281,7 +3281,7 @@ ProtoStore *ProtoStoreSymbol::clone(void) const
 
 {
   ProtoStoreSymbol *res;
-  res = new ProtoStoreSymbol(scope,restricted_usepoint);
+  res = make_unique<ProtoStoreSymbol>(scope,restricted_usepoint).release();
   delete res->outparam;
   if (outparam != (ProtoParameter *)0)
     res->outparam = outparam->clone();
@@ -3333,7 +3333,7 @@ ProtoParameter *ProtoStoreInternal::setInput(int4 i,const string &nm,const Param
     inparam.push_back((ProtoParameter *)0);
   if (inparam[i] != (ProtoParameter *)0)
     delete inparam[i];
-  inparam[i] = new ParameterBasic(nm,pieces.addr,pieces.type,pieces.flags);
+  inparam[i] = make_unique<ParameterBasic>(nm,pieces.addr,pieces.type,pieces.flags).release();
   return inparam[i];
 }
 
@@ -3382,7 +3382,7 @@ ProtoParameter *ProtoStoreInternal::setOutput(const ParameterPieces &piece)
 {
   if (outparam != (ProtoParameter *)0)
     delete outparam;
-  outparam = new ParameterBasic("",piece.addr,piece.type,piece.flags);
+  outparam = make_unique<ParameterBasic>("",piece.addr,piece.type,piece.flags).release();
   return outparam;
 }
 
@@ -3391,7 +3391,7 @@ void ProtoStoreInternal::clearOutput(void)
 {
   if (outparam != (ProtoParameter *)0)
     delete outparam;
-  outparam = new ParameterBasic(voidtype);
+  outparam = make_unique<ParameterBasic>(voidtype).release();
 }
 
 ProtoParameter *ProtoStoreInternal::getOutput(void)
@@ -3403,7 +3403,7 @@ ProtoParameter *ProtoStoreInternal::getOutput(void)
 ProtoStore *ProtoStoreInternal::clone(void) const
 
 {
-  ProtoStoreInternal *res = new ProtoStoreInternal(voidtype);
+  ProtoStoreInternal *res = make_unique<ProtoStoreInternal>(voidtype).release();
   delete res->outparam;
   if (outparam != (ProtoParameter *)0)
     res->outparam = outparam->clone();
@@ -3743,7 +3743,7 @@ void FuncProto::paramShift(int4 paramshift)
   delete store;
 
   // This routine always converts -this- to have a ProtoStoreInternal
-  store = new ProtoStoreInternal(typefactory->getTypeVoid());
+  store = make_unique<ProtoStoreInternal>(typefactory->getTypeVoid()).release();
 
   store->setOutput(pieces[0]);
   uint4 j=0;
@@ -3879,7 +3879,7 @@ void FuncProto::getPieces(PrototypePieces &pieces) const
 void FuncProto::setScope(Scope *s,const Address &startpoint)
 
 {
-  store = new ProtoStoreSymbol(s,startpoint);
+  store = make_unique<ProtoStoreSymbol>(s,startpoint).release();
   if (model == (ProtoModel *)0)
     setModel(s->getArch()->defaultfp);
 }
@@ -3891,7 +3891,7 @@ void FuncProto::setScope(Scope *s,const Address &startpoint)
 void FuncProto::setInternal(ProtoModel *m,Datatype *vt)
 
 {
-  store = new ProtoStoreInternal(vt);
+  store = make_unique<ProtoStoreInternal>(vt).release();
   if (model == (ProtoModel *)0)
     setModel(m);
 }
@@ -4964,7 +4964,7 @@ void FuncCallSpecs::setFuncdata(Funcdata *f)
 FuncCallSpecs *FuncCallSpecs::clone(PcodeOp *newop) const
 
 {
-  FuncCallSpecs *res = new FuncCallSpecs(newop);
+  FuncCallSpecs *res = make_unique<FuncCallSpecs>(newop).release();
   res->setFuncdata(fd);
   // This sets op, name, address, fd
   res->effective_extrapop = effective_extrapop;
@@ -5490,7 +5490,7 @@ void FuncCallSpecs::forceSet(Funcdata &data,const FuncProto &fp)
 
   // Copy the recovered prototype into the override manager so that
   // future restarts don't have to rediscover it
-  FuncProto *newproto = new FuncProto();
+  FuncProto *newproto = make_unique<FuncProto>().release();
   newproto->copy(fp);
   data.getOverride().insertProtoOverride(op->getAddr(),newproto);
   if (lateRestriction(fp,newinput,newoutput)) {
