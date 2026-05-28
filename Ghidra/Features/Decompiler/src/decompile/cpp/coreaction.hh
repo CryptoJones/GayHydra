@@ -36,7 +36,7 @@ public:
   ActionStart(const string &g) : Action(0,"start",g) {}		///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionStart(getGroup());
+    return make_unique<ActionStart>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     data.startProcessing(); return 0; }
@@ -48,7 +48,7 @@ public:
   ActionStop(const string &g) : Action(0,"stop",g) {}		///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionStop(getGroup());
+    return make_unique<ActionStop>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     data.stopProcessing(); return 0; }
@@ -60,7 +60,7 @@ public:
   ActionStartCleanUp(const string &g) : Action(0,"startcleanup",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionStartCleanUp(getGroup());
+    return make_unique<ActionStartCleanUp>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     data.startCleanUp(); return 0; }
@@ -77,7 +77,7 @@ public:
   virtual void reset(Funcdata &data) { data.setTypeRecovery(true); }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionStartTypes(getGroup());
+    return make_unique<ActionStartTypes>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     if (data.startTypeRecovery()) count+=1;
@@ -99,7 +99,7 @@ public:
   virtual void reset(Funcdata &data) { analysis_finished = false; }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionStackPtrFlow(getGroup(),stackspace);
+    return make_unique<ActionStackPtrFlow>(getGroup(),stackspace).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -117,7 +117,7 @@ public:
   ActionLaneDivide(const string &g) : Action(rule_onceperfunc,"lanedivide",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionLaneDivide(getGroup());
+    return make_unique<ActionLaneDivide>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -132,7 +132,7 @@ public:
   virtual void reset(Funcdata &data) { localcount = 0; }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionSegmentize(getGroup());
+    return make_unique<ActionSegmentize>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -143,7 +143,7 @@ public:
   ActionForceGoto(const string &g) : Action(0,"forcegoto",g) {}		///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionForceGoto(getGroup());
+    return make_unique<ActionForceGoto>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -154,7 +154,7 @@ public:
 //   ActionCse(const string &g) : Action(0,"cse",g) {}			///< Constructor
 //   virtual Action *clone(const ActionGroupList &grouplist) const {
 //     if (!grouplist.contains(getGroup())) return (Action *)0;
-//     return new ActionCse(getGroup());
+//     return make_unique<ActionCse>(getGroup()).release();
 //   }
 //   virtual int4 apply(Funcdata &data);
 // };
@@ -168,7 +168,7 @@ public:
   ActionMultiCse(const string &g) : Action(0,"multicse",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMultiCse(getGroup());
+    return make_unique<ActionMultiCse>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -179,7 +179,7 @@ public:
   ActionShadowVar(const string &g) : Action(0,"shadowvar",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionShadowVar(getGroup());
+    return make_unique<ActionShadowVar>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -197,7 +197,7 @@ public:
   virtual void reset(Funcdata &data) { localcount = 0; }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionConstantPtr(getGroup());
+    return make_unique<ActionConstantPtr>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -208,7 +208,7 @@ public:
   ActionDeindirect(const string &g) : Action(0,"deindirect",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDeindirect(getGroup());
+    return make_unique<ActionDeindirect>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -224,7 +224,7 @@ public:
   ActionVarnodeProps(const string &g) : Action(0,"varnodeprops",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionVarnodeProps(getGroup());
+    return make_unique<ActionVarnodeProps>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -246,7 +246,7 @@ public:
   ActionDirectWrite(const string &g,bool prop) : Action(0,"directwrite",g) { propagateIndirect=prop; }	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDirectWrite(getGroup(),propagateIndirect);
+    return make_unique<ActionDirectWrite>(getGroup(),propagateIndirect).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -261,7 +261,7 @@ public:
   ActionConstbase(const string &g) : Action(0,"constbase",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionConstbase(getGroup());
+    return make_unique<ActionConstbase>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -272,7 +272,7 @@ public:
   ActionSpacebase(const string &g) : Action(0,"spacebase",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionSpacebase(getGroup());
+    return make_unique<ActionSpacebase>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     data.spacebase(); return 0; }
@@ -284,7 +284,7 @@ public:
   ActionHeritage(const string &g) : Action(0,"heritage",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionHeritage(getGroup());
+    return make_unique<ActionHeritage>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.opHeritage(); return 0; }
 };
@@ -295,7 +295,7 @@ public:
   ActionNonzeroMask(const string &g) : Action(0,"nonzeromask",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionNonzeroMask(getGroup());
+    return make_unique<ActionNonzeroMask>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.calcNZMask(); return 0; }
 };
@@ -331,7 +331,7 @@ public:
   ActionSetCasts(const string &g) : Action(rule_onceperfunc,"setcasts",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionSetCasts(getGroup());
+    return make_unique<ActionSetCasts>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -342,7 +342,7 @@ public:
   ActionAssignHigh(const string &g) : Action(rule_onceperfunc,"assignhigh",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionAssignHigh(getGroup());
+    return make_unique<ActionAssignHigh>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.setHighLevel(); return 0; }
 };
@@ -353,7 +353,7 @@ public:
   ActionMarkIndirectOnly(const string &g) : Action(rule_onceperfunc, "markindirectonly",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMarkIndirectOnly(getGroup());
+    return make_unique<ActionMarkIndirectOnly>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) {
     data.markIndirectOnly(); return 0; }
@@ -365,7 +365,7 @@ public:
   ActionMergeRequired(const string &g) : Action(rule_onceperfunc,"mergerequired",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMergeRequired(getGroup());
+    return make_unique<ActionMergeRequired>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { 
     data.getMerge().mergeAddrTied(); data.getMerge().groupPartials(); data.getMerge().mergeMarker(); return 0; }
@@ -377,7 +377,7 @@ public:
   ActionMergeAdjacent(const string &g) : Action(rule_onceperfunc,"mergeadjacent",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMergeAdjacent(getGroup());
+    return make_unique<ActionMergeAdjacent>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.getMerge().mergeAdjacent(); return 0; }
 };
@@ -388,7 +388,7 @@ public:
   ActionMergeCopy(const string &g) : Action(rule_onceperfunc,"mergecopy",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMergeCopy(getGroup());
+    return make_unique<ActionMergeCopy>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.getMerge().mergeOpcode(CPUI_COPY); return 0; }
 };
@@ -399,7 +399,7 @@ public:
   ActionMergeMultiEntry(const string &g) : Action(rule_onceperfunc,"mergemultientry",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMergeMultiEntry(getGroup());
+    return make_unique<ActionMergeMultiEntry>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.getMerge().mergeMultiEntry(); return 0; }
 };
@@ -410,7 +410,7 @@ public:
   ActionMergeType(const string &g) : Action(rule_onceperfunc,"mergetype",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMergeType(getGroup());
+    return make_unique<ActionMergeType>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { 
     data.getMerge().mergeByDatatype(data.beginLoc(),data.endLoc()); return 0; }
@@ -441,7 +441,7 @@ public:
   ActionMarkExplicit(const string &g) : Action(rule_onceperfunc,"markexplicit",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMarkExplicit(getGroup());
+    return make_unique<ActionMarkExplicit>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -462,7 +462,7 @@ public:
   ActionMarkImplied(const string &g) : Action(rule_onceperfunc,"markimplied",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMarkImplied(getGroup());
+    return make_unique<ActionMarkImplied>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -483,7 +483,7 @@ public:
   ActionNameVars(const string &g) : Action(rule_onceperfunc,"namevars",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionNameVars(getGroup());
+    return make_unique<ActionNameVars>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -494,7 +494,7 @@ public:
   ActionUnreachable(const string &g) : Action(0,"unreachable",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionUnreachable(getGroup());
+    return make_unique<ActionUnreachable>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -505,7 +505,7 @@ public:
   ActionDoNothing(const string &g) : Action(rule_repeatapply,"donothing",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDoNothing(getGroup());
+    return make_unique<ActionDoNothing>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -517,7 +517,7 @@ public:
   ActionLateDoNothing(const string &g) : Action(0,"latedonothing",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionLateDoNothing(getGroup());
+    return make_unique<ActionLateDoNothing>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -528,7 +528,7 @@ public:
   ActionRedundBranch(const string &g) : Action(0,"redundbranch",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionRedundBranch(getGroup());
+    return make_unique<ActionRedundBranch>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -539,7 +539,7 @@ public:
   ActionDeterminedBranch(const string &g) : Action(0,"determinedbranch",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDeterminedBranch(getGroup());
+    return make_unique<ActionDeterminedBranch>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -573,7 +573,7 @@ public:
   ActionDeadCode(const string &g) : Action(0,"deadcode",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDeadCode(getGroup());
+    return make_unique<ActionDeadCode>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -608,7 +608,7 @@ public:
   ActionConditionalConst(const string &g) : Action(0,"condconst",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionConditionalConst(getGroup());
+    return make_unique<ActionConditionalConst>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -622,7 +622,7 @@ public:
   ActionSwitchNorm(const string &g) : Action(0,"switchnorm",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionSwitchNorm(getGroup());
+    return make_unique<ActionSwitchNorm>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -644,7 +644,7 @@ public:
   virtual void reset(Funcdata &data) { data.setNormalization(true); }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionNormalizeSetup(getGroup());
+    return make_unique<ActionNormalizeSetup>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -660,7 +660,7 @@ public:
   ActionPrototypeTypes(const string &g) : Action(rule_onceperfunc,"prototypetypes",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionPrototypeTypes(getGroup());
+    return make_unique<ActionPrototypeTypes>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -675,7 +675,7 @@ public:
   ActionDefaultParams(const string &g) : Action(rule_onceperfunc,"defaultparams",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDefaultParams(getGroup());
+    return make_unique<ActionDefaultParams>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -693,7 +693,7 @@ public:
   ActionExtraPopSetup(const string &g,AddrSpace *ss) : Action(rule_onceperfunc,"extrapopsetup",g) { stackspace = ss; }	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionExtraPopSetup(getGroup(),stackspace);
+    return make_unique<ActionExtraPopSetup>(getGroup(),stackspace).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -711,7 +711,7 @@ public:
   ActionFuncLink(const string &g) : Action(rule_onceperfunc,"funclink",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionFuncLink(getGroup());
+    return make_unique<ActionFuncLink>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -729,7 +729,7 @@ public:
   ActionFuncLinkOutOnly(const string &g) : Action(rule_onceperfunc,"funclink_outonly",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionFuncLinkOutOnly(getGroup());
+    return make_unique<ActionFuncLinkOutOnly>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -746,7 +746,7 @@ public:
   ActionParamDouble(const string &g) : Action(0, "paramdouble",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionParamDouble(getGroup());
+    return make_unique<ActionParamDouble>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -764,7 +764,7 @@ public:
   ActionActiveParam(const string &g) : Action( 0, "activeparam",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionActiveParam(getGroup());
+    return make_unique<ActionActiveParam>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -777,7 +777,7 @@ public:
   ActionActiveReturn(const string &g) : Action( 0, "activereturn",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionActiveReturn(getGroup());
+    return make_unique<ActionActiveReturn>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -788,7 +788,7 @@ public:
 //   ActionParamShiftStart(const string &g) : Action( rule_onceperfunc, "paramshiftstart",g) {}	///< Constructor
 //   virtual Action *clone(const ActionGroupList &grouplist) const {
 //     if (!grouplist.contains(getGroup())) return (Action *)0;
-//     return new ActionParamShiftStart(getGroup());
+//     return make_unique<ActionParamShiftStart>(getGroup()).release();
 //   }
 //   virtual int4 apply(Funcdata &data);
 // };
@@ -801,7 +801,7 @@ public:
 //   virtual void reset(Funcdata &data) { paramshiftsleft = true; }
 //   virtual Action *clone(const ActionGroupList &grouplist) const {
 //     if (!grouplist.contains(getGroup())) return (Action *)0;
-//     return new ActionParamShiftStop(getGroup());
+//     return make_unique<ActionParamShiftStop>(getGroup()).release();
 //   }
 //   virtual int4 apply(Funcdata &data);
 // };
@@ -813,7 +813,7 @@ public:
   ActionReturnRecovery(const string &g) : Action( 0, "returnrecovery",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionReturnRecovery(getGroup());
+    return make_unique<ActionReturnRecovery>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -827,7 +827,7 @@ public:
   ActionRestrictLocal(const string &g) : Action(0,"restrictlocal",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionRestrictLocal(getGroup());
+    return make_unique<ActionRestrictLocal>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -851,7 +851,7 @@ public:
   ActionLikelyTrash(const string &g) : Action(0,"likelytrash",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionLikelyTrash(getGroup());
+    return make_unique<ActionLikelyTrash>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -870,7 +870,7 @@ public:
   virtual void reset(Funcdata &data) { numpass = 0; }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionRestructureVarnode(getGroup());
+    return make_unique<ActionRestructureVarnode>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -883,7 +883,7 @@ public:
   ActionMappedLocalSync(const string &g) : Action(0,"mapped_local_sync",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMappedLocalSync(getGroup());
+    return make_unique<ActionMappedLocalSync>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -894,7 +894,7 @@ public:
   ActionMapGlobals(const string &g) : Action(rule_onceperfunc,"mapglobals",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionMapGlobals(getGroup());
+    return make_unique<ActionMapGlobals>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.mapGlobals(); return 0; }
 };
@@ -908,7 +908,7 @@ public:
   ActionInputPrototype(const string &g) : Action(rule_onceperfunc,"inputprototype",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionInputPrototype(getGroup());
+    return make_unique<ActionInputPrototype>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -919,7 +919,7 @@ public:
   ActionOutputPrototype(const string &g) : Action(rule_onceperfunc,"outputprototype",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionOutputPrototype(getGroup());
+    return make_unique<ActionOutputPrototype>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -934,7 +934,7 @@ public:
   ActionUnjustifiedParams(const string &g) : Action(0,"unjustparams",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionUnjustifiedParams(getGroup());
+    return make_unique<ActionUnjustifiedParams>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -989,7 +989,7 @@ public:
   virtual void reset(Funcdata &data) { localcount = 0; }
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionInferTypes(getGroup());
+    return make_unique<ActionInferTypes>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -1006,7 +1006,7 @@ public:
   ActionHideShadow(const string &g) : Action(rule_onceperfunc,"hideshadow",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionHideShadow(getGroup());
+    return make_unique<ActionHideShadow>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -1017,7 +1017,7 @@ public:
   ActionDominantCopy(const string &g) : Action(rule_onceperfunc,"dominantcopy",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDominantCopy(getGroup());
+    return make_unique<ActionDominantCopy>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.getMerge().processCopyTrims(); return 0; }
 };
@@ -1028,7 +1028,7 @@ public:
   ActionCopyMarker(const string &g) : Action(rule_onceperfunc,"copymarker",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionCopyMarker(getGroup());
+    return make_unique<ActionCopyMarker>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data) { data.getMerge().markInternalCopies(); return 0; }
 };
@@ -1039,7 +1039,7 @@ public:
   ActionDynamicMapping(const string &g) : Action(0,"dynamicmapping",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDynamicMapping(getGroup());
+    return make_unique<ActionDynamicMapping>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -1050,7 +1050,7 @@ public:
   ActionDynamicSymbols(const string &g) : Action(rule_onceperfunc,"dynamicsymbols",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionDynamicSymbols(getGroup());
+    return make_unique<ActionDynamicSymbols>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -1061,7 +1061,7 @@ public:
   ActionPrototypeWarnings(const string &g) : Action(rule_onceperfunc,"prototypewarnings",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionPrototypeWarnings(getGroup());
+    return make_unique<ActionPrototypeWarnings>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
@@ -1074,7 +1074,7 @@ public:
   ActionInternalStorage(const string &g) : Action(rule_onceperfunc,"internalstorage",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Action *)0;
-    return new ActionInternalStorage(getGroup());
+    return make_unique<ActionInternalStorage>(getGroup()).release();
   }
   virtual int4 apply(Funcdata &data);
 };
