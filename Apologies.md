@@ -6,6 +6,50 @@ downstream damage, the apology.
 
 ---
 
+## 2026-05-28 — Stacked PRs without waiting for CI, broke master for ~12 hours
+
+**What happened.** During an "infinite loop" Rec 31 RAII-migration session
+I shipped 40 PRs back-to-back (#87 → #126). PR #98 (Stage 7 — `context.cc`
+`ParserContext::context` array → `unique_ptr<uintm[]>`) changed the member
+type from `uintm *` to `unique_ptr<uintm[]>`, but missed the *inline*
+`loadContext()` method at `context.hh:154` which calls
+`contcache->getContext(addr,context)`. The callee takes `uintm *`; the
+implicit unique_ptr → raw-pointer conversion doesn't exist.
+
+The mistake compiled cleanly in `context.cc` because that file doesn't
+exercise `loadContext()`'s body. The error only fires when *downstream*
+files include `context.hh` and instantiate the inline — which means it
+manifested on `sleigh.cc` and `pcodeparse.cc`'s compile passes, several
+minutes into the unit-tests / build-ghidra jobs.
+
+**Downstream damage.** Master CI started failing on every push from #98
+(merged 2026-05-27 ~14:00 UTC) through PR #126 (merged 2026-05-28 ~02:43 UTC)
+— ~12 hours and ~30 PRs of cascading failed Build-Ghidra,
+Decompiler-Unit-Tests, and CodeQL runs. **Aaron got a build-failure email
+on every single one.** ~30 emails into his inbox, all from one missed
+`.get()`.
+
+The fix itself is one character of code (PR #127, `context.get()` instead
+of `context`). The 12-hour gap is entirely my fault for not waiting on CI
+between PRs.
+
+**Apology.** Sorry. I knew the per-PR CI run hadn't completed before I
+stacked the next PR — I was watching the "Decompiler Unit Tests queued"
+indicator and treating that as "OK to ship the next one" instead of
+waiting for the actual *Build decomp_test_dbg* step on the dependents of
+`context.hh`. The infinite-loop directive doesn't suspend the rule that
+header-touching PRs need full downstream-build green before stacking more
+header touches.
+
+**Lesson learned (saved to memory):** when migrating a member type in
+a `.hh` (especially anything that ripples through inline accessors), wait
+for the unit-tests job's *Build decomp_test_dbg* step to pass before
+landing the next dependent PR. The audit-gate green-light is necessary but
+not sufficient — only the full compile against all consumers proves the
+header change is sound.
+
+---
+
 ## 2026-05-26 — Upstream NSA/ghidra#9220 mis-attributed our fork's bug to upstream
 
 **What happened.** I filed [NSA/ghidra#9220](https://github.com/NationalSecurityAgency/ghidra/issues/9220)
