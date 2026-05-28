@@ -131,7 +131,7 @@ public:
   SizeRestrictedFilter(int4 min,int4 max);	///< Constructor
   SizeRestrictedFilter(const SizeRestrictedFilter &op2);	///< Copy constructor
   bool filterOnSize(Datatype *dt) const;		///< Enforce any size bounds on a given data-type
-  virtual DatatypeFilter *clone(void) const { return new SizeRestrictedFilter(*this); }
+  virtual DatatypeFilter *clone(void) const { return make_unique<SizeRestrictedFilter>(*this).release(); }
   virtual bool filter(Datatype *dt) const { return filterOnSize(dt); }
   virtual void decode(Decoder &decoder);
 };
@@ -146,7 +146,7 @@ public:
   MetaTypeFilter(type_metatype meta);	///< Constructor for use with decode()
   MetaTypeFilter(type_metatype meta,int4 min,int4 max);	///< Constructor
   MetaTypeFilter(const MetaTypeFilter &op2);	///< Copy constructor
-  virtual DatatypeFilter *clone(void) const { return new MetaTypeFilter(*this); }
+  virtual DatatypeFilter *clone(void) const { return make_unique<MetaTypeFilter>(*this).release(); }
   virtual bool filter(Datatype *dt) const;
 };
 
@@ -160,7 +160,7 @@ public:
   HomogeneousAggregate(type_metatype meta);	///< Constructor for use with decode()
   HomogeneousAggregate(type_metatype meta,int4 maxPrim,int4 minSize,int4 maxSize);	///< Constructor
   HomogeneousAggregate(const HomogeneousAggregate &op2);	///< Copy constructor
-  virtual DatatypeFilter *clone(void) const { return new HomogeneousAggregate(*this); }
+  virtual DatatypeFilter *clone(void) const { return make_unique<HomogeneousAggregate>(*this).release(); }
   virtual bool filter(Datatype *dt) const;
   virtual void decode(Decoder &decoder);
 };
@@ -223,7 +223,7 @@ class VarargsFilter : public QualifierFilter {
 public:
   VarargsFilter(void) { firstPos = 0x80000000; lastPos = 0x7fffffff; }	///< Constructor for use with decode
   VarargsFilter(int4 first,int4 last) { firstPos = first; lastPos = last; }	///< Constructor
-  virtual QualifierFilter *clone(void) const { return new VarargsFilter(firstPos,lastPos); }
+  virtual QualifierFilter *clone(void) const { return make_unique<VarargsFilter>(firstPos,lastPos).release(); }
   virtual bool filter(const PrototypePieces &proto,int4 pos) const;
   virtual void decode(Decoder &decoder);
 };
@@ -236,7 +236,7 @@ class PositionMatchFilter : public QualifierFilter {
   int4 position;	///< Parameter position being filtered for
 public:
   PositionMatchFilter(int4 pos) { position = pos; }	///< Constructor
-  virtual QualifierFilter *clone(void) const { return new PositionMatchFilter(position); }
+  virtual QualifierFilter *clone(void) const { return make_unique<PositionMatchFilter>(position).release(); }
   virtual bool filter(const PrototypePieces &proto,int4 pos) const;
   virtual void decode(Decoder &decoder);
 };
@@ -329,7 +329,7 @@ class GotoStack : public AssignAction {
 public:
   GotoStack(const ParamListStandard *res,int4 val);	///< Constructor for use with decode
   GotoStack(const ParamListStandard *res);	///< Constructor
-  virtual AssignAction *clone(const ParamListStandard *newResource) const { return new GotoStack(newResource); }
+  virtual AssignAction *clone(const ParamListStandard *newResource) const { return make_unique<GotoStack>(newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual bool fillinOutputMap(ParamActive *active) const;
@@ -343,7 +343,7 @@ class ConvertToPointer : public AssignAction {
   AddrSpace *space;	///< Address space used for pointer size
 public:
   ConvertToPointer(const ParamListStandard *res);	///< Constructor for use with decode()
-  virtual AssignAction *clone(const ParamListStandard *newResource) const { return new ConvertToPointer(newResource); }
+  virtual AssignAction *clone(const ParamListStandard *newResource) const { return make_unique<ConvertToPointer>(newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual void decode(Decoder &decoder);
@@ -368,7 +368,7 @@ public:
   MultiSlotAssign(const ParamListStandard *res);	///< Constructor for use with decode
   MultiSlotAssign(type_class store,bool stack,bool mostSig,bool align,bool justRight,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new MultiSlotAssign(resourceType,consumeFromStack,consumeMostSig,enforceAlignment,justifyRight,newResource); }
+    return make_unique<MultiSlotAssign>(resourceType,consumeFromStack,consumeMostSig,enforceAlignment,justifyRight,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual bool fillinOutputMap(ParamActive *active) const;
@@ -387,7 +387,7 @@ class MultiMemberAssign : public AssignAction {
 public:
   MultiMemberAssign(type_class store,bool stack,bool mostSig,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new MultiMemberAssign(resourceType,consumeFromStack,consumeMostSig,newResource); }
+    return make_unique<MultiMemberAssign>(resourceType,consumeFromStack,consumeMostSig,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual bool fillinOutputMap(ParamActive *active) const;
@@ -418,8 +418,8 @@ public:
   MultiSlotDualAssign(type_class baseStore,type_class altStore,bool stack,bool mostSig,
               bool justRight,bool fillAlt,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new MultiSlotDualAssign(baseType,altType,consumeFromStack,consumeMostSig,justifyRight,
-              fillAlternate,newResource); }
+    return make_unique<MultiSlotDualAssign>(baseType,altType,consumeFromStack,consumeMostSig,justifyRight,
+              fillAlternate,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual bool fillinOutputMap(ParamActive *active) const;
@@ -435,7 +435,7 @@ class ConsumeAs : public AssignAction {
 public:
   ConsumeAs(type_class store,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new ConsumeAs(resourceType,newResource); }
+    return make_unique<ConsumeAs>(resourceType,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual bool fillinOutputMap(ParamActive *active) const;
@@ -459,7 +459,7 @@ class HiddenReturnAssign : public AssignAction {
 public:
   HiddenReturnAssign(const ParamListStandard *res,uint4 code);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new HiddenReturnAssign(newResource, retCode); }
+    return make_unique<HiddenReturnAssign>(newResource, retCode).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual void decode(Decoder &decoder);
@@ -481,7 +481,7 @@ public:
   ConsumeExtra(const ParamListStandard *res);	///< Constructor for use with decode
   ConsumeExtra(type_class store,bool match,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new ConsumeExtra(resourceType,matchSize,newResource); }
+    return make_unique<ConsumeExtra>(resourceType,matchSize,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual void decode(Decoder &decoder);
@@ -502,7 +502,7 @@ public:
   ExtraStack(const ParamListStandard *res);	///< Constructor for use with decode
   ExtraStack(type_class storage,int4 offset,const ParamListStandard *res);	///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-    return new ExtraStack(afterStorage,afterBytes,newResource); }
+    return make_unique<ExtraStack>(afterStorage,afterBytes,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
 			      vector<int4> &status,ParameterPieces &res) const;
   virtual void decode(Decoder &decoder);
@@ -522,7 +522,7 @@ public:
   ConsumeRemaining(const ParamListStandard *res); ///< Constructor for use with decode
   ConsumeRemaining(type_class store, const ParamListStandard *res); ///< Constructor
   virtual AssignAction *clone(const ParamListStandard *newResource) const {
-	return new ConsumeRemaining(resourceType,newResource); }
+	return make_unique<ConsumeRemaining>(resourceType,newResource).release(); }
   virtual uint4 assignAddress(Datatype *dt,const PrototypePieces &proto,int4 pos,TypeFactory &tlist,
                   vector<int4> &status,ParameterPieces &res) const;
   virtual void decode(Decoder &decoder);
