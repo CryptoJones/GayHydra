@@ -65,14 +65,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest]
+        # Rec 23: expand from Ubuntu-only to all three native-decompiler
+        # platforms. The `build` job already runs on this matrix
+        # successfully (per release.yml's parallel build_sign_publish_*
+        # jobs); this job covers the JVM unit-test surface on the same
+        # OSes so platform-specific test bugs surface here rather than
+        # at user-reported time.
+        platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
 
-      - name: Read Ghidra JDK Version
+      - name: Read Ghidra JDK Version (Unix)
+        if: runner.os != 'Windows'
         run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Read Ghidra JDK Version (Windows)
+        if: runner.os == 'Windows'
+        # Windows runners use PowerShell by default; awk isn't on PATH.
+        shell: pwsh
+        run: |
+          $line = Get-Content Ghidra/application.properties | Where-Object { $_ -match '^application\.java\.min=' }
+          $ver = ($line -split '=')[1]
+          echo "JDK_VER=$ver" >> $env:GITHUB_ENV
 
       - name: Setup JDK
         uses: actions/setup-java@v5
