@@ -171,7 +171,7 @@ PatternBlock *TokenPattern::buildSingle(int4 startbit,int4 endbit,uintm byteval)
   byteval = (byteval << (sizeof(uintm)*8-size))& mask;
   mask >>= startbit;
   byteval >>= startbit;
-  return new PatternBlock(offset,mask,byteval);
+  return make_unique<PatternBlock>(offset,mask,byteval).release();
 }
 
 PatternBlock *TokenPattern::buildBigBlock(int4 size,int4 bitstart,int4 bitend,intb value)
@@ -265,7 +265,7 @@ TokenPattern::TokenPattern(void)
 {
   leftellipsis = false;
   rightellipsis = false;
-  pattern = new InstructionPattern(true);
+  pattern = make_unique<InstructionPattern>(true).release();
 }
 
 TokenPattern::TokenPattern(bool tf)
@@ -273,7 +273,7 @@ TokenPattern::TokenPattern(bool tf)
 {				// TRUE or FALSE pattern
   leftellipsis = false;
   rightellipsis = false;
-  pattern = new InstructionPattern(tf);
+  pattern = make_unique<InstructionPattern>(tf).release();
 }
   
 TokenPattern::TokenPattern(Token *tok)
@@ -281,7 +281,7 @@ TokenPattern::TokenPattern(Token *tok)
 {
   leftellipsis = false;
   rightellipsis = false;
-  pattern = new InstructionPattern(true);
+  pattern = make_unique<InstructionPattern>(true).release();
   toklist.push_back(tok);
 }
 
@@ -298,7 +298,7 @@ TokenPattern::TokenPattern(Token *tok,intb value,int4 bitstart,int4 bitend)
     block = buildBigBlock(tok->getSize(),bitstart,bitend,value);
   else
     block = buildLittleBlock(tok->getSize(),bitstart,bitend,value);
-  pattern = new InstructionPattern(block);
+  pattern = make_unique<InstructionPattern>(block).release();
 }
 
 TokenPattern::TokenPattern(intb value,int4 startbit,int4 endbit)
@@ -310,7 +310,7 @@ TokenPattern::TokenPattern(intb value,int4 startbit,int4 endbit)
   int4 size = (endbit/8) + 1;
 
   block = buildBigBlock(size,size*8-1-endbit,size*8-1-startbit,value);
-  pattern = new ContextPattern(block);
+  pattern = make_unique<ContextPattern>(block).release();
 }
 
 TokenPattern::TokenPattern(const TokenPattern &tokpat)
@@ -469,39 +469,39 @@ PatternExpression *PatternExpression::decodeExpression(Decoder &decoder,Translat
   uint4 el = decoder.peekElement();
 
   if (el == sla::ELEM_TOKENFIELD)
-    res = new TokenField();
+    res = make_unique<TokenField>().release();
   else if (el == sla::ELEM_CONTEXTFIELD)
-    res = new ContextField();
+    res = make_unique<ContextField>().release();
   else if (el == sla::ELEM_INTB)
-    res = new ConstantValue();
+    res = make_unique<ConstantValue>().release();
   else if (el == sla::ELEM_OPERAND_EXP)
-    res = new OperandValue();
+    res = make_unique<OperandValue>().release();
   else if (el == sla::ELEM_START_EXP)
-    res = new StartInstructionValue();
+    res = make_unique<StartInstructionValue>().release();
   else if (el == sla::ELEM_END_EXP)
-    res = new EndInstructionValue();
+    res = make_unique<EndInstructionValue>().release();
   else if (el == sla::ELEM_PLUS_EXP)
-    res = new PlusExpression();
+    res = make_unique<PlusExpression>().release();
   else if (el == sla::ELEM_SUB_EXP)
-    res = new SubExpression();
+    res = make_unique<SubExpression>().release();
   else if (el == sla::ELEM_MULT_EXP)
-    res = new MultExpression();
+    res = make_unique<MultExpression>().release();
   else if (el == sla::ELEM_LSHIFT_EXP)
-    res = new LeftShiftExpression();
+    res = make_unique<LeftShiftExpression>().release();
   else if (el == sla::ELEM_RSHIFT_EXP)
-    res = new RightShiftExpression();
+    res = make_unique<RightShiftExpression>().release();
   else if (el == sla::ELEM_AND_EXP)
-    res = new AndExpression();
+    res = make_unique<AndExpression>().release();
   else if (el == sla::ELEM_OR_EXP)
-    res = new OrExpression();
+    res = make_unique<OrExpression>().release();
   else if (el == sla::ELEM_XOR_EXP)
-    res = new XorExpression();
+    res = make_unique<XorExpression>().release();
   else if (el == sla::ELEM_DIV_EXP)
-    res = new DivExpression();
+    res = make_unique<DivExpression>().release();
   else if (el == sla::ELEM_MINUS_EXP)
-    res = new MinusExpression();
+    res = make_unique<MinusExpression>().release();
   else if (el == sla::ELEM_NOT_EXP)
-    res = new NotExpression();
+    res = make_unique<NotExpression>().release();
   else
     throw DecoderError("Invalid pattern expression element");
   try {
