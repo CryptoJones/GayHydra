@@ -102,7 +102,7 @@ VariablePiece::VariablePiece(HighVariable *h,int4 offset,HighVariable *grp)
   if (grp != (HighVariable *)0)
     group = grp->piece->getGroup();
   else
-    group = new VariableGroup();
+    group = make_unique<VariableGroup>().release();
   group->addPiece(this);
 }
 
@@ -585,8 +585,8 @@ void HighVariable::groupWith(int4 off,HighVariable *hi2)
 
 {
   if (piece == (VariablePiece *)0 && hi2->piece == (VariablePiece *)0) {
-    hi2->piece = new VariablePiece(hi2,0);
-    piece = new VariablePiece(this,off,hi2);
+    hi2->piece = make_unique<VariablePiece>(hi2,0).release();
+    piece = make_unique<VariablePiece>(this,off,hi2).release();
     hi2->piece->markIntersectionDirty();
     return;
   }
@@ -595,7 +595,7 @@ void HighVariable::groupWith(int4 off,HighVariable *hi2)
       hi2->piece->markIntersectionDirty();
     highflags |= intersectdirty | extendcoverdirty;
     off += hi2->piece->getOffset();
-    piece = new VariablePiece(this,off,hi2);
+    piece = make_unique<VariablePiece>(this,off,hi2).release();
   }
   else if (hi2->piece == (VariablePiece *)0) {
     int4 hi2Off = piece->getOffset() - off;
@@ -606,7 +606,7 @@ void HighVariable::groupWith(int4 off,HighVariable *hi2)
     if ((highflags & intersectdirty) == 0)
       piece->markIntersectionDirty();
     hi2->highflags |= intersectdirty | extendcoverdirty;
-    hi2->piece = new VariablePiece(hi2,hi2Off,this);
+    hi2->piece = make_unique<VariablePiece>(hi2,hi2Off,this).release();
   }
   else {
     int4 offDiff = hi2->piece->getOffset() + off - piece->getOffset();

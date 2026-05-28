@@ -176,6 +176,9 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/prettyprint.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage_bfd.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleigh.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/interface.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/consolemain.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/variable.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
         // `state[i] = new ConstructState(MAX_OPERAND);` — the
