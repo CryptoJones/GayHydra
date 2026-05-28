@@ -989,7 +989,7 @@ void BlockGraph::clearEdgeFlags(uint4 fl)
 FlowBlock *BlockGraph::createVirtualRoot(const vector<FlowBlock *> &rootlist)
 
 {
-  FlowBlock *newroot = new FlowBlock();
+  FlowBlock *newroot = make_unique<FlowBlock>().release();
   for(int4 i=0;i<rootlist.size();++i)
     rootlist[i]->addInEdge(newroot,0);
   return newroot;
@@ -1663,7 +1663,7 @@ FlowBlock *BlockGraph::getStartBlock(void) const
 FlowBlock *BlockGraph::newBlock(void)
 
 {
-  FlowBlock *ret = new FlowBlock();
+  FlowBlock *ret = make_unique<FlowBlock>().release();
   addBlock(ret);
   return ret;
 }
@@ -1674,7 +1674,7 @@ FlowBlock *BlockGraph::newBlock(void)
 BlockBasic *BlockGraph::newBlockBasic(Funcdata *fd)
 
 {
-  BlockBasic *ret = new BlockBasic(fd);
+  BlockBasic *ret = make_unique<BlockBasic>(fd).release();
   addBlock(ret);
   return ret;
 }
@@ -1685,7 +1685,7 @@ BlockBasic *BlockGraph::newBlockBasic(Funcdata *fd)
 BlockCopy *BlockGraph::newBlockCopy(FlowBlock *bl)
 
 {
-  BlockCopy *ret = new BlockCopy(bl);
+  BlockCopy *ret = make_unique<BlockCopy>(bl).release();
   ret->intothis = bl->intothis;
   ret->outofthis = bl->outofthis;
   ret->immed_dom = bl->immed_dom;
@@ -1706,7 +1706,7 @@ BlockCopy *BlockGraph::newBlockCopy(FlowBlock *bl)
 BlockGoto *BlockGraph::newBlockGoto(FlowBlock *bl)
 
 {
-  BlockGoto *ret = new BlockGoto(bl->getOut(0));
+  BlockGoto *ret = make_unique<BlockGoto>(bl->getOut(0)).release();
   vector<FlowBlock *> nodes;
   nodes.push_back(bl);
   identifyInternal(ret,nodes);
@@ -1735,7 +1735,7 @@ BlockMultiGoto *BlockGraph::newBlockMultiGoto(FlowBlock *bl,int4 outedge)
       ret->setDefaultGoto();
   }
   else {
-    ret = new BlockMultiGoto(bl);
+    ret = make_unique<BlockMultiGoto>(bl).release();
     int4 origSizeOut = bl->sizeOut();
     vector<FlowBlock *> nodes;
     nodes.push_back(bl);
@@ -1766,7 +1766,7 @@ BlockList *BlockGraph::newBlockList(const vector<FlowBlock *> &nodes)
   int4 outforce = nodes.back()->sizeOut();
   if (outforce==2)
     out0 = nodes.back()->getOut(0);
-  BlockList *ret = new BlockList();
+  BlockList *ret = make_unique<BlockList>().release();
   identifyInternal(ret,nodes);
   addBlock(ret);
   ret->forceOutputNum(outforce);
@@ -1787,7 +1787,7 @@ BlockCondition *BlockGraph::newBlockCondition(FlowBlock *b1,FlowBlock *b2)
   const FlowBlock *out0 = b2->getOut(0);
   vector<FlowBlock *> nodes;
   OpCode opc = (b1->getFalseOut() == b2) ? CPUI_INT_OR : CPUI_INT_AND;
-  BlockCondition *ret = new BlockCondition(opc);
+  BlockCondition *ret = make_unique<BlockCondition>(opc).release();
   nodes.push_back(b1);
   nodes.push_back(b2);
   identifyInternal(ret,nodes);
@@ -1808,7 +1808,7 @@ BlockIf *BlockGraph::newBlockIfGoto(FlowBlock *cond)
 
   const FlowBlock *out0 = cond->getOut(0);
   vector<FlowBlock *> nodes;
-  BlockIf *ret = new BlockIf();
+  BlockIf *ret = make_unique<BlockIf>().release();
   ret->setGotoTarget(cond->getOut(1)); // Store the target
   nodes.push_back(cond);
   identifyInternal(ret,nodes);
@@ -1827,7 +1827,7 @@ BlockIf *BlockGraph::newBlockIf(FlowBlock *cond,FlowBlock *tc)
 
 {
   vector<FlowBlock *> nodes;
-  BlockIf *ret = new BlockIf();
+  BlockIf *ret = make_unique<BlockIf>().release();
   nodes.push_back(cond);
   nodes.push_back(tc);
   identifyInternal(ret,nodes);
@@ -1845,7 +1845,7 @@ BlockIf *BlockGraph::newBlockIfElse(FlowBlock *cond,FlowBlock *tc,FlowBlock *fc)
 
 {
   vector<FlowBlock *> nodes;
-  BlockIf *ret = new BlockIf();
+  BlockIf *ret = make_unique<BlockIf>().release();
   nodes.push_back(cond);
   nodes.push_back(tc);
   nodes.push_back(fc);
@@ -1863,7 +1863,7 @@ BlockWhileDo *BlockGraph::newBlockWhileDo(FlowBlock *cond,FlowBlock *cl)
 
 {
   vector<FlowBlock *> nodes;
-  BlockWhileDo *ret = new BlockWhileDo();
+  BlockWhileDo *ret = make_unique<BlockWhileDo>().release();
   nodes.push_back(cond);
   nodes.push_back(cl);
   identifyInternal(ret,nodes);
@@ -1879,7 +1879,7 @@ BlockDoWhile *BlockGraph::newBlockDoWhile(FlowBlock *condcl)
 
 {
   vector<FlowBlock *> nodes;
-  BlockDoWhile *ret = new BlockDoWhile();
+  BlockDoWhile *ret = make_unique<BlockDoWhile>().release();
   nodes.push_back(condcl);
   identifyInternal(ret,nodes);
   addBlock(ret);
@@ -1894,7 +1894,7 @@ BlockInfLoop *BlockGraph::newBlockInfLoop(FlowBlock *body)
 
 {
   vector<FlowBlock *> nodes;
-  BlockInfLoop *ret = new BlockInfLoop();
+  BlockInfLoop *ret = make_unique<BlockInfLoop>().release();
   nodes.push_back(body);
   identifyInternal(ret,nodes);
   addBlock(ret);
@@ -1909,7 +1909,7 @@ BlockSwitch *BlockGraph::newBlockSwitch(const vector<FlowBlock *> &cs,bool hasEx
 
 {
   FlowBlock *rootbl = cs[0];
-  unique_ptr<BlockSwitch> uret( new BlockSwitch(rootbl) );
+  auto uret = make_unique<BlockSwitch>(rootbl);
   const FlowBlock *leafbl = rootbl->getExitLeaf();
   if ((leafbl == (const FlowBlock *)0)||(leafbl->getType() != FlowBlock::t_copy))
     throw LowlevelError("Could not get switch leaf");
@@ -3747,11 +3747,11 @@ FlowBlock *BlockMap::resolveBlock(FlowBlock::block_type bt)
 {
   switch(bt) {
   case FlowBlock::t_plain:
-    return new FlowBlock();
+    return make_unique<FlowBlock>().release();
   case FlowBlock::t_copy:
-    return new BlockCopy((FlowBlock *)0);
+    return make_unique<BlockCopy>((FlowBlock *)0).release();
   case FlowBlock::t_graph:
-    return new BlockGraph();
+    return make_unique<BlockGraph>().release();
   default:
     break;
   }
