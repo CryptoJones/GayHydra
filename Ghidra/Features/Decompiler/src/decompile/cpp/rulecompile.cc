@@ -99,7 +99,7 @@ int4 RuleLexer::scanNumber(void)
   s >> val;
   if (!s)
     return BADINTEGER;
-  ruleparselval.big = new int8(val);
+  ruleparselval.big = make_unique<int8>(val).release();
   return INTB;
 }
 
@@ -112,13 +112,13 @@ int4 RuleLexer::buildString(int4 tokentype)
   }
 
   if (identifier[0] == '.') {
-    ruleparselval.str = new string(identifier+1);
+    ruleparselval.str = make_unique<string>(identifier+1).release();
     return tokentype;
   }
     
   if (identifier[0] == '#')
     identifier[0] = 'c';
-  ruleparselval.str = new string(identifier);
+  ruleparselval.str = make_unique<string>(identifier).release();
   return tokentype;
 }
 
@@ -442,24 +442,24 @@ int4 RuleCompile::findIdentifier(string *nm)
 ConstraintGroup *RuleCompile::newOp(int4 id)
 
 {
-  ConstraintGroup *res = new ConstraintGroup();
-  res->addConstraint(new DummyOpConstraint(id));
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
+  res->addConstraint(make_unique<DummyOpConstraint>(id).release());
   return res;
 }
 
 ConstraintGroup *RuleCompile::newVarnode(int4 id)
 
 {
-  ConstraintGroup *res = new ConstraintGroup();
-  res->addConstraint(new DummyVarnodeConstraint(id));
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
+  res->addConstraint(make_unique<DummyVarnodeConstraint>(id).release());
   return res;
 }
 
 ConstraintGroup *RuleCompile::newConst(int4 id)
 
 {
-  ConstraintGroup *res = new ConstraintGroup();
-  res->addConstraint(new DummyConstConstraint(id));
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
+  res->addConstraint(make_unique<DummyConstConstraint>(id).release());
   return res;
 }
 
@@ -467,7 +467,7 @@ ConstraintGroup *RuleCompile::opCopy(ConstraintGroup *base,int4 opid)
 
 {
   int4 opindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpCopy(opindex,opid);
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpCopy>(opindex,opid).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -478,7 +478,7 @@ ConstraintGroup *RuleCompile::opInput(ConstraintGroup *base,int8 *slot,int4 vari
   int4 ourslot = (int4) *slot;
   delete slot;
   int4 opindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpInput(opindex,varid,ourslot);
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpInput>(opindex,varid,ourslot).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -487,7 +487,7 @@ ConstraintGroup *RuleCompile::opInputAny(ConstraintGroup *base,int4 varid)
 
 {
   int4 opindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpInputAny(opindex,varid);
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpInputAny>(opindex,varid).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -501,16 +501,16 @@ ConstraintGroup *RuleCompile::opInputConstVal(ConstraintGroup *base,int8 *slot,R
   UnifyConstraint *newconstraint;
   ConstantAbsolute *myconst = dynamic_cast<ConstantAbsolute *>(val);
   if (myconst != (ConstantAbsolute *)0) {
-    newconstraint = new ConstraintParamConstVal(opindex,ourslot,myconst->getVal());
+    newconstraint = make_unique<ConstraintParamConstVal>(opindex,ourslot,myconst->getVal()).release();
   }
   else {
     ConstantNamed *mynamed = dynamic_cast<ConstantNamed *>(val);
     if (mynamed != (ConstantNamed *)0) {
-      newconstraint = new ConstraintParamConst(opindex,ourslot,mynamed->getId());
+      newconstraint = make_unique<ConstraintParamConst>(opindex,ourslot,mynamed->getId()).release();
     }
     else {
       ruleError("Can only use absolute constant here");
-      newconstraint = new ConstraintParamConstVal(opindex,ourslot,0);
+      newconstraint = make_unique<ConstraintParamConstVal>(opindex,ourslot,0).release();
     }
   }
   delete val;
@@ -522,7 +522,7 @@ ConstraintGroup *RuleCompile::opOutput(ConstraintGroup *base,int4 varid)
 
 {
   int4 opindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpOutput(opindex,varid);
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpOutput>(opindex,varid).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -531,7 +531,7 @@ ConstraintGroup *RuleCompile::varCopy(ConstraintGroup *base,int4 varid)
 
 {
   int4 varindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintVarnodeCopy(varid,varindex);
+  UnifyConstraint *newconstraint = make_unique<ConstraintVarnodeCopy>(varid,varindex).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -540,7 +540,7 @@ ConstraintGroup *RuleCompile::varConst(ConstraintGroup *base,RHSConstant *ex,RHS
 
 {
   int4 varindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintVarConst(varindex,ex,sz);
+  UnifyConstraint *newconstraint = make_unique<ConstraintVarConst>(varindex,ex,sz).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -549,7 +549,7 @@ ConstraintGroup *RuleCompile::varDef(ConstraintGroup *base,int4 opid)
 
 {
   int4 varindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintDef(opid,varindex);
+  UnifyConstraint *newconstraint = make_unique<ConstraintDef>(opid,varindex).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -558,7 +558,7 @@ ConstraintGroup *RuleCompile::varDescend(ConstraintGroup *base,int4 opid)
 
 {
   int4 varindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintDescend(opid,varindex);
+  UnifyConstraint *newconstraint = make_unique<ConstraintDescend>(opid,varindex).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -567,7 +567,7 @@ ConstraintGroup *RuleCompile::varUniqueDescend(ConstraintGroup *base,int4 opid)
 
 {
   int4 varindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintLoneDescend(opid,varindex);
+  UnifyConstraint *newconstraint = make_unique<ConstraintLoneDescend>(opid,varindex).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -578,7 +578,7 @@ ConstraintGroup *RuleCompile::opCodeConstraint(ConstraintGroup *base,vector<OpCo
   if (oplist->size() != 1)
     throw LowlevelError("Not currently supporting multiple opcode constraints");
   int4 opindex = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpcode(opindex,*oplist);
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpcode>(opindex,*oplist).release();
   delete oplist;
   base->addConstraint(newconstraint);
   return base;
@@ -588,7 +588,7 @@ ConstraintGroup *RuleCompile::opCompareConstraint(ConstraintGroup *base,int4 opi
 
 {
   int4 op1index = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintOpCompare(op1index,opid,(opc==CPUI_INT_EQUAL));
+  UnifyConstraint *newconstraint = make_unique<ConstraintOpCompare>(op1index,opid,(opc==CPUI_INT_EQUAL)).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -597,7 +597,7 @@ ConstraintGroup *RuleCompile::varCompareConstraint(ConstraintGroup *base,int4 va
 
 {
   int4 var1index = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintVarCompare(var1index,varid,(opc==CPUI_INT_EQUAL));
+  UnifyConstraint *newconstraint = make_unique<ConstraintVarCompare>(var1index,varid,(opc==CPUI_INT_EQUAL)).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -606,7 +606,7 @@ ConstraintGroup *RuleCompile::constCompareConstraint(ConstraintGroup *base,int4 
 
 {
   int4 const1index = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintConstCompare(const1index,constid,opc);
+  UnifyConstraint *newconstraint = make_unique<ConstraintConstCompare>(const1index,constid,opc).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -614,21 +614,21 @@ ConstraintGroup *RuleCompile::constCompareConstraint(ConstraintGroup *base,int4 
 ConstraintGroup *RuleCompile::constNamedExpression(int4 id,RHSConstant *expr)
 
 {
-  ConstraintGroup *res = new ConstraintGroup();
-  res->addConstraint(new ConstraintNamedExpression(id,expr));
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
+  res->addConstraint(make_unique<ConstraintNamedExpression>(id,expr).release());
   return res;
 }
 
 ConstraintGroup *RuleCompile::emptyGroup(void)
 
 {
-  return new ConstraintGroup();
+  return make_unique<ConstraintGroup>().release();
 }
 
 ConstraintGroup *RuleCompile::emptyOrGroup(void)
 
 {
-  return new ConstraintOr();
+  return make_unique<ConstraintOr>().release();
 }
 
 ConstraintGroup *RuleCompile::mergeGroups(ConstraintGroup *a,ConstraintGroup *b)
@@ -650,8 +650,8 @@ ConstraintGroup *RuleCompile::opCreation(int4 newid,OpCode oc,bool iafter,int4 o
 {
   OpBehavior *behave = inst[oc];
   int4 numparms = behave->isUnary() ? 1 : 2;
-  UnifyConstraint *newconstraint = new ConstraintNewOp(newid,oldid,oc,iafter,numparms);
-  ConstraintGroup *res = new ConstraintGroup();
+  UnifyConstraint *newconstraint = make_unique<ConstraintNewOp>(newid,oldid,oc,iafter,numparms).release();
+  ConstraintGroup *res = make_unique<ConstraintGroup>().release();
   res->addConstraint(newconstraint);
   return res;
 }
@@ -659,7 +659,7 @@ ConstraintGroup *RuleCompile::opCreation(int4 newid,OpCode oc,bool iafter,int4 o
 ConstraintGroup *RuleCompile::newUniqueOut(ConstraintGroup *base,int4 varid,int4 sz)
 
 {
-  UnifyConstraint *newconstraint = new ConstraintNewUniqueOut(base->getBaseIndex(),varid,sz);
+  UnifyConstraint *newconstraint = make_unique<ConstraintNewUniqueOut>(base->getBaseIndex(),varid,sz).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -667,7 +667,7 @@ ConstraintGroup *RuleCompile::newUniqueOut(ConstraintGroup *base,int4 varid,int4
 ConstraintGroup *RuleCompile::newSetInput(ConstraintGroup *base,RHSConstant *slot,int4 varid)
 
 {
-  UnifyConstraint *newconstraint = new ConstraintSetInput(base->getBaseIndex(),slot,varid);
+  UnifyConstraint *newconstraint = make_unique<ConstraintSetInput>(base->getBaseIndex(),slot,varid).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -675,7 +675,7 @@ ConstraintGroup *RuleCompile::newSetInput(ConstraintGroup *base,RHSConstant *slo
 ConstraintGroup *RuleCompile::newSetInputConstVal(ConstraintGroup *base,RHSConstant *slot,RHSConstant *val,RHSConstant *sz)
 
 {
-  UnifyConstraint *newconstraint = new ConstraintSetInputConstVal(base->getBaseIndex(),slot,val,sz);
+  UnifyConstraint *newconstraint = make_unique<ConstraintSetInputConstVal>(base->getBaseIndex(),slot,val,sz).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -683,7 +683,7 @@ ConstraintGroup *RuleCompile::newSetInputConstVal(ConstraintGroup *base,RHSConst
 ConstraintGroup *RuleCompile::removeInput(ConstraintGroup *base,RHSConstant *slot)
 
 {
-  UnifyConstraint *newconstraint = new ConstraintRemoveInput(base->getBaseIndex(),slot);
+  UnifyConstraint *newconstraint = make_unique<ConstraintRemoveInput>(base->getBaseIndex(),slot).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -692,7 +692,7 @@ ConstraintGroup *RuleCompile::newSetOpcode(ConstraintGroup *base,OpCode opc)
 
 {
   int4 opid = base->getBaseIndex();
-  UnifyConstraint *newconstraint = new ConstraintSetOpcode(opid,opc);
+  UnifyConstraint *newconstraint = make_unique<ConstraintSetOpcode>(opid,opc).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -700,8 +700,8 @@ ConstraintGroup *RuleCompile::newSetOpcode(ConstraintGroup *base,OpCode opc)
 ConstraintGroup *RuleCompile::booleanConstraint(bool ist,RHSConstant *expr)
 
 {
-  ConstraintGroup *base = new ConstraintGroup();
-  UnifyConstraint *newconstraint = new ConstraintBoolean(ist,expr);
+  ConstraintGroup *base = make_unique<ConstraintGroup>().release();
+  UnifyConstraint *newconstraint = make_unique<ConstraintBoolean>(ist,expr).release();
   base->addConstraint(newconstraint);
   return base;
 }
@@ -709,14 +709,14 @@ ConstraintGroup *RuleCompile::booleanConstraint(bool ist,RHSConstant *expr)
 RHSConstant *RuleCompile::constNamed(int4 id)
 
 {
-  RHSConstant *res = new ConstantNamed(id);
+  RHSConstant *res = make_unique<ConstantNamed>(id).release();
   return res;
 }
 
 RHSConstant *RuleCompile::constAbsolute(int8 *val)
 
 {
-  RHSConstant *res = new ConstantAbsolute(*val);
+  RHSConstant *res = make_unique<ConstantAbsolute>(*val).release();
   delete val;
   return res;
 }
@@ -724,14 +724,14 @@ RHSConstant *RuleCompile::constAbsolute(int8 *val)
 RHSConstant *RuleCompile::constBinaryExpression(RHSConstant *ex1,OpCode opc,RHSConstant *ex2)
 
 {
-  RHSConstant *res = new ConstantExpression( ex1, ex2, opc );
+  RHSConstant *res = make_unique<ConstantExpression>( ex1, ex2, opc ).release();
   return res;
 }
 
 RHSConstant *RuleCompile::constVarnodeSize(int4 varindex)
 
 {
-  RHSConstant *res = new ConstantVarnodeSize(varindex);
+  RHSConstant *res = make_unique<ConstantVarnodeSize>(varindex).release();
   return res;
 }
 
@@ -740,21 +740,21 @@ RHSConstant *RuleCompile::dotIdentifier(int4 id,string *str)
 {
   RHSConstant *res;
   if ((*str) == "offset")
-    res = new ConstantOffset(id);
+    res = make_unique<ConstantOffset>(id).release();
   else if ((*str) == "size")
-    res = new ConstantVarnodeSize(id);
+    res = make_unique<ConstantVarnodeSize>(id).release();
   else if ((*str) == "isconstant")
-    res = new ConstantIsConstant(id);
+    res = make_unique<ConstantIsConstant>(id).release();
   else if ((*str) == "heritageknown")
-    res = new ConstantHeritageKnown(id);
+    res = make_unique<ConstantHeritageKnown>(id).release();
   else if ((*str) == "consume")
-    res = new ConstantConsumed(id);
+    res = make_unique<ConstantConsumed>(id).release();
   else if ((*str) == "nzmask")
-    res = new ConstantNZMask(id);
+    res = make_unique<ConstantNZMask>(id).release();
   else {
     string errmsg = "Unknown variable attribute: " + *str;
     ruleError(errmsg.c_str());
-    res = new ConstantAbsolute(0);
+    res = make_unique<ConstantAbsolute>(0).release();
   }
   delete str;
   return res;
@@ -881,7 +881,7 @@ RuleGeneric *RuleGeneric::build(const string &nm,const string &gp,const string &
   
   vector<OpCode> opcodelist;
   int4 opinit = compiler.postProcessRule(opcodelist);
-  RuleGeneric *res = new RuleGeneric(gp,nm,opcodelist,opinit,compiler.releaseRule());
+  RuleGeneric *res = make_unique<RuleGeneric>(gp,nm,opcodelist,opinit,compiler.releaseRule()).release();
   return res;
 }
 
@@ -909,7 +909,7 @@ int4 scan_number(char *numtext,YYSTYPE *lval)
   s >> val;
   if (!s)
     return BADINTEGER;
-  lval->big = new intb(val);
+  lval->big = make_unique<intb>(val).release();
   return INTB;
 }
 
