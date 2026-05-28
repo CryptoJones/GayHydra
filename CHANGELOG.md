@@ -12,6 +12,10 @@ Work toward v26.1.13. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Rec 31 header-companion batch
+
+- **Rec 31 — header-companion regression-guard batch (31 files).** All `.hh` headers whose `.cc` counterparts are already in `cppRaiiAudit`'s `PROTECTED_FILES` but were themselves left ungated. Files: `address.hh`, `bfd_arch.hh`, `cpool.hh`, `database_ghidra.hh`, `emulate.hh`, `emulateutil.hh`, `globalcontext.hh`, `inject_ghidra.hh`, `loadimage_bfd.hh`, `memstate.hh`, `opbehavior.hh`, `options.hh`, `override.hh`, `printc.hh`, `printjava.hh`, `printlanguage.hh`, `rangeutil.hh`, `raw_arch.hh`, `signature_ghidra.hh`, `slaformat.hh`, `sleighbase.hh`, `space.hh`, `string_ghidra.hh`, `stringmanage.hh`, `testfunction.hh`, `transform.hh`, `typeop.hh`, `variable.hh`, `varmap.hh`, `xml.hh`, `xml_arch.hh`. All verified zero hits under the audit's `RAW_NEW_PATTERN` with trailing-comment strip. Same regression-guard pattern as the Stage 4-8 batch ([PR #94](https://github.com/CryptoJones/GayHydra/pull/94)). Protected-set count: 120 → 151.
+
 ---
 
 ## [v26.1.12] — 2026-05-28
