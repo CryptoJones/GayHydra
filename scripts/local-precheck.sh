@@ -172,18 +172,30 @@ if [[ $MODE_FULL -eq 1 ]]; then
 	# from the gradle path's translation units, not the Makefile's.
 	# Run the gradle SLEIGH-compile to close that gap.
 	#
-	# OS-aware task selection: Linux for now; macOS/FreeBSD/Windows
-	# follow the same name pattern (`Linux_x86_64` → `Mac_arm_64` etc.)
-	# Skip with -PnoSleighGradleCheck=true if needed (some folks may
-	# not have the flatRepo populated yet).
-	if [[ "$(uname -s)" == "Linux" ]]; then
-		log "running gradle :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp (closes PR #156-style gap)"
-		if ! "${gradle_cmd[@]}" :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp --console=plain; then
+	# OS-aware task selection: the task name follows the pattern
+	# `compileSleigh${OS}_${ARCH}ExecutableSleighCpp` per
+	# `Ghidra/Features/Decompiler/build.gradle`'s nativeBuild model.
+	# Map host (uname -s, uname -m) → gradle's platform name.
+	host_os="$(uname -s)"
+	host_arch="$(uname -m)"
+	case "${host_os}/${host_arch}" in
+		Linux/x86_64)   sleigh_platform=Linux_x86_64 ;;
+		Linux/aarch64)  sleigh_platform=Linux_arm_64 ;;
+		Linux/arm64)    sleigh_platform=Linux_arm_64 ;;
+		Darwin/arm64)   sleigh_platform=Mac_arm_64 ;;
+		Darwin/x86_64)  sleigh_platform=Mac_x86_64 ;;
+		FreeBSD/x86_64) sleigh_platform=Freebsd_x86_64 ;;
+		FreeBSD/aarch64) sleigh_platform=Freebsd_arm_64 ;;
+		*) sleigh_platform="" ;;
+	esac
+	if [[ -n "$sleigh_platform" ]]; then
+		log "running gradle :Decompiler:compileSleigh${sleigh_platform}ExecutableSleighCpp (closes PR #156-style gap)"
+		if ! "${gradle_cmd[@]}" ":Decompiler:compileSleigh${sleigh_platform}ExecutableSleighCpp" --console=plain; then
 			log "SLEIGH-COMPILE GRADLE FAILED"
 			exit 1
 		fi
 	else
-		log "skipping gradle SLEIGH-compile check (non-Linux host); add the per-OS task if you want full coverage"
+		log "skipping gradle SLEIGH-compile check (unknown host ${host_os}/${host_arch}); add the case in scripts/local-precheck.sh if you want full coverage"
 	fi
 
 	log "all tests passed"
