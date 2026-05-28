@@ -969,7 +969,7 @@ public:
 /// the assignment operator.  Objects can also be looked up via an integer reference.
 template<typename _type>
 class circularqueue {
-  _type *cache;		///< An array of the template object
+  unique_ptr<_type[]> cache;	///< An array of the template object
   int4 left;		///< Index within the array of the leftmost object in the queue
   int4 right;		///< Index within the array of the rightmost object in the queue
   int4 max;		///< Size of the array
@@ -999,15 +999,11 @@ circularqueue<_type>::circularqueue(int4 sz)
   max = sz;
   left = 1;			// Set queue to be empty
   right = 0;
-  cache = new _type [ sz ];
+  cache = make_unique<_type[]>(sz);
 }
 
 template<typename _type>
-circularqueue<_type>::~circularqueue(void)
-
-{
-  delete [] cache;
-}
+circularqueue<_type>::~circularqueue(void) = default; // cache's unique_ptr auto-cleans
 
 /// This destroys the old queue and reallocates a new queue with the given maximum size
 /// \param sz the maximum size of the new queue
@@ -1016,9 +1012,8 @@ void circularqueue<_type>::setMax(int4 sz)
 
 {
   if (max != sz) {
-    delete [] cache;
     max = sz;
-    cache = new _type [ sz ];
+    cache = make_unique<_type[]>(sz);
   }
   left = 1;			// This operation empties queue
   right = 0;
@@ -1033,8 +1028,8 @@ template<typename _type>
 void circularqueue<_type>::expand(int4 amount)
 
 {
-  _type *newcache = new _type [ max + amount ];
-  
+  auto newcache = make_unique<_type[]>(max + amount);
+
   int4 i=left;
   int4 j=0;
 
@@ -1046,10 +1041,9 @@ void circularqueue<_type>::expand(int4 amount)
   newcache[j] = cache[i];	// Copy rightmost
   left=0;
   right = j;
-  
-  delete [] cache;
-  cache = newcache;
-  max += amount; 
+
+  cache = std::move(newcache);
+  max += amount;
 }
 
 /// \brief A generic source code pretty printer
