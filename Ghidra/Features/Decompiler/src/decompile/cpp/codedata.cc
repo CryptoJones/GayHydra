@@ -31,14 +31,14 @@ IfaceCodeDataCapability::IfaceCodeDataCapability(void)
 void IfaceCodeDataCapability::registerCommands(IfaceStatus *status)
 
 {
-  status->registerCom(new IfcCodeDataInit(),"codedata","init");
-  status->registerCom(new IfcCodeDataTarget(),"codedata","target");
-  status->registerCom(new IfcCodeDataRun(),"codedata","run");
-  status->registerCom(new IfcCodeDataDumpModelHits(),"codedata","dump","hits");
-  status->registerCom(new IfcCodeDataDumpCrossRefs(),"codedata","dump","crossrefs");
-  status->registerCom(new IfcCodeDataDumpStarts(),"codedata","dump","starts");
-  status->registerCom(new IfcCodeDataDumpUnlinked(),"codedata","dump","unlinked");
-  status->registerCom(new IfcCodeDataDumpTargetHits(),"codedata","dump","targethits");
+  status->registerCom(make_unique<IfcCodeDataInit>().release(),"codedata","init");
+  status->registerCom(make_unique<IfcCodeDataTarget>().release(),"codedata","target");
+  status->registerCom(make_unique<IfcCodeDataRun>().release(),"codedata","run");
+  status->registerCom(make_unique<IfcCodeDataDumpModelHits>().release(),"codedata","dump","hits");
+  status->registerCom(make_unique<IfcCodeDataDumpCrossRefs>().release(),"codedata","dump","crossrefs");
+  status->registerCom(make_unique<IfcCodeDataDumpStarts>().release(),"codedata","dump","starts");
+  status->registerCom(make_unique<IfcCodeDataDumpUnlinked>().release(),"codedata","dump","unlinked");
+  status->registerCom(make_unique<IfcCodeDataDumpTargetHits>().release(),"codedata","dump","targethits");
 }
 
 void DisassemblyEngine::init(const Translate *t)
