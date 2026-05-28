@@ -69,7 +69,7 @@ class ConstantNamed : public RHSConstant {
 public:
   ConstantNamed(int4 id) { constindex = id; }
   int4 getId(void) const { return constindex; }
-  virtual RHSConstant *clone(void) { return new ConstantNamed(constindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantNamed>(constindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -79,7 +79,7 @@ class ConstantAbsolute : public RHSConstant {
 public:
   ConstantAbsolute(uintb v) { val = v; }
   uintb getVal(void) const { return val; }
-  virtual RHSConstant *clone(void) { return new ConstantAbsolute(val); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantAbsolute>(val).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -88,7 +88,7 @@ class ConstantNZMask : public RHSConstant { // A varnode's non-zero mask
   int4 varindex;
 public:
   ConstantNZMask(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantNZMask(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantNZMask>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -97,7 +97,7 @@ class ConstantConsumed : public RHSConstant { // A varnode's consume mask
   int4 varindex;
 public:
   ConstantConsumed(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantConsumed(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantConsumed>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -106,7 +106,7 @@ class ConstantOffset : public RHSConstant { // A varnode's offset
   int4 varindex;
 public:
   ConstantOffset(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantOffset(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantOffset>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -115,7 +115,7 @@ class ConstantIsConstant : public RHSConstant { // TRUE if the varnode is consta
   int4 varindex;
 public:
   ConstantIsConstant(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantIsConstant(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantIsConstant>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -124,7 +124,7 @@ class ConstantHeritageKnown : public RHSConstant { // A varnode's consume mask
   int4 varindex;
 public:
   ConstantHeritageKnown(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantHeritageKnown(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantHeritageKnown>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -133,7 +133,7 @@ class ConstantVarnodeSize : public RHSConstant { // A varnode's size as an actua
   int4 varindex;
 public:
   ConstantVarnodeSize(int4 ind) { varindex = ind; }
-  virtual RHSConstant *clone(void) { return new ConstantVarnodeSize(varindex); }
+  virtual RHSConstant *clone(void) { return make_unique<ConstantVarnodeSize>(varindex).release(); }
   virtual uintb getConstant(UnifyState &state) const;
   virtual void writeExpression(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -224,7 +224,7 @@ class DummyOpConstraint : public UnifyConstraint {
   int4 opindex;
 public:
   DummyOpConstraint(int4 ind) { maxnum = opindex = ind; }
-  virtual UnifyConstraint *clone(void) const { return (new DummyOpConstraint(opindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<DummyOpConstraint>(opindex).release()->copyid(this); }
   virtual bool step(UnifyState &state) { return true; }
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const { typelist[opindex] = UnifyDatatype(UnifyDatatype::op_type); }
   virtual int4 getBaseIndex(void) const { return opindex; }
@@ -236,7 +236,7 @@ class DummyVarnodeConstraint : public UnifyConstraint {
   int4 varindex;
 public:
   DummyVarnodeConstraint(int4 ind) { maxnum = varindex = ind; }
-  virtual UnifyConstraint *clone(void) const { return (new DummyVarnodeConstraint(varindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<DummyVarnodeConstraint>(varindex).release()->copyid(this); }
   virtual bool step(UnifyState &state) { return true; }
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const { typelist[varindex] = UnifyDatatype(UnifyDatatype::var_type); }
   virtual int4 getBaseIndex(void) const { return varindex; }
@@ -248,7 +248,7 @@ class DummyConstConstraint : public UnifyConstraint {
   int4 constindex;
 public:
   DummyConstConstraint(int4 ind) { maxnum = constindex = ind; }
-  virtual UnifyConstraint *clone(void) const { return (new DummyConstConstraint(constindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<DummyConstConstraint>(constindex).release()->copyid(this); }
   virtual bool step(UnifyState &state) { return true; }
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const { typelist[constindex] = UnifyDatatype(UnifyDatatype::const_type); }
   virtual int4 getBaseIndex(void) const { return constindex; }
@@ -262,7 +262,7 @@ class ConstraintBoolean : public UnifyConstraint { // Constant expression must e
 public:
   ConstraintBoolean(bool ist,RHSConstant *ex) { istrue = ist; expr = ex; maxnum = -1; }
   virtual ~ConstraintBoolean(void) { delete expr; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintBoolean(istrue,expr->clone()))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintBoolean>(istrue,expr->clone()).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void print(ostream &s,UnifyCPrinter &printstate) const;
 };
@@ -287,7 +287,7 @@ class ConstraintNamedExpression : public UnifyConstraint {
 public:
   ConstraintNamedExpression(int4 ind,RHSConstant *ex) { constindex = ind, expr=ex; maxnum = constindex; }
   virtual ~ConstraintNamedExpression(void) { delete expr; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintNamedExpression(constindex,expr->clone()))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintNamedExpression>(constindex,expr->clone()).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return constindex; }
@@ -299,7 +299,7 @@ class ConstraintOpCopy : public UnifyConstraint {
   int4 newopindex;
 public:
   ConstraintOpCopy(int4 oldind,int4 newind) { oldopindex = oldind; newopindex = newind; maxnum = (oldopindex > newopindex) ? oldopindex : newopindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpCopy(oldopindex,newopindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpCopy>(oldopindex,newopindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return oldopindex; }
@@ -312,7 +312,7 @@ class ConstraintOpcode : public UnifyConstraint {
 public:
   ConstraintOpcode(int4 ind,const vector<OpCode> &o) { maxnum = opindex = ind; opcodes = o; }
   const vector<OpCode> &getOpCodes(void) const { return opcodes; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpcode(opindex,opcodes))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpcode>(opindex,opcodes).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return opindex; }
@@ -325,7 +325,7 @@ class ConstraintOpCompare : public UnifyConstraint {
   bool istrue;
 public:
   ConstraintOpCompare(int4 op1ind,int4 op2ind,bool val) { op1index = op1ind; op2index = op2ind; istrue = val; maxnum = (op1index > op2index) ? op1index : op2index; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpCompare(op1index,op2index,istrue))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpCompare>(op1index,op2index,istrue).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return op1index; }
@@ -338,7 +338,7 @@ class ConstraintOpInput : public UnifyConstraint {	// Move from op to one of its
   int4 slot;			// Which slot to take
 public:
   ConstraintOpInput(int4 oind,int4 vind,int4 sl) { opindex = oind; varnodeindex = vind; slot = sl; maxnum = (opindex > varnodeindex) ? opindex : varnodeindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpInput(opindex,varnodeindex,slot))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpInput>(opindex,varnodeindex,slot).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return varnodeindex; }
@@ -350,7 +350,7 @@ class ConstraintOpInputAny : public UnifyConstraint { // Move from op to ANY of 
   int4 varnodeindex;		// What to label input varnode
 public:
   ConstraintOpInputAny(int4 oind,int4 vind) { opindex = oind; varnodeindex = vind;  maxnum = (opindex > varnodeindex) ? opindex : varnodeindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpInputAny(opindex,varnodeindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpInputAny>(opindex,varnodeindex).release()->copyid(this); }
   virtual void initialize(UnifyState &state);
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -363,7 +363,7 @@ class ConstraintOpOutput : public UnifyConstraint {	// Move from op to its outpu
   int4 varnodeindex;		// Label of output varnode
 public:
   ConstraintOpOutput(int4 oind,int4 vind) { opindex = oind; varnodeindex = vind; maxnum = (opindex > varnodeindex) ? opindex : varnodeindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOpOutput(opindex,varnodeindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOpOutput>(opindex,varnodeindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return varnodeindex; }
@@ -376,7 +376,7 @@ class ConstraintParamConstVal : public UnifyConstraint {
   uintb val;			// What value parameter must match
 public:
   ConstraintParamConstVal(int4 oind,int4 sl,uintb v) { maxnum = opindex = oind; slot=sl; val = v; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintParamConstVal(opindex,slot,val))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintParamConstVal>(opindex,slot,val).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual void print(ostream &s,UnifyCPrinter &printstate) const;
@@ -388,7 +388,7 @@ class ConstraintParamConst : public UnifyConstraint {
   int4 constindex;		// Which varnode is the constant
 public:
   ConstraintParamConst(int4 oind,int4 sl,int4 cind) { opindex = oind; slot=sl; constindex = cind; maxnum = (opindex > constindex) ? opindex : constindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintParamConst(opindex,slot,constindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintParamConst>(opindex,slot,constindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return constindex; }
@@ -400,7 +400,7 @@ class ConstraintVarnodeCopy : public UnifyConstraint {
   int4 newvarindex;
 public:
   ConstraintVarnodeCopy(int4 oldind,int4 newind) { oldvarindex = oldind; newvarindex = newind; maxnum = (oldvarindex > newvarindex) ? oldvarindex : newvarindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintVarnodeCopy(oldvarindex,newvarindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintVarnodeCopy>(oldvarindex,newvarindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return oldvarindex; }
@@ -413,7 +413,7 @@ class ConstraintVarCompare : public UnifyConstraint {
   bool istrue;
 public:
   ConstraintVarCompare(int4 var1ind,int4 var2ind,bool val) { var1index = var1ind; var2index = var2ind; istrue = val; maxnum = (var1index > var2index) ? var1index : var2index; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintVarCompare(var1index,var2index,istrue))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintVarCompare>(var1index,var2index,istrue).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return var1index; }
@@ -425,7 +425,7 @@ class ConstraintDef : public UnifyConstraint {
   int4 varindex;		// Which varnode to examine for def
 public:
   ConstraintDef(int4 oind,int4 vind) { opindex = oind; varindex = vind; maxnum = (opindex > varindex) ? opindex : varindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintDef(opindex,varindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintDef>(opindex,varindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return opindex; }
@@ -437,7 +437,7 @@ class ConstraintDescend : public UnifyConstraint {
   int4 varindex;
 public:
   ConstraintDescend(int4 oind,int4 vind) { opindex = oind; varindex = vind; maxnum = (opindex > varindex) ? opindex : varindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintDescend(opindex,varindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintDescend>(opindex,varindex).release()->copyid(this); }
   virtual void buildTraverseState(UnifyState &state);
   virtual void initialize(UnifyState &state);
   virtual bool step(UnifyState &state);
@@ -451,7 +451,7 @@ class ConstraintLoneDescend : public UnifyConstraint {
   int4 varindex;
 public:
   ConstraintLoneDescend(int4 oind,int4 vind) { opindex = oind; varindex = vind; maxnum = (opindex > varindex) ? opindex : varindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintLoneDescend(opindex,varindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintLoneDescend>(opindex,varindex).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return opindex; }
@@ -465,7 +465,7 @@ class ConstraintOtherInput : public UnifyConstraint {
 public:
   ConstraintOtherInput(int4 oind,int4 v_in,int4 v_out) { maxnum = opindex = oind; varindex_in = v_in; varindex_out = v_out; 
     if (varindex_in > maxnum) maxnum = varindex_in; if (varindex_out > maxnum) maxnum = varindex_out; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintOtherInput(opindex,varindex_in,varindex_out))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintOtherInput>(opindex,varindex_in,varindex_out).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return varindex_out; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -479,7 +479,7 @@ class ConstraintConstCompare : public UnifyConstraint {
 public:
   ConstraintConstCompare(int4 c1ind,int4 c2ind,OpCode oc) { const1index = c1ind; const2index = c2ind; opc = oc;
     maxnum = (const1index > const2index) ? const1index : const2index; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintConstCompare(const1index,const2index,opc))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintConstCompare>(const1index,const2index,opc).release()->copyid(this); }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
   virtual int4 getBaseIndex(void) const { return const1index; }
@@ -532,7 +532,7 @@ class ConstraintNewOp : public UnifyConstraint {
   int4 numparams;
 public:
   ConstraintNewOp(int4 newind,int4 oldind,OpCode oc,bool iafter,int4 num);
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintNewOp(newopindex,oldopindex,opc,insertafter,numparams))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintNewOp>(newopindex,oldopindex,opc,insertafter,numparams).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return newopindex; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -545,7 +545,7 @@ class ConstraintNewUniqueOut : public UnifyConstraint {
   int4 sizevarindex;		// Negative is specific size, Positive is varnode index (for size)
 public:
   ConstraintNewUniqueOut(int4 oind,int4 newvarind,int4 sizeind);
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintNewUniqueOut(opindex,newvarindex,sizevarindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintNewUniqueOut>(opindex,newvarindex,sizevarindex).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return newvarindex; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -559,7 +559,7 @@ class ConstraintSetInput : public UnifyConstraint {
 public:
   ConstraintSetInput(int4 oind,RHSConstant *sl,int4 varind) { opindex = oind; slot=sl; varindex = varind; maxnum = (opindex > varindex) ? opindex : varindex; }
   virtual ~ConstraintSetInput(void) { delete slot; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintSetInput(opindex,slot->clone(),varindex))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintSetInput>(opindex,slot->clone(),varindex).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return varindex; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -586,7 +586,7 @@ class ConstraintRemoveInput : public UnifyConstraint {
 public:
   ConstraintRemoveInput(int4 oind,RHSConstant *sl) { opindex = oind; slot = sl; maxnum = opindex; }
   virtual ~ConstraintRemoveInput(void) { delete slot; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintRemoveInput(opindex,slot->clone()))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintRemoveInput>(opindex,slot->clone()).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return opindex; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
@@ -598,7 +598,7 @@ class ConstraintSetOpcode : public UnifyConstraint {
   OpCode opc;
 public:
   ConstraintSetOpcode(int4 oind,OpCode oc) { opindex = oind; opc = oc; maxnum = opindex; }
-  virtual UnifyConstraint *clone(void) const { return (new ConstraintSetOpcode(opindex,opc))->copyid(this); }
+  virtual UnifyConstraint *clone(void) const { return make_unique<ConstraintSetOpcode>(opindex,opc).release()->copyid(this); }
   virtual int4 getBaseIndex(void) const { return opindex; }
   virtual bool step(UnifyState &state);
   virtual void collectTypes(vector<UnifyDatatype> &typelist) const;
