@@ -151,7 +151,7 @@ public:
   uintm getInstructionBits(int4 startbit,int4 size,uint4 off) const;	///< Get the specific range of bits from the instruction stream
   uintm getContextBits(int4 startbit,int4 size) const;			///< Get the specific range of bits from the local context
   void setContextWord(int4 i,uintm val,uintm mask) { context[i] = (context[i]&(~mask))|(mask&val); }	///< Modify a context word, using given mask and value
-  void loadContext(void) { contcache->getContext(addr,context); }	///< Pull context words associated with the starting address into the local array
+  void loadContext(void) { contcache->getContext(addr,context.get()); }	///< Pull context words associated with the starting address into the local array
   int4 getLength(void) const { return base_state->length; }		///< Get the length of the current instruction
   void setDelaySlot(int4 val) { delayslot = val; }			///< Set (the number of instruction bytes) in the delay slot
   int4 getDelaySlot(void) const { return delayslot; }			///< Get the number of instruction bytes in the delay slot
