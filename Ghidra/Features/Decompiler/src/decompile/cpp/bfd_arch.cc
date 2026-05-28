@@ -38,7 +38,7 @@ BfdArchitectureCapability::~BfdArchitectureCapability(void)
 Architecture *BfdArchitectureCapability::buildArchitecture(const string &filename,const string &target,ostream *estream)
 
 {
-  return new BfdArchitecture(filename,target,estream);
+  return make_unique<BfdArchitecture>(filename,target,estream).release();
 }
 
 bool BfdArchitectureCapability::isFileMatch(const string &filename) const
@@ -71,11 +71,11 @@ void BfdArchitecture::buildLoader(DocumentStorage &store)
 
   collectSpecFiles(*errorstream);
   if (getTarget().find("binary")==0)
-    ldr.reset(new LoadImageBfd(getFilename(),"binary"));
+    ldr = make_unique<LoadImageBfd>(getFilename(),"binary");
   else if (getTarget().find("default")==0)
-    ldr.reset(new LoadImageBfd(getFilename(),"default"));
+    ldr = make_unique<LoadImageBfd>(getFilename(),"default");
   else
-    ldr.reset(new LoadImageBfd(getFilename(),getTarget()));
+    ldr = make_unique<LoadImageBfd>(getFilename(),getTarget());
   ldr->open();
   if (adjustvma!=0)
     ldr->adjustVma(adjustvma);

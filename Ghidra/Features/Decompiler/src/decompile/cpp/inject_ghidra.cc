@@ -167,16 +167,16 @@ int4 PcodeInjectLibraryGhidra::allocateInject(const string &sourceName,const str
   InjectPayload *payload;
   switch(type) {
     case InjectPayload::CALLFIXUP_TYPE:
-      payload = new InjectCallfixupGhidra(sourceName,name);
+      payload = make_unique<InjectCallfixupGhidra>(sourceName,name).release();
       break;
     case InjectPayload::CALLOTHERFIXUP_TYPE:
-      payload = new InjectCallotherGhidra(sourceName,name);
+      payload = make_unique<InjectCallotherGhidra>(sourceName,name).release();
       break;
     case InjectPayload::CALLMECHANISM_TYPE:
-      payload = new InjectPayloadGhidra(sourceName,name,InjectPayload::CALLMECHANISM_TYPE);
+      payload = make_unique<InjectPayloadGhidra>(sourceName,name,InjectPayload::CALLMECHANISM_TYPE).release();
       break;
     case InjectPayload::EXECUTABLEPCODE_TYPE:
-      payload = new ExecutablePcodeGhidra(contextCache.glb,sourceName,name);
+      payload = make_unique<ExecutablePcodeGhidra>(contextCache.glb,sourceName,name).release();
       break;
     default:
       throw LowlevelError("Bad injection type");
