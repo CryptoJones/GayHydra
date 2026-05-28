@@ -38,7 +38,7 @@ ConstructState::ConstructState(int4 numOperands)
   parent = (ConstructState *)0;
   length = 0;
   offset = 0;
-  resolve = new ConstructState *[numOperands];
+  resolve = make_unique<ConstructState *[]>(numOperands).release();
   for(int4 i=0;i<numOperands;++i)
     resolve[i] = (ConstructState *)0;
 }

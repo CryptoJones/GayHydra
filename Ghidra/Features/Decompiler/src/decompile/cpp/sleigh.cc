@@ -448,9 +448,9 @@ void DisassemblyCache::initialize(int4 min,int4 hashsize)
   uintb masktest = coveringmask((uintb)mask);
   if (masktest != (uintb)mask)	// -hashsize- must be a power of 2
     throw LowlevelError("Bad windowsize for disassembly cache");
-  list = new ParserContext *[minimumreuse];
+  list = make_unique<ParserContext *[]>(minimumreuse).release();
   nextfree = 0;
-  hashtable = new ParserContext *[hashsize];
+  hashtable = make_unique<ParserContext *[]>(hashsize).release();
   for(int4 i=0;i<minimumreuse;++i) {
 	ParserContext *pos = make_unique<ParserContext>(contextcache,translate).release();
 	list[i] = pos;
