@@ -24,10 +24,10 @@ GhidraSignatureCapability GhidraSignatureCapability::ghidraSignatureCapability;
 void GhidraSignatureCapability::initialize(void)
 
 {
-  commandmap["generateSignatures"] = new SignaturesAt(false);
-  commandmap["debugSignatures"] = new SignaturesAt(true);
-  commandmap["getSignatureSettings"] = new GetSignatureSettings();
-  commandmap["setSignatureSettings"] = new SetSignatureSettings();
+  commandmap["generateSignatures"] = make_unique<SignaturesAt>(false).release();
+  commandmap["debugSignatures"] = make_unique<SignaturesAt>(true).release();
+  commandmap["getSignatureSettings"] = make_unique<GetSignatureSettings>().release();
+  commandmap["setSignatureSettings"] = make_unique<SetSignatureSettings>().release();
 }
 
 void SignaturesAt::loadParameters(void)

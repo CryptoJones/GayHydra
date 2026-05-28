@@ -301,13 +301,13 @@ AddrSpace *SleighBase::decodeSlaSpace(Decoder &decoder,const Translate *trans)
   if (index == 0)
     throw LowlevelError("Expecting index attribute");
   if (elemId == sla::ELEM_SPACE_UNIQUE)
-    res = new UniqueSpace(this,trans,index,flags);
+    res = make_unique<UniqueSpace>(this,trans,index,flags).release();
   else if (elemId == sla::ELEM_SPACE_OTHER)
-    res = new OtherSpace(this,trans,index);
+    res = make_unique<OtherSpace>(this,trans,index).release();
   else {
     if (addressSize == 0 || delay == -1 || name.size() == 0)
       throw LowlevelError("Expecting size/delay/name attributes");
-    res = new AddrSpace(this,trans,IPTR_PROCESSOR,name,bigEnd,addressSize,wordsize,index,flags,delay,deadcodedelay);
+    res = make_unique<AddrSpace>(this,trans,IPTR_PROCESSOR,name,bigEnd,addressSize,wordsize,index,flags,delay,deadcodedelay).release();
   }
 
   return res;
@@ -321,7 +321,7 @@ void SleighBase::decodeSlaSpaces(Decoder &decoder,const Translate *trans)
 
 {
   // The first space should always be the constant space
-  insertSpace(new ConstantSpace(this,trans));
+  insertSpace(make_unique<ConstantSpace>(this,trans).release());
 
   uint4 elemId = decoder.openElement(sla::ELEM_SPACES);
   string defname = decoder.readString(sla::ATTRIB_DEFAULTSPACE);
