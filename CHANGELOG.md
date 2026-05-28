@@ -8,9 +8,30 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.14. Tracked per-PR in
+Work toward v26.1.15. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.1.14] — 2026-05-28
+
+Patch release on top of v26.1.13 covering:
+
+- **`cppRaiiAudit` is now bulletproof**: two false-negatives in the
+  raw-`new` regex (`new T;` no-parens and `new T*[N]` array-of-ptr)
+  closed and the 12 escaping sites migrated; a completeness check
+  fails CI if any new `.cc`/`.hh` in the decompiler tree isn't
+  gated or explicitly excluded.
+- **Rec 23 — `unit_tests` job goes multi-OS** (Ubuntu / macOS /
+  Windows), matching the already-multi-OS `build` job. Platform-
+  specific JVM test failures now surface at PR time.
+- **SprintPlanning.md sync** marking Rec 31 Stages 3–8 closed.
+
+Rec 24 (Windows MSVC for the C++ decompiler unit-tests workflow) is
+still open — local validation needs the Win11 QEMU CI VM to be
+fully bootstrapped past Windows install. Deferred to the next
+release.
 
 ### 2026-05-28 — Rec 31 audit-regex tightening
 
