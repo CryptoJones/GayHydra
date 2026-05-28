@@ -231,6 +231,22 @@ sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
 auto-runs `gradle allSleighCompile` once (slow first time, cached
 after).
 
+`--full` needs a real Gradle 8.5+ on `PATH` because the repo's
+`./gradlew` shim refuses to run when `application.release.name` is
+not `PUBLIC`/`DEV` (i.e., on every cut release branch). Install once:
+
+```
+# Oracle JDK 21 + Gradle 8.5 to match CI exactly
+curl -sL https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz | tar xz -C ~/.local
+curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/g.zip
+unzip -q /tmp/g.zip -d ~/.local
+echo 'export JAVA_HOME="$HOME/.local/jdk-21.0.11"' >> ~/.bashrc
+echo 'export PATH="$JAVA_HOME/bin:$HOME/.local/gradle-8.5/bin:$PATH"' >> ~/.bashrc
+```
+
+The precheck prefers `gradle` on `PATH` and falls back to `./gradlew`
+only when `gradle` isn't available.
+
 ## Setup build in CI
 
 For running tests in headless mode on Linux, in a CI environment, or in Docker, first do:

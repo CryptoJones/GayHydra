@@ -92,6 +92,18 @@ for tool in g++ make bison flex; do
 	fi
 done
 
+# --full needs a usable gradle to (re)compile .sla files. The repo's
+# ./gradlew shim refuses to run for non-PUBLIC/DEV release names, so
+# require a real gradle on PATH whenever the audit-clean check has to
+# regenerate the sleigh artifacts.
+if [[ $MODE_FULL -eq 1 ]]; then
+	if ! command -v gradle >/dev/null 2>&1 && [[ ! -x ./gradlew ]]; then
+		echo "precheck: --full needs gradle on PATH (or a working ./gradlew)" >&2
+		echo "  install Gradle ${application_gradle_min:-8.5}+ and set JAVA_HOME to JDK 21" >&2
+		exit 2
+	fi
+fi
+
 if [[ ! -d "$CPP_DIR" ]]; then
 	echo "precheck: $CPP_DIR not found — wrong repo root?" >&2
 	exit 2
@@ -118,8 +130,20 @@ if [[ $MODE_FULL -eq 1 ]]; then
 	# for x86:LE:64:...". Compile them once via gradle if missing.
 	sla_count=$(find Ghidra/Processors -name '*.sla' 2>/dev/null | wc -l)
 	if [[ "$sla_count" -eq 0 ]]; then
-		log ".sla files missing — running gradle allSleighCompile (one-time, slow)"
-		if ! ./gradlew allSleighCompile --parallel; then
+		# Pick a working gradle. The repo's ./gradlew is a Ghidra-style
+		# shim (Ghidra/RuntimeScripts/Common/support/gradle/) that exits
+		# with "Please install Gradle ... and put it on your PATH" when
+		# application.release.name is not "PUBLIC" or "DEV" — true for
+		# every release-cut branch (e.g. application.release.name=
+		# GayHydra-26.1.x). Prefer `gradle` from PATH; fall back to the
+		# wrapper only if PATH gradle isn't there.
+		if command -v gradle >/dev/null 2>&1; then
+			gradle_cmd=(gradle)
+		else
+			gradle_cmd=(./gradlew)
+		fi
+		log ".sla files missing — running ${gradle_cmd[*]} allSleighCompile (one-time, slow)"
+		if ! "${gradle_cmd[@]}" allSleighCompile --parallel; then
 			log "SLEIGH compile failed"
 			exit 1
 		fi
