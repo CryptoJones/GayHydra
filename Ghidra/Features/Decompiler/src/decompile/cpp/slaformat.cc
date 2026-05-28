@@ -218,7 +218,7 @@ const int4 FormatDecode::IN_BUFFER_SIZE = 4096;
 FormatDecode::FormatDecode(const AddrSpaceManager *spcManager)
   : PackedDecode(spcManager)
 {
-  inBuffer = new uint1[IN_BUFFER_SIZE];
+  inBuffer = make_unique<uint1[]>(IN_BUFFER_SIZE).release();
 }
 
 FormatDecode::~FormatDecode(void)

@@ -66,7 +66,7 @@ PrintLanguage::PrintLanguage(Architecture *g,const string &nm)
   castStrategy = (CastStrategy *)0;
   name = nm;
   curscope = (Scope *)0;
-  emit = new EmitPrettyPrint();
+  emit = make_unique<EmitPrettyPrint>().release();
 
   pending = 0;
   resetDefaultsInternal();

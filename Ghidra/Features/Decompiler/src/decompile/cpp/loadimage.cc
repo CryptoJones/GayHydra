@@ -29,7 +29,7 @@ namespace ghidra {
 uint1 *LoadImage::load(int4 size,const Address &addr)
 
 {
-  uint1 *buf = new uint1[ size ];
+  uint1 *buf = make_unique<uint1[]>(size).release();
   loadFill(buf,size,addr);
   return buf;
 }
@@ -57,7 +57,7 @@ void RawLoadImage::open(void)
 
 {
   if (thefile != (ifstream *)0) throw LowlevelError("loadimage is already open");
-  thefile = new ifstream(filename.c_str());
+  thefile = make_unique<ifstream>(filename.c_str()).release();
   if (!(*thefile)) {
     string errmsg = "Unable to open raw image file: "+filename;
     delete thefile;
