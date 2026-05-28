@@ -354,6 +354,31 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/unify.hh': [],
 ]
 
+// Files in the decompiler `cpp/` tree that are intentionally NOT in
+// PROTECTED_FILES, with a documented reason. The completeness check
+// (below) treats these as the only legitimate way for a `.cc`/`.hh`
+// file in that tree to be ungated — any other unprotected file
+// fails CI. This closes the drift hazard where a brand-new file
+// could ship without a gate decision.
+//
+// Currently: bison/flex-generated files. They're regenerated from
+// .y/.l sources on every build per Ghidra/Features/Decompiler/src/
+// decompile/cpp/Makefile, so any in-place RAII edits would be
+// overwritten. The Option A `%define api.value.type variant`
+// rewrite (per docs/decompiler/RAII_STAGE_2C_XML.md) is the path
+// to migrating these — its own strategic sprint, not a narrow PR.
+//
+// `xml.cc` is the exception that stays in PROTECTED_FILES with
+// line-range exclusions: this fork ships the in-tree committed
+// copy as the source of truth (no in-build re-bison happens in
+// the GHA matrix path), so the line-number stability holds.
+final Set<String> EXCLUDED_FILES = [
+    'Ghidra/Features/Decompiler/src/decompile/cpp/grammar.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/pcodeparse.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghparse.cc',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghscan.cc',
+] as Set
+
 task cppRaiiAudit {
     description = 'Verify protected decompiler C++ files contain no raw `new` allocations.'
     group = 'verification'
@@ -422,6 +447,37 @@ task cppRaiiAudit {
                 "See docs/decompiler/RAII_MIGRATION.md (Rec 31 #31-2) — protected files " +
                 "must construct heap-owned objects via std::make_unique / std::make_shared.")
         }
-        logger.lifecycle "cppRaiiAudit: ${PROTECTED_FILES.size()} protected file(s) clean."
+
+        // Completeness check — every `.cc`/`.hh` in the decompiler
+        // cpp tree must be either gated (in PROTECTED_FILES) or
+        // explicitly excluded (in EXCLUDED_FILES, with a documented
+        // reason in the comment above). A brand-new file that
+        // ships ungated fails here. Closes the drift hazard where
+        // future contributions could silently bypass the audit.
+        File cppDir = new File(rootDir, 'Ghidra/Features/Decompiler/src/decompile/cpp')
+        List<String> drifted = []
+        if (cppDir.isDirectory()) {
+            cppDir.eachFile { File f ->
+                String name = f.name
+                if (!name.endsWith('.cc') && !name.endsWith('.hh')) return
+                String rel = "Ghidra/Features/Decompiler/src/decompile/cpp/${name}"
+                if (!PROTECTED_FILES.containsKey(rel) && !EXCLUDED_FILES.contains(rel)) {
+                    drifted.add(rel)
+                }
+            }
+        }
+        if (!drifted.isEmpty()) {
+            logger.error '== cppRaiiAudit completeness failure =='
+            drifted.each { logger.error "  ${it}" }
+            throw new GradleException(
+                "${drifted.size()} ungated decompiler C++ file(s) — neither in " +
+                "PROTECTED_FILES nor in EXCLUDED_FILES. Add the file to PROTECTED_FILES " +
+                "(with line-range exclusions if needed) after migrating its raw `new` sites, " +
+                "or add it to EXCLUDED_FILES with a documented reason " +
+                "(see gradle/cppRaiiAudit.gradle for the convention).")
+        }
+
+        logger.lifecycle "cppRaiiAudit: ${PROTECTED_FILES.size()} protected file(s) clean " +
+            "(${EXCLUDED_FILES.size()} excluded by policy)."
     }
 }
