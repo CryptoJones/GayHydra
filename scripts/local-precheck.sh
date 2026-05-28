@@ -128,20 +128,21 @@ if [[ $MODE_FULL -eq 1 ]]; then
 	# decomp_test_dbg's startDecompilerLibrary() loads real .sla files at
 	# startup. If none exist, tests fail with "Could not find .sla file
 	# for x86:LE:64:...". Compile them once via gradle if missing.
+	# Pick a working gradle. The repo's ./gradlew is a Ghidra-style
+	# shim (Ghidra/RuntimeScripts/Common/support/gradle/) that exits
+	# with "Please install Gradle ... and put it on your PATH" when
+	# application.release.name is not "PUBLIC" or "DEV" — true for
+	# every release-cut branch (e.g. application.release.name=
+	# GayHydra-26.1.x). Prefer `gradle` from PATH; fall back to the
+	# wrapper only if PATH gradle isn't there.
+	if command -v gradle >/dev/null 2>&1; then
+		gradle_cmd=(gradle)
+	else
+		gradle_cmd=(./gradlew)
+	fi
+
 	sla_count=$(find Ghidra/Processors -name '*.sla' 2>/dev/null | wc -l)
 	if [[ "$sla_count" -eq 0 ]]; then
-		# Pick a working gradle. The repo's ./gradlew is a Ghidra-style
-		# shim (Ghidra/RuntimeScripts/Common/support/gradle/) that exits
-		# with "Please install Gradle ... and put it on your PATH" when
-		# application.release.name is not "PUBLIC" or "DEV" — true for
-		# every release-cut branch (e.g. application.release.name=
-		# GayHydra-26.1.x). Prefer `gradle` from PATH; fall back to the
-		# wrapper only if PATH gradle isn't there.
-		if command -v gradle >/dev/null 2>&1; then
-			gradle_cmd=(gradle)
-		else
-			gradle_cmd=(./gradlew)
-		fi
 		log ".sla files missing — running ${gradle_cmd[*]} allSleighCompile (one-time, slow)"
 		if ! "${gradle_cmd[@]}" allSleighCompile --parallel; then
 			log "SLEIGH compile failed"
@@ -160,6 +161,31 @@ if [[ $MODE_FULL -eq 1 ]]; then
 		log "DATATESTS FAILED"
 		exit 1
 	fi
+
+	# The cpp/Makefile target `decomp_test_dbg` links only the unit-test
+	# subset of decompile/cpp/. It does NOT compile `slgh_compile.cc`,
+	# `pcodecompile.cc`, `rulecompile.cc`, or `slghsymbol.cc`'s
+	# SLEIGH-compiler entry points — those are only built by gradle's
+	# `compileSleighLinux_x86_64ExecutableSleighCpp` task (and the
+	# per-OS variants). PR #156 shipped with `--full` green but broke
+	# `release.yml` because EquationAnd's protected dtor was reachable
+	# from the gradle path's translation units, not the Makefile's.
+	# Run the gradle SLEIGH-compile to close that gap.
+	#
+	# OS-aware task selection: Linux for now; macOS/FreeBSD/Windows
+	# follow the same name pattern (`Linux_x86_64` → `Mac_arm_64` etc.)
+	# Skip with -PnoSleighGradleCheck=true if needed (some folks may
+	# not have the flatRepo populated yet).
+	if [[ "$(uname -s)" == "Linux" ]]; then
+		log "running gradle :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp (closes PR #156-style gap)"
+		if ! "${gradle_cmd[@]}" :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp --console=plain; then
+			log "SLEIGH-COMPILE GRADLE FAILED"
+			exit 1
+		fi
+	else
+		log "skipping gradle SLEIGH-compile check (non-Linux host); add the per-OS task if you want full coverage"
+	fi
+
 	log "all tests passed"
 fi
 

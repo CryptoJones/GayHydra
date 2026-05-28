@@ -227,9 +227,13 @@ Required Ubuntu/Debian deps:
 sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
 ```
 
-`--full` additionally requires `.sla` files; if absent, the script
-auto-runs `gradle allSleighCompile` once (slow first time, cached
-after).
+`--full` runs three things in order:
+
+1. Build `decomp_test_dbg` via `cpp/Makefile` (always, with or without `--full`).
+2. `decomp_test_dbg unittests` + `decomp_test_dbg datatests` — needs `.sla` files; if absent, auto-runs `gradle allSleighCompile` once (slow first time, cached after).
+3. `gradle :Decompiler:compileSleighLinux_x86_64ExecutableSleighCpp` — compiles the SLEIGH-compiler executable. This step closes a known blind spot: the `cpp/Makefile`'s `decomp_test_dbg` target does **not** include `slgh_compile.cc`, `pcodecompile.cc`, `rulecompile.cc`, or several other SLEIGH-compiler entry points; those are only built by gradle. PR #156 escaped local validation because `slgh_compile.cc`'s `make_unique<EquationAnd>(...)` hit a protected-dtor error only on the gradle path, breaking `release.yml`. Step 3 prevents that class of escape.
+
+The gradle SLEIGH-compile step runs only on Linux hosts (the task name is per-OS: `compileSleighLinux_x86_64ExecutableSleighCpp` for Ubuntu; mac contributors should run the matching `Mac_arm_64` task manually until the precheck is extended).
 
 `--full` needs a real Gradle 8.5+ on `PATH` because the repo's
 `./gradlew` shim refuses to run when `application.release.name` is
