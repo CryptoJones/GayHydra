@@ -12,6 +12,10 @@ Work toward v26.1.15. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Rec 24 decision doc (DD-0004)
+
+- **DD-0004 — Windows path for `decompiler-cpp-tests` workflow.** Captures the design choices for Rec 24 (audit-named "add Windows (MSVC) to the C++ decompiler test workflow"). The existing GCC `Makefile` builds `decomp_test_dbg` against `libbfd` (GNU binutils), so a Windows port needs either MinGW-w64 + binutils on the runner, or a new MSVC `CMakeLists.txt` paired with a libbfd-substitute. DD-0004 rejects the MinGW shortcut on toolchain-consolidation grounds (the repo already uses MSVC for `release.yml`'s Windows build; carrying two Windows toolchains for one workflow's convenience is the wrong tradeoff), rejects WSL2 because a Linux-ABI binary isn't Windows coverage, and accepts the MSVC + CMake direction as the long-term path — gated on a strategic sprint that picks the BFD-substitute approach (port vs. exclude vs. stub). `SprintPlanning.md` Backlog Rec 24 row updated to reflect "strategic sprint pending DD-0004 path-pick" rather than the previous "narrow PR" framing. Rec 23 row strike-through marks v26.1.14's [PR #162](https://github.com/CryptoJones/GayHydra/pull/162) as the close.
+
 ---
 
 ## [v26.1.14] — 2026-05-28
