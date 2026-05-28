@@ -315,7 +315,7 @@ PcodeOp *JumpValuesRange::getStartOp(void) const
 JumpValues *JumpValuesRange::clone(void) const
 
 {
-  JumpValuesRange *res = new JumpValuesRange();
+  JumpValuesRange *res = make_unique<JumpValuesRange>().release();
   res->range = range;
   res->normqvn = normqvn;
   res->startop = startop;
@@ -376,7 +376,7 @@ PcodeOp *JumpValuesRangeDefault::getStartOp(void) const
 JumpValues *JumpValuesRangeDefault::clone(void) const
 
 {
-  JumpValuesRangeDefault *res = new JumpValuesRangeDefault();
+  JumpValuesRangeDefault *res = make_unique<JumpValuesRangeDefault>().release();
   res->range = range;
   res->normqvn = normqvn;
   res->startop = startop;
@@ -414,7 +414,7 @@ void JumpModelTrivial::buildLabels(Funcdata *fd,vector<Address> &addresstable,ve
 JumpModel *JumpModelTrivial::clone(JumpTable *jt) const
 
 {
-  JumpModelTrivial *res = new JumpModelTrivial(jt);
+  JumpModelTrivial *res = make_unique<JumpModelTrivial>(jt).release();
   res->size = size;
   return res;
 }
@@ -1439,7 +1439,7 @@ bool JumpBasic::recoverModel(Funcdata *fd,PcodeOp *indop,uint4 matchsize,uint4 m
   // address used for the BRANCHIND.  The switch variable is restricted to a small range by one
   // or more "guard" instructions that, if the switch variable is not in range, branch to a default
   // location.
-  jrange = new JumpValuesRange();
+  jrange = make_unique<JumpValuesRange>().release();
   findDeterminingVarnodes(indop,0);
   findNormalized(fd,indop->getParent(),-1,matchsize,maxtablesize);
   if (jrange->getSize() > maxtablesize)
@@ -1630,7 +1630,7 @@ bool JumpBasic::sanityCheck(Funcdata *fd,PcodeOp *indop,vector<Address> &address
 JumpModel *JumpBasic::clone(JumpTable *jt) const
 
 {
-  JumpBasic *res = new JumpBasic(jt);
+  JumpBasic *res = make_unique<JumpBasic>(jt).release();
   res->jrange = (JumpValuesRange *)jrange->clone();	// We only need to clone the JumpValues
   return res;
 }
@@ -1712,7 +1712,7 @@ bool JumpBasic2::recoverModel(Funcdata *fd,PcodeOp *indop,uint4 matchsize,uint4 
   if (path == 2) return false;
   BlockBasic *rootbl = (BlockBasic *)multiop->getParent()->getIn(1-path);
   int4 pathout = multiop->getParent()->getInRevIndex(1-path);
-  JumpValuesRangeDefault *jdef = new JumpValuesRangeDefault();
+  JumpValuesRangeDefault *jdef = make_unique<JumpValuesRangeDefault>().release();
   jrange = jdef;
   jdef->setExtraValue(extravalue);
   jdef->setDefaultVn(joinvn);	// Emulate the default calculation from the join point
@@ -1770,7 +1770,7 @@ void JumpBasic2::findUnnormalized(uint4 maxaddsub,uint4 maxleftright,uint4 maxex
 JumpModel *JumpBasic2::clone(JumpTable *jt) const
 
 {
-  JumpBasic2 *res = new JumpBasic2(jt);
+  JumpBasic2 *res = make_unique<JumpBasic2>(jt).release();
   res->jrange = (JumpValuesRange *)jrange->clone();	// We only need to clone the JumpValues
   return res;
 }
@@ -2024,7 +2024,7 @@ void JumpBasicOverride::buildLabels(Funcdata *fd,vector<Address> &addresstable,v
 JumpModel *JumpBasicOverride::clone(JumpTable *jt) const
 
 {
-  JumpBasicOverride *res = new JumpBasicOverride(jt);
+  JumpBasicOverride *res = make_unique<JumpBasicOverride>(jt).release();
   res->adset = adset;
   res->values = values;
   res->addrtable = addrtable;
@@ -2233,7 +2233,7 @@ bool JumpAssisted::foldInGuards(Funcdata *fd,JumpTable *jump)
 JumpModel *JumpAssisted::clone(JumpTable *jt) const
 
 {
-  JumpAssisted *clone = new JumpAssisted(jt);
+  JumpAssisted *clone = make_unique<JumpAssisted>(jt).release();
   clone->userop = userop;
   clone->sizeIndices = sizeIndices;
   return clone;
@@ -2283,17 +2283,17 @@ void JumpTable::recoverModel(Funcdata *fd)
   if (vn->isWritten()) {
     PcodeOp *op = vn->getDef();
     if (op->code() == CPUI_CALLOTHER) {
-      JumpAssisted *jassisted = new JumpAssisted(this);
+      JumpAssisted *jassisted = make_unique<JumpAssisted>(this).release();
       jmodel = jassisted;
       if (jmodel->recoverModel(fd,indirect,addresstable.size(),maxTableSize))
 	return;
     }
   }
-  JumpBasic *jbasic = new JumpBasic(this);
+  JumpBasic *jbasic = make_unique<JumpBasic>(this).release();
   jmodel = jbasic;
   if (jmodel->recoverModel(fd,indirect,addresstable.size(),maxTableSize))
     return;
-  jmodel = new JumpBasic2(this);
+  jmodel = make_unique<JumpBasic2>(this).release();
   ((JumpBasic2 *)jmodel)->initializeStart(jbasic->getPathMeld());
   delete jbasic;
   if (jmodel->recoverModel(fd,indirect,addresstable.size(),maxTableSize))
@@ -2483,7 +2483,7 @@ void JumpTable::setOverride(const vector<Address> &addrtable,const Address &nadd
     delete jmodel;
 
   JumpBasicOverride *jumpOverride;
-  jmodel = jumpOverride = new JumpBasicOverride(this);
+  jmodel = jumpOverride = make_unique<JumpBasicOverride>(this).release();
   jumpOverride->setAddresses(addrtable);
   jumpOverride->setNorm(naddr,h);
   jumpOverride->setStartingValue(sv);
@@ -2738,7 +2738,7 @@ void JumpTable::recoverLabels(Funcdata *fd)
     }
   }
   else {
-    jmodel = new JumpModelTrivial(this);
+    jmodel = make_unique<JumpModelTrivial>(this).release();
     jmodel->recoverModel(fd,indirect,addresstable.size(),fd->getArch()->max_jumptable_size);
     jmodel->buildAddresses(fd,indirect,addresstable,(vector<LoadTable> *)0,(vector<int4> *)0);
     trivialSwitchOver();
@@ -2846,7 +2846,7 @@ void JumpTable::decode(Decoder &decoder)
     else if (subId == ELEM_BASICOVERRIDE) {
       if (jmodel != (JumpModel *)0)
 	throw LowlevelError("Duplicate jumptable override specs");
-      jmodel = new JumpBasicOverride(this);
+      jmodel = make_unique<JumpBasicOverride>(this).release();
       jmodel->decode(decoder);
     }
   }

@@ -209,6 +209,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     ],
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/translate.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/jumptable.hh': [],
     // Rec 31 header-companion batch — 31 already-clean .hh files whose
     // `.cc` counterparts are already gated. Adding the headers closes
