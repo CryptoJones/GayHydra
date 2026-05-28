@@ -137,7 +137,7 @@ void CPoolRecord::decode(Decoder &decoder,TypeFactory &typegrp)
       throw LowlevelError("Bad constant pool record: bad <data> size");
     byteDataLen = val;
     istringstream s3(decoder.readString(ATTRIB_CONTENT));
-    byteData = new uint1[byteDataLen];
+    byteData = make_unique<uint1[]>(byteDataLen).release();
     for(int4 i=0;i<byteDataLen;++i) {
       uint4 val;
       s3 >> ws >> hex >> val;

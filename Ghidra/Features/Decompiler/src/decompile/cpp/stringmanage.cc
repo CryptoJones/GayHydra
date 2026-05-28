@@ -415,7 +415,7 @@ StringManagerUnicode::StringManagerUnicode(Architecture *g,int4 max)
   : StringManager(max)
 {
   glb = g;
-  testBuffer = new uint1[max];
+  testBuffer = make_unique<uint1[]>(max).release();
 }
 
 StringManagerUnicode::~StringManagerUnicode(void)

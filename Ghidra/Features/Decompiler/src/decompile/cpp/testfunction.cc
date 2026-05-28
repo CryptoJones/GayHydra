@@ -219,7 +219,7 @@ void FunctionTestCollection::evaluateTests(list<string> &lateStream) const
 FunctionTestCollection::FunctionTestCollection(ostream &s)
 
 {
-  console = new ConsoleCommands(s,commands);
+  console = make_unique<ConsoleCommands>(s,commands).release();
   consoleOwner = true;
   dcp = (IfaceDecompData *)console->getData("decompile");
   console->setErrorIsDone(true);

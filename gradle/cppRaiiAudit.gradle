@@ -179,6 +179,14 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/interface.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/consolemain.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/variable.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/cpool.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/printlanguage.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slaformat.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghpattern.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/string_ghidra.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/stringmanage.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/testfunction.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
         // `state[i] = new ConstructState(MAX_OPERAND);` — the

@@ -88,10 +88,10 @@ class InstructionPattern : public DisjointPattern { // Matches the instruction b
 public:
   InstructionPattern(void) { maskvalue = (PatternBlock *)0; } // For use with decode
   InstructionPattern(PatternBlock *mv) { maskvalue = mv; }
-  InstructionPattern(bool tf) { maskvalue = new PatternBlock(tf); }
+  InstructionPattern(bool tf) { maskvalue = make_unique<PatternBlock>(tf).release(); }
   PatternBlock *getBlock(void) { return maskvalue; }
   virtual ~InstructionPattern(void) { if (maskvalue != (PatternBlock *)0) delete maskvalue; }
-  virtual Pattern *simplifyClone(void) const { return new InstructionPattern(maskvalue->clone()); }
+  virtual Pattern *simplifyClone(void) const { return make_unique<InstructionPattern>(maskvalue->clone()).release(); }
   virtual void shiftInstruction(int4 sa) { maskvalue->shift(sa); }
   virtual Pattern *doOr(const Pattern *b,int4 sa) const;
   virtual Pattern *doAnd(const Pattern *b,int4 sa) const;
@@ -112,7 +112,7 @@ public:
   ContextPattern(PatternBlock *mv) { maskvalue = mv; }
   PatternBlock *getBlock(void) { return maskvalue; }
   virtual ~ContextPattern(void) { if (maskvalue != (PatternBlock *)0) delete maskvalue; }
-  virtual Pattern *simplifyClone(void) const { return new ContextPattern(maskvalue->clone()); }
+  virtual Pattern *simplifyClone(void) const { return make_unique<ContextPattern>(maskvalue->clone()).release(); }
   virtual void shiftInstruction(int4 sa) { }  // do nothing
   virtual Pattern *doOr(const Pattern *b,int4 sa) const;
   virtual Pattern *doAnd(const Pattern *b,int4 sa) const;
