@@ -256,15 +256,15 @@ DatatypeFilter *DatatypeFilter::decodeFilter(Decoder &decoder)
   uint4 elemId = decoder.openElement(ELEM_DATATYPE);
   string nm = decoder.readString(ATTRIB_NAME);
   if (nm == "any") {
-    filter.reset(new SizeRestrictedFilter());
+    filter = make_unique<SizeRestrictedFilter>();
   }
   else if (nm == "homogeneous-float-aggregate") {
-    filter.reset(new HomogeneousAggregate(TYPE_FLOAT,4,0,0));
+    filter = make_unique<HomogeneousAggregate>(TYPE_FLOAT,4,0,0);
   }
   else {
     // If no other name matches, assume this is a metatype
     type_metatype meta = string2metatype(nm);
-    filter.reset(new MetaTypeFilter(meta));
+    filter = make_unique<MetaTypeFilter>(meta);
   }
   filter->decode(decoder);
   decoder.closeElement(elemId);
@@ -454,11 +454,11 @@ QualifierFilter *QualifierFilter::decodeFilter(Decoder &decoder)
   unique_ptr<QualifierFilter> filter;
   uint4 elemId = decoder.peekElement();
   if (elemId == ELEM_VARARGS)
-    filter.reset(new VarargsFilter());
+    filter = make_unique<VarargsFilter>();
   else if (elemId == ELEM_POSITION)
-    filter.reset(new PositionMatchFilter(-1));
+    filter = make_unique<PositionMatchFilter>(-1);
   else if (elemId == ELEM_DATATYPE_AT)
-    filter.reset(new DatatypeMatchFilter());
+    filter = make_unique<DatatypeMatchFilter>();
   else
     return (QualifierFilter *)0;
   filter->decode(decoder);
@@ -486,7 +486,7 @@ QualifierFilter *AndFilter::clone(void) const
   vector<QualifierFilter *> newFilters;
   for(int4 i=0;i<subQualifiers.size();++i)
     newFilters.push_back(subQualifiers[i]->clone());
-  return new AndFilter(newFilters);
+  return make_unique<AndFilter>(newFilters).release();
 }
 
 bool AndFilter::filter(const PrototypePieces &proto,int4 pos) const
@@ -546,7 +546,7 @@ DatatypeMatchFilter::~DatatypeMatchFilter(void)
 QualifierFilter *DatatypeMatchFilter::clone(void) const
 
 {
-  DatatypeMatchFilter *res = new DatatypeMatchFilter();
+  DatatypeMatchFilter *res = make_unique<DatatypeMatchFilter>().release();
   res->position = position;
   res->typeFilter = typeFilter->clone();
   return res;
@@ -595,24 +595,24 @@ AssignAction *AssignAction::decodeAction(Decoder &decoder,const ParamListStandar
   unique_ptr<AssignAction> action;
   uint4 elemId = decoder.peekElement();
   if (elemId == ELEM_GOTO_STACK)
-    action.reset(new GotoStack(res,0));
+    action = make_unique<GotoStack>(res,0);
   else if (elemId == ELEM_JOIN) {
-    action.reset(new MultiSlotAssign(res));
+    action = make_unique<MultiSlotAssign>(res);
   }
   else if (elemId == ELEM_CONSUME) {
-    action.reset(new ConsumeAs(TYPECLASS_GENERAL,res));
+    action = make_unique<ConsumeAs>(TYPECLASS_GENERAL,res);
   }
   else if (elemId == ELEM_CONVERT_TO_PTR) {
-    action.reset(new ConvertToPointer(res));
+    action = make_unique<ConvertToPointer>(res);
   }
   else if (elemId == ELEM_HIDDEN_RETURN) {
-    action.reset(new HiddenReturnAssign(res,hiddenret_specialreg));
+    action = make_unique<HiddenReturnAssign>(res,hiddenret_specialreg);
   }
   else if (elemId == ELEM_JOIN_PER_PRIMITIVE) {
-    action.reset(new MultiMemberAssign(TYPECLASS_GENERAL,false,res->isBigEndian(),res));
+    action = make_unique<MultiMemberAssign>(TYPECLASS_GENERAL,false,res->isBigEndian(),res);
   }
   else if (elemId == ELEM_JOIN_DUAL_CLASS) {
-    action.reset(new MultiSlotDualAssign(res));
+    action = make_unique<MultiSlotDualAssign>(res);
   }
   else
     throw DecoderError("Expecting model rule action");
@@ -633,7 +633,7 @@ AssignAction *AssignAction::decodePrecondition(Decoder &decoder,const ParamListS
   uint4 elemId = decoder.peekElement();
   
   if (elemId == ELEM_CONSUME_EXTRA) {
-    action.reset(new ConsumeExtra(res));
+    action = make_unique<ConsumeExtra>(res);
   }
   else {
     return (AssignAction *)0;
@@ -657,13 +657,13 @@ AssignAction *AssignAction::decodeSideeffect(Decoder &decoder,const ParamListSta
   uint4 elemId = decoder.peekElement();
 
   if (elemId == ELEM_CONSUME_EXTRA) {
-    action.reset(new ConsumeExtra(res));
+    action = make_unique<ConsumeExtra>(res);
   }
   else if (elemId == ELEM_EXTRA_STACK) {
-    action.reset(new ExtraStack(res));
+    action = make_unique<ExtraStack>(res);
   }
   else if (elemId == ELEM_CONSUME_REMAINING) {
-    action.reset(new ConsumeRemaining(res));
+    action = make_unique<ConsumeRemaining>(res);
   }
   else
     throw DecoderError("Expecting model rule sideeffect");
@@ -1692,7 +1692,7 @@ void ModelRule::decode(Decoder &decoder,const ParamListStandard *res)
     qualifiers.clear();
   }
   else {
-    qualifier = new AndFilter(qualifiers);
+    qualifier = make_unique<AndFilter>(qualifiers).release();
   }
   for (;;) {
     AssignAction *precond = AssignAction::decodePrecondition(decoder, res);
