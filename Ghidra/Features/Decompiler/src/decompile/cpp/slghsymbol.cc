@@ -60,7 +60,7 @@ SymbolTable::~SymbolTable(void)
 void SymbolTable::addScope(void)
 
 {
-  curscope = new SymbolScope(curscope,table.size());
+  curscope = make_unique<SymbolScope>(curscope,table.size()).release();
   table.push_back(curscope);
 }
 
@@ -199,7 +199,7 @@ void SymbolTable::decode(Decoder &decoder,SleighBase *trans)
       throw SleighError("Bad symbol scope parent id: not unique");
     }
 
-    table[id] = new SymbolScope( parscope, id );
+    table[id] = make_unique<SymbolScope>( parscope, id ).release();
     decoder.closeElement(subel);
   }
   curscope = table[0];		// Current scope is global
@@ -227,31 +227,31 @@ void SymbolTable::decodeSymbolHeader(Decoder &decoder)
   unique_ptr<SleighSymbol> sym;
   uint4 el = decoder.peekElement();
   if (el == sla::ELEM_USEROP_HEAD)
-    sym.reset(new UserOpSymbol());
+    sym = make_unique<UserOpSymbol>();
   else if (el == sla::ELEM_EPSILON_SYM_HEAD)
-    sym.reset(new EpsilonSymbol());
+    sym = make_unique<EpsilonSymbol>();
   else if (el == sla::ELEM_VALUE_SYM_HEAD)
-    sym.reset(new ValueSymbol());
+    sym = make_unique<ValueSymbol>();
   else if (el == sla::ELEM_VALUEMAP_SYM_HEAD)
-    sym.reset(new ValueMapSymbol());
+    sym = make_unique<ValueMapSymbol>();
   else if (el == sla::ELEM_NAME_SYM_HEAD)
-    sym.reset(new NameSymbol());
+    sym = make_unique<NameSymbol>();
   else if (el == sla::ELEM_VARNODE_SYM_HEAD)
-    sym.reset(new VarnodeSymbol());
+    sym = make_unique<VarnodeSymbol>();
   else if (el == sla::ELEM_CONTEXT_SYM_HEAD)
-    sym.reset(new ContextSymbol());
+    sym = make_unique<ContextSymbol>();
   else if (el == sla::ELEM_VARLIST_SYM_HEAD)
-    sym.reset(new VarnodeListSymbol());
+    sym = make_unique<VarnodeListSymbol>();
   else if (el == sla::ELEM_OPERAND_SYM_HEAD)
-    sym.reset(new OperandSymbol());
+    sym = make_unique<OperandSymbol>();
   else if (el == sla::ELEM_START_SYM_HEAD)
-    sym.reset(new StartSymbol());
+    sym = make_unique<StartSymbol>();
   else if (el == sla::ELEM_END_SYM_HEAD)
-    sym.reset(new EndSymbol());
+    sym = make_unique<EndSymbol>();
   else if (el == sla::ELEM_NEXT2_SYM_HEAD)
-    sym.reset(new Next2Symbol());
+    sym = make_unique<Next2Symbol>();
   else if (el == sla::ELEM_SUBTABLE_SYM_HEAD)
-    sym.reset(new SubtableSymbol());
+    sym = make_unique<SubtableSymbol>();
   else
     throw SleighError("Bad symbol xml");
 
@@ -425,14 +425,14 @@ void UserOpSymbol::decode(Decoder &decoder,SleighBase *trans)
 PatternlessSymbol::PatternlessSymbol(void)
 
 {	// The void constructor must explicitly build the ConstantValue. It is not decode (or encoded)
-  patexp = new ConstantValue((intb)0);
+  patexp = make_unique<ConstantValue>((intb)0).release();
   patexp->layClaim();
 }
 
 PatternlessSymbol::PatternlessSymbol(const string &nm)
   : SpecificSymbol(nm)
 {
-  patexp = new ConstantValue((intb)0);
+  patexp = make_unique<ConstantValue>((intb)0).release();
   patexp->layClaim();
 }
 
@@ -460,9 +460,9 @@ void EpsilonSymbol::print(ostream &s,ParserWalker &walker) const
 VarnodeTpl *EpsilonSymbol::getVarnode(void) const
 
 {
-  VarnodeTpl *res = new VarnodeTpl(ConstTpl(const_space),
+  VarnodeTpl *res = make_unique<VarnodeTpl>(ConstTpl(const_space),
 				     ConstTpl(ConstTpl::real,0),
-				     ConstTpl(ConstTpl::real,0));
+				     ConstTpl(ConstTpl::real,0)).release();
   return res;
 }
 
@@ -736,7 +736,7 @@ VarnodeSymbol::VarnodeSymbol(const string &nm,AddrSpace *base,uintb offset,int4 
 VarnodeTpl *VarnodeSymbol::getVarnode(void) const
 
 {
-  return new VarnodeTpl(ConstTpl(fix.space),ConstTpl(ConstTpl::real,fix.offset),ConstTpl(ConstTpl::real,fix.size));
+  return make_unique<VarnodeTpl>(ConstTpl(fix.space),ConstTpl(ConstTpl::real,fix.offset),ConstTpl(ConstTpl::real,fix.size)).release();
 }
 
 void VarnodeSymbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -976,7 +976,7 @@ OperandSymbol::OperandSymbol(const string &nm,int4 index,Constructor *ct)
 {
   flags = 0;
   hand = index;
-  localexp = new OperandValue(index,ct);
+  localexp = make_unique<OperandValue>(index,ct).release();
   localexp->layClaim();
   defexp = (PatternExpression *)0;
   triple = (TripleSymbol *)0;
@@ -1014,16 +1014,16 @@ VarnodeTpl *OperandSymbol::getVarnode(void) const
 {
   VarnodeTpl *res;
   if (defexp != (PatternExpression *)0)
-    res = new VarnodeTpl(hand,true); // Definite constant handle
+    res = make_unique<VarnodeTpl>(hand,true).release(); // Definite constant handle
   else {
     SpecificSymbol *specsym = dynamic_cast<SpecificSymbol *>(triple);
     if (specsym != (SpecificSymbol *)0)
       res = specsym->getVarnode();
     else if ((triple != (TripleSymbol *)0)&&
 	     ((triple->getType() == valuemap_symbol)||(triple->getType() == name_symbol)))
-      res = new VarnodeTpl(hand,true); // Zero-size symbols
+      res = make_unique<VarnodeTpl>(hand,true).release(); // Zero-size symbols
     else
-      res = new VarnodeTpl(hand,false); // Possible dynamic handle
+      res = make_unique<VarnodeTpl>(hand,false).release(); // Possible dynamic handle
   }
   return res;
 }
@@ -1138,7 +1138,7 @@ StartSymbol::StartSymbol(const string &nm,AddrSpace *cspc) : SpecificSymbol(nm)
 
 {
   const_space = cspc;
-  patexp = new StartInstructionValue();
+  patexp = make_unique<StartInstructionValue>().release();
   patexp->layClaim();
 }
 
@@ -1155,7 +1155,7 @@ VarnodeTpl *StartSymbol::getVarnode(void) const
   ConstTpl spc(const_space);
   ConstTpl off(ConstTpl::j_start);
   ConstTpl sz_zero;
-  return new VarnodeTpl(spc,off,sz_zero);
+  return make_unique<VarnodeTpl>(spc,off,sz_zero).release();
 }
 
 void StartSymbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -1194,7 +1194,7 @@ void StartSymbol::decode(Decoder &decoder,SleighBase *trans)
 
 {
   const_space = trans->getConstantSpace();
-  patexp = new StartInstructionValue();
+  patexp = make_unique<StartInstructionValue>().release();
   patexp->layClaim();
   decoder.closeElement(sla::ELEM_START_SYM.getId());
 }
@@ -1203,7 +1203,7 @@ EndSymbol::EndSymbol(const string &nm,AddrSpace *cspc) : SpecificSymbol(nm)
 
 {
   const_space = cspc;
-  patexp = new EndInstructionValue();
+  patexp = make_unique<EndInstructionValue>().release();
   patexp->layClaim();
 }
 
@@ -1220,7 +1220,7 @@ VarnodeTpl *EndSymbol::getVarnode(void) const
   ConstTpl spc(const_space);
   ConstTpl off(ConstTpl::j_next);
   ConstTpl sz_zero;
-  return new VarnodeTpl(spc,off,sz_zero);
+  return make_unique<VarnodeTpl>(spc,off,sz_zero).release();
 }
 
 void EndSymbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -1259,7 +1259,7 @@ void EndSymbol::decode(Decoder &decoder,SleighBase *trans)
 
 {
   const_space = trans->getConstantSpace();
-  patexp = new EndInstructionValue();
+  patexp = make_unique<EndInstructionValue>().release();
   patexp->layClaim();
   decoder.closeElement(sla::ELEM_END_SYM.getId());
 }
@@ -1268,7 +1268,7 @@ Next2Symbol::Next2Symbol(const string &nm,AddrSpace *cspc) : SpecificSymbol(nm)
 
 {
   const_space = cspc;
-  patexp = new Next2InstructionValue();
+  patexp = make_unique<Next2InstructionValue>().release();
   patexp->layClaim();
 }
 
@@ -1285,7 +1285,7 @@ VarnodeTpl *Next2Symbol::getVarnode(void) const
   ConstTpl spc(const_space);
   ConstTpl off(ConstTpl::j_next2);
   ConstTpl sz_zero;
-  return new VarnodeTpl(spc,off,sz_zero);
+  return make_unique<VarnodeTpl>(spc,off,sz_zero).release();
 }
 
 void Next2Symbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -1324,7 +1324,7 @@ void Next2Symbol::decode(Decoder &decoder,SleighBase *trans)
 
 {
   const_space = trans->getConstantSpace();
-  patexp = new Next2InstructionValue();
+  patexp = make_unique<Next2InstructionValue>().release();
   patexp->layClaim();
   decoder.closeElement(sla::ELEM_NEXT2_SYM.getId());
 }
@@ -1341,7 +1341,7 @@ VarnodeTpl *FlowDestSymbol::getVarnode(void) const
   ConstTpl spc(const_space);
   ConstTpl off(ConstTpl::j_flowdest);
   ConstTpl sz_zero;
-  return new VarnodeTpl(spc,off,sz_zero);
+  return make_unique<VarnodeTpl>(spc,off,sz_zero).release();
 }
 
 void FlowDestSymbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -1373,7 +1373,7 @@ VarnodeTpl *FlowRefSymbol::getVarnode(void) const
   ConstTpl spc(const_space);
   ConstTpl off(ConstTpl::j_flowref);
   ConstTpl sz_zero;
-  return new VarnodeTpl(spc,off,sz_zero);
+  return make_unique<VarnodeTpl>(spc,off,sz_zero).release();
 }
 
 void FlowRefSymbol::getFixedHandle(FixedHandle &hand,ParserWalker &walker) const
@@ -1692,17 +1692,17 @@ void Constructor::decode(Decoder &decoder,SleighBase *trans)
       decoder.closeElement(subel);
     }
     else if (subel == sla::ELEM_CONTEXT_OP) {
-      ContextOp *c_op = new ContextOp();
+      ContextOp *c_op = make_unique<ContextOp>().release();
       context.push_back(c_op);
       c_op->decode(decoder,trans);
     }
     else if (subel == sla::ELEM_COMMIT) {
-      ContextCommit *c_op = new ContextCommit();
+      ContextCommit *c_op = make_unique<ContextCommit>().release();
       context.push_back(c_op);
       c_op->decode(decoder,trans);
     }
     else {
-      unique_ptr<ConstructTpl> cur(new ConstructTpl());
+      auto cur = make_unique<ConstructTpl>();
       int4 sectionid = cur->decode(decoder);
       if (sectionid < 0) {
 	if (templ != (ConstructTpl *)0)
@@ -1806,7 +1806,7 @@ TokenPattern *Constructor::buildPattern(ostream &s)
 {
   if (pattern != (TokenPattern *)0) return pattern; // Already built
 
-  pattern = new TokenPattern();
+  pattern = make_unique<TokenPattern>().release();
   vector<TokenPattern> oppattern;
   bool recursion = false;
 				// Generate pattern for each operand, store in oppattern
@@ -1955,12 +1955,12 @@ void SubtableSymbol::decode(Decoder &decoder,SleighBase *trans)
   uint4 subel = decoder.peekElement();
   while(subel != 0) {
     if (subel == sla::ELEM_CONSTRUCTOR) {
-      Constructor *ct = new Constructor();
+      Constructor *ct = make_unique<Constructor>().release();
       addConstructor(ct);
       ct->decode(decoder,trans);
     }
     else if (subel == sla::ELEM_DECISION) {
-      decisiontree = new DecisionNode();
+      decisiontree = make_unique<DecisionNode>().release();
       decisiontree->decode(decoder,(DecisionNode *)0,this);
     }
     subel = decoder.peekElement();
@@ -1976,7 +1976,7 @@ void SubtableSymbol::buildDecisionTree(DecisionProperties &props)
 {				// Associate pattern disjoints to constructors
   if (pattern == (TokenPattern *)0) return; // Pattern not fully formed
   Pattern *pat;
-  decisiontree = new DecisionNode((DecisionNode *)0);
+  decisiontree = make_unique<DecisionNode>((DecisionNode *)0).release();
   for(int4 i=0;i<construct.size();++i) {
     pat = construct[i]->getPattern()->getPattern();
     if (pat->numDisjoint() == 0)
@@ -1995,7 +1995,7 @@ TokenPattern *SubtableSymbol::buildPattern(ostream &s)
 
   errors = false;
   beingbuilt = true;
-  pattern = new TokenPattern();
+  pattern = make_unique<TokenPattern>().release();
   if (construct.empty()) {
     s << "Error: There are no constructors in table: "+getName() << endl;
     errors = true;
@@ -2237,7 +2237,7 @@ void DecisionNode::split(DecisionProperties &props)
   int4 numChildren = 1 << bitsize;
 
   for(int4 i=0;i<numChildren;++i) {
-    DecisionNode *nd = new DecisionNode( this );
+    DecisionNode *nd = make_unique<DecisionNode>( this ).release();
     children.push_back( nd );
   }
   for(int4 i=0;i<list.size();++i) {
@@ -2405,7 +2405,7 @@ void DecisionNode::decode(Decoder &decoder,DecisionNode *par,SubtableSymbol *sub
       decoder.closeElement(subel);
     }
     else if (subel == sla::ELEM_DECISION) {
-      DecisionNode *subnode = new DecisionNode();
+      DecisionNode *subnode = make_unique<DecisionNode>().release();
       children.push_back(subnode);
       subnode->decode(decoder,this,sub);
     }
@@ -2488,7 +2488,7 @@ void ContextOp::decode(Decoder &decoder,SleighBase *trans)
 ContextChange *ContextOp::clone(void) const
 
 {
-  ContextOp *res = new ContextOp();
+  ContextOp *res = make_unique<ContextOp>().release();
   (res->patexp = patexp)->layClaim();
   res->mask = mask;
   res->num = num;
@@ -2538,7 +2538,7 @@ void ContextCommit::decode(Decoder &decoder,SleighBase *trans)
 ContextChange *ContextCommit::clone(void) const
 
 {
-  ContextCommit *res = new ContextCommit();
+  ContextCommit *res = make_unique<ContextCommit>().release();
   res->sym = sym;
   res->flow = flow;
   res->mask = mask;
