@@ -431,9 +431,8 @@ public:
 class EquationAnd : public PatternEquation { // Pattern Equations ANDed together
   PatternEquation *left;
   PatternEquation *right;
-protected:
-  virtual ~EquationAnd(void);
 public:
+  virtual ~EquationAnd(void);	///< Destructor (public to allow std::make_unique<EquationAnd> from non-friend code)
   EquationAnd(PatternEquation *l,PatternEquation *r);
   virtual void genPattern(const vector<TokenPattern> &ops) const;
   virtual bool resolveOperandLeft(OperandResolve &state) const;
@@ -443,9 +442,8 @@ public:
 class EquationOr : public PatternEquation { // Pattern Equations ORed together
   PatternEquation *left;
   PatternEquation *right;
-protected:
-  virtual ~EquationOr(void);
 public:
+  virtual ~EquationOr(void);	///< Destructor (public to allow std::make_unique<EquationOr> from non-friend code)
   EquationOr(PatternEquation *l,PatternEquation *r);
   virtual void genPattern(const vector<TokenPattern> &ops) const;
   virtual bool resolveOperandLeft(OperandResolve &state) const;
@@ -455,9 +453,8 @@ public:
 class EquationCat : public PatternEquation { // Pattern Equations concatenated
   PatternEquation *left;
   PatternEquation *right;
-protected:
-  virtual ~EquationCat(void);
 public:
+  virtual ~EquationCat(void);	///< Destructor (public to allow std::make_unique<EquationCat> from non-friend code)
   EquationCat(PatternEquation *l,PatternEquation *r);
   virtual void genPattern(const vector<TokenPattern> &ops) const;
   virtual bool resolveOperandLeft(OperandResolve &state) const;
