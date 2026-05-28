@@ -280,6 +280,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/analyzesigs.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/architecture.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/architecture.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/block.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/block.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/capability.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/capability.hh': [],
