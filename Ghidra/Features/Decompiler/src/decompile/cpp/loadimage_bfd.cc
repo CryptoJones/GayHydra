@@ -35,7 +35,7 @@ LoadImageBfd::LoadImageBfd(const string &f,const string &t) : LoadImage(f)
 
   bufsize = 512;		// Default buffer size
   bufoffset = ~((uintb)0);
-  buffer = new uint1[ bufsize ];
+  buffer = make_unique<uint1[]>(bufsize).release();
 }
 
 LoadImageBfd::~LoadImageBfd(void)
@@ -212,7 +212,7 @@ void LoadImageBfd::openSymbols(void) const
     return;
   }
 
-  symbol_table = (asymbol **) new uint1[storage_needed]; // Storage needed in bytes
+  symbol_table = (asymbol **) make_unique<uint1[]>(storage_needed).release(); // Storage needed in bytes
   number_of_symbols = bfd_canonicalize_symtab(thebfd,symbol_table);
   if (number_of_symbols <= 0) {
     delete [] symbol_table;
