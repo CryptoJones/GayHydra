@@ -212,8 +212,8 @@ first implementation tier.
 Work that doesn't fit a current sprint but is documented in the audit:
 
 - **Rec 7:** opt-in PRs from community contributors to populate [`MAINTAINERS.md`](MAINTAINERS.md).
-- **Rec 23:** expand the `unit_tests` job from Ubuntu-only to multi-OS once Linux baseline is stable.
-- **Rec 24:** add Windows (MSVC) to the C++ decompiler test workflow.
+- ~~**Rec 23:** expand the `unit_tests` job from Ubuntu-only to multi-OS once Linux baseline is stable.~~ **Shipped at v26.1.14** ([PR #162](https://github.com/CryptoJones/GayHydra/pull/162)) — `build-ghidra.yml`'s `unit_tests` job now runs on `[ubuntu-latest, macos-latest, windows-latest]`, matching the already-multi-OS `build` job.
+- **Rec 24:** add Windows (MSVC) to the C++ decompiler test workflow. **Strategic sprint pending** — see [DD-0004](docs/decisions/0004-decompiler-cpp-tests-windows.md): gated on picking a Windows libbfd-substitute approach (port vs. exclude vs. stub) and writing the MSVC `CMakeLists.txt` that replaces the GCC `Makefile`. MinGW shortcut explicitly rejected to avoid carrying two Windows toolchains.
 - **Rec 30:** headless test layer — ships after Rec 29 (JUnit 5) is partway through; opportunistic.
 - ~~**Rec 31 Stages 3–8:** the bulk of the RAII migration.~~ **Closed at v26.1.13** — see Rec 31 row in Sprint 6 above. Hand-written tree at 226/229 = 99% under audit gate. The four remaining (bison/flex-generated) need the Option A variant-mode rewrite, tracked separately.
 - **Rec 34 PRs #34-5 through #34-8:** the rest of the FlatBuffers migration + v0 removal.
