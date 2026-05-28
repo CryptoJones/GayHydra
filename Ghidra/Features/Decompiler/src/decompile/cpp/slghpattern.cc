@@ -144,11 +144,11 @@ DisjointPattern *DisjointPattern::decodeDisjoint(Decoder &decoder)
   unique_ptr<DisjointPattern> res;
   uint4 el = decoder.peekElement();
   if (el == sla::ELEM_INSTRUCT_PAT)
-    res.reset(new InstructionPattern());
+    res = make_unique<InstructionPattern>();
   else if (el == sla::ELEM_CONTEXT_PAT)
-    res.reset(new ContextPattern());
+    res = make_unique<ContextPattern>();
   else
-    res.reset(new CombinePattern());
+    res = make_unique<CombinePattern>();
   res->decode(decoder);
   return res.release();
 }
@@ -283,7 +283,7 @@ PatternBlock::PatternBlock(vector<PatternBlock *> &list)
 PatternBlock *PatternBlock::clone(void) const
 
 {
-  PatternBlock *res = new PatternBlock(true);
+  PatternBlock *res = make_unique<PatternBlock>(true).release();
 
   res->offset = offset;
   res->nonzerosize = nonzerosize;
@@ -297,7 +297,7 @@ PatternBlock *PatternBlock::commonSubPattern(const PatternBlock *b) const
 {				// The resulting pattern has a 1-bit in the mask
 				// only if the two pieces have a 1-bit and the
 				// values agree
-  PatternBlock *res = new PatternBlock(true);
+  PatternBlock *res = make_unique<PatternBlock>(true).release();
   int4 maxlength = (getLength() > b->getLength()) ? getLength() : b->getLength();
 
   res->offset = 0;
@@ -324,8 +324,8 @@ PatternBlock *PatternBlock::intersect(const PatternBlock *b) const
 
 { // Construct the intersecting pattern
   if (alwaysFalse() || b->alwaysFalse())
-    return new PatternBlock(false);
-  PatternBlock *res = new PatternBlock(true);
+    return make_unique<PatternBlock>(false).release();
+  PatternBlock *res = make_unique<PatternBlock>(true).release();
   int4 maxlength = (getLength() > b->getLength()) ? getLength() : b->getLength();
 
   res->offset = 0;
@@ -535,7 +535,7 @@ Pattern *InstructionPattern::doAnd(const Pattern *b,int4 sa) const
     InstructionPattern *newpat = (InstructionPattern *)simplifyClone();
     if (sa < 0)
       newpat->shiftInstruction(-sa);
-    return new CombinePattern((ContextPattern *)b3->simplifyClone(),newpat);
+    return make_unique<CombinePattern>((ContextPattern *)b3->simplifyClone(),newpat).release();
   }
   const InstructionPattern *b4 = (const InstructionPattern *)b;
 
@@ -552,7 +552,7 @@ Pattern *InstructionPattern::doAnd(const Pattern *b,int4 sa) const
     respattern = maskvalue->intersect(c);
     delete c;
   }
-  return new InstructionPattern(respattern);
+  return make_unique<InstructionPattern>(respattern).release();
 }
 
 Pattern *InstructionPattern::commonSubPattern(const Pattern *b,int4 sa) const
@@ -567,7 +567,7 @@ Pattern *InstructionPattern::commonSubPattern(const Pattern *b,int4 sa) const
 
   const ContextPattern *b3 = dynamic_cast<const ContextPattern *>(b);
   if (b3 != (const ContextPattern *)0) {
-    InstructionPattern *res = new InstructionPattern(true);
+    InstructionPattern *res = make_unique<InstructionPattern>(true).release();
     return res;
   }
   const InstructionPattern *b4 = (const InstructionPattern *)b;
@@ -585,7 +585,7 @@ Pattern *InstructionPattern::commonSubPattern(const Pattern *b,int4 sa) const
     respattern = maskvalue->commonSubPattern(c);
     delete c;
   }
-  return new InstructionPattern(respattern);
+  return make_unique<InstructionPattern>(respattern).release();
 }
 
 Pattern *InstructionPattern::doOr(const Pattern *b,int4 sa) const
@@ -605,7 +605,7 @@ Pattern *InstructionPattern::doOr(const Pattern *b,int4 sa) const
     res1->shiftInstruction(-sa);
   else
     res2->shiftInstruction(sa);
-  return new OrPattern(res1,res2);
+  return make_unique<OrPattern>(res1,res2).release();
 }
 
 void InstructionPattern::encode(Encoder &encoder) const
@@ -620,7 +620,7 @@ void InstructionPattern::decode(Decoder &decoder)
 
 {
   uint4 el = decoder.openElement(sla::ELEM_INSTRUCT_PAT);
-  maskvalue = new PatternBlock(true);
+  maskvalue = make_unique<PatternBlock>(true).release();
   maskvalue->decode(decoder);
   decoder.closeElement(el);
 }
@@ -632,7 +632,7 @@ Pattern *ContextPattern::doOr(const Pattern *b,int4 sa) const
   if (b2 == (const ContextPattern *)0)
     return b->doOr(this,-sa);
 
-  return new OrPattern((DisjointPattern *)simplifyClone(),(DisjointPattern *)b2->simplifyClone());
+  return make_unique<OrPattern>((DisjointPattern *)simplifyClone(),(DisjointPattern *)b2->simplifyClone()).release();
 }
 
 Pattern *ContextPattern::doAnd(const Pattern *b,int4 sa) const
@@ -643,7 +643,7 @@ Pattern *ContextPattern::doAnd(const Pattern *b,int4 sa) const
     return b->doAnd(this,-sa);
 
   PatternBlock *resblock = maskvalue->intersect(b2->maskvalue);
-  return new ContextPattern(resblock);
+  return make_unique<ContextPattern>(resblock).release();
 }
 
 Pattern *ContextPattern::commonSubPattern(const Pattern *b,int4 sa) const
@@ -654,7 +654,7 @@ Pattern *ContextPattern::commonSubPattern(const Pattern *b,int4 sa) const
     return b->commonSubPattern(this,-sa);
 
   PatternBlock *resblock = maskvalue->commonSubPattern(b2->maskvalue);
-  return new ContextPattern(resblock);
+  return make_unique<ContextPattern>(resblock).release();
 }
 
 void ContextPattern::encode(Encoder &encoder) const
@@ -669,7 +669,7 @@ void ContextPattern::decode(Decoder &decoder)
 
 {
   uint4 el = decoder.openElement(sla::ELEM_CONTEXT_PAT);
-  maskvalue = new PatternBlock(true);
+  maskvalue = make_unique<PatternBlock>(true).release();
   maskvalue->decode(decoder);
   decoder.closeElement(el);
 }
@@ -715,20 +715,20 @@ Pattern *CombinePattern::doAnd(const Pattern *b,int4 sa) const
   if (b2 != (CombinePattern *)0) {
     ContextPattern *c = (ContextPattern *)context->doAnd(b2->context,0);
     InstructionPattern *i = (InstructionPattern *)instr->doAnd(b2->instr,sa);
-    tmp = new CombinePattern(c,i);
+    tmp = make_unique<CombinePattern>(c,i).release();
   }
   else {
     const InstructionPattern *b3 = dynamic_cast<const InstructionPattern *>(b);
     if (b3 != (const InstructionPattern *)0) {
       InstructionPattern *i = (InstructionPattern *)instr->doAnd(b3,sa);
-      tmp = new CombinePattern((ContextPattern *)context->simplifyClone(),i);
+      tmp = make_unique<CombinePattern>((ContextPattern *)context->simplifyClone(),i).release();
     }
     else {			// Must be a ContextPattern
       ContextPattern *c = (ContextPattern *)context->doAnd(b,0);
       InstructionPattern *newpat = (InstructionPattern *) instr->simplifyClone();
       if (sa < 0)
 	newpat->shiftInstruction(-sa);
-      tmp = new CombinePattern(c,newpat);
+      tmp = make_unique<CombinePattern>(c,newpat).release();
     }
   }
   return tmp;
@@ -746,7 +746,7 @@ Pattern *CombinePattern::commonSubPattern(const Pattern *b,int4 sa) const
   if (b2 != (CombinePattern *)0) {
     ContextPattern *c = (ContextPattern *)context->commonSubPattern(b2->context,0);
     InstructionPattern *i = (InstructionPattern *)instr->commonSubPattern(b2->instr,sa);
-    tmp = new CombinePattern(c,i);
+    tmp = make_unique<CombinePattern>(c,i).release();
   }
   else {
     const InstructionPattern *b3 = dynamic_cast<const InstructionPattern *>(b);
@@ -770,7 +770,7 @@ Pattern *CombinePattern::doOr(const Pattern *b,int4 sa) const
     res1->shiftInstruction(-sa);
   else
     res2->shiftInstruction(sa);
-  OrPattern *tmp = new OrPattern(res1,res2);
+  OrPattern *tmp = make_unique<OrPattern>(res1,res2).release();
   return tmp;
 }
 
@@ -782,9 +782,9 @@ Pattern *CombinePattern::simplifyClone(void) const
   if (instr->alwaysTrue())
     return context->simplifyClone();
   if (context->alwaysFalse()||instr->alwaysFalse())
-    return new InstructionPattern(false);
-  return new CombinePattern((ContextPattern *)context->simplifyClone(),
-			    (InstructionPattern *)instr->simplifyClone());
+    return make_unique<InstructionPattern>(false).release();
+  return make_unique<CombinePattern>((ContextPattern *)context->simplifyClone(),
+			    (InstructionPattern *)instr->simplifyClone()).release();
 }
 
 void CombinePattern::encode(Encoder &encoder) const
@@ -800,9 +800,9 @@ void CombinePattern::decode(Decoder &decoder)
 
 {
   uint4 el = decoder.openElement(sla::ELEM_COMBINE_PAT);
-  context = new ContextPattern();
+  context = make_unique<ContextPattern>().release();
   context->decode(decoder);
-  instr = new InstructionPattern();
+  instr = make_unique<InstructionPattern>().release();
   instr->decode(decoder);
   decoder.closeElement(el);
 }
@@ -903,7 +903,7 @@ Pattern *OrPattern::doAnd(const Pattern *b,int4 sa) const
 	newlist.push_back(tmp);
       }
   }
-  tmpor = new OrPattern(newlist);
+  tmpor = make_unique<OrPattern>(newlist).release();
   return tmpor;
 }
 
@@ -951,7 +951,7 @@ Pattern *OrPattern::doOr(const Pattern *b,int4 sa) const
     for(int4 i=0;i<newlist.size();++i)
       newlist[i]->shiftInstruction(sa);
 
-  OrPattern *tmpor = new OrPattern(newlist);
+  OrPattern *tmpor = make_unique<OrPattern>(newlist).release();
   return tmpor;
 }
 
@@ -962,7 +962,7 @@ Pattern *OrPattern::simplifyClone(void) const
 
   for(iter=orlist.begin();iter!=orlist.end();++iter) // Look for alwaysTrue
     if ((*iter)->alwaysTrue())
-      return new InstructionPattern(true);
+      return make_unique<InstructionPattern>(true).release();
 
   vector<DisjointPattern *> newlist;
   for(iter=orlist.begin();iter!=orlist.end();++iter) // Look for alwaysFalse
@@ -970,10 +970,10 @@ Pattern *OrPattern::simplifyClone(void) const
       newlist.push_back((DisjointPattern *)(*iter)->simplifyClone());
   
   if (newlist.empty())
-    return new InstructionPattern(false);
+    return make_unique<InstructionPattern>(false).release();
   else if (newlist.size() == 1)
     return newlist[0];
-  return new OrPattern(newlist);
+  return make_unique<OrPattern>(newlist).release();
 }
 
 void OrPattern::encode(Encoder &encoder) const

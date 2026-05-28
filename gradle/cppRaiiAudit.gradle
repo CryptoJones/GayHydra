@@ -187,6 +187,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/printlanguage.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/slaformat.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghpattern.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/slghpattern.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/string_ghidra.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/stringmanage.cc': [],
