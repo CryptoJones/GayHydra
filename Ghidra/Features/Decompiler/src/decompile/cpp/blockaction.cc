@@ -502,7 +502,7 @@ void TraceDAG::BranchPoint::createTraces(void)
   int4 sizeout = top->sizeOut();
   for(int4 i=0;i<sizeout;++i) {
     if (!top->isLoopDAGOut(i)) continue;
-    paths.push_back( new BlockTrace(this,paths.size(),i) );
+    paths.push_back(make_unique<BlockTrace>(this,paths.size(),i).release());
   }
 }
 
@@ -839,10 +839,10 @@ bool TraceDAG::checkOpen(BlockTrace *trace)
 list<TraceDAG::BlockTrace *>::iterator TraceDAG::openBranch(BlockTrace *parent)
 
 {
-  BranchPoint *newbranch = new BranchPoint( parent );
+  auto owned = make_unique<BranchPoint>(parent);
+  BranchPoint *newbranch = owned.get();
   parent->derivedbp = newbranch;
-  if (newbranch->paths.size() == 0) { // No new traces, return immediately to parent trace
-    delete newbranch;
+  if (newbranch->paths.size() == 0) { // No new traces, return immediately to parent trace; unique_ptr auto-destroys
     parent->derivedbp = (BranchPoint *)0;
     parent->flags |= BlockTrace::f_terminal; // marking it as terminal
     parent->bottom = (FlowBlock *)0;
@@ -851,7 +851,7 @@ list<TraceDAG::BlockTrace *>::iterator TraceDAG::openBranch(BlockTrace *parent)
     return parent->activeiter;
   }
   removeActive(parent);
-  branchlist.push_back( newbranch );
+  branchlist.push_back(owned.release());
   for(int4 i=0;i<newbranch->paths.size();++i)
     insertActive(newbranch->paths[i]);
   return newbranch->paths[0]->activeiter;
@@ -967,12 +967,14 @@ TraceDAG::~TraceDAG(void)
 void TraceDAG::initialize(void)
 
 {
-  BranchPoint *rootBranch = new BranchPoint(); // Create a virtual BranchPoint for all entry points
-  branchlist.push_back(rootBranch);
+  auto owned = make_unique<BranchPoint>(); // Create a virtual BranchPoint for all entry points
+  BranchPoint *rootBranch = owned.get();
+  branchlist.push_back(owned.release());
 
   for(uint4 i=0;i<rootlist.size();++i) {	// Find the entry points
-    BlockTrace *newtrace = new BlockTrace(rootBranch,rootBranch->paths.size(),rootlist[i]);
-    rootBranch->paths.push_back(newtrace);
+    auto traceOwned = make_unique<BlockTrace>(rootBranch,rootBranch->paths.size(),rootlist[i]);
+    BlockTrace *newtrace = traceOwned.get();
+    rootBranch->paths.push_back(traceOwned.release());
     insertActive(newtrace);
   }
 }

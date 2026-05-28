@@ -171,6 +171,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/inject_ghidra.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/signature_ghidra.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleighbase.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/blockaction.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
         // `state[i] = new ConstructState(MAX_OPERAND);` — the
