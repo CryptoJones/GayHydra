@@ -428,8 +428,9 @@ void MemoryPageOverlay::insert(uintb addr,uintb val)
   if (iter != page.end())
     pageptr = (*iter).second;
   else {
-    pageptr = new uint1[getPageSize()];
-    page[pageaddr] = pageptr;
+    auto owned = make_unique<uint1[]>(getPageSize());
+    pageptr = owned.get();
+    page[pageaddr] = owned.release();
     if (underlie == (MemoryBank *)0) {
       for(int4 i=0;i<getPageSize();++i)
 	pageptr[i] = 0;
@@ -507,8 +508,9 @@ void MemoryPageOverlay::setPage(uintb addr,const uint1 *val,int4 skip,int4 size)
 
   iter = page.find(addr);
   if (iter == page.end()) {
-    pageptr = new uint1[getPageSize()];
-    page[addr] = pageptr;
+    auto owned = make_unique<uint1[]>(getPageSize());
+    pageptr = owned.get();
+    page[addr] = owned.release();
     if (size != getPageSize()) {
       if (underlie == (MemoryBank *)0) {
 	for(int4 i=0;i<getPageSize();++i)
