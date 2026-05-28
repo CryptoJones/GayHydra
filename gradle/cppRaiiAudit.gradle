@@ -192,6 +192,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/typeop.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/opbehavior.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/coreaction.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/options.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/context.cc': [
         // `state[i] = new ConstructState(MAX_OPERAND);` — the
