@@ -754,7 +754,7 @@ void GraphSigManager::collectVarnodeSigs(void)
   for(iter=sigmap.begin();iter!=sigmap.end();++iter) {
     entry = (*iter).second;
     if (entry->isNotEmitted()) continue;
-    vsig = new VarnodeSignature(entry->getVarnode(),entry->getHash());
+    vsig = make_unique<VarnodeSignature>(entry->getVarnode(),entry->getHash()).release();
     addSignature(vsig);
   }
 }
@@ -859,7 +859,7 @@ void GraphSigManager::collectBlockSigs(void)
 	finalhash = hash_mixin(val, entry->getHash());
       else
 	finalhash = hash_mixin(val, lasthash);
-      Signature *bsig = new BlockSignature(bl, finalhash, lastop, op);
+      Signature *bsig = make_unique<BlockSignature>(bl, finalhash, lastop, op).release();
       addSignature(bsig);
       lastop = op;
       lasthash = val;
@@ -867,10 +867,10 @@ void GraphSigManager::collectBlockSigs(void)
     finalhash = hash_mixin(entry->getHash(),0x9b1c5f);		// Create a hash with just block information
     if (callhash != 0)
       finalhash = hash_mixin(finalhash,callhash);
-    addSignature(new BlockSignature(bl,finalhash,(PcodeOp *)0,(PcodeOp *)0));
+    addSignature(make_unique<BlockSignature>(bl,finalhash,(PcodeOp *)0,(PcodeOp *)0).release());
     if (copyhash != 0) {
       copyhash = hash_mixin(copyhash, 0xa2de3c);
-      addSignature(new CopySignature(bl,copyhash));
+      addSignature(make_unique<CopySignature>(bl,copyhash).release());
     }
   }
 }
@@ -904,8 +904,9 @@ void GraphSigManager::initializeBlocks(void)
   const BlockGraph &blockgraph(fd->getBasicBlocks());
   for(int4 i=0;i<blockgraph.getSize();++i) {
     BlockBasic *bl = (BlockBasic *)blockgraph.getBlock(i);
-    BlockSignatureEntry *entry = new BlockSignatureEntry(bl);
-    blockmap[ bl->getIndex() ] = entry;
+    auto owned = make_unique<BlockSignatureEntry>(bl);
+    BlockSignatureEntry *entry = owned.get();
+    blockmap[ bl->getIndex() ] = owned.release();
     entry->localHash(sigmods);
   }
 }
@@ -969,8 +970,7 @@ void GraphSigManager::setCurrentFunction(const Funcdata *f)
 
   for(iter=f->beginLoc();iter!=f->endLoc();++iter) {
     Varnode *vn = *iter;
-    SignatureEntry *entry = new SignatureEntry(vn,sigmods);
-    sigmap[ vn->getCreateIndex() ] = entry;
+    sigmap[ vn->getCreateIndex() ] = make_unique<SignatureEntry>(vn,sigmods).release();
   }
   map<int4,SignatureEntry *>::const_iterator sigiter;
   if ((sigmods & SIG_COLLAPSE_INDNOISE)!=0) {

@@ -311,6 +311,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/rangemap.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/semantics.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/semantics.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/signature.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/signature.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleigh_arch.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleighexample.cc': [],
