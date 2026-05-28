@@ -345,7 +345,7 @@ void EmitMarkup::setOutputStream(ostream *t)
   if (encoder != (Encoder *)0)
     delete encoder;
   s = t;
-  encoder = new PackedEncode(*s);
+  encoder = make_unique<PackedEncode>(*s).release();
 }
 
 void EmitMarkup::setPackedOutput(bool val)
@@ -354,9 +354,9 @@ void EmitMarkup::setPackedOutput(bool val)
   if (encoder == (Encoder *)0) return;
   delete encoder;
   if (val)
-    encoder = new PackedEncode(*s);
+    encoder = make_unique<PackedEncode>(*s).release();
   else
-    encoder = new XmlEncode(*s);
+    encoder = make_unique<XmlEncode>(*s).release();
 }
 
 int4 TokenSplit::countbase = 0;
@@ -567,7 +567,7 @@ EmitPrettyPrint::EmitPrettyPrint(void)
   : Emit(), scanqueue( 3*100 ), tokqueue( 3*100 )
 
 {
-  lowlevel = new EmitNoMarkup();	// Do not emit xml by default
+  lowlevel = make_unique<EmitNoMarkup>().release();	// Do not emit xml by default
   spaceremain = maxlinesize;
   needbreak = false;
   commentmode = false;
