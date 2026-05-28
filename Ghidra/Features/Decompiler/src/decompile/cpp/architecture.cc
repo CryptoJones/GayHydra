@@ -170,10 +170,10 @@ Architecture::Architecture(void)
   context = (ContextDatabase *)0;
   print = PrintLanguageCapability::getDefault()->buildLanguage(this);
   printlist.push_back(print);
-  options = new OptionDatabase(this);
+  options = make_unique<OptionDatabase>(this).release();
   loadersymbols_parsed = false;
 #ifdef CPUI_STATISTICS
-  stats = new Statistics();
+  stats = make_unique<Statistics>().release();
 #endif
 #ifdef OPACTION_DEBUG
   debugstream = (ostream *)0;
@@ -562,10 +562,11 @@ void Architecture::addSpacebase(AddrSpace *basespace,const string &nm,const Varn
 {
   int4 ind = numSpaces();
   
-  SpacebaseSpace *spc = new SpacebaseSpace(this,translate,nm,ind,truncSize,basespace,ptrdata.space->getDelay()+1,isFormal);
+  auto owned = make_unique<SpacebaseSpace>(this,translate,nm,ind,truncSize,basespace,ptrdata.space->getDelay()+1,isFormal);
+  SpacebaseSpace *spc = owned.get();
   if (isreversejustified)
     setReverseJustified(spc);
-  insertSpace(spc);
+  insertSpace(owned.release());
   addSpacebasePointer(spc,ptrdata,truncSize,stackGrowth);
 }
 
@@ -597,8 +598,8 @@ void Architecture::buildAction(DocumentStorage &store)
 Scope *Architecture::buildDatabase(DocumentStorage &store)
 
 {
-  symboltab = new Database(this,true);
-  Scope *globscope = new ScopeInternal(0,"",this);
+  symboltab = make_unique<Database>(this,true).release();
+  Scope *globscope = make_unique<ScopeInternal>(0,"",this).release();
   symboltab->attachScope(globscope,(Scope *)0);
   return globscope;
 }
@@ -630,9 +631,9 @@ void Architecture::restoreFromSpec(DocumentStorage &store)
   translate = newtrans;
   modifySpaces(newtrans);	// Give architecture chance to modify spaces, before copying
   copySpaces(newtrans);
-  insertSpace( new FspecSpace(this,translate,numSpaces()));
-  insertSpace( new IopSpace(this,translate,numSpaces()));
-  insertSpace( new JoinSpace(this,translate,numSpaces()));
+  insertSpace( make_unique<FspecSpace>(this,translate,numSpaces()).release());
+  insertSpace( make_unique<IopSpace>(this,translate,numSpaces()).release());
+  insertSpace( make_unique<JoinSpace>(this,translate,numSpaces()).release());
   userops.initialize(this);
   if (translate->getAlignment() <= 8)
     min_funcsymbol_size = translate->getAlignment();
@@ -653,7 +654,7 @@ void Architecture::initializeSegments(void)
   for(int4 i=0;i<sz;++i) {
     SegmentOp *sop = userops.getSegmentOp(i);
     if (sop == (SegmentOp *)0) continue;
-    SegmentedResolver *rsolv = new SegmentedResolver(this,sop->getSpace(),sop);
+    SegmentedResolver *rsolv = make_unique<SegmentedResolver>(this,sop->getSpace(),sop).release();
     insertResolver(sop->getSpace(),rsolv);
   }
 }
@@ -745,9 +746,9 @@ ProtoModel *Architecture::decodeProto(Decoder &decoder)
   unique_ptr<ProtoModel> model;
   uint4 elemId = decoder.peekElement();
   if (elemId == ELEM_PROTOTYPE)
-    model.reset(new ProtoModel(this));
+    model = make_unique<ProtoModel>(this);
   else if (elemId == ELEM_RESOLVEPROTOTYPE)
-    model.reset(new ProtoModelMerged(this));
+    model = make_unique<ProtoModelMerged>(this);
   else
     throw LowlevelError("Expecting <prototype> or <resolveprototype> tag");
 
@@ -1148,7 +1149,7 @@ void Architecture::createModelAlias(const string &aliasName,const string &parent
   iter = protoModels.find(aliasName);
   if (iter != protoModels.end())
     throw LowlevelError("Duplicate ProtoModel name: "+aliasName);
-  protoModels[aliasName] = new ProtoModel(aliasName,*model);
+  protoModels[aliasName] = make_unique<ProtoModel>(aliasName,*model).release();
 }
 
 /// A new UnknownProtoModel, which clones its behavior from the default model, is created and associated with the
@@ -1158,7 +1159,7 @@ void Architecture::createModelAlias(const string &aliasName,const string &parent
 ProtoModel *Architecture::createUnknownModel(const string &modelName)
 
 {
-  UnknownProtoModel *model = new UnknownProtoModel(modelName,defaultfp);
+  UnknownProtoModel *model = make_unique<UnknownProtoModel>(modelName,defaultfp).release();
   protoModels[modelName] = model;
   if (modelName == "unknown")		// "unknown" is a reserved/internal name
     model->setPrintInDecl(false);	// don't print it in declarations

@@ -275,6 +275,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     // regression-guard pattern as the header-companion batch.
     'Ghidra/Features/Decompiler/src/decompile/cpp/analyzesigs.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/analyzesigs.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/architecture.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/architecture.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/block.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/capability.cc': [],
