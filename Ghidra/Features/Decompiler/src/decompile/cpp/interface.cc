@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "interface.hh"
+#include <memory>
 #ifdef __REMOTE_SOCKET__
 #include "sys/socket.h"
 #include "sys/un.h"
@@ -97,11 +98,11 @@ bool RemoteSocket::open(const string &filename)
   }
 
   fdopen(fileDescriptor, "r");
-  inbuf = make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::in).release();
+  inbuf = std::make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::in).release();
   fdopen(fileDescriptor, "w");
-  outbuf = make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::out).release();
-  inStream = make_unique<istream>(inbuf).release();
-  outStream = make_unique<ostream>(outbuf).release();
+  outbuf = std::make_unique<__gnu_cxx::stdio_filebuf<char>>(fileDescriptor,ios::out).release();
+  inStream = std::make_unique<istream>(inbuf).release();
+  outStream = std::make_unique<ostream>(outbuf).release();
   isOpen = true;
   return true;
 }
@@ -144,7 +145,7 @@ IfaceStatus::IfaceStatus(const string &prmpt,ostream &os,int4 mxhist)
 void IfaceStatus::pushScript(const string &filename,const string &newprompt)
 
 {
-  auto owned = make_unique<ifstream>(filename.c_str());
+  auto owned = std::make_unique<ifstream>(filename.c_str());
   if (!*owned) {
     throw IfaceParseError("Unable to open script file: "+filename);  // unique_ptr auto-destroys
   }
