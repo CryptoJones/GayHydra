@@ -23,7 +23,7 @@ PcodeCacher::PcodeCacher(void)
 {
   // We aim to allocate this array only once
   uint4 maxsize = 600;
-  poolstart = new VarnodeData[ maxsize ];
+  poolstart = make_unique<VarnodeData[]>(maxsize).release();
   endpool = poolstart + maxsize;
   curpool = poolstart;
 }
@@ -51,7 +51,7 @@ VarnodeData *PcodeCacher::expandPool(uint4 size)
 
   uint4 newsize = curmax + increase;
 
-  VarnodeData *newpool = new VarnodeData[newsize];
+  VarnodeData *newpool = make_unique<VarnodeData[]>(newsize).release();
   for(uint4 i=0;i<cursize;++i)
     newpool[i] = poolstart[i];	// Copy old data
   // Update references to the old pool
@@ -452,7 +452,7 @@ void DisassemblyCache::initialize(int4 min,int4 hashsize)
   nextfree = 0;
   hashtable = new ParserContext *[hashsize];
   for(int4 i=0;i<minimumreuse;++i) {
-	ParserContext *pos = new ParserContext(contextcache,translate);
+	ParserContext *pos = make_unique<ParserContext>(contextcache,translate).release();
 	list[i] = pos;
 	pos->initialize(constspace);
   }
@@ -517,7 +517,7 @@ Sleigh::Sleigh(LoadImage *ld,ContextDatabase *c_db)
 {
   loader = ld;
   context_db = c_db;
-  cache = new ContextCache(c_db);
+  cache = make_unique<ContextCache>(c_db).release();
   discache = (DisassemblyCache *)0;
 }
 
@@ -546,7 +546,7 @@ void Sleigh::reset(LoadImage *ld,ContextDatabase *c_db)
   pcode_cache.clear();
   loader = ld;
   context_db = c_db;
-  cache = new ContextCache(c_db);
+  cache = make_unique<ContextCache>(c_db).release();
   discache = (DisassemblyCache *)0;
 }
 
@@ -575,7 +575,7 @@ void Sleigh::initialize(DocumentStorage &store)
     parser_cachesize = 8;
     parser_windowsize = 256;
   }
-  discache = new DisassemblyCache(this,cache,getConstantSpace(),parser_cachesize,parser_windowsize);
+  discache = make_unique<DisassemblyCache>(this,cache,getConstantSpace(),parser_cachesize,parser_windowsize).release();
 }
 
 /// \brief Obtain a parse tree for the instruction at the given address
