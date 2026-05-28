@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# pre-push hook — gate pushes on the local decompiler precheck.
+#
+# Enable per clone (one-time):
+#   git config core.hooksPath .githooks
+#
+# This hook is intentionally lightweight: it delegates to
+# scripts/local-precheck.sh in build-only mode. That covers the
+# header-compile-error class of failure (PRs #127/#129/#130) without
+# the multi-minute test-suite overhead. For deeper validation run
+# `scripts/local-precheck.sh --full` manually.
+#
+# To bypass for a known-safe push (e.g. docs-only changes the script
+# would skip anyway): use the standard `git push --no-verify`.
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec "$REPO_ROOT/scripts/local-precheck.sh"

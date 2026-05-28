@@ -12,6 +12,10 @@ Work toward v26.1.11 (Sprint 11 close). Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-27 — local pre-push precheck for decompiler C++
+
+- **`scripts/local-precheck.sh` + `.githooks/pre-push`.** Tracked pre-push gate that mirrors `.github/workflows/decompiler-cpp-tests.yml`'s build step (`make -j decomp_test_dbg` under `Ghidra/Features/Decompiler/src/decompile/cpp`). Auto-skips on branches that don't touch decompiler C++. Build-only by default (~15s on a 24-thread box after first compile); `--full` extends to unittests + datatests with auto-`gradle allSleighCompile` if `.sla` files are missing; `--clean` wipes `test_dbg/*.o` for the stale-sanitizer-artifact case. Hook is opt-in per clone via `git config core.hooksPath .githooks` — once set, it would have caught the build-only failures behind PRs #127 (`.get()` on a `unique_ptr` argument), #129 (missing `using std::make_unique;`), and #130 (missing `#include <memory>`) before they hit master. Installation + manual-run docs added under DevGuide.md's "Local pre-push precheck (decompiler C++)" section.
+
 ### 2026-05-27 — release.yml Windows glob fix + Rec 31 Stage 3 audit gate
 
 - **`release.yml` Windows zip glob** — `build_sign_publish_windows`'s "Locate release zip" step searched `build/dist/ghidra_*_windows_*.zip`, but `gradle/root/distribution.gradle:688` names the Windows zip using `getCurrentPlatformName()`'s `"win_x86_64"` token (not `"windows_x86_64"`). The glob never matched, the step exited 1, and the matrix's `publish_release` job — gated on Windows succeeding — was skipped on every run from v26.1.6 onward. The four releases v26.1.6 / v26.1.8 / v26.1.9 / v26.1.10 are all stuck as drafts with their signed assets attached. Patched the glob to `ghidra_*_win_*.zip` so the next tag's matrix run completes and `publish_release` auto-flips the draft.

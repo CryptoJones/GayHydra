@@ -200,6 +200,37 @@ For running both unit and integration tests and to generate a report do:
 gradle combinedTestReport
 ```
 
+## Local pre-push precheck (decompiler C++)
+
+After cloning, enable the tracked git hooks so pushes that touch the
+decompiler C++ sources are gated on a local build:
+
+```
+git config core.hooksPath .githooks
+```
+
+The hook runs `scripts/local-precheck.sh`, which mirrors the build step
+in `.github/workflows/decompiler-cpp-tests.yml` (`make decomp_test_dbg`
+under `Ghidra/Features/Decompiler/src/decompile/cpp`). It's a no-op on
+branches that don't touch decompiler C++ files, so non-decomp PRs pay
+no overhead.
+
+Run manually anytime:
+```
+scripts/local-precheck.sh          # build-only (~1–2 min)
+scripts/local-precheck.sh --full   # also run unittests + datatests
+scripts/local-precheck.sh --force  # build even with no decomp diff
+```
+
+Required Ubuntu/Debian deps:
+```
+sudo apt-get install -y bison flex g++ make binutils-dev libiberty-dev
+```
+
+`--full` additionally requires `.sla` files; if absent, the script
+auto-runs `gradle allSleighCompile` once (slow first time, cached
+after).
+
 ## Setup build in CI
 
 For running tests in headless mode on Linux, in a CI environment, or in Docker, first do:
