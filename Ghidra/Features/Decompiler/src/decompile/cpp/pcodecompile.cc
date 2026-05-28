@@ -29,16 +29,16 @@ string Location::format(void) const
 
 {
   outvn = vn;
-  ops = new vector<OpTpl *>;
+  ops = make_unique<vector<OpTpl *>>().release();
 }
 
 ExprTree::ExprTree(OpTpl *op)
 
 {
-  ops = new vector<OpTpl *>;
+  ops = make_unique<vector<OpTpl *>>().release();
   ops->push_back(op);
   if (op->getOut() != (VarnodeTpl *)0)
-    outvn = new VarnodeTpl(*op->getOut());
+    outvn = make_unique<VarnodeTpl>(*op->getOut()).release();
   else
     outvn = (VarnodeTpl *)0;
 }
@@ -59,7 +59,7 @@ vector<OpTpl *> *ExprTree::appendParams(OpTpl *op,vector<ExprTree *> *param)
 
 {				// Create op expression with entire list of expression
 				// inputs
-  vector<OpTpl *> *res = new vector<OpTpl *>;
+  vector<OpTpl *> *res = make_unique<vector<OpTpl *>>().release();
   
   for(int4 i=0;i<param->size();++i) {
     res->insert(res->end(),(*param)[i]->ops->begin(),(*param)[i]->ops->end());
@@ -97,12 +97,12 @@ void ExprTree::setOutput(VarnodeTpl *newout)
     op->setOutput(newout);
   }
   else {
-    op = new OpTpl(CPUI_COPY);
+    op = make_unique<OpTpl>(CPUI_COPY).release();
     op->addInput(outvn);
     op->setOutput(newout);
     ops->push_back(op);
   }
-  outvn = new VarnodeTpl(*newout);
+  outvn = make_unique<VarnodeTpl>(*newout).release();
 }
 
 void PcodeCompile::force_size(VarnodeTpl *vt,const ConstTpl &size,const vector<OpTpl *> &ops)
@@ -295,9 +295,9 @@ bool PcodeCompile::propagateSize(ConstructTpl *ct)
 VarnodeTpl *PcodeCompile::buildTemporary(void)
 
 {				// Build temporary variable (with zerosize)
-  VarnodeTpl *res = new VarnodeTpl(ConstTpl(uniqspace),
+  VarnodeTpl *res = make_unique<VarnodeTpl>(ConstTpl(uniqspace),
 				   ConstTpl(ConstTpl::real,allocateTemp()),
-				   ConstTpl(ConstTpl::real,0));
+				   ConstTpl(ConstTpl::real,0)).release();
   res->setUnnamed(true);
   return res;
 }
@@ -305,7 +305,7 @@ VarnodeTpl *PcodeCompile::buildTemporary(void)
 LabelSymbol *PcodeCompile::defineLabel(string *name)
 
 { // Create a label symbol
-  LabelSymbol *labsym = new LabelSymbol(*name,local_labelcount++);
+  LabelSymbol *labsym = make_unique<LabelSymbol>(*name,local_labelcount++).release();
   delete name;
   addSymbol(labsym);		// Add symbol to local scope
   return labsym;
@@ -318,11 +318,11 @@ vector<OpTpl *> *PcodeCompile::placeLabel(LabelSymbol *labsym)
     reportError(getLocation(labsym), "Label '" + labsym->getName() + "' is placed more than once");
   }
   labsym->setPlaced();
-  vector<OpTpl *> *res = new vector<OpTpl *>;
-  OpTpl *op = new OpTpl(LABELBUILD);
-  VarnodeTpl *idvn = new VarnodeTpl(ConstTpl(constantspace),
+  vector<OpTpl *> *res = make_unique<vector<OpTpl *>>().release();
+  OpTpl *op = make_unique<OpTpl>(LABELBUILD).release();
+  VarnodeTpl *idvn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 				      ConstTpl(ConstTpl::real,labsym->getIndex()),
-				      ConstTpl(ConstTpl::real,4));
+				      ConstTpl(ConstTpl::real,4)).release();
   op->addInput(idvn);
   res->push_back(op);
   return res;
@@ -340,7 +340,7 @@ vector<OpTpl *> *PcodeCompile::newOutput(bool usesLocalKey,ExprTree *rhs,string 
 				// Only inherit if the size is real, otherwise we
 				// cannot build the VarnodeSymbol with a placeholder constant
   rhs->setOutput(tmpvn);
-  sym = new VarnodeSymbol(*varname,tmpvn->getSpace().getSpace(),tmpvn->getOffset().getReal(),tmpvn->getSize().getReal()); // Create new symbol regardless
+  sym = make_unique<VarnodeSymbol>(*varname,tmpvn->getSpace().getSpace(),tmpvn->getOffset().getReal(),tmpvn->getSize().getReal()).release(); // Create new symbol regardless
   addSymbol(sym);
   if ((!usesLocalKey) && enforceLocalKey)
     reportError(getLocation(sym), "Must use 'local' keyword to define symbol '"+*varname + "'");
@@ -352,7 +352,7 @@ void PcodeCompile::newLocalDefinition(string *varname,uint4 size)
 
 { // Create a new temporary symbol (without generating any pcode)
   VarnodeSymbol *sym;
-  sym = new VarnodeSymbol(*varname,uniqspace,allocateTemp(),size);
+  sym = make_unique<VarnodeSymbol>(*varname,uniqspace,allocateTemp(),size).release();
   addSymbol(sym);
   delete varname;
 }
@@ -363,11 +363,11 @@ ExprTree *PcodeCompile::createOp(OpCode opc,ExprTree *vn)
 				// built by performing -opc- on input vn.
 				// Free input expression
   VarnodeTpl *outvn = buildTemporary();
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn->outvn);
   op->setOutput(outvn);
   vn->ops->push_back(op);
-  vn->outvn = new VarnodeTpl(*outvn);
+  vn->outvn = make_unique<VarnodeTpl>(*outvn).release();
   return vn;
 }
 
@@ -380,13 +380,13 @@ ExprTree *PcodeCompile::createOp(OpCode opc,ExprTree *vn1,
   VarnodeTpl *outvn = buildTemporary();
   vn1->ops->insert(vn1->ops->end(),vn2->ops->begin(),vn2->ops->end());
   vn2->ops->clear();
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn1->outvn);
   op->addInput(vn2->outvn);
   vn2->outvn = (VarnodeTpl *)0;
   op->setOutput(outvn);
   vn1->ops->push_back(op);
-  vn1->outvn = new VarnodeTpl(*outvn);
+  vn1->outvn = make_unique<VarnodeTpl>(*outvn).release();
   delete vn2;
   return vn1;
 }
@@ -396,13 +396,13 @@ ExprTree *PcodeCompile::createOpOut(VarnodeTpl *outvn,OpCode opc,
 { // Create an op with explicit output and two inputs
   vn1->ops->insert(vn1->ops->end(),vn2->ops->begin(),vn2->ops->end());
   vn2->ops->clear();
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn1->outvn);
   op->addInput(vn2->outvn);
   vn2->outvn = (VarnodeTpl *)0;
   op->setOutput(outvn);
   vn1->ops->push_back(op);
-  vn1->outvn = new VarnodeTpl(*outvn);
+  vn1->outvn = make_unique<VarnodeTpl>(*outvn).release();
   delete vn2;
   return vn1;
 }
@@ -410,11 +410,11 @@ ExprTree *PcodeCompile::createOpOut(VarnodeTpl *outvn,OpCode opc,
 ExprTree *PcodeCompile::createOpOutUnary(VarnodeTpl *outvn,OpCode opc,ExprTree *vn)
 
 { // Create an op with explicit output and 1 input
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn->outvn);
   op->setOutput(outvn);
   vn->ops->push_back(op);
-  vn->outvn = new VarnodeTpl(*outvn);
+  vn->outvn = make_unique<VarnodeTpl>(*outvn).release();
   return vn;
 }
 
@@ -422,7 +422,7 @@ vector<OpTpl *> *PcodeCompile::createOpNoOut(OpCode opc,ExprTree *vn)
 
 {				// Create new expression by creating op with given -opc-
 				// and single input vn.   Free the input expression
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn->outvn);
   vn->outvn = (VarnodeTpl *)0;	// There is no longer an output to this expression
   vector<OpTpl *> *res = vn->ops;
@@ -440,7 +440,7 @@ vector<OpTpl *> *PcodeCompile::createOpNoOut(OpCode opc,ExprTree *vn1,ExprTree *
   vn1->ops = (vector<OpTpl *> *)0;
   res->insert(res->end(),vn2->ops->begin(),vn2->ops->end());
   vn2->ops->clear();
-  OpTpl *op = new OpTpl(opc);
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn1->outvn);
   vn1->outvn = (VarnodeTpl *)0;
   op->addInput(vn2->outvn);
@@ -454,11 +454,11 @@ vector<OpTpl *> *PcodeCompile::createOpNoOut(OpCode opc,ExprTree *vn1,ExprTree *
 vector<OpTpl *> *PcodeCompile::createOpConst(OpCode opc,uintb val)
 
 {
-  VarnodeTpl *vn = new VarnodeTpl(ConstTpl(constantspace),
+  VarnodeTpl *vn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 				    ConstTpl(ConstTpl::real,val),
-				    ConstTpl(ConstTpl::real,4));
-  vector<OpTpl *> *res = new vector<OpTpl *>;
-  OpTpl *op = new OpTpl(opc);
+				    ConstTpl(ConstTpl::real,4)).release();
+  vector<OpTpl *> *res = make_unique<vector<OpTpl *>>().release();
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   op->addInput(vn);
   res->push_back(op);
   return res;
@@ -468,21 +468,21 @@ ExprTree *PcodeCompile::createLoad(StarQuality *qual,ExprTree *ptr)
 
 {				// Create new load expression, free ptr expression
   VarnodeTpl *outvn = buildTemporary();
-  OpTpl *op = new OpTpl(CPUI_LOAD);
+  OpTpl *op = make_unique<OpTpl>(CPUI_LOAD).release();
   // The first varnode input to the load is a constant reference to the AddrSpace being loaded
   // from.  Internally, we really store the pointer to the AddrSpace as the reference, but this
   // isn't platform independent. So officially, we assume that the constant reference will be the
   // AddrSpace index.  We can safely assume this always has size 4.
-  VarnodeTpl *spcvn = new VarnodeTpl(ConstTpl(constantspace),
+  VarnodeTpl *spcvn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 				     qual->id,
-				     ConstTpl(ConstTpl::real,8));
+				     ConstTpl(ConstTpl::real,8)).release();
   op->addInput(spcvn);
   op->addInput(ptr->outvn);
   op->setOutput(outvn);
   ptr->ops->push_back(op);
   if (qual->size > 0)
     force_size(outvn,ConstTpl(ConstTpl::real,qual->size),*ptr->ops);
-  ptr->outvn = new VarnodeTpl(*outvn);
+  ptr->outvn = make_unique<VarnodeTpl>(*outvn).release();
   delete qual;
   return ptr;
 }
@@ -494,14 +494,14 @@ vector<OpTpl *> *PcodeCompile::createStore(StarQuality *qual,
   ptr->ops = (vector<OpTpl *> *)0;
   res->insert(res->end(),val->ops->begin(),val->ops->end());
   val->ops->clear();
-  OpTpl *op = new OpTpl(CPUI_STORE);
+  OpTpl *op = make_unique<OpTpl>(CPUI_STORE).release();
   // The first varnode input to the store is a constant reference to the AddrSpace being loaded
   // from.  Internally, we really store the pointer to the AddrSpace as the reference, but this
   // isn't platform independent. So officially, we assume that the constant reference will be the
   // AddrSpace index.  We can safely assume this always has size 4.
-  VarnodeTpl *spcvn = new VarnodeTpl(ConstTpl(constantspace),
+  VarnodeTpl *spcvn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 				     qual->id,
-				     ConstTpl(ConstTpl::real,8));
+				     ConstTpl(ConstTpl::real,8)).release();
   op->addInput(spcvn);
   op->addInput(ptr->outvn);
   op->addInput(val->outvn);
@@ -519,20 +519,20 @@ ExprTree *PcodeCompile::createUserOp(UserOpSymbol *sym,vector<ExprTree *> *param
 
 { // Create userdefined pcode op, given symbol and parameters
   VarnodeTpl *outvn = buildTemporary();
-  ExprTree *res = new ExprTree();
+  ExprTree *res = make_unique<ExprTree>().release();
   res->ops = createUserOpNoOut(sym,param);
   res->ops->back()->setOutput(outvn);
-  res->outvn = new VarnodeTpl(*outvn);
+  res->outvn = make_unique<VarnodeTpl>(*outvn).release();
   return res;
 }
 
 vector<OpTpl *> *PcodeCompile::createUserOpNoOut(UserOpSymbol *sym,vector<ExprTree *> *param)
 
 {
-  OpTpl *op = new OpTpl(CPUI_CALLOTHER);
-  VarnodeTpl *vn = new VarnodeTpl(ConstTpl(constantspace),
+  OpTpl *op = make_unique<OpTpl>(CPUI_CALLOTHER).release();
+  VarnodeTpl *vn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 				    ConstTpl(ConstTpl::real,sym->getIndex()),
-				    ConstTpl(ConstTpl::real,4));
+				    ConstTpl(ConstTpl::real,4)).release();
   op->addInput(vn);
   return ExprTree::appendParams(op,param);
 }
@@ -541,11 +541,11 @@ ExprTree *PcodeCompile::createVariadic(OpCode opc,vector<ExprTree *> *param)
 
 {
   VarnodeTpl *outvn = buildTemporary();
-  ExprTree *res = new ExprTree();
-  OpTpl *op = new OpTpl(opc);
+  ExprTree *res = make_unique<ExprTree>().release();
+  OpTpl *op = make_unique<OpTpl>(opc).release();
   res->ops = ExprTree::appendParams(op,param);
   res->ops->back()->setOutput(outvn);
-  res->outvn = new VarnodeTpl(*outvn);
+  res->outvn = make_unique<VarnodeTpl>(*outvn).release();
   return res;
 }
 
@@ -553,16 +553,16 @@ void PcodeCompile::appendOp(OpCode opc,ExprTree *res,uintb constval,int4 constsz
 
 { // Take output of res expression, combine with constant,
   // using opc operation, return the resulting expression
-  OpTpl *op = new OpTpl(opc);
-  VarnodeTpl *constvn = new VarnodeTpl(ConstTpl(constantspace),
+  OpTpl *op = make_unique<OpTpl>(opc).release();
+  VarnodeTpl *constvn = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 					 ConstTpl(ConstTpl::real,constval),
-					 ConstTpl(ConstTpl::real,constsz));
+					 ConstTpl(ConstTpl::real,constsz)).release();
   VarnodeTpl *outvn = buildTemporary();
   op->addInput(res->outvn);
   op->addInput(constvn);
   op->setOutput(outvn);
   res->ops->push_back(op);
-  res->outvn = new VarnodeTpl(*outvn);
+  res->outvn = make_unique<VarnodeTpl>(*outvn).release();
 }
 
 VarnodeTpl *PcodeCompile::buildTruncatedVarnode(VarnodeTpl *basevn,uint4 bitoffset,uint4 numbits)
@@ -605,7 +605,7 @@ VarnodeTpl *PcodeCompile::buildTruncatedVarnode(VarnodeTpl *basevn,uint4 bitoffs
       plus = byteoffset;
     specialoff = ConstTpl(ConstTpl::real,basevn->getOffset().getReal() + plus);
   }
-  VarnodeTpl *res = new VarnodeTpl(basevn->getSpace(),specialoff,ConstTpl(ConstTpl::real,numbytes));
+  VarnodeTpl *res = make_unique<VarnodeTpl>(basevn->getSpace(),specialoff,ConstTpl(ConstTpl::real,numbytes)).release();
   return res;
 }
 
@@ -655,14 +655,14 @@ vector<OpTpl *> *PcodeCompile::assignBitRange(VarnodeTpl *vn,uint4 bitoffset,uin
   else {
     if (bitoffset + numbits > 64)
       errmsg = "Assigned bitrange extends past first 64 bits";
-    res = new ExprTree(vn);
+    res = make_unique<ExprTree>(vn).release();
     appendOp(CPUI_INT_AND,res,mask,0);
     if (zextneeded)
       createOp(CPUI_INT_ZEXT,rhs);
     if (shiftneeded)
       appendOp(CPUI_INT_LEFT,rhs,bitoffset,4);
   
-    finalout = new VarnodeTpl(*vn);
+    finalout = make_unique<VarnodeTpl>(*vn).release();
     res = createOpOut(finalout,CPUI_INT_OR,res,rhs);
   }
   if (errmsg.size() > 0)
@@ -693,7 +693,7 @@ ExprTree *PcodeCompile::createBitRange(SpecificSymbol *sym,uint4 bitoffset,uint4
   if ((errmsg.size()==0)&&(bitoffset==0)&&(!maskneeded)) {
     if ((vn->getSpace().getType()==ConstTpl::handle)&&vn->isZeroSize()) {
       vn->setSize(ConstTpl(ConstTpl::real,finalsize));
-      ExprTree *res = new ExprTree(vn);
+      ExprTree *res = make_unique<ExprTree>(vn).release();
       //      VarnodeTpl *cruft = buildTemporary();
       //      delete cruft;
       return res;
@@ -703,7 +703,7 @@ ExprTree *PcodeCompile::createBitRange(SpecificSymbol *sym,uint4 bitoffset,uint4
   if (errmsg.size()==0) {
     VarnodeTpl *truncvn = buildTruncatedVarnode(vn,bitoffset,numbits);
     if (truncvn != (VarnodeTpl *)0) { // If we are able to construct a simple truncated varnode
-      ExprTree *res = new ExprTree(truncvn); // Return just the varnode as an expression
+      ExprTree *res = make_unique<ExprTree>(truncvn).release(); // Return just the varnode as an expression
       delete vn;
       return res;
     }
@@ -737,7 +737,7 @@ ExprTree *PcodeCompile::createBitRange(SpecificSymbol *sym,uint4 bitoffset,uint4
   if (maskneeded && (finalsize > 8))
     errmsg = "Illegal masked bitrange producing varnode larger than 64 bits: " + sym->getName();
 
-  ExprTree *res = new ExprTree(vn);
+  ExprTree *res = make_unique<ExprTree>(vn).release();
 
   if (errmsg.size()>0) {	// Check for error condition
     reportError(getLocation(sym), errmsg);
@@ -768,12 +768,12 @@ VarnodeTpl *PcodeCompile::addressOf(VarnodeTpl *var,uint4 size)
   if ((var->getOffset().getType() == ConstTpl::real)&&(var->getSpace().getType() == ConstTpl::spaceid)) {
     AddrSpace *spc = var->getSpace().getSpace();
     uintb off = AddrSpace::byteToAddress(var->getOffset().getReal(),spc->getWordSize());
-    res = new VarnodeTpl(ConstTpl(constantspace),
+    res = make_unique<VarnodeTpl>(ConstTpl(constantspace),
 			  ConstTpl(ConstTpl::real,off),
-			  ConstTpl(ConstTpl::real,size));
+			  ConstTpl(ConstTpl::real,size)).release();
   }
   else
-    res = new VarnodeTpl(ConstTpl(constantspace),var->getOffset(),ConstTpl(ConstTpl::real,size));
+    res = make_unique<VarnodeTpl>(ConstTpl(constantspace),var->getOffset(),ConstTpl(ConstTpl::real,size)).release();
   delete var;
   return res;
 }

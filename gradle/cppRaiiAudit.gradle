@@ -317,6 +317,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage_xml.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage_xml.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/partmap.hh': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/pcodecompile.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/pcodecompile.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/pcodeinject.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/pcodeinject.hh': [],
