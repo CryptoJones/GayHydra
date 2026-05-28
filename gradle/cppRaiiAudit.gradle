@@ -173,6 +173,7 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
     'Ghidra/Features/Decompiler/src/decompile/cpp/signature_ghidra.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/sleighbase.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/blockaction.cc': [],
+    'Ghidra/Features/Decompiler/src/decompile/cpp/blockaction.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/prettyprint.cc': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/prettyprint.hh': [],
     'Ghidra/Features/Decompiler/src/decompile/cpp/loadimage_bfd.cc': [],
