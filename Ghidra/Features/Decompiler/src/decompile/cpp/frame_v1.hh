@@ -101,6 +101,27 @@ enum class Error {
   RESERVED_FLAG_SET  ///< COMPRESSION/CONTINUATION flag set (not supported yet).
 };
 
+/// Negotiated framing mode for a connection. The greeting handshake
+/// (#33-2.4) decides this once at connection start; the IPC loop reads
+/// and writes v0 markers or v1 frames accordingly.
+enum class ChannelMode {
+  V0 = 0,  ///< Legacy `\0\0\1\NN` marker framing (default / fallback).
+  V1       ///< v1 framing negotiated via a GREETING handshake.
+};
+
+/// Greeting-payload version field. Major-version mismatch is rejected
+/// by the reader; a minor bump is forward-compatible. On the wire the
+/// 2-byte VERSION field is big-endian (major byte first).
+constexpr uint1 GREETING_VERSION_MAJOR = 0x01;
+constexpr uint1 GREETING_VERSION_MINOR = 0x00;
+
+/// Greeting CAPABS bitmask (4-byte big-endian field). v1 always
+/// advertises CRC-required; compression is reserved.
+namespace capab {
+  constexpr uint4 CRC_REQUIRED          = 0x00000001;
+  constexpr uint4 COMPRESSION_SUPPORTED = 0x00000002;  // reserved
+}
+
 } // namespace frame_v1
 
 /// \brief Encode a single v1 frame to a byte vector.
@@ -207,6 +228,58 @@ frame_v1::Error read_frame_v1(
     frame_v1::Header &hdr_out,
     vector<uint1> &payload_out,
     vector<uint1> &peeked_out);
+
+/// \brief Build a v1 greeting payload (VERSION | CAPABS | IDENT).
+///
+/// Layout per DD-0005: 2-byte big-endian VERSION (major.minor),
+/// 4-byte big-endian CAPABS bitmask (CRC-required set), then the
+/// UTF-8 \c ident bytes for the remainder. The result is the PAYLOAD
+/// of a `Type::GREETING` frame — wrap it with \c write_frame_v1 /
+/// \c encode_frame_v1 to put it on the wire.
+///
+/// \param ident Free-text peer identity (e.g. "GayHydra-decompiler").
+/// \return Greeting payload bytes (6 + ident.size()).
+vector<uint1> build_greeting_payload_v1(const string &ident);
+
+/// \brief Parse a v1 greeting payload.
+///
+/// Inverse of \c build_greeting_payload_v1. Requires at least 6 bytes
+/// (VERSION + CAPABS); the remainder is the IDENT string.
+///
+/// \param payload Greeting frame payload bytes.
+/// \param version_out Big-endian VERSION (major in high byte).
+/// \param capabs_out Big-endian CAPABS bitmask.
+/// \param ident_out UTF-8 identity string (may be empty).
+/// \return true if the payload was long enough to parse; false otherwise.
+bool parse_greeting_payload_v1(
+    const vector<uint1> &payload,
+    uint2 &version_out,
+    uint4 &capabs_out,
+    string &ident_out);
+
+/// \brief Perform the connection-start greeting handshake (#33-2.4).
+///
+/// A single non-consuming \c peek distinguishes the peer's framing:
+/// v0 streams always open with `0x00` (the `\0\0\1\NN` burst), the v1
+/// greeting opens with `MAGIC[0]` (0x47). When the first byte is not
+/// `0x47` the stream is left byte-identical for the legacy v0 reader
+/// and this returns \c ChannelMode::V0.
+///
+/// When the first byte is the v1 magic lead-in (a peer no v0 client
+/// produces), the client greeting frame is consumed and validated; on
+/// a well-formed `Type::GREETING` with a matching major version, the
+/// server's own greeting (identified by \c server_ident) is written to
+/// \c sout and the function returns \c ChannelMode::V1. Any malformed
+/// or non-greeting frame falls back to \c ChannelMode::V0.
+///
+/// \param sin Connection input stream (peer → us).
+/// \param sout Connection output stream (us → peer).
+/// \param server_ident Our IDENT string for the reply greeting.
+/// \return The negotiated channel mode.
+frame_v1::ChannelMode negotiate_greeting_v1(
+    std::istream &sin,
+    std::ostream &sout,
+    const string &server_ident);
 
 } // End namespace ghidra
 #endif
