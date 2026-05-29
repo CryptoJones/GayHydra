@@ -8,9 +8,34 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.16. Tracked per-PR in
+Work toward v26.1.17. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.1.16] — 2026-05-29
+
+Rec 33 sprint close. Two themes landed since v26.1.15:
+
+- **IPC framing v1 (DD-0005).** The Rec 33 `#33-2.x` sequence:
+  the `frame_v1` encode/decode helper + stream reader/writer,
+  the native greeting handshake (`negotiate_greeting_v1` in
+  `ghidra_process.cc`), and the Java v1 framing client
+  (`DecompileProcess`) with the `decompiler.framing` option
+  defaulted to `auto` (v1 greeting, v0 fallback). Post-handshake
+  traffic stays byte-identical to v0; the full v1 command-loop
+  dispatch is deferred to `#33-2.6`.
+- **Three upstream security cherry-picks.** GP-6875 (Mach-O
+  invalid load-command count guard), GP-6849 (RISC-V CSR
+  instructions writing to a constant operand), and GP-6717
+  (safe `Class.forName` centralized on `ClassSearcher.forNameSafe`,
+  no static-initializer gadget on resolve/validate).
+
+Also includes CI/build hardening: Gradle build cache + a dedicated
+`audits` job, the CodeQL traced-compile fix, the `unit_tests`
+timeout bump for the macOS long pole, and `local-precheck.sh`
+gaining the `ghidra_dbg` and multi-OS SLEIGH-compile legs.
 
 ### 2026-05-29 — Rec 33 #33-2.5 — Java v1 framing client + flip default to v1
 
