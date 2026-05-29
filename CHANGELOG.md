@@ -12,6 +12,10 @@ Work toward v26.1.16. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-29 — CodeQL: force a traced compile in the Java build step
+
+- **`.github/workflows/codeql.yml` "Manual Java build" now runs `gradle --no-build-cache --no-daemon prepDev --parallel`.** Enabling the tree-wide Gradle build cache (`org.gradle.caching=true`, shipped same-day) made every `:*:compileJava` task resolve `FROM-CACHE` in the CodeQL job, so `javac` never executed under CodeQL's tracer. The `java-kotlin` analysis then saw zero source ("CodeQL could not process any code written in Java/Kotlin" / "no source code seen during build") and `codeql database finalize` aborted with exit 32 ("configuration error") — a hard-red required check on every PR, with no actual code defect. `--no-build-cache` forces the compile tasks to really run so the tracer observes the `javac` invocations; `--no-daemon` keeps that compile in the traced process tree rather than a pre-warmed daemon. CodeQL-only change: the `build`/`unit_tests`/`audits` jobs and all build outputs are unaffected (they still use the cache).
+
 ### 2026-05-29 — Build Ghidra CI: Gradle build cache + dedicated audits job
 
 - **`org.gradle.caching=true` + `org.gradle.parallel=true` in `gradle.properties`.** The `unit_tests` job (`needs: build`) runs on a fresh runner and re-compiles everything the `build` job already produced; with the Gradle build cache persisted via `gradle/actions/setup-gradle`, those tasks become cache hits instead of full recompiles. Build-cache misses are non-fatal (a non-cacheable task simply runs normally), so it is safe to enable globally. `--parallel` was already passed on the CI command line; making it the default keeps local builds consistent with CI. **`org.gradle.configuration-cache` is deliberately NOT enabled** — Ghidra's build scripts reference Gradle script objects from Groovy closures, which the configuration cache rejects.
