@@ -12,6 +12,10 @@ Work toward v26.1.16. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Rec 33 #33-2.2.1 — stream-based v1 writer
+
+- **write_frame_v1(ostream&, Type, payload)** — stream-emission overload of encode_frame_v1, builds the CRC incrementally as it writes (no intermediate vector). String + vector<uint1> payload overloads. Caller responsible for s.flush(). 5 new unit tests (total 240): writer output matches buffer encoder byte-for-byte, empty-payload wire shape, write-then-read round-trip on the same stringstream, two back-to-back frames parseable, binary payload with 0x00 bytes (verifies the length prefix bounds the read, not a terminator scan).
+
 ### 2026-05-28 — Rec 33 #33-2.2 — stream-based v1 reader
 
 - **`read_frame_v1(istream&, hdr_out, payload_out, peeked_out)`** — stream wrapper around `decode_frame_v1` that reads exactly the bytes it needs from an istream. Same `Error` enum returns (`OK` / `MAGIC_MISMATCH` / `TRUNCATED` / `LENGTH_TOO_LARGE` / `CRC_MISMATCH` / `RESERVED_FLAG_SET`). On `MAGIC_MISMATCH` the 4 leading bytes are returned in `peeked_out` so the channel-mode dispatch logic in [#33-2.4] can feed them straight into the existing v0 path (`readToAnyBurst`). `testframe_v1.cc` gains 12 stream-based tests (`+12`, total now 235): round-trip COMMAND/PING, two sequential frames from one stream (verifies stream position advances correctly), magic-mismatch returns the v0 marker bytes intact, six EOF/truncation paths (empty stream, partial magic, mid-header, mid-payload, missing CRC), length-cap rejection, CRC-mismatch detection, reserved-flag rejection. No IPC wiring yet — that's #33-2.3 (writer) + #33-2.4 (greeting handshake).

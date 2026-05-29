@@ -153,6 +153,28 @@ frame_v1::Error decode_frame_v1(
 /// 0xFFFFFFFF. Matches java.util.zip.CRC32.
 uint4 crc32_ieee802_3(const uint1 *bytes, size_t len);
 
+/// \brief Write one v1 frame to an ostream.
+///
+/// Stream wrapper around \c encode_frame_v1: the same wire layout
+/// (`MAGIC + TYPE + FLAGS + LENGTH + PAYLOAD + CRC32`) is written
+/// directly to \c s without an intermediate \c vector<uint1>
+/// allocation when the payload is large (the implementation
+/// builds the CRC incrementally as it writes).
+///
+/// Does not flush. Caller is responsible for `s.flush()` if the
+/// transport needs it (stdio's libc buffering vs. a `stringstream`
+/// is the canonical reason callers may or may not need to flush).
+///
+/// \param s Output stream.
+/// \param type Frame type tag.
+/// \param payload Frame body bytes.
+void write_frame_v1(std::ostream &s, frame_v1::Type type, const vector<uint1> &payload);
+
+/// \brief Write one v1 frame to an ostream from a string payload.
+///
+/// Convenience overload. UTF-8 bytes are taken as-is.
+void write_frame_v1(std::ostream &s, frame_v1::Type type, const string &payload);
+
 /// \brief Read one v1 frame from an istream.
 ///
 /// Reads exactly 4 magic bytes; if they match \c MAGIC, continues
