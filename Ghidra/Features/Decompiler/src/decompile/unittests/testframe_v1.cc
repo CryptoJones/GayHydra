@@ -543,4 +543,131 @@ TEST(frame_v1_write_binary_payload) {
     ASSERT_EQUALS(got[i], body[i]);
 }
 
+// ------------------------------------------------------------------
+// Greeting payload build/parse + connection-start handshake
+// (Rec 33 #33-2.4).
+// ------------------------------------------------------------------
+
+TEST(frame_v1_greeting_payload_roundtrip) {
+  vector<uint1> p = build_greeting_payload_v1("GayHydra-decompiler");
+  // 2 (version) + 4 (capabs) + ident length
+  ASSERT_EQUALS(p.size(), (size_t)(6 + 19));
+  // VERSION major.minor
+  ASSERT_EQUALS(p[0], frame_v1::GREETING_VERSION_MAJOR);
+  ASSERT_EQUALS(p[1], frame_v1::GREETING_VERSION_MINOR);
+  // CAPABS big-endian == CRC_REQUIRED
+  ASSERT_EQUALS(p[2], 0x00);
+  ASSERT_EQUALS(p[3], 0x00);
+  ASSERT_EQUALS(p[4], 0x00);
+  ASSERT_EQUALS(p[5], (uint1)frame_v1::capab::CRC_REQUIRED);
+
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  bool ok = parse_greeting_payload_v1(p, version, capabs, ident);
+  ASSERT(ok);
+  ASSERT_EQUALS(version, (uint2)0x0100);
+  ASSERT_EQUALS(capabs, frame_v1::capab::CRC_REQUIRED);
+  ASSERT(ident == "GayHydra-decompiler");
+}
+
+TEST(frame_v1_greeting_payload_empty_ident) {
+  vector<uint1> p = build_greeting_payload_v1("");
+  ASSERT_EQUALS(p.size(), (size_t)6);
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  ASSERT(parse_greeting_payload_v1(p, version, capabs, ident));
+  ASSERT_EQUALS(ident.size(), (size_t)0);
+}
+
+TEST(frame_v1_greeting_payload_too_short) {
+  // 5 bytes — short of the 6-byte VERSION+CAPABS minimum.
+  vector<uint1> p = { 0x01, 0x00, 0x00, 0x00, 0x00 };
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  ASSERT(!parse_greeting_payload_v1(p, version, capabs, ident));
+}
+
+TEST(frame_v1_negotiate_keeps_v0_stream_intact) {
+  // A v0 command-start burst. negotiate must peek only (no consume)
+  // and write nothing, so the legacy reader sees identical bytes.
+  vector<uint1> v0bytes = { 0x00, 0x00, 0x01, 0x02, 0xAB, 0xCD };
+  stringstream in = make_stream(v0bytes);
+  stringstream out(std::ios::out | std::ios::binary);
+
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "srv");
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V0);
+  ASSERT_EQUALS(stream_bytes(out).size(), (size_t)0);
+
+  // Whole v0 stream still readable, unmodified.
+  vector<uint1> back;
+  int c;
+  while ((c = in.get()) != EOF) back.push_back((uint1)c);
+  ASSERT_EQUALS(back.size(), (size_t)6);
+  ASSERT_EQUALS(back[0], 0x00);
+  ASSERT_EQUALS(back[3], 0x02);
+  ASSERT_EQUALS(back[4], 0xAB);
+  ASSERT_EQUALS(back[5], 0xCD);
+}
+
+TEST(frame_v1_negotiate_v0_on_empty) {
+  stringstream in;  // empty — peer closed before sending
+  stringstream out(std::ios::out | std::ios::binary);
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "srv");
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V0);
+  ASSERT_EQUALS(stream_bytes(out).size(), (size_t)0);
+}
+
+TEST(frame_v1_negotiate_v1_on_greeting) {
+  // Client sends a well-formed v1 greeting; expect V1 and a server
+  // greeting written back to `out`.
+  vector<uint1> clientGreeting = build_greeting_payload_v1("ghidra-java");
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::GREETING, clientGreeting);
+  stringstream in = make_stream(wire);
+  stringstream out(std::ios::in | std::ios::out | std::ios::binary);
+
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "GayHydra-decompiler");
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V1);
+
+  // The reply must be a parseable GREETING frame carrying our ident.
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(out, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::GREETING);
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  ASSERT(parse_greeting_payload_v1(payload, version, capabs, ident));
+  ASSERT(ident == "GayHydra-decompiler");
+}
+
+TEST(frame_v1_negotiate_v0_on_non_greeting_frame) {
+  // A valid v1 frame whose TYPE is not GREETING — magic leads in, so
+  // the frame is consumed, but the handshake must fall back to V0.
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::COMMAND, "decompileAt");
+  stringstream in = make_stream(wire);
+  stringstream out(std::ios::out | std::ios::binary);
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "srv");
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V0);
+  ASSERT_EQUALS(stream_bytes(out).size(), (size_t)0);
+}
+
+TEST(frame_v1_negotiate_v0_on_bad_major_version) {
+  // Greeting with major version 0x02 — reader rejects the major and
+  // falls back to v0 without replying.
+  vector<uint1> p = {
+    0x02, 0x00,              // VERSION major.minor (major != 0x01)
+    0x00, 0x00, 0x00, 0x01,  // CAPABS = CRC_REQUIRED
+  };
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::GREETING, p);
+  stringstream in = make_stream(wire);
+  stringstream out(std::ios::out | std::ios::binary);
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "srv");
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V0);
+  ASSERT_EQUALS(stream_bytes(out).size(), (size_t)0);
+}
+
 } // End namespace ghidra

@@ -16,6 +16,7 @@
 #include "ghidra_process.hh"
 #include "flow.hh"
 #include "blockaction.hh"
+#include "frame_v1.hh"
 
 #ifdef _WINDOWS
 #include <fcntl.h>
@@ -529,6 +530,19 @@ int main(int argc,char **argv)
   AttributeId::initialize();
   ElementId::initialize();
   CapabilityPoint::initializeAll();
+
+  // Rec 33 #33-2.4: connection-start greeting handshake. A single
+  // non-consuming peek decides the framing — a v0 client (every
+  // current Ghidra build) opens with 0x00 and is left byte-identical
+  // for the legacy readCommand loop below; only a v1 client (none
+  // until #33-2.5 wires the Java side) triggers a greeting exchange.
+  // The negotiated mode is not yet consumed by the command loop: the
+  // v1 read/write dispatch lands with the Java v1 client in #33-2.5,
+  // where it can be integration-tested end-to-end. v1 remains
+  // unreachable in production until then, so v0 is unaffected.
+  static const string ghidraDecompIdent = "GayHydra-decompiler (v1 framing)";
+  negotiate_greeting_v1(cin, cout, ghidraDecompIdent);
+
   int4 status = 0;
   while(status == 0) {
     status = GhidraCapability::readCommand(cin,cout);

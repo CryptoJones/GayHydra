@@ -294,4 +294,88 @@ frame_v1::Error read_frame_v1(
   return frame_v1::Error::OK;
 }
 
+vector<uint1> build_greeting_payload_v1(const string &ident)
+{
+  vector<uint1> p;
+  p.reserve(6 + ident.size());
+
+  // 2-byte big-endian VERSION (major, then minor)
+  p.push_back(frame_v1::GREETING_VERSION_MAJOR);
+  p.push_back(frame_v1::GREETING_VERSION_MINOR);
+
+  // 4-byte big-endian CAPABS — v1 always advertises CRC-required.
+  uint4 caps = frame_v1::capab::CRC_REQUIRED;
+  p.push_back((uint1)((caps >> 24) & 0xff));
+  p.push_back((uint1)((caps >> 16) & 0xff));
+  p.push_back((uint1)((caps >> 8)  & 0xff));
+  p.push_back((uint1)(caps         & 0xff));
+
+  // IDENT (UTF-8) for the remainder.
+  for (char c : ident)
+    p.push_back((uint1)c);
+
+  return p;
+}
+
+bool parse_greeting_payload_v1(
+    const vector<uint1> &payload,
+    uint2 &version_out,
+    uint4 &capabs_out,
+    string &ident_out)
+{
+  // Need VERSION(2) + CAPABS(4) at minimum; IDENT may be empty.
+  if (payload.size() < 6)
+    return false;
+
+  version_out = (uint2)(((uint2)payload[0] << 8) | (uint2)payload[1]);
+  capabs_out  = ((uint4)payload[2] << 24)
+              | ((uint4)payload[3] << 16)
+              | ((uint4)payload[4] << 8)
+              |  (uint4)payload[5];
+
+  ident_out.clear();
+  ident_out.reserve(payload.size() - 6);
+  for (size_t i = 6; i < payload.size(); ++i)
+    ident_out.push_back((char)payload[i]);
+
+  return true;
+}
+
+frame_v1::ChannelMode negotiate_greeting_v1(
+    std::istream &sin,
+    std::ostream &sout,
+    const string &server_ident)
+{
+  // v0 streams always begin with 0x00 (the \0\0\1\NN burst); the v1
+  // greeting begins with MAGIC[0] (0x47). A single non-consuming peek
+  // distinguishes them, leaving a v0 peer's stream byte-identical for
+  // the legacy readToAnyBurst path.
+  if (sin.peek() != (int)frame_v1::MAGIC[0])
+    return frame_v1::ChannelMode::V0;
+
+  // First byte is the v1 magic lead-in — a peer no v0 client produces.
+  // Consume and validate the client greeting frame.
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error err = read_frame_v1(sin, hdr, payload, peeked);
+  if (err != frame_v1::Error::OK || hdr.type != frame_v1::Type::GREETING)
+    return frame_v1::ChannelMode::V0;
+
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  if (!parse_greeting_payload_v1(payload, version, capabs, ident))
+    return frame_v1::ChannelMode::V0;
+
+  // Reject a mismatched major version; minor bumps are compatible.
+  if (((version >> 8) & 0xff) != frame_v1::GREETING_VERSION_MAJOR)
+    return frame_v1::ChannelMode::V0;
+
+  // Reply with our own greeting and switch the channel to v1.
+  vector<uint1> reply = build_greeting_payload_v1(server_ident);
+  write_frame_v1(sout, frame_v1::Type::GREETING, reply);
+  sout.flush();
+  return frame_v1::ChannelMode::V1;
+}
+
 } // End namespace ghidra
