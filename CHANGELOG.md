@@ -12,6 +12,10 @@ Work toward v26.1.16. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+### 2026-05-28 — Precheck now also builds `ghidra_dbg`
+
+- **`scripts/local-precheck.sh` builds `ghidra_dbg` in addition to `decomp_test_dbg`.** Closes a blind spot ahead of the Rec 33 #33-2.4 live-path wiring: `ghidra_arch.cc`, `ghidra_process.cc`, and the `*_ghidra.cc` IPC translation units compile **only** into the `ghidra_dbg`/`ghidra_opt` targets (the `GHIDRA=` Makefile list), never into `decomp_test_dbg`. A change that breaks just the IPC layer would pass a `decomp_test_dbg`-only gate and still break the release build — the same blind-spot class as the SLEIGH-compile gap closed in [#165](https://github.com/CryptoJones/GayHydra/pull/165). New build leg runs in both default and `--full` modes, after the `decomp_test_dbg` build. `ghidra_dbg` links without `-lbfd`, so it builds anywhere `g++` is present (the libbfd-dependent files are test-only `EXTRA`, per DD-0004). Verified by running `scripts/local-precheck.sh --force`: both legs build green on master.
+
 ### 2026-05-28 — Rec 33 #33-2.2.1 — stream-based v1 writer
 
 - **write_frame_v1(ostream&, Type, payload)** — stream-emission overload of encode_frame_v1, builds the CRC incrementally as it writes (no intermediate vector). String + vector<uint1> payload overloads. Caller responsible for s.flush(). 5 new unit tests (total 240): writer output matches buffer encoder byte-for-byte, empty-payload wire shape, write-then-read round-trip on the same stringstream, two back-to-back frames parseable, binary payload with 0x00 bytes (verifies the length prefix bounds the read, not a terminator scan).
