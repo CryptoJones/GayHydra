@@ -153,4 +153,100 @@ frame_v1::Error decode_frame_v1(
   return frame_v1::Error::OK;
 }
 
+/// Read exactly \c n bytes from \c s into \c out. Returns true on
+/// success, false on EOF before \c n bytes are available.
+static bool read_exact(std::istream &s, size_t n, vector<uint1> &out)
+{
+  size_t start = out.size();
+  out.resize(start + n);
+  s.read((char *)(out.data() + start), (std::streamsize)n);
+  if (s.gcount() != (std::streamsize)n) {
+    out.resize(start + (size_t)s.gcount());
+    return false;
+  }
+  return true;
+}
+
+frame_v1::Error read_frame_v1(
+    std::istream &s,
+    frame_v1::Header &hdr_out,
+    vector<uint1> &payload_out,
+    vector<uint1> &peeked_out)
+{
+  peeked_out.clear();
+  payload_out.clear();
+
+  // Read 4 bytes for magic check.
+  vector<uint1> magic_buf;
+  if (!read_exact(s, 4, magic_buf)) {
+    // Hand back whatever we got so the caller can decide
+    // (probably channel closed).
+    peeked_out = magic_buf;
+    return frame_v1::Error::TRUNCATED;
+  }
+
+  // Magic check
+  for (int i = 0; i < 4; ++i) {
+    if (magic_buf[i] != frame_v1::MAGIC[i]) {
+      peeked_out = magic_buf;
+      return frame_v1::Error::MAGIC_MISMATCH;
+    }
+  }
+
+  // Read 6-byte header (type + flags + 4-byte length)
+  vector<uint1> hdr_buf;
+  if (!read_exact(s, 6, hdr_buf)) {
+    return frame_v1::Error::TRUNCATED;
+  }
+
+  uint1 raw_type  = hdr_buf[0];
+  uint1 raw_flags = hdr_buf[1];
+  uint4 length    = ((uint4)hdr_buf[2] << 24)
+                  | ((uint4)hdr_buf[3] << 16)
+                  | ((uint4)hdr_buf[4] << 8)
+                  |  (uint4)hdr_buf[5];
+
+  // Length cap
+  if (length > frame_v1::MAX_PAYLOAD_LEN) {
+    return frame_v1::Error::LENGTH_TOO_LARGE;
+  }
+
+  // Reserved flags
+  if ((raw_flags & (frame_v1::flags::COMPRESSION | frame_v1::flags::CONTINUATION)) != 0) {
+    return frame_v1::Error::RESERVED_FLAG_SET;
+  }
+
+  // Read payload
+  vector<uint1> payload_buf;
+  if (length > 0 && !read_exact(s, (size_t)length, payload_buf)) {
+    return frame_v1::Error::TRUNCATED;
+  }
+
+  // Read CRC trailer
+  vector<uint1> crc_buf;
+  if (!read_exact(s, 4, crc_buf)) {
+    return frame_v1::Error::TRUNCATED;
+  }
+  uint4 actual_crc = ((uint4)crc_buf[0] << 24)
+                   | ((uint4)crc_buf[1] << 16)
+                   | ((uint4)crc_buf[2] << 8)
+                   |  (uint4)crc_buf[3];
+
+  // Compute expected CRC over hdr_buf + payload_buf
+  uint4 reg = 0xffffffff;
+  for (uint1 b : hdr_buf) reg = crc_update(reg, b);
+  for (uint1 b : payload_buf) reg = crc_update(reg, b);
+  uint4 expected_crc = reg ^ 0xffffffff;
+
+  if (actual_crc != expected_crc) {
+    return frame_v1::Error::CRC_MISMATCH;
+  }
+
+  hdr_out.type     = (frame_v1::Type)raw_type;
+  hdr_out.flagbits = raw_flags;
+  hdr_out.length   = length;
+  payload_out      = std::move(payload_buf);
+  return frame_v1::Error::OK;
+}
+
 } // End namespace ghidra

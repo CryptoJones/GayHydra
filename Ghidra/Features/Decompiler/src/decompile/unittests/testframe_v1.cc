@@ -15,8 +15,11 @@
  */
 #include "frame_v1.hh"
 #include "test.hh"
+#include <sstream>
 
 namespace ghidra {
+
+using std::stringstream;
 
 // ------------------------------------------------------------------
 // CRC32 sanity — must match the IEEE 802.3 / java.util.zip.CRC32
@@ -267,6 +270,181 @@ TEST(frame_v1_wire_format_pin_ping) {
                  | ((uint4)wire[12] << 8)
                  |  (uint4)wire[13];
   ASSERT_EQUALS(wire_crc, expected_crc);
+}
+
+// ------------------------------------------------------------------
+// Stream-based reader (#33-2.2). Same coverage matrix as the
+// buffer-based decoder, but driven through std::stringstream.
+// ------------------------------------------------------------------
+
+static stringstream make_stream(const vector<uint1> &bytes) {
+  stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  s.write((const char *)bytes.data(), (std::streamsize)bytes.size());
+  return s;
+}
+
+TEST(frame_v1_read_stream_roundtrip_command) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::COMMAND, "<query/>");
+  stringstream s = make_stream(wire);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::COMMAND);
+  ASSERT_EQUALS(payload.size(), (size_t)8);
+  ASSERT_EQUALS(peeked.size(), (size_t)0);
+}
+
+TEST(frame_v1_read_stream_roundtrip_empty_payload) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::PING, "");
+  stringstream s = make_stream(wire);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::PING);
+  ASSERT_EQUALS(payload.size(), (size_t)0);
+}
+
+TEST(frame_v1_read_stream_two_frames_sequential) {
+  vector<uint1> w1 = encode_frame_v1(frame_v1::Type::GREETING, "GayHydra/26.1.x");
+  vector<uint1> w2 = encode_frame_v1(frame_v1::Type::COMMAND, "decompileAt");
+  vector<uint1> combined = w1;
+  for (uint1 b : w2) combined.push_back(b);
+  stringstream s = make_stream(combined);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+
+  // First frame
+  frame_v1::Error e1 = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e1, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::GREETING);
+
+  // Second frame from same stream
+  frame_v1::Error e2 = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e2, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::COMMAND);
+  ASSERT_EQUALS(payload.size(), (size_t)11);
+}
+
+TEST(frame_v1_read_stream_magic_mismatch_returns_peek) {
+  // Send 4 bytes that aren't magic, expect MAGIC_MISMATCH and
+  // those exact bytes back in `peeked` so the caller can feed
+  // them into the v0 path.
+  vector<uint1> bytes = { 0x00, 0x00, 0x01, 0x0e };  // v0 string-start marker
+  stringstream s = make_stream(bytes);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::MAGIC_MISMATCH);
+  ASSERT_EQUALS(peeked.size(), (size_t)4);
+  ASSERT_EQUALS(peeked[0], 0x00);
+  ASSERT_EQUALS(peeked[1], 0x00);
+  ASSERT_EQUALS(peeked[2], 0x01);
+  ASSERT_EQUALS(peeked[3], 0x0e);
+}
+
+TEST(frame_v1_read_stream_eof_on_empty) {
+  stringstream s;  // empty
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::TRUNCATED);
+  ASSERT_EQUALS(peeked.size(), (size_t)0);
+}
+
+TEST(frame_v1_read_stream_eof_after_partial_magic) {
+  vector<uint1> bytes = { 0x47, 0x48, 0x01 };  // 3 of 4 magic bytes
+  stringstream s = make_stream(bytes);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::TRUNCATED);
+  ASSERT_EQUALS(peeked.size(), (size_t)3);
+}
+
+TEST(frame_v1_read_stream_eof_after_header) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::COMMAND, "hello");
+  // Keep only magic + header (no payload, no CRC)
+  vector<uint1> truncated(wire.begin(), wire.begin() + 10);
+  stringstream s = make_stream(truncated);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::TRUNCATED);
+}
+
+TEST(frame_v1_read_stream_eof_during_payload) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::RESPONSE, "abcdefghij");
+  // Keep magic + header + half the payload
+  vector<uint1> truncated(wire.begin(), wire.begin() + 15);
+  stringstream s = make_stream(truncated);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::TRUNCATED);
+}
+
+TEST(frame_v1_read_stream_eof_before_crc) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::RESPONSE, "abc");
+  // Drop the 4-byte CRC trailer
+  vector<uint1> truncated(wire.begin(), wire.end() - 4);
+  stringstream s = make_stream(truncated);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::TRUNCATED);
+}
+
+TEST(frame_v1_read_stream_length_too_large) {
+  vector<uint1> bytes;
+  for (int i = 0; i < 4; ++i) bytes.push_back(frame_v1::MAGIC[i]);
+  bytes.push_back((uint1)frame_v1::Type::COMMAND);
+  bytes.push_back(frame_v1::flags::CRC_PRESENT);
+  uint4 too_big = frame_v1::MAX_PAYLOAD_LEN + 1;
+  bytes.push_back((uint1)((too_big >> 24) & 0xff));
+  bytes.push_back((uint1)((too_big >> 16) & 0xff));
+  bytes.push_back((uint1)((too_big >> 8)  & 0xff));
+  bytes.push_back((uint1)(too_big         & 0xff));
+  stringstream s = make_stream(bytes);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::LENGTH_TOO_LARGE);
+}
+
+TEST(frame_v1_read_stream_reserved_flag) {
+  vector<uint1> bytes;
+  for (int i = 0; i < 4; ++i) bytes.push_back(frame_v1::MAGIC[i]);
+  bytes.push_back((uint1)frame_v1::Type::COMMAND);
+  bytes.push_back(frame_v1::flags::CRC_PRESENT | frame_v1::flags::COMPRESSION);
+  bytes.push_back(0); bytes.push_back(0); bytes.push_back(0); bytes.push_back(0);
+  stringstream s = make_stream(bytes);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::RESERVED_FLAG_SET);
+}
+
+TEST(frame_v1_read_stream_crc_mismatch) {
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::RESPONSE, "abc");
+  wire[wire.size() - 1] ^= 0xff;  // flip last CRC byte
+  stringstream s = make_stream(wire);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::CRC_MISMATCH);
 }
 
 } // End namespace ghidra

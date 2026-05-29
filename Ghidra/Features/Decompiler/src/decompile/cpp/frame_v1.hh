@@ -153,5 +153,38 @@ frame_v1::Error decode_frame_v1(
 /// 0xFFFFFFFF. Matches java.util.zip.CRC32.
 uint4 crc32_ieee802_3(const uint1 *bytes, size_t len);
 
+/// \brief Read one v1 frame from an istream.
+///
+/// Reads exactly 4 magic bytes; if they match \c MAGIC, continues
+/// reading the 6-byte header + payload + 4-byte CRC trailer.
+/// Returns the same \c Error categories as decode_frame_v1; on
+/// MAGIC_MISMATCH the stream has consumed 4 bytes and \c
+/// peeked_out is populated with what was read (so the caller can
+/// feed those bytes into the legacy v0 path — that's how #33-2.4's
+/// greeting handshake dispatches between v1 and v0 at connection
+/// start).
+///
+/// On TRUNCATED (stream EOF mid-frame), the stream's position is
+/// undefined relative to the start of the read attempt (some bytes
+/// may have been consumed and discarded). Treat the channel as
+/// closed by the peer at that point.
+///
+/// On CRC_MISMATCH or LENGTH_TOO_LARGE or RESERVED_FLAG_SET, the
+/// stream has consumed the full frame (header + payload + CRC).
+/// Caller can attempt to resync on the next read.
+///
+/// \param s Input stream.
+/// \param hdr_out Decoded header (only valid when return == OK).
+/// \param payload_out Decoded payload (only valid when return == OK).
+/// \param peeked_out On MAGIC_MISMATCH, populated with the 4 bytes
+///                  that were actually read (for v0 fallback feed).
+///                  Otherwise empty.
+/// \return Decode error code.
+frame_v1::Error read_frame_v1(
+    std::istream &s,
+    frame_v1::Header &hdr_out,
+    vector<uint1> &payload_out,
+    vector<uint1> &peeked_out);
+
 } // End namespace ghidra
 #endif
