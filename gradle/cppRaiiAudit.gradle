@@ -361,22 +361,32 @@ final Map<String, List<List<Integer>>> PROTECTED_FILES = [
 // fails CI. This closes the drift hazard where a brand-new file
 // could ship without a gate decision.
 //
-// Currently: bison/flex-generated files. They're regenerated from
-// .y/.l sources on every build per Ghidra/Features/Decompiler/src/
-// decompile/cpp/Makefile, so any in-place RAII edits would be
+// Currently: bison/flex-generated files (the `.cc` they emit) and
+// their corresponding `.y`/`.l` sources. They're regenerated from
+// `.y`/`.l` sources on every build per Ghidra/Features/Decompiler/
+// src/decompile/cpp/Makefile, so any in-place RAII edits would be
 // overwritten. The Option A `%define api.value.type variant`
 // rewrite (per docs/decompiler/RAII_STAGE_2C_XML.md) is the path
 // to migrating these — its own strategic sprint, not a narrow PR.
 //
-// `xml.cc` is the exception that stays in PROTECTED_FILES with
-// line-range exclusions: this fork ships the in-tree committed
-// copy as the source of truth (no in-build re-bison happens in
-// the GHA matrix path), so the line-number stability holds.
+// `xml.cc` / `xml.y` are the exceptions that stay in PROTECTED_FILES
+// with line-range exclusions: this fork ships the in-tree committed
+// copies as the source of truth (no in-build re-bison happens in
+// the GHA matrix path), so the line-number stability holds. The
+// other generator pairs follow the EXCLUDED-by-policy path until
+// the variant-mode strategic sprint runs.
 final Set<String> EXCLUDED_FILES = [
+    // Generated C++ outputs
     'Ghidra/Features/Decompiler/src/decompile/cpp/grammar.cc',
     'Ghidra/Features/Decompiler/src/decompile/cpp/pcodeparse.cc',
     'Ghidra/Features/Decompiler/src/decompile/cpp/slghparse.cc',
     'Ghidra/Features/Decompiler/src/decompile/cpp/slghscan.cc',
+    // Generator source files (.y bison, .l flex)
+    'Ghidra/Features/Decompiler/src/decompile/cpp/grammar.y',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/pcodeparse.y',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/ruleparse.y',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghparse.y',
+    'Ghidra/Features/Decompiler/src/decompile/cpp/slghscan.l',
 ] as Set
 
 task cppRaiiAudit {
@@ -459,7 +469,8 @@ task cppRaiiAudit {
         if (cppDir.isDirectory()) {
             cppDir.eachFile { File f ->
                 String name = f.name
-                if (!name.endsWith('.cc') && !name.endsWith('.hh')) return
+                if (!name.endsWith('.cc') && !name.endsWith('.hh') &&
+                    !name.endsWith('.y') && !name.endsWith('.l')) return
                 String rel = "Ghidra/Features/Decompiler/src/decompile/cpp/${name}"
                 if (!PROTECTED_FILES.containsKey(rel) && !EXCLUDED_FILES.contains(rel)) {
                     drifted.add(rel)
