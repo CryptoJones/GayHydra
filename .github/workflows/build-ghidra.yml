@@ -137,7 +137,13 @@ jobs:
         # at user-reported time.
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
-    timeout-minutes: 90
+    # macOS runners are ~2x slower than ubuntu and the JVM suite's
+    # MDMangBaseTest combinatorial surface pushes the macOS leg to
+    # ~88-90 min — it tripped the previous 90-min cap (a timeout-cancel
+    # that read as a false red, with every test passing). Bumped to 120
+    # for headroom; ubuntu (~35 min) and windows (~60 min) finish well
+    # under either value, so this only affects the macOS long pole.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
 
