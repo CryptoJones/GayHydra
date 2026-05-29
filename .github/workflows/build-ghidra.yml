@@ -2,8 +2,22 @@ name: Build Ghidra
 
 on:
   push:
+    # Feature branches are already built via their pull_request trigger;
+    # restricting push to master avoids the double-run that floods the
+    # runner queue. The flood was starving master's own runs into
+    # cancellation, which GitHub renders as a red "failing" README badge
+    # even though no build actually failed.
+    branches: [master]
   pull_request:
   workflow_dispatch:
+
+# Dedupe rapid re-pushes without starving master. A PR re-push cancels
+# its own superseded in-progress run to free runners; push (master) runs
+# are NEVER cancelled, so master always lands a real success/failure
+# conclusion and the badge reflects true build health.
+concurrency:
+  group: build-ghidra-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
