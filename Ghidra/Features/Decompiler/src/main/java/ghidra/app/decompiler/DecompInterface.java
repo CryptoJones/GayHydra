@@ -254,6 +254,25 @@ public class DecompInterface {
 	}
 
 	/**
+	 * Resolve the IPC framing preference passed to the decompiler process at
+	 * connection start (Rec 33, docs/decisions/0005-ipc-framing-v1.md). The
+	 * {@code decompiler.framing} system property ("auto"/"v1"/"v0") wins so
+	 * headless and test runs can override; otherwise the decompiler options'
+	 * {@link DecompileOptions.FramingMode} is used; otherwise "auto".
+	 * @return the framing mode string for {@link DecompileProcess#setFramingMode}
+	 */
+	private String resolveFramingMode() {
+		String sys = System.getProperty("decompiler.framing");
+		if (sys != null && !sys.isBlank()) {
+			return sys.trim().toLowerCase();
+		}
+		if (options != null && options.getFramingMode() != null) {
+			return options.getFramingMode().getOptionString();
+		}
+		return "auto";
+	}
+
+	/**
 	 * This is the main routine for making sure that a decompiler
 	 * process is active and that it is initialized properly
 	 * @throws IOException for any problems with the pipe to the decompiler process
@@ -286,6 +305,7 @@ public class DecompInterface {
 		baseEncodingSet = new EncodeDecodeSet(program);
 
 		decompCallback.setNativeMessage(null);
+		decompProcess.setFramingMode(resolveFramingMode());
 		decompProcess.registerProgram(decompCallback, pspecxml, cspecxml, tspec, coretypes,
 			program);
 		String nativeMessage = decompCallback.getNativeMessage();

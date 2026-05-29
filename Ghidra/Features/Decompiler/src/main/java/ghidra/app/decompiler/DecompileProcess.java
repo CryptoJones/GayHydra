@@ -19,7 +19,9 @@ import static ghidra.program.model.pcode.AttributeId.*;
 import static ghidra.program.model.pcode.ElementId.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.CRC32;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.InjectPayload;
@@ -61,6 +63,31 @@ public class DecompileProcess {
 	private final static byte[] exception_end = { 0, 0, 1, 11 };
 	private final static byte[] byte_start = { 0, 0, 1, 12 };
 	private final static byte[] byte_end = { 0, 0, 1, 13 };
+
+	// Rec 33 IPC framing v1 (docs/decisions/0005-ipc-framing-v1.md). The
+	// greeting frame is the only v1 traffic emitted by this client: the
+	// command/response protocol below stays v0 because the native command
+	// loop (ghidra_process.cc) still reads v0 bursts regardless of the
+	// negotiated mode. The v1 command-loop dispatch is a follow-up; until
+	// then a successful greeting just records that the peer speaks v1.
+	private final static byte[] FRAME_MAGIC = { 0x47, 0x48, 0x01, 0x00 };
+	private final static int FRAME_TYPE_GREETING = 0x00;
+	private final static int FRAME_FLAG_CRC_PRESENT = 0x01;
+	private final static int FRAME_FLAGS_RESERVED = 0x06; // compression|continuation
+	private final static int GREETING_VERSION_MAJOR = 0x01;
+	private final static int GREETING_VERSION_MINOR = 0x00;
+	private final static int GREETING_CAPAB_CRC_REQUIRED = 0x00000001;
+	private final static int FRAME_MAX_PAYLOAD_LEN = 16 * 1024 * 1024;
+	private final static String CLIENT_IDENT = "GayHydra-Ghidra (v1 framing)";
+
+	// Configured framing preference: "auto" (send greeting, fall back to
+	// v0 if the peer does not reply v1), "v1" (send greeting), or "v0"
+	// (legacy: emit no greeting). Set by DecompInterface before each
+	// registerProgram. Default matches DD-0005's flip of GayHydra clients
+	// to v1-by-default.
+	private volatile String framingMode = "auto";
+	// True once a v1 greeting handshake has completed with the peer.
+	private volatile boolean channelV1 = false;
 
 	//private static final int MAXIMUM_RESULT_SIZE = 50 * 1024 * 1024; // maximum result size in bytes to allow from decompiler
 
@@ -292,6 +319,175 @@ public class DecompileProcess {
 		write(string_end);
 	}
 
+	/**
+	 * Set the IPC framing preference for the next {@link #registerProgram}.
+	 * Accepts "auto", "v1", or "v0"; anything else defaults to "auto".
+	 * @param mode the framing preference
+	 */
+	public void setFramingMode(String mode) {
+		if ("v0".equals(mode) || "v1".equals(mode) || "auto".equals(mode)) {
+			framingMode = mode;
+		}
+		else {
+			framingMode = "auto";
+		}
+	}
+
+	/**
+	 * {@return true if a v1 framing greeting was negotiated with the peer.}
+	 */
+	public boolean isChannelV1() {
+		return channelV1;
+	}
+
+	/**
+	 * Build a complete v1 GREETING frame: MAGIC + TYPE + FLAGS + LENGTH +
+	 * PAYLOAD + CRC32. The CRC (java.util.zip.CRC32 == IEEE 802.3) covers
+	 * TYPE|FLAGS|LENGTH|PAYLOAD, not MAGIC — matching frame_v1.cc.
+	 * Package-private for unit testing of the exact wire bytes.
+	 * @param ident the free-text peer identity placed in the greeting payload
+	 * @return the encoded greeting frame bytes
+	 */
+	static byte[] buildGreetingFrameV1(String ident) {
+		return encodeFrameV1(FRAME_TYPE_GREETING, buildGreetingPayloadV1(ident));
+	}
+
+	/**
+	 * Build the greeting payload: 2-byte BE VERSION (major.minor), 4-byte
+	 * BE CAPABS (CRC-required), then the UTF-8 ident bytes.
+	 */
+	static byte[] buildGreetingPayloadV1(String ident) {
+		byte[] id = ident.getBytes(StandardCharsets.UTF_8);
+		byte[] payload = new byte[6 + id.length];
+		payload[0] = (byte) GREETING_VERSION_MAJOR;
+		payload[1] = (byte) GREETING_VERSION_MINOR;
+		payload[2] = (byte) ((GREETING_CAPAB_CRC_REQUIRED >>> 24) & 0xff);
+		payload[3] = (byte) ((GREETING_CAPAB_CRC_REQUIRED >>> 16) & 0xff);
+		payload[4] = (byte) ((GREETING_CAPAB_CRC_REQUIRED >>> 8) & 0xff);
+		payload[5] = (byte) (GREETING_CAPAB_CRC_REQUIRED & 0xff);
+		System.arraycopy(id, 0, payload, 6, id.length);
+		return payload;
+	}
+
+	/**
+	 * Encode a single v1 frame. Always sets the CRC_PRESENT flag and
+	 * appends the 4-byte BE CRC32 trailer.
+	 */
+	static byte[] encodeFrameV1(int type, byte[] payload) {
+		int len = payload.length;
+		byte[] frame = new byte[14 + len];
+		frame[0] = FRAME_MAGIC[0];
+		frame[1] = FRAME_MAGIC[1];
+		frame[2] = FRAME_MAGIC[2];
+		frame[3] = FRAME_MAGIC[3];
+		frame[4] = (byte) type;
+		frame[5] = (byte) FRAME_FLAG_CRC_PRESENT;
+		frame[6] = (byte) ((len >>> 24) & 0xff);
+		frame[7] = (byte) ((len >>> 16) & 0xff);
+		frame[8] = (byte) ((len >>> 8) & 0xff);
+		frame[9] = (byte) (len & 0xff);
+		System.arraycopy(payload, 0, frame, 10, len);
+		CRC32 crc = new CRC32();
+		crc.update(frame, 4, 6 + len); // TYPE|FLAGS|LENGTH|PAYLOAD
+		long c = crc.getValue();
+		frame[10 + len] = (byte) ((c >>> 24) & 0xff);
+		frame[11 + len] = (byte) ((c >>> 16) & 0xff);
+		frame[12 + len] = (byte) ((c >>> 8) & 0xff);
+		frame[13 + len] = (byte) (c & 0xff);
+		return frame;
+	}
+
+	/**
+	 * Emit the v1 greeting (unless framing is forced to v0) and read the
+	 * peer's reply. On a well-formed GREETING reply with a matching major
+	 * version, {@link #channelV1} is set. A v0 peer (the native command
+	 * loop's default) leaves no reply path: a v0-mode client emits nothing
+	 * and the peer's non-consuming peek keeps the stream byte-identical for
+	 * the legacy reader.
+	 */
+	private void negotiateFramingV1() throws IOException {
+		channelV1 = false;
+		if ("v0".equals(framingMode)) {
+			return;
+		}
+		write(buildGreetingFrameV1(CLIENT_IDENT));
+		if (nativeOut != null) {
+			nativeOut.flush();
+		}
+		channelV1 = readGreetingReplyV1();
+	}
+
+	/**
+	 * Read one v1 frame from the decompiler and validate it as a GREETING
+	 * with a matching major version and correct CRC. Returns false (rather
+	 * than throwing) on EOF / magic mismatch / bad CRC so the caller can
+	 * proceed on the legacy v0 path.
+	 */
+	private boolean readGreetingReplyV1() throws IOException {
+		if (nativeIn == null) {
+			return false;
+		}
+		byte[] hdr = new byte[10]; // MAGIC(4) + TYPE(1) + FLAGS(1) + LENGTH(4)
+		if (!readFully(hdr, 10)) {
+			return false;
+		}
+		for (int i = 0; i < 4; i++) {
+			if ((hdr[i] & 0xff) != (FRAME_MAGIC[i] & 0xff)) {
+				return false;
+			}
+		}
+		int type = hdr[4] & 0xff;
+		int flags = hdr[5] & 0xff;
+		long len = ((long) (hdr[6] & 0xff) << 24) | ((hdr[7] & 0xff) << 16) |
+			((hdr[8] & 0xff) << 8) | (hdr[9] & 0xff);
+		if (len > FRAME_MAX_PAYLOAD_LEN) {
+			return false;
+		}
+		if ((flags & FRAME_FLAGS_RESERVED) != 0) {
+			return false;
+		}
+		byte[] payload = new byte[(int) len];
+		if (len > 0 && !readFully(payload, (int) len)) {
+			return false;
+		}
+		byte[] crcBytes = new byte[4];
+		if (!readFully(crcBytes, 4)) {
+			return false;
+		}
+		CRC32 crc = new CRC32();
+		crc.update(hdr, 4, 6); // TYPE|FLAGS|LENGTH
+		if (len > 0) {
+			crc.update(payload, 0, (int) len);
+		}
+		long expected = crc.getValue();
+		long actual = ((long) (crcBytes[0] & 0xff) << 24) | ((crcBytes[1] & 0xff) << 16) |
+			((crcBytes[2] & 0xff) << 8) | (crcBytes[3] & 0xff);
+		if (actual != expected) {
+			return false;
+		}
+		if (type != FRAME_TYPE_GREETING || payload.length < 6) {
+			return false;
+		}
+		// Reject a mismatched major version; minor bumps are compatible.
+		return (payload[0] & 0xff) == GREETING_VERSION_MAJOR;
+	}
+
+	/**
+	 * Read exactly {@code n} bytes from the decompiler into {@code buf}.
+	 * @return true on success, false on EOF before {@code n} bytes arrive
+	 */
+	private boolean readFully(byte[] buf, int n) throws IOException {
+		int off = 0;
+		while (off < n) {
+			int r = nativeIn.read(buf, off, n - off);
+			if (r < 0) {
+				return false;
+			}
+			off += r;
+		}
+		return true;
+	}
+
 	private void generateException() throws IOException, DecompileException {
 		readQueryParam(stringDecoder);
 		String type = stringDecoder.toString();
@@ -475,6 +671,7 @@ public class DecompileProcess {
 		StringIngest response = new StringIngest();	// Don't use stringDecoder
 
 		setup();
+		negotiateFramingV1();
 		try {
 			write(command_start);
 			writeString("registerProgram");

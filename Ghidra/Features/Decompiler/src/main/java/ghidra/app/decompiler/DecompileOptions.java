@@ -154,6 +154,47 @@ public class DecompileOptions {
 	private final static NanIgnoreEnum NANIGNORE_OPTIONDEFAULT = NanIgnoreEnum.Compare;	// Must match Architecture::resetDefaultsInternal
 	private NanIgnoreEnum nanIgnore;
 
+	private final static String FRAMING_OPTIONSTRING = "Analysis.IPC framing protocol";
+	private final static String FRAMING_OPTIONDESCRIPTION =
+		"Select the wire framing used to talk to the native decompiler process (Rec 33). " +
+			"'Auto' sends a v1 greeting and falls back to legacy v0 if the process does not " +
+			"reply v1. 'v1' forces the v1 greeting; 'v0' keeps the legacy marker framing. " +
+			"This is a transport-only setting negotiated at connection start; it does not " +
+			"change decompiler output.";
+
+	/**
+	 * Selects the IPC framing protocol used between Ghidra and the native
+	 * decompiler process. See docs/decisions/0005-ipc-framing-v1.md. The
+	 * option string ("auto"/"v1"/"v0") is what {@link DecompInterface}
+	 * threads down to {@link DecompileProcess} at connection start.
+	 */
+	public enum FramingMode {
+
+		Auto("auto", "Auto (v1 greeting, v0 fallback)"),
+		V1("v1", "Force v1 framing"),
+		V0("v0", "Legacy v0 framing");
+
+		private String label;
+		private String optionString;
+
+		private FramingMode(String optString, String label) {
+			this.label = label;
+			this.optionString = optString;
+		}
+
+		public String getOptionString() {
+			return optionString;
+		}
+
+		@Override
+		public String toString() {
+			return label;
+		}
+	}
+
+	private final static FramingMode FRAMING_OPTIONDEFAULT = FramingMode.Auto;
+	private FramingMode framingMode;
+
 	private final static String NULLTOKEN_OPTIONSTRING = "Display.Print 'NULL' for null pointers";
 	private final static String NULLTOKEN_OPTIONDESCRIPTION =
 		"If set, any zero valued pointer (null pointer) will " +
@@ -500,6 +541,7 @@ public class DecompileOptions {
 		splitArrays = SPLITARRAYS_OPTIONDEFAULT;
 		splitPointers = SPLITPOINTERS_OPTIONDEFAULT;
 		nanIgnore = NANIGNORE_OPTIONDEFAULT;
+		framingMode = FRAMING_OPTIONDEFAULT;
 		ignoreunimpl = IGNOREUNIMPL_OPTIONDEFAULT;
 		inferconstptr = INFERCONSTPTR_OPTIONDEFAULT;
 		analyzeForLoops = ANALYZEFORLOOPS_OPTIONDEFAULT;
@@ -567,6 +609,7 @@ public class DecompileOptions {
 		splitArrays = opt.getBoolean(SPLITARRAYS_OPTIONSTRING, SPLITARRAYS_OPTIONDEFAULT);
 		splitPointers = opt.getBoolean(SPLITPOINTERS_OPTIONSTRING, SPLITPOINTERS_OPTIONDEFAULT);
 		nanIgnore = opt.getEnum(NANIGNORE_OPTIONSTRING, NANIGNORE_OPTIONDEFAULT);
+		framingMode = opt.getEnum(FRAMING_OPTIONSTRING, FRAMING_OPTIONDEFAULT);
 
 		nullToken = opt.getBoolean(NULLTOKEN_OPTIONSTRING, NULLTOKEN_OPTIONDEFAULT);
 		inplaceTokens = opt.getBoolean(INPLACEOP_OPTIONSTRING, INPLACEOP_OPTIONDEFAULT);
@@ -694,6 +737,9 @@ public class DecompileOptions {
 		opt.registerOption(NANIGNORE_OPTIONSTRING, NANIGNORE_OPTIONDEFAULT,
 			new HelpLocation(HelpTopics.DECOMPILER, "AnalysisNanIgnore"),
 			NANIGNORE_OPTIONDESCRIPTION);
+		opt.registerOption(FRAMING_OPTIONSTRING, FRAMING_OPTIONDEFAULT,
+			new HelpLocation(HelpTopics.DECOMPILER, "AnalysisIPCFraming"),
+			FRAMING_OPTIONDESCRIPTION);
 		opt.registerOption(NULLTOKEN_OPTIONSTRING, NULLTOKEN_OPTIONDEFAULT,
 			new HelpLocation(HelpTopics.DECOMPILER, "DisplayNull"), NULLTOKEN_OPTIONDESCRIPTION);
 		opt.registerOption(INPLACEOP_OPTIONSTRING, INPLACEOP_OPTIONDEFAULT,
@@ -1618,6 +1664,23 @@ public class DecompileOptions {
 	 */
 	public NanIgnoreEnum getNanIgnore() {
 		return nanIgnore;
+	}
+
+	/**
+	 * {@return the configured IPC framing protocol for the decompiler channel.}
+	 * @see #FRAMING_OPTIONDESCRIPTION
+	 */
+	public FramingMode getFramingMode() {
+		return framingMode;
+	}
+
+	/**
+	 * Set the IPC framing protocol used to talk to the native decompiler.
+	 * @param framingMode the {@link FramingMode} value to set
+	 * @see #FRAMING_OPTIONDESCRIPTION
+	 */
+	public void setFramingMode(FramingMode framingMode) {
+		this.framingMode = framingMode;
 	}
 
 	/**
