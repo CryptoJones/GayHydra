@@ -111,6 +111,7 @@ model {
 		                include "override.cc"
 		                include "dynamic.cc"
 		                include "crc32.cc"
+		                include "frame_v1.cc"
 		                include "prettyprint.cc"
 		                include "printlanguage.cc"
 		                include "printc.cc"
