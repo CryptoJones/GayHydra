@@ -21,6 +21,9 @@ generated from the GitHub Releases UI at sprint close.
 ### 2026-05-29 — Mach-O: reject headers with an invalid load-command count (GP-6875)
 
 - **`MachHeader` now validates `nCmds` before iterating the load commands.** A new `MAX_LOAD_COMMANDS = 32_768` ceiling plus a `validateNumLoadCommands()` guard (called at the head of `parse(SplitDyldCache)`, `parseSegments()`, `parseReexports()`, and `parseAndCheck(int)`) throw `MachException` when `nCmds` is negative or absurdly large, instead of looping on attacker-controlled garbage and reading far past the file. `parseSegments()`/`parseReexports()`/`parseAndCheck(int)` consequently gain `throws MachException`; all in-tree callers (`MachoLoader`, `MachoPrelinkUtils`, `DyldCacheFileSystem`, `MachoFileSetFileSystem`) already propagate or catch it — `MachoLoader.detectCompilerName` was wrapped in a `try { … } catch (MachException)` to match. Cherry-picked from upstream NSA/ghidra commit `34afe864bc` (Ryan Kurtz); our fork preserves its Golang-only compiler detection (no Swift branch).
+### 2026-05-29 — RISC-V: fix CSR instructions writing to a constant operand (GP-6849)
+
+- **`riscv.csr.sinc` / `riscv.table.sinc`: the CSR read/clear/set family now writes the destination register via the `rd` register operand instead of the `rdDst` table.** `rdDst` resolved to a constant-export form, so `csrrc`/`csrrci`/`csrr`/`csrrs`/`csrrsi` (and a few other register operands) emitted p-code that wrote the old CSR value to a *constant* rather than to the architectural destination register — losing the result. Renaming the operand to the proper `rd` register field fixes the write target. Cherry-picked from upstream NSA/ghidra commit `6a40c607cd` (ghidorahrex); applies cleanly to our fork and the RISC-V SLEIGH spec recompiles green.
 
 ### 2026-05-29 — CodeQL: force a traced compile in the Java build step
 
