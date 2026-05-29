@@ -155,7 +155,7 @@ first implementation tier.
 
 ## Sprint 7 — IPC Modernization (Recs 33, 34)
 
-- [ ] **Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active.
+- [ ] **Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active. **Design landed at [DD-0005](docs/decisions/0005-ipc-framing-v1.md)** — sequence is `#33-2.1` (`frame_v1.hh`/`.cc` + unit tests), `#33-2.2` (server-side reader with v0 fallback), `#33-2.3` (server-side writer), `#33-2.4` (greeting handshake), `#33-2.5` (Java-side wiring + default flip to v1). Each PR ships independently; v0 fallback keeps the channel working at every step.
 - [ ] **Rec 34 PR #34-2:** vendor FlatBuffers C++ headers + Java jar.
 - [ ] **Rec 34 PR #34-3:** land `decompile.fbs` schema + generated bindings.
 - [ ] **Rec 34 PR #34-4:** dual-encode the decompile-function request path.
