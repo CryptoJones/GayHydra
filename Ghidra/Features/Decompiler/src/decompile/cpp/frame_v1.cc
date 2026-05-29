@@ -153,6 +153,51 @@ frame_v1::Error decode_frame_v1(
   return frame_v1::Error::OK;
 }
 
+void write_frame_v1(std::ostream &s, frame_v1::Type type, const vector<uint1> &payload)
+{
+  // Build header bytes: type | flags | length(BE).
+  uint1 hdr[6];
+  hdr[0] = (uint1)type;
+  hdr[1] = frame_v1::flags::CRC_PRESENT;
+  uint4 len = (uint4)payload.size();
+  hdr[2] = (uint1)((len >> 24) & 0xff);
+  hdr[3] = (uint1)((len >> 16) & 0xff);
+  hdr[4] = (uint1)((len >> 8)  & 0xff);
+  hdr[5] = (uint1)(len         & 0xff);
+
+  // Compute CRC over header + payload incrementally.
+  uint4 reg = 0xffffffff;
+  for (int i = 0; i < 6; ++i) reg = crc_update(reg, hdr[i]);
+  for (uint1 b : payload)     reg = crc_update(reg, b);
+  uint4 crc = reg ^ 0xffffffff;
+
+  // Write magic, header, payload, CRC.
+  s.write((const char *)frame_v1::MAGIC, 4);
+  s.write((const char *)hdr, 6);
+  if (!payload.empty())
+    s.write((const char *)payload.data(), (std::streamsize)payload.size());
+  uint1 trailer[4] = {
+    (uint1)((crc >> 24) & 0xff),
+    (uint1)((crc >> 16) & 0xff),
+    (uint1)((crc >> 8)  & 0xff),
+    (uint1)(crc         & 0xff),
+  };
+  s.write((const char *)trailer, 4);
+}
+
+void write_frame_v1(std::ostream &s, frame_v1::Type type, const string &payload)
+{
+  // Reuse the vector path; cheap copy + payload is typically small
+  // for control messages (greeting, command markers). For large
+  // XML payloads we'd want a single-pass write, which the
+  // vector<uint1> overload above already does.
+  vector<uint1> bytes;
+  bytes.reserve(payload.size());
+  for (char c : payload)
+    bytes.push_back((uint1)c);
+  write_frame_v1(s, type, bytes);
+}
+
 /// Read exactly \c n bytes from \c s into \c out. Returns true on
 /// success, false on EOF before \c n bytes are available.
 static bool read_exact(std::istream &s, size_t n, vector<uint1> &out)

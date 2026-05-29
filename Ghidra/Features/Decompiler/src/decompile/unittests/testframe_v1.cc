@@ -447,4 +447,100 @@ TEST(frame_v1_read_stream_crc_mismatch) {
   ASSERT_EQUALS((int)e, (int)frame_v1::Error::CRC_MISMATCH);
 }
 
+// ------------------------------------------------------------------
+// Stream-based writer (#33-2.3). Verifies the bytes written to an
+// ostream match the documented wire layout (and the buffer-based
+// encoder's output, byte-for-byte).
+// ------------------------------------------------------------------
+
+static vector<uint1> stream_bytes(const stringstream &s) {
+  string str = s.str();
+  vector<uint1> out;
+  out.reserve(str.size());
+  for (char c : str)
+    out.push_back((uint1)c);
+  return out;
+}
+
+TEST(frame_v1_write_stream_matches_buffer_encoder) {
+  // The stream writer and the buffer encoder must produce the
+  // exact same bytes — neither is supposed to invent layout.
+  vector<uint1> wire_buf = encode_frame_v1(frame_v1::Type::COMMAND, "<query/>");
+  stringstream s(std::ios::out | std::ios::binary);
+  write_frame_v1(s, frame_v1::Type::COMMAND, string("<query/>"));
+  vector<uint1> wire_str = stream_bytes(s);
+  ASSERT_EQUALS(wire_buf.size(), wire_str.size());
+  for (size_t i = 0; i < wire_buf.size(); ++i)
+    ASSERT_EQUALS(wire_buf[i], wire_str[i]);
+}
+
+TEST(frame_v1_write_stream_empty_payload) {
+  stringstream s(std::ios::out | std::ios::binary);
+  write_frame_v1(s, frame_v1::Type::PING, string(""));
+  vector<uint1> bytes = stream_bytes(s);
+
+  // 14 bytes total: 4 magic + 1 type + 1 flags + 4 length + 0 payload + 4 crc
+  ASSERT_EQUALS(bytes.size(), (size_t)14);
+  ASSERT_EQUALS(bytes[4], (uint1)frame_v1::Type::PING);
+  ASSERT_EQUALS(bytes[5], frame_v1::flags::CRC_PRESENT);
+  // length = 0
+  ASSERT_EQUALS(bytes[6], 0);
+  ASSERT_EQUALS(bytes[7], 0);
+  ASSERT_EQUALS(bytes[8], 0);
+  ASSERT_EQUALS(bytes[9], 0);
+}
+
+TEST(frame_v1_write_then_read_roundtrip) {
+  // Writer -> Reader on the same stringstream.
+  stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  string payload = "GayHydra/26.1.x build=linux_x86_64";
+  write_frame_v1(s, frame_v1::Type::GREETING, payload);
+
+  frame_v1::Header hdr;
+  vector<uint1> got_payload, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, got_payload, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::GREETING);
+  ASSERT_EQUALS(got_payload.size(), payload.size());
+  for (size_t i = 0; i < payload.size(); ++i)
+    ASSERT_EQUALS((char)got_payload[i], payload[i]);
+}
+
+TEST(frame_v1_write_two_frames_back_to_back) {
+  // The writer leaves the stream positioned right after each frame
+  // it emits — two consecutive writes should produce two
+  // back-to-back parseable frames.
+  stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  write_frame_v1(s, frame_v1::Type::COMMAND, string("first"));
+  write_frame_v1(s, frame_v1::Type::COMMAND, string("second"));
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+
+  frame_v1::Error e1 = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e1, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS(payload.size(), (size_t)5);
+
+  frame_v1::Error e2 = read_frame_v1(s, hdr, payload, peeked);
+  ASSERT_EQUALS((int)e2, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS(payload.size(), (size_t)6);
+}
+
+TEST(frame_v1_write_binary_payload) {
+  // 0x00 bytes in the payload must not confuse anything — the
+  // length prefix is what bounds the read, not a terminator scan.
+  vector<uint1> body;
+  for (int i = 0; i < 256; ++i) body.push_back((uint1)i);
+  stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  write_frame_v1(s, frame_v1::Type::RESPONSE_BYTE_DATA, body);
+
+  frame_v1::Header hdr;
+  vector<uint1> got, peeked;
+  frame_v1::Error e = read_frame_v1(s, hdr, got, peeked);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT_EQUALS(got.size(), body.size());
+  for (size_t i = 0; i < body.size(); ++i)
+    ASSERT_EQUALS(got[i], body[i]);
+}
+
 } // End namespace ghidra
