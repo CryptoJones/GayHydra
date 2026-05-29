@@ -7,6 +7,15 @@
 # #130 missing <memory> include) were all build-only failures that
 # `make decomp_test_dbg` would have surfaced in under two minutes.
 #
+# We build BOTH `decomp_test_dbg` AND `ghidra_dbg`. They link different
+# translation units: `ghidra_arch.cc`, `ghidra_process.cc`,
+# `*_ghidra.cc`, etc. compile ONLY into ghidra_dbg/ghidra_opt (the
+# GHIDRA= Makefile list), never into the unit-test binary. A change that
+# breaks just the IPC layer would pass a decomp_test_dbg-only gate and
+# still break the release build — the same blind-spot class as the
+# SLEIGH-compile gap closed in #165. ghidra_dbg links without -lbfd, so
+# it builds anywhere g++ is present.
+#
 # Usage:
 #   scripts/local-precheck.sh           # build-only (default, fast)
 #   scripts/local-precheck.sh --full    # also run unittests + datatests
@@ -122,6 +131,19 @@ if ! make -C "$CPP_DIR" -j"$jobs" decomp_test_dbg; then
 	exit 1
 fi
 log "build OK in $((SECONDS - build_start))s"
+
+# Also build the GHIDRA-facing decompiler binary. ghidra_arch.cc /
+# ghidra_process.cc / *_ghidra.cc only compile into this target (the
+# GHIDRA= Makefile list), not into decomp_test_dbg above — so without
+# this leg an IPC-layer compile break passes the gate and breaks the
+# release build. See the header comment.
+log "make ghidra_dbg -j${jobs}"
+ghidra_build_start=$SECONDS
+if ! make -C "$CPP_DIR" -j"$jobs" ghidra_dbg; then
+	log "ghidra_dbg BUILD FAILED after $((SECONDS - ghidra_build_start))s"
+	exit 1
+fi
+log "ghidra_dbg build OK in $((SECONDS - ghidra_build_start))s"
 
 # --- optional test runs ----------------------------------------------------
 if [[ $MODE_FULL -eq 1 ]]; then
