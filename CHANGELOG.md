@@ -12,6 +12,13 @@ Work toward v26.1.17. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): record the #33-2.6 deferral in DD-0005 — the
+  v1 command-loop flip stays untestable by the local precheck
+  (command-loop `.cc` files link only into `ghidra_dbg`, never
+  `decomp_test_dbg`); documents the end-to-end test gap and the
+  unblock options. No code/protocol change; v26.1.16 ships
+  greeting-v1 + commands-v0.
+
 ---
 
 ## [v26.1.16] — 2026-05-29

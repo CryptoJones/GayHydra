@@ -238,6 +238,54 @@ Upstream Ghidra Java still speaks v0; if a user invokes the
 GayHydra decompile binary from upstream Ghidra, the v0 fallback
 keeps it working.
 
+## Post-#33-2.5 status: the command loop is still v0 (#33-2.6 deferred)
+
+As shipped in **v26.1.16**, #33-2.1 … #33-2.5 are all merged, but
+the v1 path stops at the greeting. Both ends negotiate a v1
+**greeting** (`negotiate_greeting_v1` on the C++ side,
+`negotiateFramingV1()` on the Java side), then run the **command
+loop in pure v0** — `ghidra_process.cc`'s `main()` deliberately
+discards the negotiated `ChannelMode` and falls straight into the
+legacy `GhidraCapability::readCommand` loop. Because both ends do
+the same thing (greeting = v1, commands = v0) they stay in sync and
+production decompiles exactly as before. v1 framing is wire-format
+plumbing that is negotiated but **not yet load-bearing**.
+
+**#33-2.6** is the remaining work: flip the live command loop to v1
+framing on *both* ends when `channelV1` was negotiated. It is
+deferred, and the reason is a hard testability constraint, not a
+design gap:
+
+- The flip is irreducible integration glue in the GHIDRA-only
+  translation units — `ghidra_process.cc`, `ghidra_arch.cc`, and
+  `DecompileProcess.java`. Per
+  `Ghidra/Features/Decompiler/src/decompile/cpp/Makefile`, the
+  command-loop `.cc` files are in the `GHIDRA` object list and
+  compile **only into `ghidra_dbg`/`ghidra_opt`, never into
+  `decomp_test_dbg`**. So `scripts/local-precheck.sh --full` can
+  *compile-check* the command loop but cannot *runtime-test* it.
+- The fast Java suite (`DecompileProcessFramingV1Test`, in the
+  `test` sourceset) is pure byte-math over the encoders — it never
+  spawns the native process.
+- The only real validation is an **end-to-end decompile**: the Java
+  client spawning the native binary and exchanging *commands* under
+  v1 framing. Today that lives only in the slow integration tests
+  (`Ghidra/Features/Decompiler/src/test.slow/java/…`, full Ghidra
+  runtime + a built native binary), and those do not exercise v1
+  command framing.
+- Blast radius is maximal: a one-sided or buggy flip desyncs the two
+  ends and breaks **all** decompilation for every v26.1.16+ user.
+
+Because the change cannot meet the project's "test everything
+locally before push" bar with the standard toolchain, #33-2.6 waits
+on one of: **(a)** stand up a runnable local end-to-end IPC test
+(e.g. a golden-transcript replay that drives the built native binary
+with v1-framed commands), then do the validated flip; **(b)** do the
+flip in an attended session with live end-to-end verification; or
+**(c)** keep the greeting-only-v1 state shipped in v26.1.16 as the
+terminal design for the v26.1.x line. The v0 command path is the
+safety net either way.
+
 ## Open questions deferred to the implementation PRs
 
 - Whether `compression` (FLAGS bit 1) lands in this sprint or a
