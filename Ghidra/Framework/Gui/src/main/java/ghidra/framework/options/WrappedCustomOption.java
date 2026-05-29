@@ -16,6 +16,7 @@
 package ghidra.framework.options;
 
 import ghidra.util.Msg;
+import ghidra.util.classfinder.ClassSearcher;
 
 public class WrappedCustomOption implements WrappedOption {
 
@@ -36,16 +37,9 @@ public class WrappedCustomOption implements WrappedOption {
 		String className = saveState.getString("CUSTOM OPTION CLASS", null);
 		valid = false;
 		try {
-
-			ClassLoader loader = getClass().getClassLoader();
-			Class<?> clazz = Class.forName(className, false, loader);
-			if (!CustomOption.class.isAssignableFrom(clazz)) {
-				Msg.error(this, "Can't create custom option instance; not a CustomOpiton: " +
-					className);
-				return;
-			}
-
-			value = (CustomOption) clazz.getConstructor().newInstance();
+			Class<? extends CustomOption> c = ClassSearcher.forNameSafe(className,
+				CustomOption.class, getClass().getClassLoader());
+			value = c.getConstructor().newInstance();
 			value.readState(saveState);
 			valid = true;
 		}

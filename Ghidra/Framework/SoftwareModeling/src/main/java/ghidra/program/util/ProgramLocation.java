@@ -22,6 +22,7 @@ import ghidra.framework.options.SaveState;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.*;
 import ghidra.util.Msg;
+import ghidra.util.classfinder.ClassSearcher;
 
 /**
  * <CODE>ProgramLocation</CODE> provides information about a location in a program in the most
@@ -280,8 +281,8 @@ public class ProgramLocation implements Cloneable, Comparable<ProgramLocation> {
 
 		ClassLoader loader = ProgramLocation.class.getClassLoader();
 		try {
-
-			Class<?> locationClass = Class.forName(className, false, loader);
+			Class<? extends ProgramLocation> locationClass =
+				ClassSearcher.forNameSafe(className, ProgramLocation.class, loader);
 			if (locationClass.isInterface()) {
 				// This check is needed due to a refactoring that has changed a class into an 
 				// interface.  The class name may have been saved into the tool.  Upon restoring we
@@ -290,13 +291,7 @@ public class ProgramLocation implements Cloneable, Comparable<ProgramLocation> {
 				return null;
 			}
 
-			if (!ProgramLocation.class.isAssignableFrom(locationClass)) {
-				Msg.error(ProgramLocation.class,
-					"Class is not a ProgramLocation: " + locationClass);
-				return null;
-			}
-
-			ProgramLocation loc = (ProgramLocation) locationClass.getConstructor().newInstance();
+			ProgramLocation loc = locationClass.getConstructor().newInstance();
 			loc.restoreState(program, saveState);
 			if (loc.getAddress() != null) {
 				return loc;
@@ -305,6 +300,10 @@ public class ProgramLocation implements Cloneable, Comparable<ProgramLocation> {
 		}
 		catch (ClassNotFoundException e) {
 			// this can happen for locations created by plugins that are no longer installed
+		}
+		catch (ClassCastException e) {
+			// saved class name no longer resolves to a ProgramLocation (e.g. a refactor); skip it
+			Msg.error(ProgramLocation.class, "Class is not a ProgramLocation: " + className, e);
 		}
 		catch (InstantiationException | IllegalAccessException | NoSuchMethodException e) {
 			Msg.showError(ProgramLocation.class, null, "Programming Error",

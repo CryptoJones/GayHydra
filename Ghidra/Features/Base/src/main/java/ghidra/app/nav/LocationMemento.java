@@ -24,6 +24,7 @@ import ghidra.program.util.AddressFieldLocation;
 import ghidra.program.util.ProgramLocation;
 import ghidra.util.Msg;
 import ghidra.util.SystemUtilities;
+import ghidra.util.classfinder.ClassSearcher;
 
 public class LocationMemento {
 	private static final String PROGRAM_PATH = "PROGRAM_PATH_";
@@ -149,19 +150,18 @@ public class LocationMemento {
 
 		ClassLoader loader = LocationMemento.class.getClassLoader();
 		try {
-			Class<?> clazz = Class.forName(className, false, loader);
-			if (!LocationMemento.class.isAssignableFrom(clazz)) {
-				Msg.error(LocationMemento.class, "Class is not a LocationMemento: " + clazz);
-				return null;
-			}
-
-			Class<? extends LocationMemento> mementoClass = clazz.asSubclass(LocationMemento.class);
+			Class<? extends LocationMemento> mementoClass =
+				ClassSearcher.forNameSafe(className, LocationMemento.class, loader);
 			Constructor<? extends LocationMemento> constructor =
 				mementoClass.getConstructor(SaveState.class, Program[].class);
 			return constructor.newInstance(saveState, programs);
 		}
 		catch (ClassNotFoundException e) {
 			// class must have been deleted or renamed
+		}
+		catch (ClassCastException e) {
+			// saved class name no longer resolves to a LocationMemento (e.g. a refactor); skip it
+			Msg.error(LocationMemento.class, "Class is not a LocationMemento: " + className, e);
 		}
 		catch (InstantiationException e) {
 			Msg.showError(ProgramLocation.class, null, "Programming Error", "Class " + className +
