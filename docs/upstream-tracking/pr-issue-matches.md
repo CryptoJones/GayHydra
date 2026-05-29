@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 341 open PRs scanned. 67 PR→open-issue closing-references found, across 66 distinct PRs and 67 distinct issues.
+Snapshot: 339 open PRs scanned. 69 PR→open-issue closing-references found, across 68 distinct PRs and 69 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -42,9 +42,11 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9171](https://github.com/NationalSecurityAgency/ghidra/issues/9171) Loading issue causing missing section data in PE/code cave | [#9175](https://github.com/NationalSecurityAgency/ghidra/pull/9175) Round SizeOfRawData up to the nearest multiple of the FileAlignment | @XOR-RAX | +11/-4 | 2026-05-10 |
 | 0 | [#6597](https://github.com/NationalSecurityAgency/ghidra/issues/6597) armv6m: msr instruction is reading from the wrong register | [#6598](https://github.com/NationalSecurityAgency/ghidra/pull/6598) Fix input register for msr apsr | @danlehmann | +8/-8 | 2024-05-30 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
+| 0 | [#9203](https://github.com/NationalSecurityAgency/ghidra/issues/9203) Decompiler can insert Pcode into the wrong block | [#9204](https://github.com/NationalSecurityAgency/ghidra/pull/9204) Fix conditional constant MULTIEQUAL placement | @EmirX3D | +13/-6 | 2026-05-21 |
 | 0 | [#9170](https://github.com/NationalSecurityAgency/ghidra/issues/9170) Disassembly/Decompile manipulation due to loading discrepancy in PE | [#9176](https://github.com/NationalSecurityAgency/ghidra/pull/9176) Round down PointerToRawData to the nearest multiple 0x200 | @XOR-RAX | +16/-7 | 2026-05-10 |
 | 0 | [#8777](https://github.com/NationalSecurityAgency/ghidra/issues/8777) Incomprehensible decompilation of "bra ge,..." on PIC24 | [#8778](https://github.com/NationalSecurityAgency/ghidra/pull/8778) PIC24: Use a different pattern for OV/N handling on signed compare | @karcherm | +21/-3 | 2025-12-14 |
 | 0 | [#9168](https://github.com/NationalSecurityAgency/ghidra/issues/9168) PE debug symbol limit not honored while parsing a PE file | [#9174](https://github.com/NationalSecurityAgency/ghidra/pull/9174) Correctly limit PE debug symbols | @XOR-RAX | +15/-13 | 2026-05-10 |
+| 0 | [#9217](https://github.com/NationalSecurityAgency/ghidra/issues/9217) mc68k: post-increment decompilation issues | [#9222](https://github.com/NationalSecurityAgency/ghidra/pull/9222) Fix 68000 MOVE post increment destination pcode order | @EmirX3D | +30/-9 | 2026-05-24 |
 | 0 | [#4801](https://github.com/NationalSecurityAgency/ghidra/issues/4801) Add : "Disable/Enable printing of type casts" to the context menu in Decompiler | [#5623](https://github.com/NationalSecurityAgency/ghidra/pull/5623) Add 'Toggle Printing of Type Casts' decompiler pane menu item. | @Washi1337 | +40/-0 | 2023-08-01 |
 | 0 | [#9167](https://github.com/NationalSecurityAgency/ghidra/issues/9167) Section names out of bounds causes parsing error | [#9173](https://github.com/NationalSecurityAgency/ghidra/pull/9173) Limit the maximum loadable characters for symbol names | @XOR-RAX | +46/-6 | 2026-05-10 |
 | 0 | [#9169](https://github.com/NationalSecurityAgency/ghidra/issues/9169) Out of memory due to long symbol names in PE | [#9173](https://github.com/NationalSecurityAgency/ghidra/pull/9173) Limit the maximum loadable characters for symbol names | @XOR-RAX | +46/-6 | 2026-05-10 |
