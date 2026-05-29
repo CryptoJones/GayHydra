@@ -102,7 +102,17 @@ jobs:
         # pick up the .class files. Faster than `buildGhidra` and
         # avoids the SBOM / signing / packaging steps that are
         # irrelevant to static analysis.
-        run: gradle prepDev --parallel
+        #
+        # --no-build-cache --no-daemon are REQUIRED for CodeQL: once the
+        # Gradle build cache was enabled tree-wide (org.gradle.caching=true),
+        # every `:*:compileJava` task is served `FROM-CACHE`, so `javac`
+        # never actually runs in this job. CodeQL's tracer only sees real
+        # compiler invocations, so a fully-cached build yields "no source
+        # code seen during build" and `database finalize` aborts with a
+        # configuration error (exit 32). Disabling the cache forces a real,
+        # traced compile; --no-daemon keeps that compile in the traced
+        # process tree instead of a pre-warmed daemon.
+        run: gradle --no-build-cache --no-daemon prepDev --parallel
 
       - name: Manual C++ build
         if: matrix.language == 'c-cpp'
