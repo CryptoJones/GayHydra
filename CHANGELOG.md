@@ -12,6 +12,22 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): land the FlatBuffers IPC schema `decompile.fbs`
+  (Rec 34 `#34-3a`, design in
+  [docs/decompiler/IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)). Adds
+  `src/decompile/cpp/schema/decompile.fbs` — the typed payload contract
+  that will replace the ad-hoc XML documents exchanged between the Java
+  host and the C++ worker. Covers all seven commands the existing
+  protocol supports (`RegisterProgram`, `DeregisterProgram`,
+  `FlushNative`, `DecompileAt`, `StructureGraph`, `SetAction`,
+  `SetOptions`) — no new commands. Behavior-preserving: the schema and
+  its generated bindings are inert until the dual-encode migration in
+  `#34-4`..`#34-6`; opaque XML payloads (specs, control-flow graph,
+  optionslist) are carried as `string` unchanged. Validated with the
+  pinned `flatc v25.2.10` (generates clean C++ + Java); definitions are
+  ordered define-before-use (flatc rejects forward references — the
+  `#34-1` sketch had this bug). Generated bindings + build wiring land in
+  `#34-3b` (C++) and `#34-3c` (Java).
 - chore(decompiler): vendor the FlatBuffers C++ runtime headers
   (Rec 34 `#34-2`, design in
   [docs/decompiler/IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)).
