@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 339 open PRs scanned. 69 PR→open-issue closing-references found, across 68 distinct PRs and 69 distinct issues.
+Snapshot: 340 open PRs scanned. 70 PR→open-issue closing-references found, across 69 distinct PRs and 70 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -66,6 +66,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#3536](https://github.com/NationalSecurityAgency/ghidra/issues/3536) Build doesn't include cspec documentation for Decompiler | [#3137](https://github.com/NationalSecurityAgency/ghidra/pull/3137) Include cspec docs in build | @SamB | +107/-40 | 2021-06-14 |
 | 0 | [#9000](https://github.com/NationalSecurityAgency/ghidra/issues/9000) TriCore: Division and FPU conversion instructions have incorrect or missing SLEIGH semantics | [#8999](https://github.com/NationalSecurityAgency/ghidra/pull/8999) #9000 TriCore: Fix FPU conversion and division instruction semantics | @mmmorks | +59/-96 | 2026-02-23 |
 | 0 | [#7283](https://github.com/NationalSecurityAgency/ghidra/issues/7283) Inplace assignment doesn't work in this specific case | [#8635](https://github.com/NationalSecurityAgency/ghidra/pull/8635) Decompiler: Improve support of in-place C operations | @LukeSerne | +159/-3 | 2025-11-16 |
+| 0 | [#9230](https://github.com/NationalSecurityAgency/ghidra/issues/9230) Expand builtin function recovery to memset / bzero | [#9232](https://github.com/NationalSecurityAgency/ghidra/pull/9232) Decompiler: Add builtin_bzero and builtin_memset optimizations | @EmirX3D | +200/-11 | 2026-05-29 |
 | 0 | [#6385](https://github.com/NationalSecurityAgency/ghidra/issues/6385) RISC-V: Support for WCH/QingKe XW extension | [#6390](https://github.com/NationalSecurityAgency/ghidra/pull/6390) RISC-V: Add WCH/QingKe XW extension | @ArcaneNibble | +245/-0 | 2024-04-07 |
 | 0 | [#8995](https://github.com/NationalSecurityAgency/ghidra/issues/8995) V850: 26 SLEIGH semantic bugs causing incorrect decompilation and disassembly | [#8996](https://github.com/NationalSecurityAgency/ghidra/pull/8996) V850: Fix 26 SLEIGH semantic bugs | @mmmorks | +194/-86 | 2026-02-22 |
 | 0 | [#8728](https://github.com/NationalSecurityAgency/ghidra/issues/8728) API to modify the username field of label history and comment history | [#8729](https://github.com/NationalSecurityAgency/ghidra/pull/8729) Add API to change/anonymize the username field of comment history and label history | @mattp-zetier | +299/-0 | 2025-12-03 |
