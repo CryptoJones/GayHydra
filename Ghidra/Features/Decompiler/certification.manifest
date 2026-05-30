@@ -130,6 +130,8 @@ src/main/resources/images/eliminateUnreachable.png||GHIDRA||||END|
 src/main/resources/images/readOnly.png||GHIDRA||||END|
 src/decompile/cpp/fuzz/README.md||GHIDRA||||END|
 src/decompile/cpp/fuzz/Makefile.fuzz||GHIDRA||||END|
+src/decompile/cpp/schema/README.md||GHIDRA||||END|
+src/decompile/cpp/schema/decompile.fbs||GHIDRA||||END|
 src/decompile/cpp/vendor/flatbuffers/README.md||GHIDRA||||END|
 src/decompile/cpp/vendor/flatbuffers/LICENSE||Apache License 2.0||||END|
 src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/allocator.h||Apache License 2.0||||END|

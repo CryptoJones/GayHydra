@@ -1,0 +1,111 @@
+// Rec 34 — FlatBuffers IPC schema for the Ghidra decompiler worker protocol.
+//
+// Typed payload contract that replaces the ad-hoc XML documents currently
+// exchanged between the Java host (DecompInterface / DecompileProcess) and the
+// C++ decompiler worker (the ghidra_process.cc command loop). This is the
+// "Stage 2" full schema referenced by docs/decompiler/IPC_SCHEMA.md (#34-3).
+//
+// Scope: every command the existing protocol already supports — no new IPC
+// commands are introduced here (that would conflate two changes). The seven
+// commands mirror the GhidraCommand subclasses in ghidra_process.hh:
+//   RegisterProgram, DeregisterProgram, FlushNative, DecompileAt,
+//   StructureGraph, SetAction, SetOptions.
+//
+// Behavior-preserving: #34-3 lands only the schema + generated bindings;
+// nothing encodes or decodes with it yet. The host/worker dual-encode
+// migration lands command-by-command in #34-4..#34-6. Payloads the legacy
+// protocol carries as opaque XML documents (processor/compiler specs, the
+// control-flow <block> graph, the <optionslist>) are modelled as `string`,
+// carrying that same serialized document unchanged; structuring them is out of
+// scope until a later rec commits to it.
+//
+// Program id: the legacy protocol passes the program id as a decimal-encoded
+// string parameter, so the schema keeps it as `string` to match the wire and
+// the #34-1 sketch.
+//
+// flatc: definitions are ordered define-before-use (flatc 25.2.10 rejects
+// forward references). Regenerate bindings with:
+//   flatc --cpp --java -o <out> decompile.fbs        (flatc v25.2.10)
+
+namespace ghidra.ipc;
+
+// ------------------------------------------------------------------- enums
+enum ResponseStatus : byte { OK = 0, TIMEOUT = 1, ANALYSIS_FAILED = 2, PARTIAL = 3 }
+enum DataTypeKind : byte { VOID = 0, BOOL = 1, INT = 2, UINT = 3, FLOAT = 4, POINTER = 5, ARRAY = 6, STRUCT = 7, UNION = 8, ENUM = 9, FUNCTION = 10 }
+enum StorageKind : byte { REGISTER = 0, STACK = 1, MEMORY = 2, HASH = 3 }
+enum Severity : byte { INFO = 0, WARN = 1, ERROR = 2 }
+
+// ------------------------------------------------------- shared value types
+table DataType { name : string; size : uint32; kind : DataTypeKind; }
+table Storage { kind : StorageKind; address : uint64; space : uint8; }
+table Varnode { address_space : uint8; offset : uint64; size : uint32; }
+table HighSymbol { name : string; type : DataType; storage : Storage; }
+table HighFunction { name : string; return_type : DataType; parameters : [HighSymbol]; locals : [HighSymbol]; }
+table PcodeOp { opcode : uint16; output : Varnode; inputs : [Varnode]; sequence_number : uint32; }
+table Diagnostic { severity : Severity; message : string; pcode_seq : uint32; }
+
+// --------------------------------------------------------- RegisterProgram
+// Establishes a program/Architecture in the worker and returns its id. Must
+// precede any other command. Four spec documents configure the worker.
+table RegisterProgramRequest {
+  processor_spec : string;   // <pspec>
+  compiler_spec : string;    // <cspec>
+  translate_spec : string;   // stripped <sleigh> address-space description
+  core_types_spec : string;  // <coretypes> built-in datatypes
+}
+table RegisterProgramResponse { program_id : string; }
+
+// ------------------------------------------------------- DeregisterProgram
+// Frees the Architecture for a program; the worker then terminates.
+table DeregisterProgramRequest { program_id : string; }
+table DeregisterProgramResponse { meta_command : int32; }  // worker meta-command (1 = terminate)
+
+// ------------------------------------------------------------- FlushNative
+// Clears cached Symbol/Scope/Datatype/Funcdata for a program.
+table FlushNativeRequest { program_id : string; }
+table FlushNativeResponse { result : int32; }  // 0 = success
+
+// ------------------------------------------------------------- DecompileAt
+// Decompiles the function at an entry-point address (the #34-1 sketch).
+table DecompileFunctionRequest {
+  program_id : string;
+  function_address : uint64;
+  timeout_ms : uint32 = 30000;
+  flags : uint32 = 0;
+}
+table DecompileFunctionResponse {
+  status : ResponseStatus;
+  pcode : [PcodeOp];
+  high_function : HighFunction;
+  diagnostics : [Diagnostic];
+}
+
+// ---------------------------------------------------------- StructureGraph
+// Structures an arbitrary control-flow graph into if/else, loops, switches.
+table StructureGraphRequest {
+  program_id : string;
+  control_flow : string;   // encoded <block> control-flow document
+}
+table StructureGraphResponse { structured : string; }  // structured control-flow document
+
+// --------------------------------------------------------------- SetAction
+// Sets the root Action and/or toggles output printing components. An empty
+// field leaves that setting unchanged.
+table SetActionRequest {
+  program_id : string;
+  root_action : string;   // decompile|normalize|jumptable|paramid|register|firstpass
+  print_config : string;  // tree|notree|c|noc|parammeasures|...|jumpload|nojumpload
+}
+table SetActionResponse { success : bool; }  // legacy 't'/'f'
+
+// -------------------------------------------------------------- SetOptions
+// Toggles named decompiler options (ArchOption) from an <optionslist>.
+table SetOptionsRequest {
+  program_id : string;
+  options : string;   // encoded <optionslist> document
+}
+table SetOptionsResponse { success : bool; }  // legacy 't'/'f'
+
+// Messages are encoded each as their own FlatBuffers root, selected by the
+// Rec 33 frame's command id; DecompileFunctionRequest is the nominal root.
+root_type DecompileFunctionRequest;
