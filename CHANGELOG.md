@@ -27,6 +27,18 @@ generated from the GitHub Releases UI at sprint close.
   generated bindings, and the `-Ivendor/flatbuffers/include` build wiring
   land in PR `#34-3`. C++-headers half only; the Java runtime jar is a
   follow-up PR.
+- chore(decompiler): vendor the FlatBuffers Java runtime as a declarative
+  fetch (Rec 34 `#34-2b`, companion to the C++ headers in `#34-2a`). Adds
+  `flatbuffers-java-25.2.10.jar` to `gradle/support/fetchDependencies.gradle`
+  (Maven Central, sha256-pinned), landing it in the gitignored
+  `dependencies/flatRepo/` flat repo like every other third-party jar — no
+  binary blob enters git history. Pinned to 25.2.10 (Maven Central's latest
+  published `flatbuffers-java`); the C++ headers track the newer `v25.12.19`
+  GitHub tag, but the FlatBuffers wire format is stable across these minor
+  versions, so the Java runtime decodes buffers the C++ runtime writes. The
+  jar is unreferenced until PR `#34-3` wires it into the Decompiler classpath
+  with the generated bindings, where the flatc/runtime alignment is verified
+  by compilation.
 
 ---
 

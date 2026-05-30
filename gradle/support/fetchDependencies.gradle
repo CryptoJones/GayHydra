@@ -96,6 +96,21 @@ ext.deps = [
 		sha256: "00ed038eb6abaf6ddec8d202a3ed7a81b521458f4cd459948115cfd02ff59d6d",
 		destination: FLAT_REPO_DIR
 	],
+	// FlatBuffers Java runtime for the Rec 34 decompiler IPC schema (PR #34-2b).
+	// Companion to the vendored C++ runtime headers (PR #34-2a). The C++ headers
+	// are pinned to the v25.12.19 GitHub tag; Maven Central's latest published
+	// flatbuffers-java artifact is 25.2.10, so the Java runtime is pinned there.
+	// The FlatBuffers wire format is stable across these minor versions, so the
+	// 25.2.10 Java runtime decodes buffers written by the 25.12.19 C++ runtime.
+	// Nothing consumes this jar yet; it is wired into the Decompiler classpath
+	// alongside the generated bindings in PR #34-3, where the exact flatc /
+	// runtime version alignment is verified by compiling the bindings.
+	[
+		name: "flatbuffers-java-25.2.10.jar",
+		url: "https://repo1.maven.org/maven2/com/google/flatbuffers/flatbuffers-java/25.2.10/flatbuffers-java-25.2.10.jar",
+		sha256: "587bd6c31cda747587493a113bec8602d3a0b0ca579b2b1b838ef71b19e6525d",
+		destination: FLAT_REPO_DIR
+	],
 	[
 		name: "yajsw-stable-13.18.zip",
 		url: "https://sourceforge.net/projects/yajsw/files/yajsw/yajsw-stable-13.18/yajsw-stable-13.18.zip",
