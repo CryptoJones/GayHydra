@@ -1127,4 +1127,210 @@ public class DecompileProcess {
 
 		nativeOut.write(i);
 	}
+
+	// Rec 33 #33-2.6 framing tunnel (Java side). These mirror the C++
+	// FrameOutStreambuf/FrameInStreambuf in frame_v1.cc: in v1 mode they
+	// wrap nativeOut/nativeIn so each flush becomes one v1 frame and each
+	// frame yields one byte-run, leaving the v0 marshaling above untouched.
+	// They are landed but not yet wired in (the flip is gated behind a
+	// channelV1 check in registerProgram, a follow-up); they exist now so
+	// the wire behavior is unit-testable without a live decompiler.
+
+	/**
+	 * Output filter that wraps each {@link #flush()} as exactly one v1 frame.
+	 * Mirrors {@code FrameOutStreambuf}. Bytes written are buffered until a
+	 * flush, which emits one {@code encodeFrameV1} frame carrying the buffered
+	 * payload and then flushes the target. An empty flush (nothing buffered)
+	 * emits no frame, keeping the two directions' frame counts symmetric with
+	 * {@link FrameInputStream}'s empty-frame skip.
+	 */
+	static final class FrameOutputStream extends OutputStream {
+		private final OutputStream target;
+		private final int frameType;
+		private final ByteArrayOutputStream pending = new ByteArrayOutputStream();
+
+		FrameOutputStream(OutputStream target, int frameType) {
+			this.target = target;
+			this.frameType = frameType;
+		}
+
+		@Override
+		public void write(int b) {
+			pending.write(b);
+		}
+
+		@Override
+		public void write(byte[] b, int off, int len) {
+			pending.write(b, off, len);
+		}
+
+		@Override
+		public void flush() throws IOException {
+			if (pending.size() > 0) {
+				target.write(encodeFrameV1(frameType, pending.toByteArray()));
+				pending.reset();
+			}
+			target.flush();
+		}
+
+		@Override
+		public void close() throws IOException {
+			flush();
+			target.close();
+		}
+	}
+
+	/**
+	 * Input filter that unwraps each v1 frame into a byte run. Mirrors
+	 * {@code FrameInStreambuf}. Each refill reads exactly one v1 frame and
+	 * exposes its payload; empty-payload frames are skipped (symmetric with
+	 * {@link FrameOutputStream}'s no-op empty flush). A non-OK frame read
+	 * (EOF, magic mismatch, bad CRC, reserved flag, oversize length) ends the
+	 * stream: {@code read} returns -1 and the cause is available via
+	 * {@link #getLastError()}.
+	 */
+	static final class FrameInputStream extends InputStream {
+
+		/** Mirror of {@code frame_v1::Error} for the reader's terminal state. */
+		enum FrameError {
+			OK, MAGIC_MISMATCH, TRUNCATED, LENGTH_TOO_LARGE, CRC_MISMATCH, RESERVED_FLAG_SET
+		}
+
+		private final InputStream source;
+		private byte[] payload = new byte[0];
+		private int pos = 0;
+		private FrameError lastError = FrameError.OK;
+		private int lastType = -1;
+		private boolean ended = false;
+
+		FrameInputStream(InputStream source) {
+			this.source = source;
+		}
+
+		/** {@return the reason the stream ended, or {@code OK} until then.} */
+		FrameError getLastError() {
+			return lastError;
+		}
+
+		/** {@return the TYPE of the most recently delivered frame, or -1.} */
+		int getLastType() {
+			return lastType;
+		}
+
+		@Override
+		public int read() throws IOException {
+			if (!ensure()) {
+				return -1;
+			}
+			return payload[pos++] & 0xff;
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			if (len == 0) {
+				return 0;
+			}
+			if (!ensure()) {
+				return -1;
+			}
+			int n = Math.min(len, payload.length - pos);
+			System.arraycopy(payload, pos, b, off, n);
+			pos += n;
+			return n;
+		}
+
+		/** Ensure the payload buffer holds at least one unread byte. */
+		private boolean ensure() throws IOException {
+			if (pos < payload.length) {
+				return true;
+			}
+			if (ended) {
+				return false;
+			}
+			for (;;) {
+				byte[] next = readOneFrame();
+				if (next == null) {
+					ended = true;
+					return false;
+				}
+				if (next.length == 0) {
+					continue; // skip empty frame (symmetric with an empty flush)
+				}
+				payload = next;
+				pos = 0;
+				return true;
+			}
+		}
+
+		/**
+		 * Read exactly one v1 frame; return its payload, or null on any non-OK
+		 * condition (with {@link #lastError} set to the cause).
+		 */
+		private byte[] readOneFrame() throws IOException {
+			byte[] hdr = new byte[10]; // MAGIC(4) + TYPE(1) + FLAGS(1) + LENGTH(4)
+			if (!readFully(hdr, 10)) {
+				lastError = FrameError.TRUNCATED;
+				return null;
+			}
+			for (int i = 0; i < 4; i++) {
+				if ((hdr[i] & 0xff) != (FRAME_MAGIC[i] & 0xff)) {
+					lastError = FrameError.MAGIC_MISMATCH;
+					return null;
+				}
+			}
+			int type = hdr[4] & 0xff;
+			int flags = hdr[5] & 0xff;
+			long len = ((long) (hdr[6] & 0xff) << 24) | ((hdr[7] & 0xff) << 16) |
+				((hdr[8] & 0xff) << 8) | (hdr[9] & 0xff);
+			if (len > FRAME_MAX_PAYLOAD_LEN) {
+				lastError = FrameError.LENGTH_TOO_LARGE;
+				return null;
+			}
+			if ((flags & FRAME_FLAGS_RESERVED) != 0) {
+				lastError = FrameError.RESERVED_FLAG_SET;
+				return null;
+			}
+			byte[] body = new byte[(int) len];
+			if (len > 0 && !readFully(body, (int) len)) {
+				lastError = FrameError.TRUNCATED;
+				return null;
+			}
+			byte[] crcBytes = new byte[4];
+			if (!readFully(crcBytes, 4)) {
+				lastError = FrameError.TRUNCATED;
+				return null;
+			}
+			CRC32 crc = new CRC32();
+			crc.update(hdr, 4, 6); // TYPE|FLAGS|LENGTH
+			if (len > 0) {
+				crc.update(body, 0, (int) len);
+			}
+			long expected = crc.getValue();
+			long actual = ((long) (crcBytes[0] & 0xff) << 24) | ((crcBytes[1] & 0xff) << 16) |
+				((crcBytes[2] & 0xff) << 8) | (crcBytes[3] & 0xff);
+			if (actual != expected) {
+				lastError = FrameError.CRC_MISMATCH;
+				return null;
+			}
+			lastType = type;
+			return body;
+		}
+
+		private boolean readFully(byte[] buf, int n) throws IOException {
+			int off = 0;
+			while (off < n) {
+				int r = source.read(buf, off, n - off);
+				if (r < 0) {
+					return false;
+				}
+				off += r;
+			}
+			return true;
+		}
+
+		@Override
+		public void close() throws IOException {
+			source.close();
+		}
+	}
 }
