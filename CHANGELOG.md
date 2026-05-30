@@ -12,6 +12,22 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- chore(decompiler): vendor the FlatBuffers C++ runtime headers
+  (Rec 34 `#34-2`, design in
+  [docs/decompiler/IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)).
+  Pins upstream `v25.12.19` (Apache License 2.0) under
+  `src/decompile/cpp/vendor/flatbuffers/`, vendoring only the 16-header
+  runtime include-closure of `flatbuffers/flatbuffers.h` — the
+  schema-compiler headers (`idl.h`, `flatc.h`, `reflection*.h`, …) are
+  excluded since they belong to the build-time `flatc` toolchain, not the
+  decompiler runtime. Headers are verbatim upstream (provenance sha256 in
+  the vendored `README.md`); each is attributed `Apache License 2.0` in
+  the module `certification.manifest` so the `:Decompiler:ip` audit
+  resolves it. Nothing `#include`s these yet — the `decompile.fbs` schema,
+  generated bindings, and the `-Ivendor/flatbuffers/include` build wiring
+  land in PR `#34-3`. C++-headers half only; the Java runtime jar is a
+  follow-up PR.
+
 ---
 
 ## [v26.2.0] — 2026-05-30

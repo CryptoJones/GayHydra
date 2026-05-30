@@ -5,6 +5,7 @@
 ##MODULE IP: Oxygen Icons - LGPL 3.0
 ##MODULE IP: Tango Icons - Public Domain
 ##MODULE IP: zlib License
+##MODULE IP: FlatBuffers - Apache License 2.0
 Module.manifest||GHIDRA||||END|
 README.md||GHIDRA||||END|
 data/decompiler.theme.properties||GHIDRA||||END|
@@ -129,4 +130,22 @@ src/main/resources/images/eliminateUnreachable.png||GHIDRA||||END|
 src/main/resources/images/readOnly.png||GHIDRA||||END|
 src/decompile/cpp/fuzz/README.md||GHIDRA||||END|
 src/decompile/cpp/fuzz/Makefile.fuzz||GHIDRA||||END|
+src/decompile/cpp/vendor/flatbuffers/README.md||GHIDRA||||END|
+src/decompile/cpp/vendor/flatbuffers/LICENSE||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/allocator.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/array.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/base.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/buffer.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/buffer_ref.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/default_allocator.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/detached_buffer.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/flatbuffer_builder.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/flatbuffers.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/stl_emulation.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/string.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/struct.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/table.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/vector.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/vector_downward.h||Apache License 2.0||||END|
+src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/verifier.h||Apache License 2.0||||END|
 src/decompile/datatests/pic_branch_ge.xml||GHIDRA||||END|
