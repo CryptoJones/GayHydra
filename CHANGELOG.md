@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): commit the generated C++ FlatBuffers bindings
+  `decompile_generated.h` (Rec 34 `#34-3b`). Generated from
+  `schema/decompile.fbs` and compile-validated against the vendored C++
+  runtime headers (`vendor/flatbuffers/include`). Generated with **flatc
+  v25.12.19** — *not* the `v25.2.10` used for the Java side: flatc emits a
+  hard `static_assert` pinning generated code to its exact runtime
+  version, so the C++ bindings must be generated with the flatc release
+  matching the vendored C++ runtime (`25.12.19`), while the Java bindings
+  (`#34-3c`) use `25.2.10` to match the Maven jar. The two interoperate at
+  the wire level (the FlatBuffers wire format is stable across these minor
+  versions). This corrects the `#34-3a` README's claim that `25.2.10` C++
+  codegen was forward-compatible with the newer runtime — it is not; the
+  `static_assert` is a compile error. Behavior-preserving: the header is
+  inert (nothing includes it yet) until the dual-encode migration in
+  `#34-4`..`#34-6`.
 - feat(decompiler): land the FlatBuffers IPC schema `decompile.fbs`
   (Rec 34 `#34-3a`, design in
   [docs/decompiler/IPC_SCHEMA.md](docs/decompiler/IPC_SCHEMA.md)). Adds
