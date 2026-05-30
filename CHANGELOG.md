@@ -12,6 +12,23 @@ Work toward v26.1.17. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): add the `#33-2.6` framing-tunnel streambufs
+  (`FrameOutStreambuf` / `FrameInStreambuf`) to `frame_v1.hh`/`.cc`.
+  These are the transparent v1 framing tunnel for the deferred
+  command-loop flip: the out-buffer wraps each `flush` as one
+  `write_frame_v1` frame, the in-buffer yields one frame's payload
+  per `underflow`, and empty flushes/frames are no-ops on both
+  sides. Because v0 already flushes once per turn, the existing
+  message rhythm maps one-to-one onto frame boundaries, so the v0
+  `\0\0\1\NN` bursts (NULs and high bytes included) ride through
+  byte-for-byte. They live in `DECCORE`, so they are fully
+  unit-testable in `decomp_test_dbg` (10 new tunnel tests:
+  round-trip, multi-flush concatenation, overflow vs. bulk path,
+  empty-frame skip, EOF/CRC error surfacing, v0-marker preservation,
+  100 KB payload). No production wiring yet — `ghidra_process.cc` /
+  `DecompileProcess.java` are untouched, so blast radius is zero;
+  this only lands the testable substrate the `#33-2.6` flip will
+  install once an end-to-end harness exists.
 - docs(decompiler): record the #33-2.6 deferral in DD-0005 — the
   v1 command-loop flip stays untestable by the local precheck
   (command-loop `.cc` files link only into `ghidra_dbg`, never
