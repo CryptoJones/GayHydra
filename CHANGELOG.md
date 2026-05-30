@@ -8,9 +8,21 @@ does not yet promise SemVer.
 
 ## [Unreleased]
 
-Work toward v26.1.17. Tracked per-PR in
+Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
+
+---
+
+## [v26.2.0] — 2026-05-30
+
+Rec 33 `#33-2.6` sprint close: the v1 IPC framing tunnel, wired end to
+end. Three stacked PRs landed the unit-tested tunnel substrate (C++ and
+Java) and then flipped the negotiated channel so the default `auto`
+mode now tunnels all decompilation through v1 frames, validated by a
+standalone real-native end-to-end harness. Minor bump (26.1.16 →
+26.2.0) for the new production protocol path; SBOM stays bundled until
+the GHCR packaging wiring lands as its own PR.
 
 - feat(decompiler): add the `#33-2.6` framing-tunnel streambufs
   (`FrameOutStreambuf` / `FrameInStreambuf`) to `frame_v1.hh`/`.cc`.
