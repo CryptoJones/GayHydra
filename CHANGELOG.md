@@ -29,6 +29,22 @@ generated from the GitHub Releases UI at sprint close.
   `DecompileProcess.java` are untouched, so blast radius is zero;
   this only lands the testable substrate the `#33-2.6` flip will
   install once an end-to-end harness exists.
+- feat(decompiler): add the Java side of the `#33-2.6` framing tunnel —
+  `DecompileProcess.FrameOutputStream` / `FrameInputStream`, mirroring
+  the C++ `FrameOutStreambuf`/`FrameInStreambuf`. The out-stream wraps
+  each `flush` as one `encodeFrameV1` frame; the in-stream yields one
+  frame's payload per refill, skips empty frames, and surfaces a
+  terminal `FrameError` (EOF/CRC/reserved/oversize) via
+  `getLastError()`. They reuse the existing greeting-path constants
+  (`FRAME_MAGIC`, `FRAME_FLAGS_RESERVED`, `FRAME_MAX_PAYLOAD_LEN`), so
+  both ends stay byte-compatible with `frame_v1`. Not yet wired in —
+  `registerProgram` still writes v0 regardless of `channelV1`, so blast
+  radius is zero; this only lands the unit-testable substrate. 9 new
+  tunnel tests in `DecompileProcessFramingV1Test` (round-trip,
+  multi-flush concatenation, empty-flush no-op, empty-frame skip,
+  EOF→TRUNCATED + corrupt→CRC_MISMATCH surfacing, v0-marker
+  preservation, 100 KB payload); the fast `test` sourceset stays pure
+  byte math (13 tests total, no Ghidra runtime).
 - docs(decompiler): record the #33-2.6 deferral in DD-0005 — the
   v1 command-loop flip stays untestable by the local precheck
   (command-loop `.cc` files link only into `ghidra_dbg`, never
