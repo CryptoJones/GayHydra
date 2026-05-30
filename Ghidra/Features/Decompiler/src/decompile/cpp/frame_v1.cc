@@ -378,4 +378,73 @@ frame_v1::ChannelMode negotiate_greeting_v1(
   return frame_v1::ChannelMode::V1;
 }
 
+// ------------------------------------------------------------------
+// Framing tunnel streambufs (#33-2.6). FrameOutStreambuf turns each
+// flush into one v1 frame; FrameInStreambuf turns each frame back
+// into a byte run. Together they make the v0 command-loop bytes ride
+// transparently inside v1 frames once a channel negotiates v1.
+// ------------------------------------------------------------------
+
+FrameOutStreambuf::FrameOutStreambuf(std::streambuf *destbuf, frame_v1::Type type)
+  : dest(destbuf), frameType(type)
+{
+}
+
+int FrameOutStreambuf::overflow(int c)
+{
+  if (c == traits_type::eof())
+    return traits_type::not_eof(c);
+  pending.push_back((uint1)(c & 0xff));
+  return c;
+}
+
+std::streamsize FrameOutStreambuf::xsputn(const char *s, std::streamsize n)
+{
+  if (n > 0) {
+    size_t base = pending.size();
+    pending.resize(base + (size_t)n);
+    for (std::streamsize i = 0; i < n; ++i)
+      pending[base + (size_t)i] = (uint1)s[i];
+  }
+  return n;
+}
+
+int FrameOutStreambuf::sync()
+{
+  if (!pending.empty()) {
+    write_frame_v1(dest, frameType, pending);
+    pending.clear();
+  }
+  dest.flush();
+  return dest.good() ? 0 : -1;
+}
+
+FrameInStreambuf::FrameInStreambuf(std::streambuf *srcbuf)
+  : src(srcbuf),
+    lastError(frame_v1::Error::OK),
+    lastFrameType(frame_v1::Type::GREETING)
+{
+}
+
+int FrameInStreambuf::underflow()
+{
+  // Pull whole frames until one carries a non-empty payload.
+  for (;;) {
+    frame_v1::Header hdr;
+    vector<uint1> peeked;
+    frame_v1::Error err = read_frame_v1(src, hdr, payload, peeked);
+    if (err != frame_v1::Error::OK) {
+      lastError = err;
+      setg(nullptr, nullptr, nullptr);
+      return traits_type::eof();
+    }
+    lastFrameType = hdr.type;
+    if (payload.empty())
+      continue;  // no-op frame (symmetric with an empty flush) — skip
+    char *base = (char *)payload.data();
+    setg(base, base, base + payload.size());
+    return traits_type::to_int_type((char)payload[0]);
+  }
+}
+
 } // End namespace ghidra

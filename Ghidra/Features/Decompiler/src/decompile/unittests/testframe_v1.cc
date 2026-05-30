@@ -670,4 +670,200 @@ TEST(frame_v1_negotiate_v0_on_bad_major_version) {
   ASSERT_EQUALS(stream_bytes(out).size(), (size_t)0);
 }
 
+// ------------------------------------------------------------------
+// Framing tunnel streambufs (#33-2.6). The transparent tunnel that
+// carries v0 command-loop bytes inside v1 frames: FrameOutStreambuf
+// emits one frame per flush, FrameInStreambuf yields one frame's
+// payload per underflow. These tests drive the streambufs directly
+// (no Ghidra runtime) and prove byte-exact transparency + error
+// surfacing.
+// ------------------------------------------------------------------
+
+// Run `payload` through a FrameOutStreambuf and return the framed wire.
+static vector<uint1> tunnel_out(const vector<uint1> &payload, frame_v1::Type type) {
+  stringstream transport(std::ios::in | std::ios::out | std::ios::binary);
+  FrameOutStreambuf outbuf(transport.rdbuf(), type);
+  std::ostream os(&outbuf);
+  if (!payload.empty())
+    os.write((const char *)payload.data(), (std::streamsize)payload.size());
+  os.flush();
+  return stream_bytes(transport);
+}
+
+TEST(frame_v1_tunnel_out_one_frame_per_flush) {
+  vector<uint1> payload = { 'h', 'e', 'l', 'l', 'o' };
+  vector<uint1> wire = tunnel_out(payload, frame_v1::Type::RESPONSE);
+
+  // Exactly one frame: 14 + 5 bytes, decodes cleanly to the end.
+  ASSERT_EQUALS(wire.size(), (size_t)(14 + 5));
+  frame_v1::Header hdr;
+  vector<uint1> got;
+  size_t next = 0;
+  ASSERT_EQUALS((int)decode_frame_v1(wire, 0, hdr, got, next),
+                (int)frame_v1::Error::OK);
+  ASSERT_EQUALS((int)hdr.type, (int)frame_v1::Type::RESPONSE);
+  ASSERT_EQUALS(next, wire.size());
+  ASSERT(got == payload);
+}
+
+TEST(frame_v1_tunnel_out_overflow_path) {
+  // put() routes each byte through overflow() (no put-area), exercising
+  // the single-char path rather than xsputn.
+  stringstream transport(std::ios::in | std::ios::out | std::ios::binary);
+  FrameOutStreambuf outbuf(transport.rdbuf(), frame_v1::Type::RESPONSE);
+  std::ostream os(&outbuf);
+  os.put('X');
+  os.put('Y');
+  os.put('Z');
+  os.flush();
+
+  vector<uint1> wire = stream_bytes(transport);
+  frame_v1::Header hdr;
+  vector<uint1> got;
+  size_t next = 0;
+  ASSERT_EQUALS((int)decode_frame_v1(wire, 0, hdr, got, next),
+                (int)frame_v1::Error::OK);
+  ASSERT_EQUALS(next, wire.size());  // exactly one frame
+  ASSERT_EQUALS(got.size(), (size_t)3);
+  ASSERT_EQUALS((char)got[0], 'X');
+  ASSERT_EQUALS((char)got[1], 'Y');
+  ASSERT_EQUALS((char)got[2], 'Z');
+}
+
+TEST(frame_v1_tunnel_empty_flush_is_noop) {
+  // A flush with nothing buffered must emit zero bytes.
+  vector<uint1> wire = tunnel_out(vector<uint1>(), frame_v1::Type::RESPONSE);
+  ASSERT_EQUALS(wire.size(), (size_t)0);
+}
+
+TEST(frame_v1_tunnel_roundtrip_single) {
+  vector<uint1> payload = { 'r', 'o', 'u', 'n', 'd', '-', 't', 'r', 'i', 'p' };
+  vector<uint1> wire = tunnel_out(payload, frame_v1::Type::RESPONSE);
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+
+  vector<uint1> got(payload.size());
+  is.read((char *)got.data(), (std::streamsize)payload.size());
+  ASSERT_EQUALS((size_t)is.gcount(), payload.size());
+  ASSERT(got == payload);
+  ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::OK);
+}
+
+TEST(frame_v1_tunnel_multiple_flushes_concatenate) {
+  // Two separate flushes => two frames => the reader sees the byte
+  // streams concatenated, frame boundaries invisible.
+  stringstream transport(std::ios::in | std::ios::out | std::ios::binary);
+  FrameOutStreambuf outbuf(transport.rdbuf(), frame_v1::Type::RESPONSE);
+  std::ostream os(&outbuf);
+  os.write("AAA", 3);
+  os.flush();
+  os.write("BBBB", 4);
+  os.flush();
+
+  vector<uint1> wire = stream_bytes(transport);
+  // Two frames: (14+3) + (14+4).
+  ASSERT_EQUALS(wire.size(), (size_t)((14 + 3) + (14 + 4)));
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  char got[7];
+  is.read(got, 7);
+  ASSERT_EQUALS((int)is.gcount(), 7);
+  ASSERT_EQUALS(got[0], 'A');
+  ASSERT_EQUALS(got[2], 'A');
+  ASSERT_EQUALS(got[3], 'B');
+  ASSERT_EQUALS(got[6], 'B');
+}
+
+TEST(frame_v1_tunnel_in_skips_empty_payload_frame) {
+  // An empty-payload frame ahead of a real one must be transparently
+  // skipped (symmetric with FrameOutStreambuf's no-op empty flush).
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::COMMAND, vector<uint1>());
+  vector<uint1> second = encode_frame_v1(frame_v1::Type::RESPONSE, string("Z"));
+  wire.insert(wire.end(), second.begin(), second.end());
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  int c = is.get();
+  ASSERT_EQUALS(c, (int)'Z');
+  ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::OK);
+}
+
+TEST(frame_v1_tunnel_in_eof_sets_truncated) {
+  // After the only frame's bytes are drained, the next read hits EOF
+  // and getLastError reports the truncated next-frame read.
+  vector<uint1> wire = tunnel_out(vector<uint1>{ 'h', 'i' }, frame_v1::Type::RESPONSE);
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+
+  char got[2];
+  is.read(got, 2);
+  ASSERT_EQUALS((int)is.gcount(), 2);
+  int c = is.get();  // forces a fresh underflow on an exhausted stream
+  ASSERT_EQUALS(c, EOF);
+  ASSERT(is.eof());
+  ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::TRUNCATED);
+}
+
+TEST(frame_v1_tunnel_in_crc_mismatch_sets_error) {
+  // Corrupt a payload byte so the trailer no longer matches; the
+  // reader must surface CRC_MISMATCH and stop.
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::RESPONSE, string("data"));
+  // Payload begins at offset 10 (4 magic + 1 type + 1 flags + 4 length).
+  wire[10] ^= 0xFF;
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  int c = is.get();
+  ASSERT_EQUALS(c, EOF);
+  ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::CRC_MISMATCH);
+}
+
+TEST(frame_v1_tunnel_preserves_v0_marker_bytes) {
+  // The whole point of the tunnel: v0 `\0\0\1\NN` bursts (with NULs and
+  // high bytes) must survive byte-for-byte inside a frame payload.
+  vector<uint1> payload = {
+    0x00, 0x00, 0x01, 0x04,   // a v0 burst marker
+    0x00, 0x00, 0x01, 0x0E,   // string-start marker
+    'h', 'i',
+    0x00, 0x00, 0x01, 0x0F,   // string-end marker
+    0xFF, 0x00, 0x7F,
+  };
+  vector<uint1> wire = tunnel_out(payload, frame_v1::Type::RESPONSE);
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  vector<uint1> got(payload.size());
+  is.read((char *)got.data(), (std::streamsize)payload.size());
+  ASSERT_EQUALS((size_t)is.gcount(), payload.size());
+  ASSERT(got == payload);
+}
+
+TEST(frame_v1_tunnel_large_payload_roundtrip) {
+  // Exercise the bulk xsputn path and multi-byte read_exact with a
+  // payload far larger than any single marshaling burst.
+  vector<uint1> payload;
+  payload.reserve(100000);
+  for (size_t i = 0; i < 100000; ++i)
+    payload.push_back((uint1)(i & 0xff));
+
+  vector<uint1> wire = tunnel_out(payload, frame_v1::Type::RESPONSE);
+  ASSERT_EQUALS(wire.size(), (size_t)(14 + 100000));
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  vector<uint1> got(payload.size());
+  is.read((char *)got.data(), (std::streamsize)payload.size());
+  ASSERT_EQUALS((size_t)is.gcount(), payload.size());
+  ASSERT(got == payload);
+}
+
 } // End namespace ghidra

@@ -45,6 +45,7 @@
 #include <vector>
 #include <istream>
 #include <ostream>
+#include <streambuf>
 
 namespace ghidra {
 
@@ -280,6 +281,70 @@ frame_v1::ChannelMode negotiate_greeting_v1(
     std::istream &sin,
     std::ostream &sout,
     const string &server_ident);
+
+/// \brief Output streambuf that wraps each flush as one v1 frame.
+///
+/// The write side of the #33-2.6 framing tunnel. The legacy v0
+/// marshaling code writes its `\0\0\1\NN` bursts unchanged; this
+/// streambuf buffers those bytes and, on every \c sync (i.e. every
+/// `std::ostream::flush`), wraps the accumulated payload in a single
+/// \c write_frame_v1 frame and flushes the destination. v0 already
+/// flushes once per turn (otherwise the peer would block), so that
+/// existing rhythm maps one-to-one onto frame boundaries and the v0
+/// byte stream is preserved verbatim inside the frame payloads.
+///
+/// An empty flush (nothing buffered) emits no frame — a no-op, which
+/// keeps the two directions' frame counts symmetric with
+/// \c FrameInStreambuf's empty-frame skip.
+///
+/// Install by swapping the stream's buffer, e.g.
+/// `old = os.rdbuf(new FrameOutStreambuf(old, Type::RESPONSE))`.
+class FrameOutStreambuf : public std::streambuf {
+public:
+  FrameOutStreambuf(std::streambuf *dest, frame_v1::Type frameType);
+  FrameOutStreambuf(const FrameOutStreambuf &) = delete;
+  FrameOutStreambuf &operator=(const FrameOutStreambuf &) = delete;
+protected:
+  int overflow(int c) override;
+  std::streamsize xsputn(const char *s, std::streamsize n) override;
+  int sync() override;
+private:
+  std::ostream dest;          ///< Destination, wrapped as an ostream.
+  frame_v1::Type frameType;   ///< TYPE tag stamped on every emitted frame.
+  vector<uint1> pending;      ///< Bytes buffered since the last frame.
+};
+
+/// \brief Input streambuf that unwraps each v1 frame into a byte run.
+///
+/// The read side of the #33-2.6 framing tunnel. Each \c underflow
+/// reads exactly one v1 frame via \c read_frame_v1 and exposes its
+/// payload as the get area, so the legacy v0 reader pulls the exact
+/// bytes the peer marshaled — frame boundaries are invisible to it.
+/// Zero-length-payload frames are skipped (the symmetric counterpart
+/// of \c FrameOutStreambuf's no-op empty flush). A non-OK frame read
+/// (EOF, CRC mismatch, …) ends the stream: \c underflow returns EOF
+/// and the cause is retrievable via \c getLastError.
+///
+/// Install by swapping the stream's buffer, e.g.
+/// `old = is.rdbuf(new FrameInStreambuf(old))`.
+class FrameInStreambuf : public std::streambuf {
+public:
+  explicit FrameInStreambuf(std::streambuf *src);
+  FrameInStreambuf(const FrameInStreambuf &) = delete;
+  FrameInStreambuf &operator=(const FrameInStreambuf &) = delete;
+
+  /// Error from the frame read that ended the stream (OK until then).
+  frame_v1::Error getLastError() const { return lastError; }
+  /// TYPE of the most recently delivered frame.
+  frame_v1::Type lastType() const { return lastFrameType; }
+protected:
+  int underflow() override;
+private:
+  std::istream src;             ///< Source, wrapped as an istream.
+  vector<uint1> payload;        ///< Backing store for the current get area.
+  frame_v1::Error lastError;    ///< Reason the stream ended (or OK).
+  frame_v1::Type lastFrameType; ///< TYPE of the current frame.
+};
 
 } // End namespace ghidra
 #endif
