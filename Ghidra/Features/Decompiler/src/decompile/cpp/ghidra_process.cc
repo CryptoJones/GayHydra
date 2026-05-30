@@ -531,17 +531,26 @@ int main(int argc,char **argv)
   ElementId::initialize();
   CapabilityPoint::initializeAll();
 
-  // Rec 33 #33-2.4: connection-start greeting handshake. A single
-  // non-consuming peek decides the framing — a v0 client (every
-  // current Ghidra build) opens with 0x00 and is left byte-identical
-  // for the legacy readCommand loop below; only a v1 client (none
-  // until #33-2.5 wires the Java side) triggers a greeting exchange.
-  // The negotiated mode is not yet consumed by the command loop: the
-  // v1 read/write dispatch lands with the Java v1 client in #33-2.5,
-  // where it can be integration-tested end-to-end. v1 remains
-  // unreachable in production until then, so v0 is unaffected.
+  // Rec 33 #33-2.6: connection-start greeting handshake decides framing.
+  // A v0 client (every stock Ghidra build) opens with 0x00 and is left
+  // byte-identical for the legacy readCommand loop below. A v1 client
+  // opens with the greeting MAGIC; on a successful exchange we tunnel the
+  // legacy command-loop bytes through v1 frames by swapping cin/cout's
+  // streambufs: each underflow yields one inbound frame's payload and each
+  // flush emits one RESPONSE frame. The v0 marshaling inside the frames is
+  // untouched, so readCommand and every ArchitectureGhidra callback query
+  // ride transparently (each flush already aligns with one logical burst).
+  // ArchitectureGhidra, built later holding cin/cout by reference, inherits
+  // the swapped bufs automatically. The bufs live for the process lifetime
+  // (make_unique(...).release() — the intentional process-lifetime leak this
+  // file already uses for every long-lived singleton, and the form the RAII
+  // audit accepts; rdbuf() does not take ownership, so the buf must outlive
+  // the stream and is reclaimed only at process exit).
   static const string ghidraDecompIdent = "GayHydra-decompiler (v1 framing)";
-  negotiate_greeting_v1(cin, cout, ghidraDecompIdent);
+  if (negotiate_greeting_v1(cin, cout, ghidraDecompIdent) == frame_v1::ChannelMode::V1) {
+    cin.rdbuf(make_unique<FrameInStreambuf>(cin.rdbuf()).release());
+    cout.rdbuf(make_unique<FrameOutStreambuf>(cout.rdbuf(), frame_v1::Type::RESPONSE).release());
+  }
 
   int4 status = 0;
   while(status == 0) {

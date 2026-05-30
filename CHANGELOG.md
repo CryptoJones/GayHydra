@@ -51,6 +51,23 @@ generated from the GitHub Releases UI at sprint close.
   `decomp_test_dbg`); documents the end-to-end test gap and the
   unblock options. No code/protocol change; v26.1.16 ships
   greeting-v1 + commands-v0.
+- feat(decompiler): wire the `#33-2.6` v1 command-loop flip behind the
+  negotiated channel. When the greeting handshake selects v1, both ends
+  now swap in the framing tunnel: `ghidra_process.cc` wraps `cin`/`cout`
+  in `FrameInStreambuf`/`FrameOutStreambuf` (RESPONSE frames), and
+  `DecompileProcess.java` wraps `nativeIn`/`nativeOut` in
+  `FrameInputStream`/`FrameOutputStream` (COMMAND frames), so the entire
+  legacy command loop — `registerProgram`, `decompileAt`, and every
+  callback query — tunnels through v1 frames. A v0 client (every stock
+  build) opens with `0x00` and is left byte-identical, so the flip is
+  gated on the negotiated `channelV1`. The default `auto` mode now
+  negotiates v1, making the tunnel the production decompilation path.
+  Lands a standalone end-to-end harness
+  (`DecompileProcessFramingV1EndToEndTest`, `src/test.slow`) that drives
+  a real native `decompile` against a stock avr8 function under forced
+  `framing=v0` then `=v1` (and `auto`) in one JVM and asserts
+  byte-identical decompiled C — proving the bidirectional tunnel is
+  transparent across the full protocol.
 
 ---
 

@@ -72,6 +72,7 @@ public class DecompileProcess {
 	// then a successful greeting just records that the peer speaks v1.
 	private final static byte[] FRAME_MAGIC = { 0x47, 0x48, 0x01, 0x00 };
 	private final static int FRAME_TYPE_GREETING = 0x00;
+	private final static int FRAME_TYPE_COMMAND = 0x01;
 	private final static int FRAME_FLAG_CRC_PRESENT = 0x01;
 	private final static int FRAME_FLAGS_RESERVED = 0x06; // compression|continuation
 	private final static int GREETING_VERSION_MAJOR = 0x01;
@@ -415,6 +416,16 @@ public class DecompileProcess {
 			nativeOut.flush();
 		}
 		channelV1 = readGreetingReplyV1();
+		if (channelV1) {
+			// Channel negotiated v1: tunnel the legacy command-loop bytes
+			// through v1 frames. Each flush of nativeOut emits one COMMAND
+			// frame; each refill of nativeIn unwraps one inbound frame. The
+			// raw greeting exchange above is already fully consumed, and the
+			// v0 marshaling inside the frames is untouched, so every write/
+			// read helper rides transparently from here on.
+			nativeOut = new FrameOutputStream(nativeOut, FRAME_TYPE_COMMAND);
+			nativeIn = new FrameInputStream(nativeIn);
+		}
 	}
 
 	/**
