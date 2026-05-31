@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- test(decompiler): wire the v1 IPC framing end-to-end test into CI (Rec 33
+  `#33-2.6` / DD-0005). Adds an `ipc_e2e` job to `build-ghidra.yml` that builds
+  the native `decompile` worker and runs `DecompileProcessFramingV1EndToEndTest`
+  — the spawn-native differential guard that forces framing to v0 then v1 and
+  asserts byte-identical decompiled output. The existing `unit_tests` job runs
+  `gradle test`, which does **not** execute the `src/test.slow` integration
+  suite, so the negotiated command-loop flip (and the forthcoming `#34-4`
+  FlatBuffers dual-encode commands) were previously unguarded by CI. The job is
+  Ubuntu-only because the test validates the platform-independent wire protocol,
+  and explicitly builds `:Decompiler:decompileLinux_x86_64Executable` first
+  because `integrationTest` compiles the sleigh languages + Java test sources
+  but not the native binary the test spawns.
 - feat(decompiler): commit the generated Java FlatBuffers bindings
   `schema/java/ghidra/ipc/*.java` (Rec 34 `#34-3c`). 25 classes generated
   from `schema/decompile.fbs` with **flatc v25.2.10** to match the vendored
