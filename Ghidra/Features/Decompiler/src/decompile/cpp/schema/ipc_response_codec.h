@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Rec 34 (#34-5a): worker-side codec for the v1 (FlatBuffers) decompile-function
-// *response envelope* — the overall ResponseStatus plus the Diagnostic list.
-// This is the response-path analogue of schema/ipc_request_codec.h, with the
-// direction flipped: in the protocol the worker writes the response and the
-// host reads it, so encode_decompile_response() is the worker's production
-// direction. decode_decompile_response() mirrors the host's read and pins the
-// same verify-before-read contract; it is exercised only by the round-trip and
+// Rec 34 (#34-5a/#34-5b): worker-side codec for the v1 (FlatBuffers)
+// decompile-function response. This is the response-path analogue of
+// schema/ipc_request_codec.h, with the direction flipped: in the protocol the
+// worker writes the response and the host reads it, so
+// encode_decompile_response() is the worker's production direction.
+// decode_decompile_response() mirrors the host's read and pins the same
+// verify-before-read contract; it is exercised only by the round-trip and
 // malformed-input tests (see ../unittests/testipc_response_codec.cc).
 //
-// Scope is deliberately the envelope only. The heavy response body — the
-// PcodeOp/Varnode array and the HighFunction/HighSymbol/DataType/Storage tree —
-// is several levels of nested, optional tables and is migrated in follow-up
-// increments (#34-5b, #34-5c). A response encoded here leaves pcode and
-// high_function unset on the wire; decode reads back status + diagnostics and
-// does not touch them. FlatBuffers' forward-compatible layout makes that growth
-// additive: a later increment extends DecompileResponseV1 and the encode/decode
-// without rewriting this one.
+// Scope grows additively across the response increments, which FlatBuffers'
+// forward-compatible layout makes painless — each step extends
+// DecompileResponseV1 and the encode/decode without rewriting the prior one:
+//   #34-5a  the envelope: ResponseStatus + the Diagnostic list.
+//   #34-5b  the pcode body: the PcodeOp array, each carrying an optional output
+//           Varnode and an inputs Varnode list (this increment).
+//   #34-5c  the HighFunction/HighSymbol/DataType/Storage tree (still deferred;
+//           a response encoded here leaves high_function unset on the wire and
+//           decode does not touch it).
 //
 // Like the request codec this header is inert: nothing in the production
 // decompiler includes it. The command-loop wiring that would call it on a real
@@ -55,12 +56,31 @@ struct DiagnosticV1 {
   uint32_t pcode_seq = 0;
 };
 
-// Native view of the decompile-function response envelope, decoded out of a v1
-// payload. status defaults to OK (the schema's zero value); diagnostics is
-// empty for a clean result. The pcode and high_function members of the wire
-// table are intentionally not represented here yet (see the header note).
+// Native view of a p-code varnode (a leaf table: no further nesting).
+struct VarnodeV1 {
+  uint8_t address_space = 0;
+  uint64_t offset = 0;
+  uint32_t size = 0;
+};
+
+// Native view of a single p-code operation. The schema's output is an optional
+// table, so has_output distinguishes "no output varnode" from a zero-valued
+// one; output is meaningful only when has_output is true.
+struct PcodeOpV1 {
+  uint16_t opcode = 0;
+  bool has_output = false;
+  VarnodeV1 output;
+  std::vector<VarnodeV1> inputs;
+  uint32_t sequence_number = 0;
+};
+
+// Native view of the decompile-function response, decoded out of a v1 payload.
+// status defaults to OK (the schema's zero value); diagnostics is empty for a
+// clean result; pcode is the operation list. The high_function member of the
+// wire table is intentionally not represented here yet (see the header note).
 struct DecompileResponseV1 {
   ResponseStatus status = ResponseStatus_OK;
+  std::vector<PcodeOpV1> pcode;
   std::vector<DiagnosticV1> diagnostics;
 };
 
@@ -71,13 +91,30 @@ struct DecompileResponseV1 {
 // a copy of the builder's bytes.
 inline std::vector<uint8_t> encode_decompile_response(const DecompileResponseV1 &in) {
   ::flatbuffers::FlatBufferBuilder fbb;
+  std::vector<::flatbuffers::Offset<PcodeOp>> pcode_offsets;
+  pcode_offsets.reserve(in.pcode.size());
+  for (const PcodeOpV1 &op : in.pcode) {
+    std::vector<::flatbuffers::Offset<Varnode>> input_offsets;
+    input_offsets.reserve(op.inputs.size());
+    for (const VarnodeV1 &v : op.inputs) {
+      input_offsets.push_back(CreateVarnode(fbb, v.address_space, v.offset, v.size));
+    }
+    ::flatbuffers::Offset<Varnode> output_offset = 0;
+    if (op.has_output) {
+      output_offset =
+          CreateVarnode(fbb, op.output.address_space, op.output.offset, op.output.size);
+    }
+    pcode_offsets.push_back(CreatePcodeOpDirect(fbb, op.opcode, output_offset, &input_offsets,
+                                                op.sequence_number));
+  }
   std::vector<::flatbuffers::Offset<Diagnostic>> diag_offsets;
   diag_offsets.reserve(in.diagnostics.size());
   for (const DiagnosticV1 &d : in.diagnostics) {
     diag_offsets.push_back(
         CreateDiagnosticDirect(fbb, d.severity, d.message.c_str(), d.pcode_seq));
   }
-  auto root = CreateDecompileFunctionResponseDirect(fbb, in.status, nullptr, 0, &diag_offsets);
+  auto root =
+      CreateDecompileFunctionResponseDirect(fbb, in.status, &pcode_offsets, 0, &diag_offsets);
   fbb.Finish(root);
   const uint8_t *p = fbb.GetBufferPointer();
   return std::vector<uint8_t>(p, p + fbb.GetSize());
@@ -99,6 +136,37 @@ inline bool decode_decompile_response(const uint8_t *buf, size_t len, DecompileR
   const DecompileFunctionResponse *resp =
       ::flatbuffers::GetRoot<DecompileFunctionResponse>(buf);
   out.status = resp->status();
+  out.pcode.clear();
+  if (resp->pcode() != nullptr) {
+    const auto *ops = resp->pcode();
+    out.pcode.reserve(ops->size());
+    for (::flatbuffers::uoffset_t i = 0; i < ops->size(); ++i) {
+      const PcodeOp *op = ops->Get(i);
+      PcodeOpV1 nop;
+      nop.opcode = op->opcode();
+      nop.sequence_number = op->sequence_number();
+      const Varnode *outv = op->output();
+      if (outv != nullptr) {
+        nop.has_output = true;
+        nop.output.address_space = outv->address_space();
+        nop.output.offset = outv->offset();
+        nop.output.size = outv->size();
+      }
+      if (op->inputs() != nullptr) {
+        const auto *ins = op->inputs();
+        nop.inputs.reserve(ins->size());
+        for (::flatbuffers::uoffset_t j = 0; j < ins->size(); ++j) {
+          const Varnode *v = ins->Get(j);
+          VarnodeV1 nv;
+          nv.address_space = v->address_space();
+          nv.offset = v->offset();
+          nv.size = v->size();
+          nop.inputs.push_back(nv);
+        }
+      }
+      out.pcode.push_back(nop);
+    }
+  }
   out.diagnostics.clear();
   if (resp->diagnostics() != nullptr) {
     const auto *diags = resp->diagnostics();

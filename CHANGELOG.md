@@ -82,6 +82,19 @@ generated from the GitHub Releases UI at sprint close.
   Test-only and inert: nothing in the production decompiler includes the codec
   yet — the command-loop wiring is the end-to-end-only change deferred per
   DD-0005.
+- feat(decompiler): extend the v1 response codec with the `pcode` body
+  (`#34-5b`). Grows `schema/ipc_response_codec.h` additively from the `#34-5a`
+  envelope to carry `DecompileFunctionResponse.pcode` — the `PcodeOp` array,
+  each op carrying an opcode, sequence number, an optional output `Varnode`, and
+  an `inputs` `Varnode` list. `DecompileResponseV1` gains `VarnodeV1` / `PcodeOpV1`
+  views; `PcodeOpV1.has_output` distinguishes "no output varnode" from a
+  zero-valued one so `encode`/`decode` preserve the schema's optional-table
+  semantics rather than fabricating a varnode. `testipc_response_codec.cc` adds
+  three cases — output + multi-input round-trip, an op with no output, and
+  multiple ops including one with empty inputs (276 unit tests total). The
+  `high_function` tree (`HighFunction`/`HighSymbol`/`DataType`/`Storage`) is
+  still deferred to `#34-5c`; a response encoded here leaves it unset and decode
+  does not touch it. Test-only and inert, like the rest of `#34-5`.
 
 ---
 
