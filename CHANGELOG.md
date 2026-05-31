@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+---
+
+## [v26.2.1] — 2026-05-31
+
+Patch release: packaging + CI hardening on top of v26.2.0's v1 IPC
+tunnel, plus the inert Rec 34 FlatBuffers IPC substrate. No production
+decompilation path changes — every code-bearing item is CI-only,
+build-time, or schema groundwork that nothing `#include`s/imports yet.
+The headline is the "packages" wiring deferred from the v26.2.0 notes:
+a `v*` tag now publishes a runnable container image to GHCR alongside
+the signed-zip release. Patch (not minor) bump because no new runtime
+protocol or feature ships — the FlatBuffers dual-encode migration
+(`#34-4`..`#34-6`) is still ahead.
+
 - feat(release): publish a runnable container image to GHCR on every `v*` tag.
   Adds a standalone `publish-container.yml` workflow that runs `buildGhidra`,
   extracts the linux distribution, and `docker build`s the bundled
