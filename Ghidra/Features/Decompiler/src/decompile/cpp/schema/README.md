@@ -7,11 +7,11 @@ design in [`docs/decompiler/IPC_SCHEMA.md`](../../../../../../../docs/decompiler
 
 ## Status
 
-Schema only (PR `#34-3a`). The generated C++ and Java bindings are committed
-separately — C++ in PR `#34-3b`, Java in PR `#34-3c` — and the host/worker
-dual-encode migration that actually uses them lands command-by-command in
-`#34-4`..`#34-6`. Nothing reads or writes these messages yet; this file is
-inert until then.
+Schema (`#34-3a`) plus the generated C++ bindings (`decompile_generated.h`,
+`#34-3b`). The Java bindings are committed separately in `#34-3c`, and the
+host/worker dual-encode migration that actually uses any of this lands
+command-by-command in `#34-4`..`#34-6`. Nothing reads or writes these messages
+yet; the bindings are inert until then.
 
 ## Scope
 
@@ -22,24 +22,39 @@ subclasses in `ghidra_process.hh`: `RegisterProgram`, `DeregisterProgram`,
 
 ## Regenerating bindings
 
-Bindings are generated with the pinned FlatBuffers schema compiler, **flatc
-v25.2.10** — the same release as the vendored Java runtime jar
-(`flatbuffers-java-25.2.10.jar`, PR `#34-2b`) and forward-compatible with the
-vendored C++ runtime headers (`v25.12.19`, PR `#34-2a`): flatc 25.2.10
-generated code links against the newer C++ runtime, which preserves backward
-compatibility with code emitted by an older compiler.
+Each language's bindings are generated with the flatc release that **matches
+that language's vendored runtime**, because flatc emits a hard
+`static_assert(FLATBUFFERS_VERSION_{MAJOR,MINOR,REVISION} == ...)` into the
+generated code pinning it to the exact runtime version it was generated with.
+A version-skewed runtime is a compile error, not a forward-compatible upgrade —
+so the C++ and Java sides legitimately use different flatc versions:
 
-    flatc --cpp  -o <cpp-out>  decompile.fbs
-    flatc --java -o <java-out> decompile.fbs
+| Language | flatc        | Runtime                                              |
+|----------|--------------|------------------------------------------------------|
+| C++      | **v25.12.19**| vendored headers `vendor/flatbuffers/include` (`#34-2a`) |
+| Java     | **v25.2.10** | vendored jar `flatbuffers-java-25.2.10.jar` (`#34-2b`)   |
 
-The Linux flatc binary used for the committed bindings is
-`Linux.flatc.binary.g++-13.zip` from
-<https://github.com/google/flatbuffers/releases/tag/v25.2.10> (zip sha256
-`6f01258d7475806f375d6da66a61df47add8016edd73f1774673f37b80b9a711`).
+The two runtimes differ (`25.12.19` vs `25.2.10`) only because Maven Central's
+newest published `flatbuffers-java` artifact is `25.2.10`. This is safe: the
+FlatBuffers **wire format** is stable across these minor versions, so a buffer
+written by the `25.12.19` C++ runtime decodes in the `25.2.10` Java runtime and
+vice versa. The exact-version `static_assert` is a *within-language*
+codegen/runtime check, not a cross-language wire constraint.
+
+    flatc --cpp  -o <cpp-out>  decompile.fbs    # flatc v25.12.19
+    flatc --java -o <java-out> decompile.fbs    # flatc v25.2.10
+
+The Linux flatc binaries used for the committed bindings are both
+`Linux.flatc.binary.g++-13.zip`:
+
+- C++  — <https://github.com/google/flatbuffers/releases/tag/v25.12.19>
+  (zip sha256 `9f87066dc5dfa7fe02090b55bab5f3e55df03e32c9b0cdf229004ade7d091039`)
+- Java — <https://github.com/google/flatbuffers/releases/tag/v25.2.10>
+  (zip sha256 `6f01258d7475806f375d6da66a61df47add8016edd73f1774673f37b80b9a711`)
 
 ## Conventions
 
-- Definitions are ordered **define-before-use**; flatc 25.2.10 rejects forward
+- Definitions are ordered **define-before-use**; flatc rejects forward
   references.
 - Each message is encoded as its own FlatBuffers root, selected by the Rec 33
   frame's command id.
