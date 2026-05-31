@@ -48,6 +48,20 @@ generated from the GitHub Releases UI at sprint close.
   production decompiler includes the codec yet — the command-loop wiring that
   would call `decode_decompile_request()` on an incoming frame is an
   end-to-end-only change deferred out of this PR.
+- feat(decompiler): host-side v1 request encoder for the Rec 34 dual-encode
+  (`#34-4`, Java half). New `ghidra.app.decompiler.ipc.DecompileRequestCodec`
+  exposes `encodeRequest(programId, functionAddress, timeoutMs, flags)`, which
+  builds a finished, root-typed `DecompileFunctionRequest` payload with the
+  flatbuffers-java runtime — the host's mirror of the C++ worker decoder
+  (`schema/ipc_request_codec.h`). Only the encode direction lives on the host
+  (the host writes requests; the worker reads them), and the vendored
+  flatbuffers-java bindings are generated without a verifier, so no host-side
+  decode is offered. A new fast-sourceset JUnit test
+  (`src/test/java/.../ipc/DecompileRequestCodecTest.java`) round-trips the bytes
+  through the generated accessors: scalars, string, schema-default read-back,
+  null-vs-empty `program_id`, and unsigned-uint32 widening for `timeout_ms` /
+  `flags`. Inert — nothing in `DecompileProcess` calls the encoder yet; the
+  command-loop wiring is deferred with the rest of `#34-4`.
 
 ---
 
