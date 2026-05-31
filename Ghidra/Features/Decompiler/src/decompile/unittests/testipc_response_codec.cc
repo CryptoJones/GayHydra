@@ -81,6 +81,86 @@ TEST(ipc_response_empty_message) {
   ASSERT_EQUALS(out.diagnostics[0].message, std::string(""));
 }
 
+// A p-code op carrying an output varnode and several inputs survives a full
+// round-trip, every varnode field and the op's opcode/sequence preserved.
+TEST(ipc_response_pcode_roundtrip) {
+  ipc::DecompileResponseV1 in;
+  in.status = ipc::ResponseStatus_OK;
+  ipc::PcodeOpV1 op;
+  op.opcode = 0x21;  // some CPUI opcode
+  op.sequence_number = 99u;
+  op.has_output = true;
+  op.output = {1u, 0x4010ULL, 8u};
+  op.inputs.push_back({2u, 0x7fffULL, 4u});
+  op.inputs.push_back({0u, 0x1ULL, 1u});
+  in.pcode.push_back(op);
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.pcode.size(), (size_t)1);
+  const ipc::PcodeOpV1 &o = out.pcode[0];
+  ASSERT_EQUALS(o.opcode, (uint16_t)0x21);
+  ASSERT_EQUALS(o.sequence_number, 99u);
+  ASSERT(o.has_output);
+  ASSERT_EQUALS(o.output.address_space, (uint8_t)1);
+  ASSERT_EQUALS(o.output.offset, 0x4010ULL);
+  ASSERT_EQUALS(o.output.size, 8u);
+  ASSERT_EQUALS(o.inputs.size(), (size_t)2);
+  ASSERT_EQUALS(o.inputs[0].address_space, (uint8_t)2);
+  ASSERT_EQUALS(o.inputs[0].offset, 0x7fffULL);
+  ASSERT_EQUALS(o.inputs[0].size, 4u);
+  ASSERT_EQUALS(o.inputs[1].offset, 0x1ULL);
+}
+
+// An op with no output varnode (e.g. a STORE/BRANCH) leaves the output table
+// unset on the wire; decode must read it back as has_output == false, not as a
+// zero-valued varnode.
+TEST(ipc_response_pcode_no_output) {
+  ipc::DecompileResponseV1 in;
+  ipc::PcodeOpV1 op;
+  op.opcode = 0x9;
+  op.has_output = false;
+  op.inputs.push_back({3u, 0x2000ULL, 8u});
+  in.pcode.push_back(op);
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.pcode.size(), (size_t)1);
+  ASSERT(!out.pcode[0].has_output);
+  ASSERT_EQUALS(out.pcode[0].inputs.size(), (size_t)1);
+  ASSERT_EQUALS(out.pcode[0].inputs[0].address_space, (uint8_t)3);
+}
+
+// Multiple ops, one with empty inputs, round-trip in order; an empty inputs
+// list reads back empty rather than collapsing the op.
+TEST(ipc_response_pcode_multi_and_empty_inputs) {
+  ipc::DecompileResponseV1 in;
+  ipc::PcodeOpV1 a;
+  a.opcode = 0x1;
+  a.has_output = true;
+  a.output = {1u, 0x10ULL, 4u};  // no inputs
+  ipc::PcodeOpV1 b;
+  b.opcode = 0x2;
+  b.sequence_number = 5u;
+  b.inputs.push_back({1u, 0x20ULL, 4u});
+  in.pcode.push_back(a);
+  in.pcode.push_back(b);
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.pcode.size(), (size_t)2);
+  ASSERT_EQUALS(out.pcode[0].opcode, (uint16_t)0x1);
+  ASSERT(out.pcode[0].has_output);
+  ASSERT(out.pcode[0].inputs.empty());
+  ASSERT_EQUALS(out.pcode[1].opcode, (uint16_t)0x2);
+  ASSERT_EQUALS(out.pcode[1].sequence_number, 5u);
+  ASSERT(!out.pcode[1].has_output);
+  ASSERT_EQUALS(out.pcode[1].inputs.size(), (size_t)1);
+}
+
 // A null pointer is rejected without dereference.
 TEST(ipc_response_rejects_null) {
   ipc::DecompileResponseV1 out;
