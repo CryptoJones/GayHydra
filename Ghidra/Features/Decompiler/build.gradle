@@ -29,9 +29,23 @@ eclipse.project.name = 'Features Decompiler'
 dependencies {
 	api project(':Base')
 	api project(':SoftwareModeling')
+	// FlatBuffers Java runtime for the Rec 34 IPC schema bindings (ghidra.ipc.*).
+	api 'com.google.flatbuffers:flatbuffers-java:25.2.10'
 	// include Base src/test/resources when running decompiler integration tests (uses defaultTools)
 	integrationTestImplementation project(path: ':Base', configuration: 'testArtifacts')
 	integrationTestImplementation project(path: ':SoftwareModeling', configuration: 'testArtifacts')
+}
+
+// Compile the flatc-generated FlatBuffers IPC bindings (Rec 34) that live alongside
+// the C++ schema sources. Inert groundwork: nothing imports ghidra.ipc.* yet, but
+// wiring them onto the main source set means any drift from the vendored runtime
+// fails the build.
+sourceSets {
+	main {
+		java {
+			srcDir 'src/decompile/cpp/schema/java'
+		}
+	}
 }
 
 // Include buildable native source in distribution
