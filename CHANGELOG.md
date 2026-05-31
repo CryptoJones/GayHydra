@@ -62,6 +62,26 @@ generated from the GitHub Releases UI at sprint close.
   null-vs-empty `program_id`, and unsigned-uint32 widening for `timeout_ms` /
   `flags`. Inert — nothing in `DecompileProcess` calls the encoder yet; the
   command-loop wiring is deferred with the rest of `#34-4`.
+- feat(decompiler): worker-side v1 response *envelope* codec for the Rec 34
+  response path (`#34-5a`). New header-only `schema/ipc_response_codec.h`
+  provides `encode_decompile_response()` / `decode_decompile_response()` for the
+  `DecompileFunctionResponse` envelope — the overall `ResponseStatus` plus the
+  `Diagnostic` list — the response-path analogue of `schema/ipc_request_codec.h`
+  with the direction flipped (the worker writes the response, the host reads it,
+  so `encode` is the worker's production direction). Because
+  `DecompileFunctionResponse` is not the schema `root_type`, the generic
+  `FlatBufferBuilder::Finish` / `GetRoot` / `Verifier::VerifyBuffer` API roots
+  it; `decode` verifies before reading and returns false on a null or
+  unverifiable buffer. Scope is the envelope only — the heavy `pcode`
+  (`PcodeOp`/`Varnode`) and `high_function`
+  (`HighFunction`/`HighSymbol`/`DataType`/`Storage`) body is several levels of
+  nested optional tables and lands additively in `#34-5b`/`#34-5c`. A new
+  auto-globbed unit test (`src/decompile/unittests/testipc_response_codec.cc`)
+  pins the status + multi-diagnostic round-trip, the OK/empty-list clean result,
+  empty-message handling, and the null/garbage/truncated rejection contract.
+  Test-only and inert: nothing in the production decompiler includes the codec
+  yet — the command-loop wiring is the end-to-end-only change deferred per
+  DD-0005.
 
 ---
 
