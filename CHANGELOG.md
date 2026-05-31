@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): commit the generated Java FlatBuffers bindings
+  `schema/java/ghidra/ipc/*.java` (Rec 34 `#34-3c`). 25 classes generated
+  from `schema/decompile.fbs` with **flatc v25.2.10** to match the vendored
+  `flatbuffers-java-25.2.10.jar`, and standalone-validated with `javac`
+  against that jar (the Java parallel to `#34-3b`'s C++ compile check). The
+  per-language flatc split is intentional — see the `#34-3b` note on the
+  `static_assert` runtime pin. Behavior-preserving and symmetric with
+  `#34-3b`: the sources are staged under `schema/java/` (not yet on a
+  compiled source set) and remain inert until the dual-encode migration
+  wires the jar classpath in `#34-4`.
 - feat(decompiler): commit the generated C++ FlatBuffers bindings
   `decompile_generated.h` (Rec 34 `#34-3b`). Generated from
   `schema/decompile.fbs` and compile-validated against the vendored C++

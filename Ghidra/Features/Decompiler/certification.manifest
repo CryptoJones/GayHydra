@@ -133,6 +133,31 @@ src/decompile/cpp/fuzz/Makefile.fuzz||GHIDRA||||END|
 src/decompile/cpp/schema/README.md||GHIDRA||||END|
 src/decompile/cpp/schema/decompile.fbs||GHIDRA||||END|
 src/decompile/cpp/schema/decompile_generated.h||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DataType.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DataTypeKind.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DecompileFunctionRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DecompileFunctionResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DeregisterProgramRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DeregisterProgramResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/Diagnostic.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/FlushNativeRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/FlushNativeResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/HighFunction.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/HighSymbol.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/PcodeOp.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/RegisterProgramRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/RegisterProgramResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/ResponseStatus.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/SetActionRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/SetActionResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/SetOptionsRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/SetOptionsResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/Severity.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/Storage.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/StorageKind.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/StructureGraphRequest.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/StructureGraphResponse.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/Varnode.java||GHIDRA||||END|
 src/decompile/cpp/vendor/flatbuffers/README.md||GHIDRA||||END|
 src/decompile/cpp/vendor/flatbuffers/LICENSE||Apache License 2.0||||END|
 src/decompile/cpp/vendor/flatbuffers/include/flatbuffers/allocator.h||Apache License 2.0||||END|

@@ -7,11 +7,15 @@ design in [`docs/decompiler/IPC_SCHEMA.md`](../../../../../../../docs/decompiler
 
 ## Status
 
-Schema (`#34-3a`) plus the generated C++ bindings (`decompile_generated.h`,
-`#34-3b`). The Java bindings are committed separately in `#34-3c`, and the
-host/worker dual-encode migration that actually uses any of this lands
+Schema (`#34-3a`), the generated C++ bindings (`decompile_generated.h`,
+`#34-3b`), and the generated Java bindings (`java/ghidra/ipc/*.java`, `#34-3c`).
+The host/worker dual-encode migration that actually uses any of this lands
 command-by-command in `#34-4`..`#34-6`. Nothing reads or writes these messages
-yet; the bindings are inert until then.
+yet; the bindings are inert until then. The Java sources are staged under
+`schema/java/` and validated by a standalone `javac` against the vendored
+`flatbuffers-java-25.2.10.jar`; they are not yet on a compiled source set —
+build-system wiring (the C++ `-Ivendor` include and the Java jar classpath)
+lands with the first consumer in `#34-4`.
 
 ## Scope
 
