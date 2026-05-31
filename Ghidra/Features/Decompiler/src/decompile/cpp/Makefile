@@ -52,6 +52,11 @@ YACC=bison
 INCLUDES=
 BFDLIB=-lbfd
 
+# Vendored FlatBuffers C++ runtime headers (Rec 34). Only the unit-test build
+# needs these: the ghidra::ipc::* bindings are exercised by ../unittests, not
+# linked into the production decompiler yet (#34-4b).
+FLATBUF_INCLUDE=-Ivendor/flatbuffers/include
+
 LNK=-lz
 
 # Source files
@@ -220,7 +225,7 @@ com_opt/%.o:	%.cc
 test_dbg/%.o:	%.cc
 	$(CXX) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(TEST_DEBUG)        $< -o $@
 test_dbg/%.o:	../unittests/%.cc
-	$(CXX) -I. $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(TEST_DEBUG)        $< -o $@
+	$(CXX) -I. $(FLATBUF_INCLUDE) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(TEST_DEBUG)        $< -o $@
 ghi_dbg/%.o:	%.cc
 	$(CXX) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(GHIDRA_DEBUG)      $< -o $@
 ghi_opt/%.o:	%.cc
@@ -364,7 +369,7 @@ com_opt/depend:	$(COMMANDLINE_NAMES:%=%.cc)
 test_dbg/depend:	$(TEST_NAMES:%=%.cc) $(UNITTEST_NAMES:%=%.cc)
 	mkdir -p test_dbg
 	@set -e; rm -f $@; \
-	$(CXX) -I. -MM $(TEST_DEBUG) $^ > $@.$$$$; \
+	$(CXX) -I. $(FLATBUF_INCLUDE) -MM $(TEST_DEBUG) $^ > $@.$$$$; \
 	sed 's,\(.*\)\.o[ :]*,test_dbg/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
