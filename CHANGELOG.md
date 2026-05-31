@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- build(decompiler): compile-wire the Rec 34 FlatBuffers IPC Java bindings
+  (`#34-4a`). The 25 flatc-generated `ghidra.ipc.*` classes under
+  `src/decompile/cpp/schema/java` were shipped as inert source in `#34-3`; this
+  adds the `com.google.flatbuffers:flatbuffers-java:25.2.10` runtime dependency
+  and a `srcDir` so they compile onto the Decompiler module's main source set.
+  Registers the now-bundled `lib/flatbuffers-java-25.2.10.jar` as `Apache
+  License 2.0` in the module's `Module.manifest` so the `:Decompiler:ip` audit
+  stays green. Still inert — nothing imports `ghidra.ipc.*` yet — but the
+  bindings now build against the vendored runtime every CI run, so any drift
+  between the schema and the jar fails the build instead of lurking until the
+  dual-encode step (`#34-4b`..`#34-6`) tries to use them.
+
 ---
 
 ## [v26.2.1] — 2026-05-31
