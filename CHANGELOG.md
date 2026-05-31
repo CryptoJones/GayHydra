@@ -95,6 +95,22 @@ generated from the GitHub Releases UI at sprint close.
   `high_function` tree (`HighFunction`/`HighSymbol`/`DataType`/`Storage`) is
   still deferred to `#34-5c`; a response encoded here leaves it unset and decode
   does not touch it. Test-only and inert, like the rest of `#34-5`.
+- feat(decompiler): complete the v1 response codec with the `high_function` tree
+  (`#34-5c`). Final additive growth of `schema/ipc_response_codec.h`: carries
+  `DecompileFunctionResponse.high_function` — the `HighFunction` table and its
+  nested `HighSymbol` return value, parameter, and local lists, each symbol
+  optionally bearing a `DataType` and a `Storage` location. `DecompileResponseV1`
+  gains `DataTypeV1` / `StorageV1` / `HighSymbolV1` / `HighFunctionV1` views and a
+  `has_high_function` flag; `HighSymbolV1.has_type` / `has_storage` mirror the
+  schema's optional-table semantics so `encode`/`decode` distinguish an absent
+  nested table from a zero-valued one rather than fabricating one. With this the
+  worker-side `DecompileFunctionResponse` codec covers every field in the schema
+  (envelope + `pcode` + `high_function`). `testipc_response_codec.cc` adds three
+  cases — a full HighFunction round-trip (return type, params, locals, storage),
+  a HighFunction whose symbols omit the optional type/storage, and a response
+  with no HighFunction at all (279 unit tests total). Test-only and inert, like
+  the rest of `#34-5`: the command-loop wiring is the end-to-end-only change
+  deferred per DD-0005.
 
 ---
 

@@ -161,6 +161,98 @@ TEST(ipc_response_pcode_multi_and_empty_inputs) {
   ASSERT_EQUALS(out.pcode[1].inputs.size(), (size_t)1);
 }
 
+// A full HighFunction — return type, a typed+stored parameter, and a local —
+// survives a round-trip with every nested DataType/Storage field preserved.
+TEST(ipc_response_high_function_roundtrip) {
+  ipc::DecompileResponseV1 in;
+  in.has_high_function = true;
+  in.high_function.name = "decode_frame";
+  in.high_function.has_return_type = true;
+  in.high_function.return_type = {"int", 4u, ipc::DataTypeKind_INT};
+
+  ipc::HighSymbolV1 p;
+  p.name = "len";
+  p.has_type = true;
+  p.type = {"uint", 4u, ipc::DataTypeKind_UINT};
+  p.has_storage = true;
+  p.storage = {ipc::StorageKind_REGISTER, 0x10ULL, 2u};
+  in.high_function.parameters.push_back(p);
+
+  ipc::HighSymbolV1 loc;
+  loc.name = "buf";
+  loc.has_type = true;
+  loc.type = {"ptr", 8u, ipc::DataTypeKind_POINTER};
+  loc.has_storage = true;
+  loc.storage = {ipc::StorageKind_STACK, 0xfffffff0ULL, 0u};
+  in.high_function.locals.push_back(loc);
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT(out.has_high_function);
+  ASSERT_EQUALS(out.high_function.name, std::string("decode_frame"));
+  ASSERT(out.high_function.has_return_type);
+  ASSERT_EQUALS(out.high_function.return_type.name, std::string("int"));
+  ASSERT_EQUALS(out.high_function.return_type.kind, ipc::DataTypeKind_INT);
+
+  ASSERT_EQUALS(out.high_function.parameters.size(), (size_t)1);
+  const ipc::HighSymbolV1 &op = out.high_function.parameters[0];
+  ASSERT_EQUALS(op.name, std::string("len"));
+  ASSERT(op.has_type);
+  ASSERT_EQUALS(op.type.kind, ipc::DataTypeKind_UINT);
+  ASSERT(op.has_storage);
+  ASSERT_EQUALS(op.storage.kind, ipc::StorageKind_REGISTER);
+  ASSERT_EQUALS(op.storage.address, 0x10ULL);
+  ASSERT_EQUALS(op.storage.space, (uint8_t)2);
+
+  ASSERT_EQUALS(out.high_function.locals.size(), (size_t)1);
+  const ipc::HighSymbolV1 &ol = out.high_function.locals[0];
+  ASSERT_EQUALS(ol.name, std::string("buf"));
+  ASSERT_EQUALS(ol.type.kind, ipc::DataTypeKind_POINTER);
+  ASSERT_EQUALS(ol.storage.kind, ipc::StorageKind_STACK);
+  ASSERT_EQUALS(ol.storage.address, 0xfffffff0ULL);
+}
+
+// Optional gating: a HighFunction with no return type and a symbol with neither
+// a datatype nor a storage must read those back as absent (has_* == false), not
+// as zero-valued tables.
+TEST(ipc_response_high_function_optional_absent) {
+  ipc::DecompileResponseV1 in;
+  in.has_high_function = true;
+  in.high_function.name = "thunk";
+  in.high_function.has_return_type = false;
+  ipc::HighSymbolV1 bare;
+  bare.name = "x";  // no type, no storage
+  in.high_function.parameters.push_back(bare);
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT(out.has_high_function);
+  ASSERT_EQUALS(out.high_function.name, std::string("thunk"));
+  ASSERT(!out.high_function.has_return_type);
+  ASSERT_EQUALS(out.high_function.parameters.size(), (size_t)1);
+  ASSERT_EQUALS(out.high_function.parameters[0].name, std::string("x"));
+  ASSERT(!out.high_function.parameters[0].has_type);
+  ASSERT(!out.high_function.parameters[0].has_storage);
+  ASSERT(out.high_function.locals.empty());
+}
+
+// A response with no high_function leaves the table unset on the wire; decode
+// must read it back as has_high_function == false.
+TEST(ipc_response_high_function_absent) {
+  ipc::DecompileResponseV1 in;
+  in.status = ipc::ResponseStatus_OK;
+  in.diagnostics.push_back({ipc::Severity_INFO, "no function", 0u});
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_response(in);
+  ipc::DecompileResponseV1 out;
+  out.has_high_function = true;  // sentinel must be cleared
+  ASSERT(ipc::decode_decompile_response(buf.data(), buf.size(), out));
+  ASSERT(!out.has_high_function);
+  ASSERT_EQUALS(out.diagnostics.size(), (size_t)1);
+}
+
 // A null pointer is rejected without dereference.
 TEST(ipc_response_rejects_null) {
   ipc::DecompileResponseV1 out;
