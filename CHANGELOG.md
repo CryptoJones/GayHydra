@@ -23,6 +23,17 @@ generated from the GitHub Releases UI at sprint close.
   bindings now build against the vendored runtime every CI run, so any drift
   between the schema and the jar fails the build instead of lurking until the
   dual-encode step (`#34-4b`..`#34-6`) tries to use them.
+- test(decompiler): compile-wire the Rec 34 FlatBuffers IPC C++ bindings
+  (`#34-4b`). C++ analog of `#34-4a`: a new auto-globbed unit test
+  (`src/decompile/unittests/testschema_fb.cc`) `#include`s the flatc-generated
+  `schema/decompile_generated.h` and round-trips `DecompileFunctionRequest`
+  (scalars, string, schema defaults) and `Diagnostic` (enum) against the
+  vendored FlatBuffers C++ runtime, and the `cpp/Makefile` test build gains
+  `-Ivendor/flatbuffers/include` (compile + depend rules) so that header
+  resolves. Test-only — the bindings are not linked into the production
+  `decompile`/`sleigh` executables yet — but exercising them in
+  `decomp_test_dbg` makes the header's `FLATBUFFERS_VERSION` `static_assert`
+  and the wire behavior CI-enforced ahead of the dual-encode work.
 
 ---
 
