@@ -1,0 +1,109 @@
+name: Publish container (GHCR)
+
+# Builds the GayHydra distribution and publishes a runnable container image to
+# the GitHub Container Registry (ghcr.io/<owner>/gayhydra) so the repo's
+# Packages section is populated alongside each release.
+#
+# Decoupled from release.yml on purpose: a container-build or registry-push
+# failure must never block the signed-zip release pipeline (and vice versa).
+# It triggers on the same v* tag push, so a single `git tag vX.Y.Z && git push
+# --tags` fans out to both the signed-zip release (release.yml) and this
+# container publish.
+#
+# The image is built from the *extracted release distribution*, not the source
+# tree: docker/Dockerfile does `COPY . .` and then installs the prebuilt
+# pyghidra wheel from Ghidra/Features/PyGhidra/pypkg/dist and builds BSim
+# postgres — artifacts that exist only in a built release. So this job runs
+# `gradle buildGhidra`, unzips the linux distribution, and uses that extracted
+# tree as the docker build context (the same contract docker/build-docker-image.sh
+# relies on locally).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build & publish (e.g. v26.2.1)'
+        required: true
+
+permissions:
+  contents: read    # checkout
+  packages: write   # push image to GHCR
+
+jobs:
+  build_publish_container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Read JDK version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra (produces release zip)
+        run: gradle buildGhidra --parallel
+
+      - name: Derive image name + tag
+        id: meta
+        env:
+          REF: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          TAG=${REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # GHCR image names must be lowercase; owner may be mixed-case.
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/gayhydra" >> $GITHUB_OUTPUT
+
+      - name: Extract linux distribution
+        id: dist
+        run: |
+          ZIP=$(ls build/dist/ghidra_*_linux_x86_64.zip | head -1)
+          test -n "$ZIP" || { echo "::error::no linux release zip produced by buildGhidra"; exit 1; }
+          EXTRACT_DIR=$(mktemp -d)
+          unzip -q "$ZIP" -d "$EXTRACT_DIR"
+          # The zip's single top-level prefix dir (ghidra_<ver>_<release>) is
+          # the runnable release root and the docker build context.
+          ROOT=$(ls -d "$EXTRACT_DIR"/ghidra_* | head -1)
+          test -n "$ROOT" || { echo "::error::no ghidra_* dir after extract"; exit 1; }
+          test -e "$ROOT/ghidraRun" || { echo "::error::extracted tree is not a built release (no ghidraRun)"; exit 1; }
+          test -e "$ROOT/docker/Dockerfile" || { echo "::error::extracted release has no docker/Dockerfile"; exit 1; }
+          echo "ROOT=$ROOT" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push image
+        run: |
+          IMAGE='${{ steps.meta.outputs.IMAGE }}'
+          VERSION='${{ steps.meta.outputs.VERSION }}'
+          ROOT='${{ steps.dist.outputs.ROOT }}'
+          docker build -f "$ROOT/docker/Dockerfile" \
+            -t "$IMAGE:$VERSION" \
+            -t "$IMAGE:latest" \
+            "$ROOT"
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:latest"
+          echo "Published $IMAGE:$VERSION and $IMAGE:latest"

@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(release): publish a runnable container image to GHCR on every `v*` tag.
+  Adds a standalone `publish-container.yml` workflow that runs `buildGhidra`,
+  extracts the linux distribution, and `docker build`s the bundled
+  `docker/Dockerfile` from that extracted release root (the same build-context
+  contract `docker/build-docker-image.sh` uses locally), then pushes
+  `ghcr.io/<owner>/gayhydra:<version>` + `:latest`. Deliberately decoupled from
+  `release.yml` so a container/registry failure never blocks the signed-zip
+  release (and vice versa); both fire off the same tag push. The
+  `docker/Dockerfile` `org.opencontainers.image.{title,description,source}`
+  labels are repointed from upstream NSA/ghidra to this fork so GHCR links the
+  published package to the GayHydra repo's Packages section. This is the GHCR
+  half of the "packages" wiring the release-cadence notes had deferred to its
+  own PR.
 - test(decompiler): wire the v1 IPC framing end-to-end test into CI (Rec 33
   `#33-2.6` / DD-0005). Adds an `ipc_e2e` job to `build-ghidra.yml` that builds
   the native `decompile` worker and runs `DecompileProcessFramingV1EndToEndTest`

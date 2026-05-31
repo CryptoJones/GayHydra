@@ -7,9 +7,9 @@
 ###############################################################
 FROM alpine:3.20 AS base
 
-LABEL org.opencontainers.image.title="ghidra" \
-	org.opencontainers.image.description="Docker image for Ghidra" \
-	org.opencontainers.image.source="https://github.com/NationalSecurityAgency/ghidra" \
+LABEL org.opencontainers.image.title="gayhydra" \
+	org.opencontainers.image.description="Docker image for GayHydra (a Ghidra fork)" \
+	org.opencontainers.image.source="https://github.com/CryptoJones/GayHydra" \
 	org.opencontainers.image.licenses="Apache 2.0"
 
 # Configure user, entrypoint, and some env vars first, before making the image larger with dependencies
