@@ -111,6 +111,25 @@ generated from the GitHub Releases UI at sprint close.
   with no HighFunction at all (279 unit tests total). Test-only and inert, like
   the rest of `#34-5`: the command-loop wiring is the end-to-end-only change
   deferred per DD-0005.
+- feat(decompiler): worker-side v1 codecs for the program-lifecycle commands
+  (`#34-6a`). With `DecompileAt` migrated (`#34-4`/`#34-5`), `#34-6` works through
+  the remaining six commands; this increment lands the program-lifecycle trio in
+  a new header-only `schema/ipc_lifecycle_codec.h`: `RegisterProgram`,
+  `DeregisterProgram`, and `FlushNative`. Each command gets its native request
+  and response views plus the full encode/decode round-trip; on the worker the
+  production directions are `decode_*_request()` / `encode_*_response()`, and the
+  host directions are included so each round-trips under test. None of these
+  tables is the schema `root_type`, so — like the response codec — the generic
+  `FlatBufferBuilder::Finish` / `GetRoot` / `Verifier::VerifyBuffer` API roots
+  them, and every `decode` verifies before reading and returns false on a null or
+  unverifiable buffer. A new auto-globbed unit test
+  (`src/decompile/unittests/testipc_lifecycle_codec.cc`) pins each command's
+  request/response round-trip, schema-default read-back, empty-string handling,
+  and the null/garbage/truncated rejection contract (291 unit tests total). The
+  config/graph trio (`StructureGraph`/`SetAction`/`SetOptions`) follows in
+  `#34-6b`. Test-only and inert: nothing in the production decompiler includes
+  the codec yet — the command-loop wiring is the end-to-end-only change deferred
+  per DD-0005.
 
 ---
 
