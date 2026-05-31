@@ -202,3 +202,60 @@ jobs:
             **/build/reports/jacoco/**
           if-no-files-found: ignore
           retention-days: 30
+
+  # Rec 33 #33-2.6 / DD-0005: continuously validate the negotiated v1 framing
+  # tunnel (the FrameInStreambuf/FrameOutStreambuf command-loop flip in
+  # ghidra_process.cc) and, going forward, the Rec 34 FlatBuffers IPC
+  # dual-encode commands. These are exercised only by
+  # DecompileProcessFramingV1EndToEndTest, an AbstractGhidraHeadlessIntegrationTest
+  # that spawns the real native `decompile` worker, forces framing to v0 then
+  # v1, runs a full real decompilation (registerProgram + decompileAt + every
+  # host callback) through the v1 frame tunnel, and asserts v1 output is
+  # byte-identical to v0. The `unit_tests` job runs `gradle test`, which does
+  # NOT execute the `src/test.slow` integration suite — so without this job the
+  # entire command-loop / IPC tunnel is unguarded in CI. Ubuntu-only: the test
+  # validates the wire protocol (platform-independent), so one Linux leg is a
+  # sufficient regression guard.
+  ipc_e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build native decompiler
+        # The e2e test spawns the real native `decompile` worker. The
+        # integrationTest task compiles the sleigh languages and the Java test
+        # sources but does NOT build the native binary, so build it explicitly.
+        run: gradle :Decompiler:decompileLinux_x86_64Executable --parallel
+
+      - name: Run IPC v1 framing e2e integration test
+        run: gradle :Decompiler:integrationTest --tests "ghidra.app.decompiler.DecompileProcessFramingV1EndToEndTest"
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-ipc-e2e
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
