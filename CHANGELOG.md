@@ -34,6 +34,20 @@ generated from the GitHub Releases UI at sprint close.
   `decompile`/`sleigh` executables yet — but exercising them in
   `decomp_test_dbg` makes the header's `FLATBUFFERS_VERSION` `static_assert`
   and the wire behavior CI-enforced ahead of the dual-encode work.
+- feat(decompiler): worker-side v1 request codec for the Rec 34 dual-encode
+  (`#34-4`). New header-only `schema/ipc_request_codec.h` provides
+  `encode_decompile_request()` / `decode_decompile_request()` — the pure
+  payload<->fields mapping for `DecompileFunctionRequest`, with no dependency on
+  the live command loop or Ghidra's native `Address`/`Architecture` types.
+  `decode` verifies the buffer first and returns false on a null or
+  unverifiable payload (leaving its out-param untouched) so the worker can never
+  read through a malformed v1 frame. A new auto-globbed unit test
+  (`src/decompile/unittests/testipc_codec.cc`) pins the encode/decode
+  round-trip, schema-default read-back, empty-string handling, and the
+  null/garbage/truncated rejection contract. Test-only and inert: nothing in the
+  production decompiler includes the codec yet — the command-loop wiring that
+  would call `decode_decompile_request()` on an incoming frame is an
+  end-to-end-only change deferred out of this PR.
 
 ---
 
