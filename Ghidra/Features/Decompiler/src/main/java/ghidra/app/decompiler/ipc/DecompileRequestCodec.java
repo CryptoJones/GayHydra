@@ -17,6 +17,7 @@ package ghidra.app.decompiler.ipc;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 
+import ghidra.ipc.DecompileBudget;
 import ghidra.ipc.DecompileFunctionRequest;
 
 /**
@@ -60,10 +61,50 @@ public final class DecompileRequestCodec {
 	public static byte[] encodeRequest(String programId, long functionAddress, long timeoutMs,
 			long flags) {
 		FlatBufferBuilder builder = new FlatBufferBuilder(64);
-		int programIdOffset = (programId != null) ? builder.createString(programId) : 0;
-		int root = DecompileFunctionRequest.createDecompileFunctionRequest(builder, programIdOffset,
-			functionAddress, timeoutMs, flags);
+		int root = buildRequest(builder, programId, functionAddress, timeoutMs, flags, 0);
 		DecompileFunctionRequest.finishDecompileFunctionRequestBuffer(builder, root);
 		return builder.sizedByteArray();
+	}
+
+	/**
+	 * Encode a decompile-function request carrying an explicit per-function
+	 * analysis budget (Rec 35, {@code #35-2}). The five caps ride in an optional
+	 * {@code DecompileBudget} sub-table; the worker reads it back with
+	 * {@code decode_decompile_request} and threads it through the analysis loop.
+	 * Each cap is a uint32; encoding a value equal to its schema default omits it
+	 * on the wire, and the worker reads back the default
+	 * (see docs/decompiler/DECOMPILER_BUDGETS.md). The four-argument overload
+	 * leaves the budget unset, which the worker reads back as all defaults.
+	 *
+	 * @param programId the program identifier; {@code null} leaves the field unset
+	 * @param functionAddress the entry address of the function to decompile (uint64)
+	 * @param timeoutMs analysis budget in milliseconds (uint32; schema default 30000)
+	 * @param flags request flags bitset (uint32; schema default 0)
+	 * @param wallClockMs soft wall-clock cap in ms (schema default 30000)
+	 * @param wallClockHardMs hard wall-clock cap in ms (schema default 60000)
+	 * @param rssMaxMb hard resident-set cap in MiB (schema default 4096)
+	 * @param pcodeOpLimit soft pcode-op count cap (schema default 1000000)
+	 * @param iterationLimitPerPass soft per-pass fixed-point cap (schema default 100)
+	 * @return the payload bytes
+	 */
+	public static byte[] encodeRequest(String programId, long functionAddress, long timeoutMs,
+			long flags, long wallClockMs, long wallClockHardMs, long rssMaxMb, long pcodeOpLimit,
+			long iterationLimitPerPass) {
+		FlatBufferBuilder builder = new FlatBufferBuilder(64);
+		int budgetOffset = DecompileBudget.createDecompileBudget(builder, wallClockMs,
+			wallClockHardMs, rssMaxMb, pcodeOpLimit, iterationLimitPerPass);
+		int root = buildRequest(builder, programId, functionAddress, timeoutMs, flags, budgetOffset);
+		DecompileFunctionRequest.finishDecompileFunctionRequestBuffer(builder, root);
+		return builder.sizedByteArray();
+	}
+
+	// Build the request table on an in-progress builder. The program-id string
+	// and the budget sub-table (when non-zero) must already be created, since a
+	// FlatBuffers table cannot be built while another object is in progress.
+	private static int buildRequest(FlatBufferBuilder builder, String programId,
+			long functionAddress, long timeoutMs, long flags, int budgetOffset) {
+		int programIdOffset = (programId != null) ? builder.createString(programId) : 0;
+		return DecompileFunctionRequest.createDecompileFunctionRequest(builder, programIdOffset,
+			functionAddress, timeoutMs, flags, budgetOffset);
 	}
 }

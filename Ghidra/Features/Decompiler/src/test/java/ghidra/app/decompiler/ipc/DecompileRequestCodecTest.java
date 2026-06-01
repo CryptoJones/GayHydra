@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.Test;
 
+import ghidra.ipc.DecompileBudget;
 import ghidra.ipc.DecompileFunctionRequest;
 
 /**
@@ -96,5 +97,49 @@ public class DecompileRequestCodecTest {
 		DecompileFunctionRequest req = readBack(payload);
 		assertEquals("uint32 timeout widens unsigned", 0xFFFFFFFFL, req.timeoutMs());
 		assertEquals("uint32 flags widens unsigned", 0x80000000L, req.flags());
+	}
+
+	@Test
+	public void testBudgetRoundtrip() {
+		// The budget overload writes the optional DecompileBudget sub-table; each
+		// of the five non-default caps must read back through req.budget() (#35-2).
+		byte[] payload = DecompileRequestCodec.encodeRequest("prog-42", 0x401000L, 5000L, 0xFL,
+			10000L, 20000L, 2048L, 500000L, 50L);
+
+		DecompileFunctionRequest req = readBack(payload);
+		DecompileBudget budget = req.budget();
+		assertNotNull("budget sub-table is present", budget);
+		assertEquals(10000L, budget.wallClockMs());
+		assertEquals(20000L, budget.wallClockHardMs());
+		assertEquals(2048L, budget.rssMaxMb());
+		assertEquals(500000L, budget.pcodeOpLimit());
+		assertEquals(50L, budget.iterationLimitPerPass());
+	}
+
+	@Test
+	public void testAbsentBudgetReadsNull() {
+		// The four-argument overload leaves the budget unset: req.budget() is null,
+		// which the worker treats as "use the schema defaults".
+		byte[] payload = DecompileRequestCodec.encodeRequest("p", 0x10L, 30000L, 0L);
+
+		DecompileFunctionRequest req = readBack(payload);
+		assertNull("absent budget reads back null", req.budget());
+	}
+
+	@Test
+	public void testBudgetDefaultValuesReadBack() {
+		// A budget whose caps all equal their schema defaults is a present sub-table
+		// with every scalar omitted; the accessors must still yield the defaults.
+		byte[] payload = DecompileRequestCodec.encodeRequest("p", 0x10L, 30000L, 0L,
+			30000L, 60000L, 4096L, 1000000L, 100L);
+
+		DecompileFunctionRequest req = readBack(payload);
+		DecompileBudget budget = req.budget();
+		assertNotNull("budget sub-table is present even when all-default", budget);
+		assertEquals("schema default wall_clock_ms", 30000L, budget.wallClockMs());
+		assertEquals("schema default wall_clock_hard_ms", 60000L, budget.wallClockHardMs());
+		assertEquals("schema default rss_max_mb", 4096L, budget.rssMaxMb());
+		assertEquals("schema default pcode_op_limit", 1000000L, budget.pcodeOpLimit());
+		assertEquals("schema default iteration_limit_per_pass", 100L, budget.iterationLimitPerPass());
 	}
 }
