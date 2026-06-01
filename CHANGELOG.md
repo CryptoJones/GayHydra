@@ -32,6 +32,18 @@ generated from the GitHub Releases UI at sprint close.
   asserting the truncation warning header end-to-end) and a new
   `testbudget.cc` case (`budget_engage_and_caps_survive_reset`) pinning that
   `engage()`/caps survive a per-function `reset()`.
+- feat(decompiler): name the exhausted pass in the budget partial-result
+  diagnostic (`#35-3c`). The `#35-3b` truncation header was the generic
+  `Exceeded decompilation budget: Some flow is truncated`; it now reads
+  `Exceeded decompilation budget on pass <name>: Some flow is truncated`, using
+  the tracker's previously production-unused `exhaustedPass()` to report which
+  pass ran out of budget (here `flow_analysis`). This realizes the design's
+  "budget exhausted on pass X" partial-result contract
+  ([DECOMPILER_BUDGETS.md](docs/decompiler/DECOMPILER_BUDGETS.md)). Pass-only
+  (the budget-class name is dropped) so the rendered header stays on a single
+  comment line under the 100-column wrap, which the per-line `stringmatch` in
+  `datatests/decompbudget.xml` now asserts. No behaviour change to any
+  unbudgeted decompile; the full unit + datatest suites stay green.
 - build(decompiler): compile-wire the Rec 34 FlatBuffers IPC Java bindings
   (`#34-4a`). The 25 flatc-generated `ghidra.ipc.*` classes under
   `src/decompile/cpp/schema/java` were shipped as inert source in `#34-3`; this
