@@ -135,6 +135,7 @@ src/decompile/cpp/schema/decompile.fbs||GHIDRA||||END|
 src/decompile/cpp/schema/decompile_generated.h||GHIDRA||||END|
 src/decompile/cpp/schema/java/ghidra/ipc/DataType.java||GHIDRA||||END|
 src/decompile/cpp/schema/java/ghidra/ipc/DataTypeKind.java||GHIDRA||||END|
+src/decompile/cpp/schema/java/ghidra/ipc/DecompileBudget.java||GHIDRA||||END|
 src/decompile/cpp/schema/java/ghidra/ipc/DecompileFunctionRequest.java||GHIDRA||||END|
 src/decompile/cpp/schema/java/ghidra/ipc/DecompileFunctionResponse.java||GHIDRA||||END|
 src/decompile/cpp/schema/java/ghidra/ipc/DeregisterProgramRequest.java||GHIDRA||||END|
