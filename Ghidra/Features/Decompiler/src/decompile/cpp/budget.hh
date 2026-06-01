@@ -124,6 +124,25 @@ public:
   /// \brief Accumulate pcode-ops produced so far against the soft pcode cap.
   void addPcodeOps(uint64_t count) { pcodeOps += count; }
 
+  /// \brief Replace the caps this tracker enforces (program-level config).
+  ///
+  /// Caps are configuration, not per-function state: reset() preserves them.
+  void setCaps(const DecompileBudgetCaps &c) { caps = c; }
+
+  /// \brief Arm the tracker so yield points consult it; until engaged, every
+  ///        yield point is a no-op and the analysis loop is unaffected.
+  ///
+  /// Engagement is configuration, not per-function state: reset() preserves it.
+  /// Nothing in the production analysis loop engages a tracker by default, so a
+  /// default-constructed Architecture budget is inert.
+  void engage(void) { engagedFlag = true; }
+
+  /// \brief Disarm the tracker; subsequent yield points are no-ops again.
+  void disengage(void) { engagedFlag = false; }
+
+  /// \brief \b true once engage()d; yield points should skip the tracker when false.
+  bool engaged(void) const { return engagedFlag; }
+
   /// \brief Yield-point query: the most severe budget class currently exceeded.
   ///
   /// Evaluates hard wall-clock, then soft wall-clock, then the pcode-op cap,
@@ -178,6 +197,7 @@ private:
   BudgetExhaustion exhaust = BudgetExhaustion::none;  ///< Sticky exhaustion class.
   std::string exhaustPass;      ///< Pass that first ran out of budget.
   std::string currentPass;      ///< Pass currently executing.
+  bool engagedFlag = false;     ///< Config: are yield points to consult this tracker? (reset() preserves)
 };
 
 } // End namespace ghidra

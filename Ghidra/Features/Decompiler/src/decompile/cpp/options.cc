@@ -29,6 +29,7 @@ ElementId ELEM_COMMENTINSTRUCTION = ElementId("commentinstruction",179);
 ElementId ELEM_COMMENTSTYLE = ElementId("commentstyle",180);
 ElementId ELEM_CONVENTIONPRINTING = ElementId("conventionprinting",181);
 ElementId ELEM_CURRENTACTION = ElementId("currentaction",182);
+ElementId ELEM_DECOMPILEBUDGET = ElementId("decompilebudget",290);
 ElementId ELEM_DEFAULTPROTOTYPE = ElementId("defaultprototype",183);
 ElementId ELEM_ERRORREINTERPRETED = ElementId("errorreinterpreted",184);
 ElementId ELEM_ERRORTOOMANYINSTRUCTIONS = ElementId("errortoomanyinstructions",185);
@@ -128,6 +129,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionToggleRule>().release());
   registerOption(make_unique<OptionAliasBlock>().release());
   registerOption(make_unique<OptionMaxInstruction>().release());
+  registerOption(make_unique<OptionDecompileBudget>().release());
   registerOption(make_unique<OptionNamespaceStrategy>().release());
   registerOption(make_unique<OptionSplitDatatypes>().release());
   registerOption(make_unique<OptionNanIgnore>().release());
@@ -949,6 +951,32 @@ string OptionMaxInstruction::apply(Architecture *glb,const string &p1,const stri
     throw ParseError("Bad maxinstruction parameter");
   glb->max_instructions = newMax;
   return "Maximum instructions per function set";
+}
+
+/// \class OptionDecompileBudget
+/// \brief Engage the cooperative per-function analysis budget (Rec 35)
+///
+/// The first parameter is an integer giving the per-pass iteration cap. Setting
+/// it engages the budget so the flow_analysis yield point will truncate flow and
+/// emit a partial-result diagnostic once a pass reaches the cap. With no budget
+/// engaged (the default) the analysis loop is unaffected.
+string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  if (p1.size() == 0)
+    throw ParseError("Must specify a per-pass iteration budget");
+
+  int4 newLimit = -1;
+  istringstream s1(p1);
+  s1.unsetf(ios::dec | ios::hex | ios::oct); // Let user specify base
+  s1 >> newLimit;
+  if (newLimit < 0)
+    throw ParseError("Bad decompilebudget parameter");
+  DecompileBudgetCaps caps;
+  caps.iteration_limit_per_pass = (uint4)newLimit;
+  glb->budget.setCaps(caps);
+  glb->budget.engage();
+  return "Decompilation budget engaged";
 }
 
 /// \class OptionNamespaceStrategy

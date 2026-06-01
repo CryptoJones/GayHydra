@@ -68,6 +68,7 @@ public:
 	 outofbounds_present = 0x100,	///< Indicate we have encountered flow out of the specified range
 	 reinterpreted_present = 0x200,	///< Indicate we have encountered reinterpreted data
 	 toomanyinstructions_present = 0x400, 	///< Indicate the maximum instruction threshold was reached
+	 budgetexhausted_present = 0x800,	///< Indicate the cooperative analysis budget was exhausted (Rec 35)
 	 possible_unreachable = 0x1000,	///< Indicate a CALL was converted to a BRANCH and some code may be unreachable
 	 flow_forinline = 0x2000,	///< Indicate flow is being generated to in-line (a function)
 	 record_jumploads = 0x4000	///< Indicate that any jump table recovery should record the table structure
@@ -163,6 +164,7 @@ public:
   bool hasOutOfBounds(void) const { return ((flags & outofbounds_present)!=0); }	///< Does \b this flow out of bound
   bool hasReinterpreted(void) const { return ((flags & reinterpreted_present)!=0); }	///< Does \b this flow reinterpret bytes
   bool hasTooManyInstructions(void) const { return ((flags & toomanyinstructions_present)!=0); }	///< Does \b this flow have too many instructions
+  bool hasBudgetExhausted(void) const { return ((flags & budgetexhausted_present)!=0); }	///< Did the analysis budget run out during \b this flow
   bool isFlowForInline(void) const { return ((flags & flow_forinline)!=0); }	///< Is \b this flow to be in-lined
   bool doesJumpRecord(void) const { return ((flags & record_jumploads)!=0); }	///< Should jump table structure be recorded
 };

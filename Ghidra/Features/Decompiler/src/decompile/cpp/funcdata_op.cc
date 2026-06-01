@@ -768,6 +768,10 @@ void Funcdata::followFlow(const Address &baddr,const Address &eaddr)
   flow.setRange(baddr,eaddr);
   flow.setFlags(fl);
   flow.setMaximumInstructions(glb->max_instructions);
+  if (glb->budget.engaged()) {		// Rec 35: rebase the per-function budget and enter flow_analysis
+    glb->budget.reset();
+    glb->budget.enterPass("flow_analysis");
+  }
   flow.generateOps();
   size = flow.getSize();
   // Cannot keep track of function sizes in general because of non-contiguous functions

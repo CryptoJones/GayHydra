@@ -12,6 +12,26 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): wire the cooperative analysis budget into `flow_analysis`
+  (`#35-3b`). The `DecompileBudgetTracker` shipped inert in `#35-3a` is now
+  consulted at the flow-following yield point: each processed instruction counts
+  as one per-pass iteration, and when the budget is engaged and the per-pass cap
+  is reached, flow truncates exactly as the existing max-instruction cap does
+  (artificial `HALT`, no fall-through) and records a one-time partial-result
+  diagnostic (`Exceeded decompilation budget: Some flow is truncated`). A new
+  console option `decompilebudget <N>` engages the tracker with an `N`-iteration
+  per-pass cap; `Architecture` gains an inert `DecompileBudgetTracker` member
+  that nothing in production engages, so the disengaged default adds only a
+  single bool test per instruction and leaves every existing decompile
+  byte-identical (the full 678-case datatest suite stays green). Also fixes an
+  `ElementId` id collision the new option surfaced: `decompilebudget` was given
+  id 289, already held by `ELEM_BITFIELD`, so the console `option` lookup
+  dispatched to the wrong table entry and never engaged the budget — reassigned
+  to 290 (the prior next-open index) with `ELEM_UNKNOWN`'s sentinel bumped to
+  291. Covered by a new functional datatest (`datatests/decompbudget.xml`,
+  asserting the truncation warning header end-to-end) and a new
+  `testbudget.cc` case (`budget_engage_and_caps_survive_reset`) pinning that
+  `engage()`/caps survive a per-function `reset()`.
 - build(decompiler): compile-wire the Rec 34 FlatBuffers IPC Java bindings
   (`#34-4a`). The 25 flatc-generated `ghidra.ipc.*` classes under
   `src/decompile/cpp/schema/java` were shipped as inert source in `#34-3`; this

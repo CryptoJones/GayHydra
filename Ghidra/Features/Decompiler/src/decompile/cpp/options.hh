@@ -35,6 +35,7 @@ extern ElementId ELEM_COMMENTINSTRUCTION;	///< Marshaling element \<commentinstr
 extern ElementId ELEM_COMMENTSTYLE;		///< Marshaling element \<commentstyle>
 extern ElementId ELEM_CONVENTIONPRINTING;	///< Marshaling element \<conventionprinting>
 extern ElementId ELEM_CURRENTACTION;		///< Marshaling element \<currentaction>
+extern ElementId ELEM_DECOMPILEBUDGET;		///< Marshaling element \<decompilebudget>
 extern ElementId ELEM_DEFAULTPROTOTYPE;		///< Marshaling element \<defaultprototype>
 extern ElementId ELEM_ERRORREINTERPRETED;	///< Marshaling element \<errorreinterpreted>
 extern ElementId ELEM_ERRORTOOMANYINSTRUCTIONS;	///< Marshaling element \<errortoomanyinstructions>
@@ -322,6 +323,12 @@ public:
 class OptionMaxInstruction : public ArchOption {
 public:
   OptionMaxInstruction(void) { name="maxinstruction"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionDecompileBudget : public ArchOption {
+public:
+  OptionDecompileBudget(void) { name="decompilebudget"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

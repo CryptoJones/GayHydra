@@ -403,6 +403,20 @@ bool FlowInfo::processInstruction(const Address &curaddr,bool &startbasic)
       }
     }
   }
+  // Rec 35: cooperative per-function analysis budget. Each processed instruction
+  // is one iteration of the flow_analysis pass; when the budget is engaged and
+  // the per-pass cap is reached we truncate flow exactly as the max-instruction
+  // cap does (artificial HALT, no fall-thru) and record a partial-result
+  // diagnostic. Disengaged (the production default) this is a single bool test.
+  if (glb->budget.engaged() && glb->budget.tickIteration()) {
+    step = 1;
+    artificialHalt(curaddr,PcodeOp::badinstruction);
+    data.warning("Decompilation budget exhausted -- Truncating flow here",curaddr);
+    if (!hasBudgetExhausted()) {
+      flags |= budgetexhausted_present;
+      data.warningHeader("Exceeded decompilation budget: Some flow is truncated");
+    }
+  }
   insn_count += 1;
 
   if (obank.empty())

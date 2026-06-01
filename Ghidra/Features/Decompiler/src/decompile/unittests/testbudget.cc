@@ -155,6 +155,30 @@ TEST(budget_reset_clears) {
   ASSERT_EQUALS((int)t.check(), (int)BudgetExhaustion::none);  // clock rebased to fake=10000
 }
 
+// Engagement and caps are configuration, not per-function state: a tracker is
+// disengaged by default, engage()/disengage() flip the flag, setCaps() replaces
+// the caps, and reset() (a per-function boundary) preserves both.
+TEST(budget_engage_and_caps_survive_reset) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+  ASSERT(!t.engaged());
+
+  t.engage();
+  ASSERT(t.engaged());
+
+  DecompileBudgetCaps caps;
+  caps.iteration_limit_per_pass = 7;
+  t.setCaps(caps);
+  ASSERT_EQUALS((int)t.budget().iteration_limit_per_pass, 7);
+
+  t.reset();  // per-function boundary
+  ASSERT(t.engaged());
+  ASSERT_EQUALS((int)t.budget().iteration_limit_per_pass, 7);
+
+  t.disengage();
+  ASSERT(!t.engaged());
+}
+
 // Caps are literal, not "disabled": a zero wall-clock cap is reached at t=0.
 TEST(budget_zero_cap_trips_immediately) {
   uint64_t fake = 0;
