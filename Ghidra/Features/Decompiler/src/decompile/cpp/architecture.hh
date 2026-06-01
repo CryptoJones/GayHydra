@@ -33,6 +33,7 @@
 #include "options.hh"
 #include "transform.hh"
 #include "prefersplit.hh"
+#include "budget.hh"
 
 namespace ghidra {
 
@@ -183,6 +184,7 @@ public:
   int4 funcptr_align;		///< How many bits of alignment a function ptr has
   uint4 flowoptions;            ///< options passed to flow following engine
   uint4 max_instructions;	///< Maximum instructions that can be processed in one function
+  DecompileBudgetTracker budget;	///< Cooperative per-function analysis budget (Rec 35); inert until engaged
   int4 alias_block_level;	///< Aliases blocked by 0=none, 1=struct, 2=array, 3=all
   uint4 split_datatype_config;	///< Toggle for data-types splitting: Bit 0=structs, 1=arrays, 2=pointers
   vector<Rule *> extra_pool_rules; ///< Extra rules that go in the main pool (cpu specific, experimental)
