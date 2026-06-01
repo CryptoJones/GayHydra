@@ -90,4 +90,56 @@ TEST(ipc_codec_rejects_truncated) {
   ASSERT(!ipc::decode_decompile_request(buf.data(), buf.size() / 2, out));
 }
 
+// An explicit, all-non-default budget survives the encode -> decode round-trip:
+// every one of the five caps reads back the value it was given (Rec 35, #35-2).
+TEST(ipc_codec_budget_roundtrip) {
+  ipc::DecompileBudgetV1 budget;
+  budget.wall_clock_ms = 10000u;
+  budget.wall_clock_hard_ms = 20000u;
+  budget.rss_max_mb = 2048u;
+  budget.pcode_op_limit = 500000u;
+  budget.iteration_limit_per_pass = 50u;
+
+  std::vector<uint8_t> buf = ipc::encode_decompile_request("prog-42", 0x401000ULL, 5000u, 0xFu, &budget);
+  ASSERT(!buf.empty());
+
+  ipc::DecompileRequestV1 out;
+  ASSERT(ipc::decode_decompile_request(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.budget.wall_clock_ms, 10000u);
+  ASSERT_EQUALS(out.budget.wall_clock_hard_ms, 20000u);
+  ASSERT_EQUALS(out.budget.rss_max_mb, 2048u);
+  ASSERT_EQUALS(out.budget.pcode_op_limit, 500000u);
+  ASSERT_EQUALS(out.budget.iteration_limit_per_pass, 50u);
+}
+
+// A request encoded without a budget leaves the sub-table absent; decode must
+// read the budget back as the schema defaults, not as zero-by-omission.
+TEST(ipc_codec_budget_absent_defaults) {
+  std::vector<uint8_t> buf = ipc::encode_decompile_request("p", 0x10ULL, 30000u, 0u);
+
+  ipc::DecompileRequestV1 out;
+  ASSERT(ipc::decode_decompile_request(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.budget.wall_clock_ms, 30000u);
+  ASSERT_EQUALS(out.budget.wall_clock_hard_ms, 60000u);
+  ASSERT_EQUALS(out.budget.rss_max_mb, 4096u);
+  ASSERT_EQUALS(out.budget.pcode_op_limit, 1000000u);
+  ASSERT_EQUALS(out.budget.iteration_limit_per_pass, 100u);
+}
+
+// A budget whose caps all equal their schema defaults is encoded as a
+// present-but-empty sub-table (the scalars are omitted); decode must still read
+// each cap back as its default.
+TEST(ipc_codec_budget_default_values_roundtrip) {
+  ipc::DecompileBudgetV1 budget;  // all fields at their schema defaults
+  std::vector<uint8_t> buf = ipc::encode_decompile_request("p", 0x10ULL, 30000u, 0u, &budget);
+
+  ipc::DecompileRequestV1 out;
+  ASSERT(ipc::decode_decompile_request(buf.data(), buf.size(), out));
+  ASSERT_EQUALS(out.budget.wall_clock_ms, 30000u);
+  ASSERT_EQUALS(out.budget.wall_clock_hard_ms, 60000u);
+  ASSERT_EQUALS(out.budget.rss_max_mb, 4096u);
+  ASSERT_EQUALS(out.budget.pcode_op_limit, 1000000u);
+  ASSERT_EQUALS(out.budget.iteration_limit_per_pass, 100u);
+}
+
 }  // namespace ghidra

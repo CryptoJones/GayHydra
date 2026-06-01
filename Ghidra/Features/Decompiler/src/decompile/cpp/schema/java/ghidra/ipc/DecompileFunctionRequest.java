@@ -33,25 +33,30 @@ public final class DecompileFunctionRequest extends Table {
   public long functionAddress() { int o = __offset(6); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
   public long timeoutMs() { int o = __offset(8); return o != 0 ? (long)bb.getInt(o + bb_pos) & 0xFFFFFFFFL : 30000L; }
   public long flags() { int o = __offset(10); return o != 0 ? (long)bb.getInt(o + bb_pos) & 0xFFFFFFFFL : 0L; }
+  public ghidra.ipc.DecompileBudget budget() { return budget(new ghidra.ipc.DecompileBudget()); }
+  public ghidra.ipc.DecompileBudget budget(ghidra.ipc.DecompileBudget obj) { int o = __offset(12); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createDecompileFunctionRequest(FlatBufferBuilder builder,
       int programIdOffset,
       long functionAddress,
       long timeoutMs,
-      long flags) {
-    builder.startTable(4);
+      long flags,
+      int budgetOffset) {
+    builder.startTable(5);
     DecompileFunctionRequest.addFunctionAddress(builder, functionAddress);
+    DecompileFunctionRequest.addBudget(builder, budgetOffset);
     DecompileFunctionRequest.addFlags(builder, flags);
     DecompileFunctionRequest.addTimeoutMs(builder, timeoutMs);
     DecompileFunctionRequest.addProgramId(builder, programIdOffset);
     return DecompileFunctionRequest.endDecompileFunctionRequest(builder);
   }
 
-  public static void startDecompileFunctionRequest(FlatBufferBuilder builder) { builder.startTable(4); }
+  public static void startDecompileFunctionRequest(FlatBufferBuilder builder) { builder.startTable(5); }
   public static void addProgramId(FlatBufferBuilder builder, int programIdOffset) { builder.addOffset(0, programIdOffset, 0); }
   public static void addFunctionAddress(FlatBufferBuilder builder, long functionAddress) { builder.addLong(1, functionAddress, 0L); }
   public static void addTimeoutMs(FlatBufferBuilder builder, long timeoutMs) { builder.addInt(2, (int) timeoutMs, (int) 30000L); }
   public static void addFlags(FlatBufferBuilder builder, long flags) { builder.addInt(3, (int) flags, (int) 0L); }
+  public static void addBudget(FlatBufferBuilder builder, int budgetOffset) { builder.addOffset(4, budgetOffset, 0); }
   public static int endDecompileFunctionRequest(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;

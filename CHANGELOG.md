@@ -179,6 +179,22 @@ generated from the GitHub Releases UI at sprint close.
   on its own and runs locally / via our own CI. Validated locally against 200k+
   malformed inputs under ASan+UBSan with zero findings (clang/libFuzzer absent on
   the build box; the committed target builds under `Makefile.fuzz` with clang).
+- feat(decompiler): add `DecompileBudget` to the v1 request schema (`#35-2`).
+  First slice of Rec 35 (bounded decompilation): a new optional `DecompileBudget`
+  table on `DecompileFunctionRequest` carries the five per-function caps from
+  [`DECOMPILER_BUDGETS.md`](docs/decompiler/DECOMPILER_BUDGETS.md) —
+  `wall_clock_ms` (30000), `wall_clock_hard_ms` (60000), `rss_max_mb` (4096),
+  `pcode_op_limit` (1000000), `iteration_limit_per_pass` (100) — each defaulted
+  in the schema so an absent budget reads back as the defaults rather than zero.
+  Bindings regenerated with the version-matched flatc (C++ v25.12.19, Java
+  v25.2.10); the worker codec `schema/ipc_request_codec.h` gains a
+  `DecompileBudgetV1` view plus optional encode/decode, and the host
+  `DecompileRequestCodec` gains a budget-carrying `encodeRequest` overload. The
+  generated `Verify` recurses into the sub-table, so a malformed budget is
+  rejected by the same verify-before-read contract. Schema/codec only — nothing
+  reads the budget into the analysis loop yet (that is `#35-3`). Covered by new
+  round-trip + absent-defaults tests on both sides (`testipc_codec.cc`,
+  `DecompileRequestCodecTest`).
 
 ---
 

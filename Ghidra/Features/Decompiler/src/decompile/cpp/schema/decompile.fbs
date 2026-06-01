@@ -66,12 +66,26 @@ table FlushNativeRequest { program_id : string; }
 table FlushNativeResponse { result : int32; }  // 0 = success
 
 // ------------------------------------------------------------- DecompileAt
+// Per-function analysis budget (Rec 35, #35-2). The worker reads it once at
+// request entry and threads it through the analysis loop; exhausting any cap
+// returns a partial result rather than hanging. An absent budget table (the
+// field is optional) means "use these defaults", so every field carries the
+// default from docs/decompiler/DECOMPILER_BUDGETS.md.
+table DecompileBudget {
+  wall_clock_ms : uint32 = 30000;            // soft wall-clock cap (30s)
+  wall_clock_hard_ms : uint32 = 60000;       // hard wall-clock cap (60s)
+  rss_max_mb : uint32 = 4096;                // hard resident-set cap (4 GiB)
+  pcode_op_limit : uint32 = 1000000;         // soft pcode-op count cap
+  iteration_limit_per_pass : uint32 = 100;   // soft per-pass fixed-point cap
+}
+
 // Decompiles the function at an entry-point address (the #34-1 sketch).
 table DecompileFunctionRequest {
   program_id : string;
   function_address : uint64;
   timeout_ms : uint32 = 30000;
   flags : uint32 = 0;
+  budget : DecompileBudget;   // optional; absent means the schema defaults
 }
 table DecompileFunctionResponse {
   status : ResponseStatus;

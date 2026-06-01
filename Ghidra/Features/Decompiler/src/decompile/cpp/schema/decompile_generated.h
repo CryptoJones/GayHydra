@@ -55,6 +55,9 @@ struct FlushNativeRequestBuilder;
 struct FlushNativeResponse;
 struct FlushNativeResponseBuilder;
 
+struct DecompileBudget;
+struct DecompileBudgetBuilder;
+
 struct DecompileFunctionRequest;
 struct DecompileFunctionRequestBuilder;
 
@@ -1114,13 +1117,96 @@ inline ::flatbuffers::Offset<FlushNativeResponse> CreateFlushNativeResponse(
   return builder_.Finish();
 }
 
+struct DecompileBudget FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DecompileBudgetBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_WALL_CLOCK_MS = 4,
+    VT_WALL_CLOCK_HARD_MS = 6,
+    VT_RSS_MAX_MB = 8,
+    VT_PCODE_OP_LIMIT = 10,
+    VT_ITERATION_LIMIT_PER_PASS = 12
+  };
+  uint32_t wall_clock_ms() const {
+    return GetField<uint32_t>(VT_WALL_CLOCK_MS, 30000);
+  }
+  uint32_t wall_clock_hard_ms() const {
+    return GetField<uint32_t>(VT_WALL_CLOCK_HARD_MS, 60000);
+  }
+  uint32_t rss_max_mb() const {
+    return GetField<uint32_t>(VT_RSS_MAX_MB, 4096);
+  }
+  uint32_t pcode_op_limit() const {
+    return GetField<uint32_t>(VT_PCODE_OP_LIMIT, 1000000);
+  }
+  uint32_t iteration_limit_per_pass() const {
+    return GetField<uint32_t>(VT_ITERATION_LIMIT_PER_PASS, 100);
+  }
+  template <bool B = false>
+  bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_WALL_CLOCK_MS, 4) &&
+           VerifyField<uint32_t>(verifier, VT_WALL_CLOCK_HARD_MS, 4) &&
+           VerifyField<uint32_t>(verifier, VT_RSS_MAX_MB, 4) &&
+           VerifyField<uint32_t>(verifier, VT_PCODE_OP_LIMIT, 4) &&
+           VerifyField<uint32_t>(verifier, VT_ITERATION_LIMIT_PER_PASS, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct DecompileBudgetBuilder {
+  typedef DecompileBudget Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_wall_clock_ms(uint32_t wall_clock_ms) {
+    fbb_.AddElement<uint32_t>(DecompileBudget::VT_WALL_CLOCK_MS, wall_clock_ms, 30000);
+  }
+  void add_wall_clock_hard_ms(uint32_t wall_clock_hard_ms) {
+    fbb_.AddElement<uint32_t>(DecompileBudget::VT_WALL_CLOCK_HARD_MS, wall_clock_hard_ms, 60000);
+  }
+  void add_rss_max_mb(uint32_t rss_max_mb) {
+    fbb_.AddElement<uint32_t>(DecompileBudget::VT_RSS_MAX_MB, rss_max_mb, 4096);
+  }
+  void add_pcode_op_limit(uint32_t pcode_op_limit) {
+    fbb_.AddElement<uint32_t>(DecompileBudget::VT_PCODE_OP_LIMIT, pcode_op_limit, 1000000);
+  }
+  void add_iteration_limit_per_pass(uint32_t iteration_limit_per_pass) {
+    fbb_.AddElement<uint32_t>(DecompileBudget::VT_ITERATION_LIMIT_PER_PASS, iteration_limit_per_pass, 100);
+  }
+  explicit DecompileBudgetBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<DecompileBudget> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<DecompileBudget>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<DecompileBudget> CreateDecompileBudget(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t wall_clock_ms = 30000,
+    uint32_t wall_clock_hard_ms = 60000,
+    uint32_t rss_max_mb = 4096,
+    uint32_t pcode_op_limit = 1000000,
+    uint32_t iteration_limit_per_pass = 100) {
+  DecompileBudgetBuilder builder_(_fbb);
+  builder_.add_iteration_limit_per_pass(iteration_limit_per_pass);
+  builder_.add_pcode_op_limit(pcode_op_limit);
+  builder_.add_rss_max_mb(rss_max_mb);
+  builder_.add_wall_clock_hard_ms(wall_clock_hard_ms);
+  builder_.add_wall_clock_ms(wall_clock_ms);
+  return builder_.Finish();
+}
+
 struct DecompileFunctionRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef DecompileFunctionRequestBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PROGRAM_ID = 4,
     VT_FUNCTION_ADDRESS = 6,
     VT_TIMEOUT_MS = 8,
-    VT_FLAGS = 10
+    VT_FLAGS = 10,
+    VT_BUDGET = 12
   };
   const ::flatbuffers::String *program_id() const {
     return GetPointer<const ::flatbuffers::String *>(VT_PROGRAM_ID);
@@ -1134,6 +1220,9 @@ struct DecompileFunctionRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers:
   uint32_t flags() const {
     return GetField<uint32_t>(VT_FLAGS, 0);
   }
+  const ghidra::ipc::DecompileBudget *budget() const {
+    return GetPointer<const ghidra::ipc::DecompileBudget *>(VT_BUDGET);
+  }
   template <bool B = false>
   bool Verify(::flatbuffers::VerifierTemplate<B> &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1142,6 +1231,8 @@ struct DecompileFunctionRequest FLATBUFFERS_FINAL_CLASS : private ::flatbuffers:
            VerifyField<uint64_t>(verifier, VT_FUNCTION_ADDRESS, 8) &&
            VerifyField<uint32_t>(verifier, VT_TIMEOUT_MS, 4) &&
            VerifyField<uint32_t>(verifier, VT_FLAGS, 4) &&
+           VerifyOffset(verifier, VT_BUDGET) &&
+           verifier.VerifyTable(budget()) &&
            verifier.EndTable();
   }
 };
@@ -1162,6 +1253,9 @@ struct DecompileFunctionRequestBuilder {
   void add_flags(uint32_t flags) {
     fbb_.AddElement<uint32_t>(DecompileFunctionRequest::VT_FLAGS, flags, 0);
   }
+  void add_budget(::flatbuffers::Offset<ghidra::ipc::DecompileBudget> budget) {
+    fbb_.AddOffset(DecompileFunctionRequest::VT_BUDGET, budget);
+  }
   explicit DecompileFunctionRequestBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1178,9 +1272,11 @@ inline ::flatbuffers::Offset<DecompileFunctionRequest> CreateDecompileFunctionRe
     ::flatbuffers::Offset<::flatbuffers::String> program_id = 0,
     uint64_t function_address = 0,
     uint32_t timeout_ms = 30000,
-    uint32_t flags = 0) {
+    uint32_t flags = 0,
+    ::flatbuffers::Offset<ghidra::ipc::DecompileBudget> budget = 0) {
   DecompileFunctionRequestBuilder builder_(_fbb);
   builder_.add_function_address(function_address);
+  builder_.add_budget(budget);
   builder_.add_flags(flags);
   builder_.add_timeout_ms(timeout_ms);
   builder_.add_program_id(program_id);
@@ -1192,14 +1288,16 @@ inline ::flatbuffers::Offset<DecompileFunctionRequest> CreateDecompileFunctionRe
     const char *program_id = nullptr,
     uint64_t function_address = 0,
     uint32_t timeout_ms = 30000,
-    uint32_t flags = 0) {
+    uint32_t flags = 0,
+    ::flatbuffers::Offset<ghidra::ipc::DecompileBudget> budget = 0) {
   auto program_id__ = program_id ? _fbb.CreateString(program_id) : 0;
   return ghidra::ipc::CreateDecompileFunctionRequest(
       _fbb,
       program_id__,
       function_address,
       timeout_ms,
-      flags);
+      flags,
+      budget);
 }
 
 struct DecompileFunctionResponse FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

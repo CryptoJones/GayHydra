@@ -36,6 +36,17 @@
 namespace ghidra {
 namespace ipc {
 
+// Native view of the per-function analysis budget (Rec 35, #35-2). Defaults
+// mirror the schema (decompile.fbs / DECOMPILER_BUDGETS.md), so an all-unset or
+// absent budget reads back as these values rather than zero-by-omission.
+struct DecompileBudgetV1 {
+  uint32_t wall_clock_ms = 30000;
+  uint32_t wall_clock_hard_ms = 60000;
+  uint32_t rss_max_mb = 4096;
+  uint32_t pcode_op_limit = 1000000;
+  uint32_t iteration_limit_per_pass = 100;
+};
+
 // Native view of a decompile-function request, decoded out of a v1 payload.
 // Defaults mirror the schema (decompile.fbs) so a freshly-constructed value
 // matches what decode yields for an all-unset buffer.
@@ -44,18 +55,28 @@ struct DecompileRequestV1 {
   uint64_t function_address = 0;
   uint32_t timeout_ms = 30000;  // schema default
   uint32_t flags = 0;           // schema default
+  DecompileBudgetV1 budget;     // schema defaults when the request omits it
 };
 
 // Encode a request as a finished, root-typed FlatBuffers payload (schema v1),
 // returning the buffer bytes ready to ride inside a Rec 33 frame's payload
-// range. The returned vector owns a copy of the builder's bytes.
+// range. The returned vector owns a copy of the builder's bytes. A non-null
+// budget is encoded as the optional budget sub-table; a null budget leaves the
+// field unset, which the worker reads back as the schema defaults.
 inline std::vector<uint8_t> encode_decompile_request(const std::string &program_id,
                                                      uint64_t function_address,
                                                      uint32_t timeout_ms,
-                                                     uint32_t flags) {
+                                                     uint32_t flags,
+                                                     const DecompileBudgetV1 *budget = nullptr) {
   ::flatbuffers::FlatBufferBuilder fbb;
+  ::flatbuffers::Offset<DecompileBudget> budget_off = 0;
+  if (budget != nullptr) {
+    budget_off = CreateDecompileBudget(fbb, budget->wall_clock_ms, budget->wall_clock_hard_ms,
+                                       budget->rss_max_mb, budget->pcode_op_limit,
+                                       budget->iteration_limit_per_pass);
+  }
   auto root = CreateDecompileFunctionRequestDirect(fbb, program_id.c_str(),
-                                                   function_address, timeout_ms, flags);
+                                                   function_address, timeout_ms, flags, budget_off);
   FinishDecompileFunctionRequestBuffer(fbb, root);
   const uint8_t *p = fbb.GetBufferPointer();
   return std::vector<uint8_t>(p, p + fbb.GetSize());
@@ -79,6 +100,16 @@ inline bool decode_decompile_request(const uint8_t *buf, size_t len, DecompileRe
   out.function_address = req->function_address();
   out.timeout_ms = req->timeout_ms();
   out.flags = req->flags();
+  // budget is optional: an absent sub-table leaves out.budget at its schema
+  // defaults; a present one supplies each field (itself defaulted when omitted).
+  const DecompileBudget *b = req->budget();
+  if (b != nullptr) {
+    out.budget.wall_clock_ms = b->wall_clock_ms();
+    out.budget.wall_clock_hard_ms = b->wall_clock_hard_ms();
+    out.budget.rss_max_mb = b->rss_max_mb();
+    out.budget.pcode_op_limit = b->pcode_op_limit();
+    out.budget.iteration_limit_per_pass = b->iteration_limit_per_pass();
+  }
   return true;
 }
 
