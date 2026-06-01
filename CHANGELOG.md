@@ -165,6 +165,20 @@ generated from the GitHub Releases UI at sprint close.
   contract. Test-only and inert, like the rest of `#34-4`..`#34-6`: nothing in
   `DecompileProcess` calls this yet — the command-loop wiring is the
   end-to-end-only change deferred per DD-0005.
+- test(decompiler): `fuzz_ipc_schema` harness for the Rec 34 FlatBuffers IPC
+  decoders (`#34-9`). With the worker-side codecs complete (`#34-4`..`#34-6`), a
+  new libFuzzer harness in `cpp/fuzz/` feeds one fuzzer buffer to every
+  `decode_*_request`/`_response` across the four codec headers and relies on the
+  verify-before-read contract: any input — null, garbage, or truncated — must
+  return false rather than read out of bounds or trip a sanitizer. Header-only
+  (the codecs are inline over the vendored FlatBuffers runtime), so the target
+  links no decompiler object files; `Makefile.fuzz` gains a `FLATBUF_INCLUDE`
+  path and the `fuzz_ipc_schema` rule, and the fuzz `README`/`OSS_FUZZ.md`
+  harness + seed tables gain its row. This is the in-tree continuation of Rec 13's
+  fuzz set — the OSS-Fuzz upstream submission was rejected, so the harness stands
+  on its own and runs locally / via our own CI. Validated locally against 200k+
+  malformed inputs under ASan+UBSan with zero findings (clang/libFuzzer absent on
+  the build box; the committed target builds under `Makefile.fuzz` with clang).
 
 ---
 

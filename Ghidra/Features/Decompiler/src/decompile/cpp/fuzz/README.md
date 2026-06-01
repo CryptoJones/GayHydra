@@ -12,6 +12,7 @@ CI.
 |---|---|
 | `fuzz_xml.cc` | `xml_tree()` — the decompiler's XML parser. |
 | `fuzz_marshal.cc` | `PackedDecode` — the Java↔C++ binary IPC parser. |
+| `fuzz_ipc_schema.cc` | `decode_*()` — the Rec 34 FlatBuffers IPC schema decoders (#34-9). Header-only; no decompiler objects. |
 
 ## Build (local)
 

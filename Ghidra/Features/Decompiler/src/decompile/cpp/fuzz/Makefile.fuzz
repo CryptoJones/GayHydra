@@ -19,6 +19,9 @@ LIB_FUZZING_ENGINE ?= -fsanitize=fuzzer
 
 CXXSTD := -std=c++20
 INCLUDES := -I$(CPP_DIR)
+# The Rec 34 schema codecs are header-only over the vendored FlatBuffers
+# runtime; fuzz_ipc_schema needs its include path.
+FLATBUF_INCLUDE := -I$(CPP_DIR)/vendor/flatbuffers/include
 WARN := -Wall -Wno-sign-compare
 
 SAN :=
@@ -46,9 +49,9 @@ MARSHAL_OBJS := \
     $(CPP_DIR)/address.o \
     $(CPP_DIR)/space.o
 
-.PHONY: all clean fuzz_xml fuzz_marshal
+.PHONY: all clean fuzz_xml fuzz_marshal fuzz_ipc_schema
 
-all: fuzz_xml fuzz_marshal
+all: fuzz_xml fuzz_marshal fuzz_ipc_schema
 
 fuzz_xml: fuzz_xml.cc $(XML_OBJS)
 	$(CXX) $(CXXFLAGS) $(LIB_FUZZING_ENGINE) $^ -o $@
@@ -56,5 +59,10 @@ fuzz_xml: fuzz_xml.cc $(XML_OBJS)
 fuzz_marshal: fuzz_marshal.cc $(MARSHAL_OBJS)
 	$(CXX) $(CXXFLAGS) $(LIB_FUZZING_ENGINE) $^ -o $@
 
+# Header-only: the schema codecs are inline over the vendored FlatBuffers
+# runtime, so this harness links no decompiler object files.
+fuzz_ipc_schema: fuzz_ipc_schema.cc
+	$(CXX) $(CXXFLAGS) $(FLATBUF_INCLUDE) $(LIB_FUZZING_ENGINE) $^ -o $@
+
 clean:
-	rm -f fuzz_xml fuzz_marshal
+	rm -f fuzz_xml fuzz_marshal fuzz_ipc_schema
