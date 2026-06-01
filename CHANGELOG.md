@@ -195,6 +195,17 @@ generated from the GitHub Releases UI at sprint close.
   reads the budget into the analysis loop yet (that is `#35-3`). Covered by new
   round-trip + absent-defaults tests on both sides (`testipc_codec.cc`,
   `DecompileRequestCodecTest`).
+- feat(decompiler): add the cooperative analysis budget tracker (`#35-3a`).
+  Next slice of Rec 35: a dependency-free, header-only `DecompileBudgetTracker`
+  (`cpp/budget.hh`) that the analysis loop will consult at each yield point. It
+  tracks soft/hard wall-clock, accumulated pcode-ops, and per-pass fixed-point
+  iterations against the five caps, never interrupting — an exhausted cap is
+  recorded as a `BudgetExhaustion` class pinned to the pass that first ran out,
+  so the caller can checkpoint and return a partial result. The clock source is
+  injectable, so the wall-clock paths are unit-tested deterministically without
+  sleeping (`testbudget.cc`, 9 cases). Inert for now: no production pass consults
+  it yet — wiring the checks into `flow_analysis`/`data_flow` is the behaviour-
+  changing follow-up (`#35-3b`).
 
 ---
 
