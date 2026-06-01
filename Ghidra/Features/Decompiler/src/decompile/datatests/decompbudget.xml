@@ -1,14 +1,15 @@
 <decompilertest>
 <binaryimage arch="x86:LE:64:default:gcc">
 <!--
-    Rec 35 (#35-3b): the cooperative analysis budget, wired into the flow_analysis
-    yield point. Engaging the budget with a tight per-pass iteration cap truncates
-    flow exactly as the max-instruction cap does (artificial HALT, no fall-thru)
-    and records a partial-result diagnostic. This pins that contract end-to-end:
-    a budgeted decompile of a real, multi-instruction function emits the
-    "Exceeded decompilation budget" warning header. The unbudgeted decompile of the
-    same function is exercised by condconst.xml, so the default (no budget engaged)
-    no-op path is covered there.
+    Rec 35 (#35-3b/#35-3c): the cooperative analysis budget, wired into the
+    flow_analysis yield point. Engaging the budget with a tight per-pass iteration
+    cap truncates flow exactly as the max-instruction cap does (artificial HALT, no
+    fall-thru) and records a partial-result diagnostic. This pins that contract
+    end-to-end: a budgeted decompile of a real, multi-instruction function emits the
+    partial-result header, which (#35-3c) names the pass the budget ran out on
+    (here flow_analysis), so the diagnostic says which pass was truncated.
+    The unbudgeted decompile of the same function is exercised by condconst.xml, so
+    the default (no budget engaged) no-op path is covered there.
 
     The function bytes are condconst1 from condconst.xml.
 -->
@@ -32,5 +33,5 @@
   <com>print C</com>
   <com>quit</com>
 </script>
-<stringmatch name="Budget exhausted warning header" min="1" max="1">WARNING: Exceeded decompilation budget: Some flow is truncated</stringmatch>
+<stringmatch name="Budget exhausted warning header names the pass" min="1" max="1">WARNING: Exceeded decompilation budget on pass flow_analysis: Some flow is truncated</stringmatch>
 </decompilertest>

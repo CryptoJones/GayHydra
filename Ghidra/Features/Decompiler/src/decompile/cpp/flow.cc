@@ -414,7 +414,15 @@ bool FlowInfo::processInstruction(const Address &curaddr,bool &startbasic)
     data.warning("Decompilation budget exhausted -- Truncating flow here",curaddr);
     if (!hasBudgetExhausted()) {
       flags |= budgetexhausted_present;
-      data.warningHeader("Exceeded decompilation budget: Some flow is truncated");
+      // Name the pass the budget ran out on, so the partial-result diagnostic
+      // says which pass was truncated (the "budget exhausted on pass X" contract
+      // in DECOMPILER_BUDGETS.md), not just that some budget was exhausted.
+      const string &exhaustedPass(glb->budget.exhaustedPass());
+      string hdr("Exceeded decompilation budget");
+      if (!exhaustedPass.empty())
+	hdr += " on pass " + exhaustedPass;
+      hdr += ": Some flow is truncated";
+      data.warningHeader(hdr);
     }
   }
   insn_count += 1;
