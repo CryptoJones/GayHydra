@@ -169,15 +169,49 @@ the cache key shape.
 
 ## Sequencing
 
-| PR | Scope |
-|---|---|
-| #35-1 (this PR) | This design doc |
-| #35-2 | Add `DecompileBudget` to the request schema (XML for now, FlatBuffers post-Rec-34) |
-| #35-3 | Add yield-point budget check to `flow_analysis` + `data_flow`; emit partial-result diagnostics |
-| #35-4 | Add the remaining passes; pass-bypass-mode |
-| #35-5 | UI banner + retry path |
-| #35-6 | Cache partial results keyed by budget |
-| #35-7 | Tune defaults from production telemetry (after one release) |
+| PR | Scope | Status |
+|---|---|---|
+| #35-1 | This design doc | done |
+| #35-2 | Add `DecompileBudget` to the request schema (XML for now, FlatBuffers post-Rec-34) | done |
+| #35-3a | Land the cooperative `DecompileBudgetTracker` (inert, std-only, unit-tested) | done |
+| #35-3b | Wire the tracker into the `flow_analysis` yield point (per-instruction iteration cap → artificial-HALT truncation + partial-result diagnostic); `decompilebudget <N>` console option | done |
+| #35-3c | Name the exhausted pass in the partial-result header (`…on pass flow_analysis…`) | done |
+| #35-3d | `data_flow` yield point — see "data_flow yield point" note below; this is a #35-4-flavored design task, not a one-shot atomic PR | not started |
+| #35-4 | Add the remaining passes; pass-bypass-mode | not started |
+| #35-5 | UI banner + retry path | not started |
+| #35-6 | Cache partial results keyed by budget | not started |
+| #35-7 | Tune defaults from production telemetry (after one release) | not started |
+
+### Implementation note: the `data_flow` yield point
+
+`flow_analysis` was wired first because its loop
+(`FlowInfo::processInstruction`) is a clean, pass-specific,
+deterministically-testable yield point: one processed instruction is one
+iteration, and truncation is the existing artificial-HALT path. The
+`data_flow` yield point has none of those properties, so it is not a single
+small atomic PR:
+
+- **No pass-specific loop.** The data_flow fixpoint is the *generic*
+  `Action::perform` loop (`action.cc`, `do { apply() } while(lcount<count &&
+  rule_repeatapply)`), shared by every pass (`flow_analysis`,
+  `type_inference`, `value_analysis`, …). A budget tick there is not
+  data_flow-specific without threading pass identity into the Action
+  framework.
+- **The restart count is degenerate.** `ActionRestartGroup` is constructed
+  with `maxrestarts = 1` (`coreaction.cc`, the `"universal"` group), so a
+  restart-count budget tops out at 1 and is useless as an iteration metric.
+- **Truncation ≠ HALT here.** "Stop data_flow early" means returning a
+  coarser result (e.g. skip alias analysis), which is the bypass/coarser-mode
+  semantics this doc defers to **#35-4** — not the artificial-HALT truncation
+  flow_analysis uses.
+- **Needs a deterministic harness.** A datatest must force many rule
+  applications and assert a stable partial-result header; that fixture does
+  not exist yet. (Wall-clock-into-flow is likewise not datatest-able: the
+  production clock is real, only a 0 ms cap trips, and that degenerately
+  breaks at instruction 1 — the same break `maxinstruction 1` produces.)
+
+So `#35-3d` should be picked up deliberately alongside the `#35-4`
+pass-bypass design, not shipped as a quick atomic follow-up.
 
 ## What this does *not* do
 

@@ -44,6 +44,16 @@ generated from the GitHub Releases UI at sprint close.
   comment line under the 100-column wrap, which the per-line `stringmatch` in
   `datatests/decompbudget.xml` now asserts. No behaviour change to any
   unbudgeted decompile; the full unit + datatest suites stay green.
+- docs(decompiler): refine the Rec 35 sequencing table to reflect what has
+  shipped (`#35-1`/`#35-2`/`#35-3a`/`#35-3b`/`#35-3c` done) and split the
+  `data_flow` yield point into its own `#35-3d` item with an implementation
+  note. Records why it is *not* a one-shot atomic PR the way `flow_analysis`
+  was: the data_flow fixpoint is the generic `Action::perform` loop (shared by
+  every pass, not data_flow-specific), the `ActionRestartGroup` restart count is
+  degenerate at `maxrestarts = 1`, "stop data_flow early" means the coarser
+  bypass-mode semantics deferred to `#35-4` rather than `flow_analysis`'s
+  artificial-HALT truncation, and no deterministic datatest fixture exists yet.
+  Documentation only; no code or behaviour change.
 - build(decompiler): compile-wire the Rec 34 FlatBuffers IPC Java bindings
   (`#34-4a`). The 25 flatc-generated `ghidra.ipc.*` classes under
   `src/decompile/cpp/schema/java` were shipped as inert source in `#34-3`; this
