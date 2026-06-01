@@ -130,6 +130,23 @@ generated from the GitHub Releases UI at sprint close.
   `#34-6b`. Test-only and inert: nothing in the production decompiler includes
   the codec yet — the command-loop wiring is the end-to-end-only change deferred
   per DD-0005.
+- feat(decompiler): worker-side v1 codecs for the configuration/graph commands
+  (`#34-6b`). Completes `#34-6` (and so the worker-side codec for every command
+  in the schema) with the remaining trio in a new header-only
+  `schema/ipc_config_codec.h`: `StructureGraph`, `SetAction`, and `SetOptions`.
+  Each gets its native request/response views and the full encode/decode
+  round-trip, same contract as the lifecycle codec (`#34-6a`): worker production
+  directions `decode_*_request()` / `encode_*_response()`, host directions
+  included for testability, generic `Finish`/`GetRoot`/`VerifyBuffer` roots
+  (none is the schema `root_type`), and verify-before-read on every `decode`. The
+  control-flow `<block>` document, the `SetAction` root-action/print-config
+  selectors, and the `SetOptions` `<optionslist>` stay opaque strings to match
+  the legacy wire. A new auto-globbed unit test
+  (`src/decompile/unittests/testipc_config_codec.cc`) pins each command's
+  request/response round-trip, the `success` bool default (`SetAction`),
+  empty-string handling, and the null/garbage/truncated rejection contract (302
+  unit tests total). Test-only and inert, like the rest of `#34-4`..`#34-6`: the
+  command-loop wiring is the end-to-end-only change deferred per DD-0005.
 
 ---
 
