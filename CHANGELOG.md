@@ -147,6 +147,24 @@ generated from the GitHub Releases UI at sprint close.
   empty-string handling, and the null/garbage/truncated rejection contract (302
   unit tests total). Test-only and inert, like the rest of `#34-4`..`#34-6`: the
   command-loop wiring is the end-to-end-only change deferred per DD-0005.
+- feat(decompiler): host-side v1 request encoders for the six non-`DecompileAt`
+  commands (`#34-6c`). Java half of `#34-6`, mirroring `DecompileRequestCodec`
+  (`#34-4`): a new `CommandRequestCodec` provides one static encoder per command
+  — `RegisterProgram`, `DeregisterProgram`, `FlushNative`, `StructureGraph`,
+  `SetAction`, and `SetOptions` — each building the v1 FlatBuffers payload the
+  C++ worker decodes (`#34-6a`/`#34-6b`). Encode-only: in the protocol the host
+  writes requests and the worker reads them, and the vendored flatbuffers-java
+  bindings are generated without a verifier, so a host-side decoder would have no
+  caller and could not safely reject a malformed buffer anyway. None of these
+  tables is the schema `root_type` (only `DecompileFunctionRequest` is), so the
+  generic `FlatBufferBuilder.finish(int)` roots the buffer rather than a
+  generated `finish*Buffer` helper. A `null` argument leaves its field unset
+  (read back as null), distinct from a present-but-empty string. A new fast-suite
+  test (`src/test/java/.../ipc/CommandRequestCodecTest.java`) reads each payload
+  back with the generated accessors to pin the round-trip and the null-vs-empty
+  contract. Test-only and inert, like the rest of `#34-4`..`#34-6`: nothing in
+  `DecompileProcess` calls this yet — the command-loop wiring is the
+  end-to-end-only change deferred per DD-0005.
 
 ---
 
