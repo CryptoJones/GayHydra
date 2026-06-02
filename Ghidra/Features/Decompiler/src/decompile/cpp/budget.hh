@@ -61,6 +61,7 @@ struct DecompileBudgetCaps {
   uint32_t rss_max_mb = 4096;                 ///< Hard resident-set cap (4 GiB).
   uint32_t pcode_op_limit = 1000000;          ///< Soft pcode-op count cap.
   uint32_t iteration_limit_per_pass = 100;    ///< Soft per-pass fixed-point cap.
+  uint32_t dataflow_iteration_limit = 100000; ///< Soft data_flow sweep cap (own scale).
 };
 
 /// \brief Cooperative, single-thread budget tracker for the analysis loop.
@@ -95,6 +96,7 @@ public:
     startMs = clock();
     pcodeOps = 0;
     passIterations = 0;
+    activeIterationLimit = caps.iteration_limit_per_pass;
     exhaust = BudgetExhaustion::none;
     exhaustPass.clear();
     currentPass.clear();
@@ -102,11 +104,24 @@ public:
 
   /// \brief Mark entry to a named pass, resetting the per-pass iteration count.
   ///
+  /// The pass is bounded by the default per-pass cap (iteration_limit_per_pass).
   /// Does not clear an already-recorded exhaustion: a budget exhausted in an
   /// earlier pass keeps its diagnostic across the pass boundary.
   void enterPass(const std::string &name) {
+    enterPass(name, caps.iteration_limit_per_pass);
+  }
+
+  /// \brief Mark entry to a named pass with an explicit per-pass iteration cap.
+  ///
+  /// Different passes count iterations on different scales (flow_analysis counts
+  /// processed instructions; the data_flow rule-pool counts simplification
+  /// sweeps), so each pass supplies the cap it is bounded by from the caps
+  /// rather than sharing one number. Resets the per-pass iteration count; does
+  /// not clear an already-recorded exhaustion.
+  void enterPass(const std::string &name, uint32_t iterLimit) {
     currentPass = name;
     passIterations = 0;
+    activeIterationLimit = iterLimit;
   }
 
   /// \brief Count one iteration of the current pass's fixed-point loop.
@@ -114,7 +129,7 @@ public:
   ///         loop can break; records iterationLimit exhaustion on the first hit.
   bool tickIteration(void) {
     passIterations += 1;
-    if (passIterations >= caps.iteration_limit_per_pass) {
+    if (passIterations >= activeIterationLimit) {
       record(BudgetExhaustion::iterationLimit);
       return true;
     }
@@ -159,7 +174,7 @@ public:
     if (pcodeOps >= caps.pcode_op_limit) {
       return record(BudgetExhaustion::pcodeOpLimit);
     }
-    if (passIterations >= caps.iteration_limit_per_pass) {
+    if (passIterations >= activeIterationLimit) {
       return record(BudgetExhaustion::iterationLimit);
     }
     return BudgetExhaustion::none;
@@ -174,6 +189,12 @@ public:
   /// \brief Name of the pass on which exhaustion was first observed (the
   ///        partial-result diagnostic); empty while still within budget.
   const std::string &exhaustedPass(void) const { return exhaustPass; }
+
+  /// \brief Name of the pass currently executing (set by enterPass); empty
+  ///        before any pass is entered. Lets a re-entrant pass detect that it
+  ///        is already active and keep accumulating its iteration count rather
+  ///        than resetting it on every visit.
+  const std::string &currentPassName(void) const { return currentPass; }
 
   /// \brief The caps this tracker enforces.
   const DecompileBudgetCaps &budget(void) const { return caps; }
@@ -194,6 +215,7 @@ private:
   uint64_t startMs = 0;         ///< Clock value captured at construction/reset.
   uint64_t pcodeOps = 0;        ///< Pcode-ops accumulated since reset.
   uint32_t passIterations = 0;  ///< Iterations of the current pass since enterPass.
+  uint32_t activeIterationLimit = 0;  ///< Per-pass iteration cap for the current pass.
   BudgetExhaustion exhaust = BudgetExhaustion::none;  ///< Sticky exhaustion class.
   std::string exhaustPass;      ///< Pass that first ran out of budget.
   std::string currentPass;      ///< Pass currently executing.

@@ -300,6 +300,26 @@ int4 Action::perform(Funcdata &data)
 {
   int4 res;
 
+  // Rec 35 (#35-3d): cooperative per-function budget for a tagged pass (e.g. the
+  // data_flow simplification pool). Disengaged or untagged, every check below is
+  // a single bool test and behaviour is unchanged.
+  Architecture *glb = data.getArch();
+  bool budgeting = (!budgetPass.empty()) && glb->budget.engaged();
+  if (budgeting && glb->budget.exhausted() && glb->budget.exhaustedPass() == budgetPass) {
+    // This pass already spent its own iteration budget: bypass it on later
+    // visits so the pass is actually bounded (the rule-pool is re-performed each
+    // outer-loop iteration). A budget exhausted by a *different* pass does not
+    // bypass us, so the shipped flow_analysis-truncation path is preserved.
+    return 0;
+  }
+  bool budgetTick = budgeting && !glb->budget.exhausted();
+  // Enter the tagged pass once, the first time it runs, and keep accumulating its
+  // iteration count across every later re-perform (the outer mainloop re-drives
+  // this pool many times). Re-entering would reset the count each visit, making
+  // the cap a per-perform limit instead of a per-function one.
+  if (budgetTick && glb->budget.currentPassName() != budgetPass)
+    glb->budget.enterPass(budgetPass, glb->budget.budget().dataflow_iteration_limit);
+
   do {
     switch(status) {
     case status_start:
@@ -345,6 +365,16 @@ int4 Action::perform(Funcdata &data)
       break;
     case status_actionbreak:	// Returned -1 last time, but we do not reapply
       break;			// we either repeat, or return our count
+    }
+    // Rec 35 (#35-3d): count one fixed-point iteration of the tagged pass only
+    // when the sweep made a change (lcount<count); a no-change sweep is natural
+    // convergence, not budget pressure, and must not trip the cap. When the cap
+    // is reached we stop here -- a sweep boundary is a consistent point -- and
+    // record the partial-result diagnostic, which now names this pass.
+    // Subsequent visits bypass via the exhausted() check above.
+    if (budgetTick && (lcount < count) && glb->budget.tickIteration()) {
+      data.warningHeader("Exceeded decompilation budget on pass " + budgetPass + ": Some analysis is truncated");
+      break;
     }
     status = status_repeat;
   } while((lcount<count)&&((flags&rule_repeatapply)!=0));
@@ -402,6 +432,8 @@ Action *ActionGroup::clone(const ActionGroupList &grouplist) const
       res->addAction(ac);
     }
   }
+  if (res != (ActionGroup *)0)
+    res->setBudgetPass(budgetPass);	// Rec 35: clone preserves the budget pass tag
   return res;
 }
 
@@ -540,6 +572,8 @@ Action *ActionRestartGroup::clone(const ActionGroupList &grouplist) const
       res->addAction(ac);
     }
   }
+  if (res != (ActionGroup *)0)
+    res->setBudgetPass(budgetPass);	// Rec 35: clone preserves the budget pass tag
   return res;
 }
 
@@ -910,6 +944,8 @@ Action *ActionPool::clone(const ActionGroupList &grouplist) const
       res->addRule(rl);
     }
   }
+  if (res != (ActionPool *)0)
+    res->setBudgetPass(budgetPass);	// Rec 35: clone preserves the budget pass tag
   return res;
 }
 

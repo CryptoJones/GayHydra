@@ -176,7 +176,7 @@ the cache key shape.
 | #35-3a | Land the cooperative `DecompileBudgetTracker` (inert, std-only, unit-tested) | done |
 | #35-3b | Wire the tracker into the `flow_analysis` yield point (per-instruction iteration cap → artificial-HALT truncation + partial-result diagnostic); `decompilebudget <N>` console option | done |
 | #35-3c | Name the exhausted pass in the partial-result header (`…on pass flow_analysis…`) | done |
-| #35-3d | `data_flow` yield point — see "data_flow yield point" note below; this is a #35-4-flavored design task, not a one-shot atomic PR | not started |
+| #35-3d | `data_flow` yield point — decoupled per-sweep cap on the `oppool1` simplification pool, bypass-on-own-exhaustion; see note below | done |
 | #35-4 | Add the remaining passes; pass-bypass-mode | not started |
 | #35-5 | UI banner + retry path | not started |
 | #35-6 | Cache partial results keyed by budget | not started |
@@ -188,30 +188,51 @@ the cache key shape.
 (`FlowInfo::processInstruction`) is a clean, pass-specific,
 deterministically-testable yield point: one processed instruction is one
 iteration, and truncation is the existing artificial-HALT path. The
-`data_flow` yield point has none of those properties, so it is not a single
-small atomic PR:
+`data_flow` yield point had none of those properties, which is why it was
+sequenced after `flow_analysis` rather than alongside it. `#35-3d` resolves
+each obstacle the original analysis raised, as follows.
 
-- **No pass-specific loop.** The data_flow fixpoint is the *generic*
-  `Action::perform` loop (`action.cc`, `do { apply() } while(lcount<count &&
-  rule_repeatapply)`), shared by every pass (`flow_analysis`,
-  `type_inference`, `value_analysis`, …). A budget tick there is not
-  data_flow-specific without threading pass identity into the Action
-  framework.
-- **The restart count is degenerate.** `ActionRestartGroup` is constructed
-  with `maxrestarts = 1` (`coreaction.cc`, the `"universal"` group), so a
-  restart-count budget tops out at 1 and is useless as an iteration metric.
-- **Truncation ≠ HALT here.** "Stop data_flow early" means returning a
-  coarser result (e.g. skip alias analysis), which is the bypass/coarser-mode
-  semantics this doc defers to **#35-4** — not the artificial-HALT truncation
-  flow_analysis uses.
-- **Needs a deterministic harness.** A datatest must force many rule
-  applications and assert a stable partial-result header; that fixture does
-  not exist yet. (Wall-clock-into-flow is likewise not datatest-able: the
-  production clock is real, only a 0 ms cap trips, and that degenerately
-  breaks at instruction 1 — the same break `maxinstruction 1` produces.)
+- **No pass-specific loop → tag the pool, not the loop.** The data_flow
+  fixpoint is the *generic* `Action::perform` loop (`action.cc`,
+  `do { apply() } while(lcount<count && rule_repeatapply)`), shared by every
+  pass. Rather than special-casing data_flow inside that loop, `#35-3d` adds an
+  `Action::budgetPass` string tag and sets it on exactly one action — the
+  `oppool1` simplification pool (`coreaction.cc`). `Action::perform` only ticks
+  when the running action carries a tag *and* the budget is engaged; every
+  untagged action runs a single bool test and is otherwise untouched. The tag
+  is propagated through `ActionGroup`/`ActionRestartGroup`/`ActionPool::clone`,
+  because each `Architecture` builds its action tree by *cloning* the universal
+  template (`ActionDatabase::deriveAction`), so a tag that did not survive
+  `clone()` would never reach the runtime pool.
+- **The restart count is degenerate → count changing sweeps instead.**
+  `ActionRestartGroup`'s `maxrestarts = 1` is useless as a metric, so the cap
+  is not restart-based. The pool is performed many times by the outer mainloop;
+  `#35-3d` counts each *changing* rule-pool sweep (`lcount<count`; a no-change
+  sweep is natural convergence, not budget pressure) and **accumulates that
+  count across the whole function** by entering the `data_flow` pass exactly
+  once (guarded on `currentPassName() != budgetPass`) instead of resetting the
+  counter on every re-perform. Without that, the cap would be a meaningless
+  per-perform limit.
+- **Truncation ≠ HALT here → clean bypass-mode.** "Stop data_flow early" is the
+  bypass/coarser-mode semantics: on reaching the cap the pool stops at a sweep
+  boundary, records the partial-result diagnostic, and on every later visit
+  returns `0` immediately (`exhausted() && exhaustedPass() == budgetPass`), so
+  total data_flow work is genuinely bounded even though the mainloop keeps
+  re-driving the pool. The partially-simplified IR remains valid and printable
+  (constant-folding is simply left incomplete). A budget exhausted by a
+  *different* pass (e.g. `flow_analysis`) does **not** bypass data_flow, so the
+  shipped `#35-3b` flow-truncation path is preserved exactly.
+- **Needs a deterministic harness → decouple the caps.** The flow and data_flow
+  caps are independent: `decompilebudget <flowN> [<dataflowN>]`, with
+  `dataflow_iteration_limit` defaulting to 100000 (effectively unbounded). That
+  lets a fixture leave flow uncapped (`flowN = 1000`) while truncating data_flow
+  on its own scale. `datatests/decompbudget_dataflow.xml` pins it: `condconst1`
+  converges naturally in 8 data_flow sweeps, and `decompilebudget 1000 2`
+  truncates it at 2, emitting a stable, single-line partial-result header.
 
-So `#35-3d` should be picked up deliberately alongside the `#35-4`
-pass-bypass design, not shipped as a quick atomic follow-up.
+The remaining passes and a general pass-bypass façade are still **#35-4**;
+`#35-3d` lands the data_flow pass on the same mechanism so that work can follow
+the pattern rather than invent it.
 
 ## What this does *not* do
 

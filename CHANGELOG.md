@@ -12,6 +12,31 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): wire the cooperative budget into the `data_flow`
+  simplification fixpoint (`#35-3d`). The `#35-3b`/`#35-3c` work bounded
+  `flow_analysis`; this extends the budget to the data-flow rule pool
+  (`oppool1`). A new `Action::budgetPass` tag (propagated through every
+  container `clone()`, since each `Architecture` derives its action tree by
+  cloning the universal template) marks exactly that pool; the generic
+  `Action::perform` fixpoint, when the pool is tagged and the budget engaged,
+  counts each *changing* rule-pool sweep (a no-change sweep is natural
+  convergence, not budget pressure) and accumulates that count across the whole
+  function rather than resetting it on every re-perform the outer mainloop
+  drives. Reaching the cap stops the pool at a sweep boundary, records the same
+  pass-named partial-result diagnostic (`Exceeded decompilation budget on pass
+  data_flow: Some analysis is truncated`), and bypasses the pool on every later
+  visit so total data_flow work is genuinely bounded. The cap is *decoupled*
+  from the `flow_analysis` cap — `decompilebudget <flowN> [<dataflowN>]` now
+  takes an optional second sweep cap (default 100000, effectively unbounded) so
+  the two passes are budgeted on their own scales; omitting it leaves data_flow
+  untouched. A budget exhausted by `flow_analysis` does *not* bypass data_flow,
+  so the shipped `#35-3b` flow-truncation path is byte-for-byte preserved.
+  Covered by a new functional datatest
+  (`datatests/decompbudget_dataflow.xml`): `condconst1` converges naturally in
+  8 data_flow sweeps, and a cap of 2 truncates it well short, emitting the
+  data_flow header with the constant-folding visibly incomplete. Disengaged
+  (the production default) every yield point is still a single bool test, and
+  the full 315-case unit suite + 679-case datatest suite stay green.
 - feat(decompiler): wire the cooperative analysis budget into `flow_analysis`
   (`#35-3b`). The `DecompileBudgetTracker` shipped inert in `#35-3a` is now
   consulted at the flow-following yield point: each processed instruction counts

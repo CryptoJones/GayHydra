@@ -5656,6 +5656,7 @@ void ActionDatabase::universalAction(Architecture *conf)
       actstackstall = make_unique<ActionGroup>(Action::rule_repeatapply,"stackstall").release();
       {
 	actprop = make_unique<ActionPool>(Action::rule_repeatapply,"oppool1").release();
+	actprop->setBudgetPass("data_flow");	// Rec 35 (#35-3d): the data_flow simplification fixpoint
 	actprop->addRule(make_unique<RuleEarlyRemoval>("deadcode").release());
 	actprop->addRule(make_unique<RuleTermOrder>("analysis").release());
 	actprop->addRule(make_unique<RuleSelectCse>("analysis").release());

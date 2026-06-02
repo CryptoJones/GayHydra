@@ -86,6 +86,7 @@ protected:
   uint4 count_apply;		///< Number of times apply() made changes
   string name;			///< Name of the action
   string basegroup;		///< Base group this action belongs to
+  string budgetPass;		///< If non-empty, the Rec 35 budget pass name this Action realizes
   void issueWarning(Architecture *glb);	///< Warn that this Action has applied
   bool checkStartBreak(void);	///< Check start breakpoint
   bool checkActionBreak(void);	///< Check action breakpoint
@@ -107,6 +108,15 @@ public:
   bool enableRule(const string &specify);			///< Enable a specific Rule within \b this
   const string &getName(void) const { return name; }		///< Get the Action's name
   const string &getGroup(void) const { return basegroup; }	///< Get the Action's group
+  /// \brief Tag this Action as the realization of a Rec 35 budget pass
+  ///
+  /// When the per-function budget is engaged, Action::perform consults the
+  /// budget at the start of and within this Action's fixed-point loop, bounding
+  /// it by the pass's iteration cap and truncating at a consistent boundary with
+  /// a partial-result diagnostic. Empty (the default) leaves the Action
+  /// budget-transparent.
+  void setBudgetPass(const string &nm) { budgetPass = nm; }
+  const string &getBudgetPass(void) const { return budgetPass; }	///< Get the budget pass name (may be empty)
   uint4 getStatus(void) const { return status; }		///< Get the current status of \b this Action
   uint4 getNumTests(void) { return count_tests; }		///< Get the number of times apply() was invoked
   uint4 getNumApply(void) { return count_apply; }		///< Get the number of times apply() made changes
