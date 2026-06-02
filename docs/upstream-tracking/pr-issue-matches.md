@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 344 open PRs scanned. 72 PR→open-issue closing-references found, across 71 distinct PRs and 72 distinct issues.
+Snapshot: 343 open PRs scanned. 73 PR→open-issue closing-references found, across 72 distinct PRs and 72 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -38,6 +38,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8948](https://github.com/NationalSecurityAgency/ghidra/issues/8948) CompareExecutablesScript Could not locate vector because ID is 0 | [#8949](https://github.com/NationalSecurityAgency/ghidra/pull/8949) #8948 skip missing vectors in ExecutableComparison | @jordanjohnson56 | +8/-1 | 2026-02-09 |
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
 | 0 | [#8471](https://github.com/NationalSecurityAgency/ghidra/issues/8471) Pointers to Thumb function are spuriously decompiled to hex | [#8990](https://github.com/NationalSecurityAgency/ghidra/pull/8990) Do not apply rule ptrsubundo for pointers targeting ARM Thumb functions | @niooss-ledger | +10/-2 | 2026-02-19 |
+| 0 | [#9225](https://github.com/NationalSecurityAgency/ghidra/issues/9225) RISC-V emulator incorrectly emulates remu instruction (divide by zero) | [#6508](https://github.com/NationalSecurityAgency/ghidra/pull/6508) RISCV: handle divide by 0 | @Sleigh-InSPECtor | +14/-0 | 2024-05-15 |
 | 0 | [#9195](https://github.com/NationalSecurityAgency/ghidra/issues/9195) Z80 register indirect addressing mode DefaultOperandRepresentation missing parentheses | [#9196](https://github.com/NationalSecurityAgency/ghidra/pull/9196) Z80: fix (HL) register indirect addressing missing from operand representation | @0xDI | +6/-9 | 2026-05-18 |
 | 0 | [#9171](https://github.com/NationalSecurityAgency/ghidra/issues/9171) Loading issue causing missing section data in PE/code cave | [#9175](https://github.com/NationalSecurityAgency/ghidra/pull/9175) Round SizeOfRawData up to the nearest multiple of the FileAlignment | @XOR-RAX | +11/-4 | 2026-05-10 |
 | 0 | [#6597](https://github.com/NationalSecurityAgency/ghidra/issues/6597) armv6m: msr instruction is reading from the wrong register | [#6598](https://github.com/NationalSecurityAgency/ghidra/pull/6598) Fix input register for msr apsr | @danlehmann | +8/-8 | 2024-05-30 |
