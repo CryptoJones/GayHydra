@@ -137,12 +137,15 @@ jobs:
         # at user-reported time.
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
-    # macOS runners are ~2x slower than ubuntu and the JVM suite's
-    # MDMangBaseTest combinatorial surface pushes the macOS leg to
-    # ~88-90 min — it tripped the previous 90-min cap (a timeout-cancel
-    # that read as a false red, with every test passing). Bumped to 120
-    # for headroom; ubuntu (~35 min) and windows (~60 min) finish well
-    # under either value, so this only affects the macOS long pole.
+    # The MicrosoftDmang demangler suite is the macOS long pole: MDMangBaseTest
+    # plus its VS2013/VS2015/Ghidra/Genericize/ParseInfo subclasses each re-run
+    # the same ~15.7k-line combinatorial assertion set, and on the ~2x-slower
+    # macOS runner that pushed the leg to ~88-90 min — close enough to the old
+    # 90-min cap to trip a timeout-cancel that read as a false red (every test
+    # passing). The suite is pure platform-independent string processing, so it
+    # now runs once on the fast ubuntu leg and is excluded on the slower
+    # macOS/windows legs (see "Run JVM unit tests" below). The 120-min cap is
+    # kept as headroom for the remaining platform-sensitive suites.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
@@ -180,7 +183,10 @@ jobs:
       - name: Run JVM unit tests
         # --continue: don't stop at the first failure; surface the
         # whole picture in one CI run.
-        run: gradle test --parallel --continue
+        # Exclude the platform-independent MicrosoftDmang demangler suite on the
+        # slower macOS/windows legs — it's the combinatorial long pole and is
+        # fully exercised on the ubuntu leg (see timeout note above).
+        run: gradle test ${{ matrix.platform != 'ubuntu-latest' && '-x :MicrosoftDmang:test' || '' }} --parallel --continue
 
       - name: Upload test results on failure
         if: failure()
