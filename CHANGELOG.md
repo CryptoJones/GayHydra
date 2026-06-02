@@ -12,6 +12,24 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+_Nothing yet._
+
+---
+
+## [v26.2.2] — 2026-06-02
+
+Patch release closing the Rec 35 `#35-4` sprint: the cooperative
+decompilation budget gains its first concrete *bypassable* pass.
+`type_inference` is now wired onto the general pass-bypass façade
+(`#35-4b`) that sits on the per-pass iteration foundation (`#35-4a`),
+so a runaway `ActionInferTypes` fixpoint degrades to a valid, printable
+partial result instead of spinning — bounded by the optional third
+`decompilebudget <flow> <dataflow> <typeinfer>` parameter. Patch (not
+minor) bump: the default budget is unchanged, so no existing
+decompilation output moves; only an explicit cap changes behaviour. The
+remaining bypassable passes (`value_analysis`, `block_structure`) are
+still ahead on the same façade.
+
 - feat(decompiler): wire the `type_inference` pass onto the budget bypass façade
   (`#35-4`), the first concrete bypassable pass on the `#35-4b` foundation
   (DECOMPILER_BUDGETS.md `#35-4`). `ActionInferTypes::apply` now consults the
