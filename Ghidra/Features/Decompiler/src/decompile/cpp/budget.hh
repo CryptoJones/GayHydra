@@ -63,6 +63,7 @@ struct DecompileBudgetCaps {
   uint32_t pcode_op_limit = 1000000;          ///< Soft pcode-op count cap.
   uint32_t iteration_limit_per_pass = 100;    ///< Soft per-pass fixed-point cap.
   uint32_t dataflow_iteration_limit = 100000; ///< Soft data_flow sweep cap (own scale).
+  uint32_t typeinfer_iteration_limit = 100;   ///< Soft type_inference propagation-pass cap (own scale).
 };
 
 /// \brief Cooperative, single-thread budget tracker for the analysis loop.

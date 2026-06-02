@@ -5523,17 +5523,34 @@ int4 ActionInferTypes::apply(Funcdata &data)
 {
   // Make sure spacebase is accurate or bases could get typed and then ptrarithed
   if (!data.hasTypeRecoveryStarted()) return 0;
-  TypeFactory *typegrp = data.getArch()->types;
+  Architecture *glb = data.getArch();
+  TypeFactory *typegrp = glb->types;
   Varnode *vn;
   VarnodeLocSet::const_iterator iter;
+  bool budgeting = glb->budget.engaged();  // Rec 35 (#35-4): type_inference yield point
 
 #ifdef TYPEPROP_DEBUG
   if (TypeFactory::propagatedbg_on) {
     ostringstream s;
     s << "Type propagation pass - " << dec << localcount;
-    data.getArch()->printDebug(s.str());
+    glb->printDebug(s.str());
   }
 #endif
+  // Rec 35 (#35-4): type_inference is a bypassable pass. Each apply() is one
+  // propagation pass; once this pass has spent its own iteration budget (or the
+  // function is globally out of budget) the bypass façade returns coarse mode and
+  // we stop propagating, leaving the partially-inferred types in place.
+  if (budgeting) {
+    glb->budget.enterPass("type_inference", glb->budget.budget().typeinfer_iteration_limit);
+    glb->budget.check();
+    if (glb->budget.passShouldBypass("type_inference")) {
+      if (!data.isTypeRecoveryExceeded()) {
+        data.warningHeader("Exceeded decompilation budget on pass type_inference: Some analysis is truncated");
+        data.setTypeRecoveryExceeded();
+      }
+      return 0;
+    }
+  }
   if (localcount >= 7) {       // This constant arrived at empirically
     if (localcount == 7) {
       data.warningHeader("Type propagation algorithm not settling");
@@ -5558,6 +5575,15 @@ int4 ActionInferTypes::apply(Funcdata &data)
   if (writeBack(data)) {
     // count += 1;			// Do not consider this a data-flow change
     localcount += 1;
+    // Rec 35 (#35-4): one changing propagation pass is one iteration; reaching
+    // this pass's own cap records the partial-result diagnostic, after which the
+    // bypass façade short-circuits every later visit.
+    if (budgeting && glb->budget.tickIteration()) {
+      if (!data.isTypeRecoveryExceeded()) {
+        data.warningHeader("Exceeded decompilation budget on pass type_inference: Some analysis is truncated");
+        data.setTypeRecoveryExceeded();
+      }
+    }
   }
   return 0;
 }
