@@ -12,6 +12,23 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): add the general pass-bypass-mode façade (`#35-4b`) on the
+  `#35-4a` per-pass foundation (DECOMPILER_BUDGETS.md `#35-4`).
+  `DecompileBudgetTracker::passShouldBypass(name)` answers, for one named pass,
+  whether it should stop precise work and run in its coarser mode — \b true once
+  the pass has spent its *own* per-pass iteration budget, or a function-global
+  cap (wall-clock soft/hard or pcode-op) has tripped. It deliberately does *not*
+  bypass on a *different* pass's iteration cap, preserving the per-pass
+  independence `#35-4a` introduced. This generalises the bypass condition
+  `#35-3d` hand-rolled for the `data_flow` pool so the remaining bypassable
+  passes (`type_inference`, `value_analysis`, `block_structure`) each degrade on
+  the same rule rather than re-deriving it; non-bypassable passes
+  (`flow_analysis`, `output_emission`) do not consult it. Header-only and inert:
+  no production pass calls the façade yet, so both byte-sensitive truncation
+  paths (`decompbudget.xml`, `decompbudget_dataflow.xml`) are preserved exactly.
+  Four new unit tests pin own-iteration bypass (plus within-budget and
+  never-entered negatives), per-pass independence, and the global wall-clock /
+  pcode-op signals (323-case unit suite + 679-case datatest suite green).
 - feat(decompiler): track analysis-budget iterations *per pass* (`#35-4a`), the
   foundation for budgeting the remaining passes (DECOMPILER_BUDGETS.md `#35-4`).
   `DecompileBudgetTracker` previously held a single iteration counter and a
