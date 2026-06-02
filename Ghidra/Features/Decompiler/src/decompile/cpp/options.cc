@@ -960,10 +960,12 @@ string OptionMaxInstruction::apply(Architecture *glb,const string &p1,const stri
 /// cap (counted in processed instructions). The optional second parameter sets
 /// the data_flow simplification cap (counted in rule-pool sweeps, a different
 /// scale); when omitted, data_flow keeps its large default and only
-/// flow_analysis truncates. Setting either engages the budget so the matching
-/// yield point truncates and emits a partial-result diagnostic once its pass
-/// reaches the cap. With no budget engaged (the default) the analysis loop is
-/// unaffected.
+/// flow_analysis truncates. The optional third parameter sets the type_inference
+/// cap (counted in propagation passes, its own scale); when omitted,
+/// type_inference keeps its large default. Setting any engages the budget so the
+/// matching yield point truncates and emits a partial-result diagnostic once its
+/// pass reaches the cap. With no budget engaged (the default) the analysis loop
+/// is unaffected.
 string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
 
 {
@@ -986,6 +988,15 @@ string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const str
     if (dataflowLimit < 0)
       throw ParseError("Bad decompilebudget data_flow parameter");
     caps.dataflow_iteration_limit = (uint4)dataflowLimit;
+  }
+  if (p3.size() != 0) {
+    int4 typeinferLimit = -1;
+    istringstream s3(p3);
+    s3.unsetf(ios::dec | ios::hex | ios::oct); // Let user specify base
+    s3 >> typeinferLimit;
+    if (typeinferLimit < 0)
+      throw ParseError("Bad decompilebudget type_inference parameter");
+    caps.typeinfer_iteration_limit = (uint4)typeinferLimit;
   }
   glb->budget.setCaps(caps);
   glb->budget.engage();

@@ -12,6 +12,22 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): wire the `type_inference` pass onto the budget bypass façade
+  (`#35-4`), the first concrete bypassable pass on the `#35-4b` foundation
+  (DECOMPILER_BUDGETS.md `#35-4`). `ActionInferTypes::apply` now consults the
+  cooperative budget at a yield point: each changing propagation pass is one
+  iteration on type_inference's own scale, and once the pass spends its own
+  iteration budget (or the function is globally out of budget) the bypass façade
+  short-circuits every later visit, leaving the partially-inferred types in place
+  and emitting a partial-result diagnostic naming `type_inference`. The optional
+  third `decompilebudget <flow> <dataflow> <typeinfer>` parameter caps it; when
+  omitted, type_inference keeps its large default and nothing changes. A new
+  deterministic fixture (`decompbudget_typeinfer.xml`, the `readstruct` function
+  from `nestedoffset.xml`) pins the truncation: type_inference settles naturally
+  in 4 changing passes, a cap of 2 truncates it, the header appears exactly once,
+  and the partial result stays valid and printable. The pre-existing flow and
+  data_flow truncation paths (`decompbudget.xml`, `decompbudget_dataflow.xml`)
+  are preserved exactly (323-case unit suite + 681-case datatest suite green).
 - feat(decompiler): add the general pass-bypass-mode façade (`#35-4b`) on the
   `#35-4a` per-pass foundation (DECOMPILER_BUDGETS.md `#35-4`).
   `DecompileBudgetTracker::passShouldBypass(name)` answers, for one named pass,

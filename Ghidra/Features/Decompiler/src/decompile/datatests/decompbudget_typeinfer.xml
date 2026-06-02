@@ -1,0 +1,44 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 35 (#35-4): the type_inference yield point, the first concrete bypassable
+    pass wired onto the general pass-bypass facade (passShouldBypass, #35-4b). The
+    cooperative budget's optional third parameter caps type_inference, counted in
+    changing propagation passes (its own scale, distinct from flow_analysis'
+    per-instruction count and data_flow's rule-pool sweeps). Each ActionInferTypes
+    apply() that writes back a change is one iteration; reaching the cap records
+    the partial-result diagnostic naming type_inference, and the bypass facade
+    short-circuits every later visit so total type_inference work is bounded.
+
+    type_inference is bypassable: on truncation the partially-inferred types are
+    left in place and the function stays valid and printable. Here flow_analysis
+    (cap 1000 instructions) and data_flow (cap 100000 sweeps) are both left
+    effectively unbounded so only type_inference truncates. readstruct settles
+    naturally in 4 changing propagation passes; a cap of 2 stops it well short and
+    emits the type_inference partial-result header. Because ptr's type is declared,
+    the partial result remains fully printable (the struct field access still
+    resolves), demonstrating that a bypassed pass yields a valid partial rather
+    than a broken result. The unbudgeted decompile of the same function is
+    exercised by nestedoffset.xml; the flow_analysis-truncation path by
+    decompbudget.xml and the data_flow path by decompbudget_dataflow.xml.
+
+    The function bytes are readstruct from nestedoffset.xml.
+-->
+<bytechunk space="ram" offset="0x400517" readonly="true">
+              554889e5488d441602
+488d04878b005dc3
+</bytechunk>
+<symbol space="ram" offset="0x400517" name="readstruct"/>
+</binaryimage>
+<script>
+  <com>parse line struct twostruct { int4 field1; int4 field2; int4 array[5]; };</com>
+  <com>parse line extern int4 readstruct(twostruct *ptr,int8 a,int8 b);</com>
+  <com>option decompilebudget 1000 100000 2</com>
+  <com>lo fu readstruct</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="type_inference budget exhausted warning header names the pass" min="1" max="1">WARNING: Exceeded decompilation budget on pass type_inference: Some analysis is truncated</stringmatch>
+<stringmatch name="type_inference partial result remains valid and printable" min="1" max="1">return ptr-&gt;array\[b \+ a\];</stringmatch>
+</decompilertest>
