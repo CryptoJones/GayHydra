@@ -266,4 +266,68 @@ TEST(budget_reset_clears_per_pass) {
   ASSERT_EQUALS((int)t.passIterations("data_flow"), 0);
 }
 
+// Rec 35 (#35-4b): the pass-bypass façade. A pass that spends its own iteration
+// budget reports passShouldBypass(true) for itself, so its fixpoint runs in
+// coarse mode on later visits. A pass within all budgets, and one never entered,
+// report false.
+TEST(budget_bypass_on_own_iteration) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+
+  t.enterPass("type_inference", 2);
+  ASSERT(!t.passShouldBypass("type_inference"));  // within its cap
+  ASSERT(!t.tickIteration());                     // 1
+  ASSERT(t.tickIteration());                      // 2 -> own cap
+  ASSERT(t.passShouldBypass("type_inference"));   // now bypass
+  ASSERT(!t.passShouldBypass("value_analysis"));  // never entered -> false
+}
+
+// Bypass is independent per pass: one pass reaching its own iteration cap does
+// NOT make another (still within its own cap) bypass. This is the per-pass
+// independence the façade must preserve — a different pass's iterationLimit is
+// explicitly excluded from the global-pressure signal.
+TEST(budget_bypass_independent_of_other_pass) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+
+  t.enterPass("value_analysis", 1);
+  ASSERT(t.tickIteration());                      // value_analysis exhausts immediately
+  ASSERT(t.passShouldBypass("value_analysis"));
+
+  t.enterPass("block_structure", 5);
+  ASSERT(!t.tickIteration());                     // block_structure still within cap
+  ASSERT(!t.passShouldBypass("block_structure")); // not forced to bypass by value_analysis
+}
+
+// A function-global wall-clock breach makes any bypassable pass degrade, even
+// one that has not spent its own iteration budget: under global time pressure
+// precise work anywhere is no longer affordable.
+TEST(budget_bypass_on_global_wall_clock) {
+  uint64_t fake = 0;
+  DecompileBudgetCaps caps;
+  caps.wall_clock_ms = 10000;
+  caps.wall_clock_hard_ms = 60000;
+  DecompileBudgetTracker t(caps, [&fake]() { return fake; });
+
+  t.enterPass("type_inference", 1000);
+  ASSERT(!t.passShouldBypass("type_inference"));  // within both per-pass and wall-clock
+  fake = 10000;
+  ASSERT_EQUALS((int)t.check(), (int)BudgetExhaustion::wallClock);
+  ASSERT(t.passShouldBypass("type_inference"));   // global wall-clock -> bypass
+}
+
+// A function-global pcode-op breach likewise triggers bypass for a pass within
+// its own iteration cap.
+TEST(budget_bypass_on_pcode_limit) {
+  uint64_t fake = 0;
+  DecompileBudgetCaps caps;
+  caps.pcode_op_limit = 1000;
+  DecompileBudgetTracker t(caps, [&fake]() { return fake; });
+
+  t.enterPass("block_structure", 1000);
+  t.addPcodeOps(1000);
+  ASSERT_EQUALS((int)t.check(), (int)BudgetExhaustion::pcodeOpLimit);
+  ASSERT(t.passShouldBypass("block_structure"));
+}
+
 }  // namespace ghidra

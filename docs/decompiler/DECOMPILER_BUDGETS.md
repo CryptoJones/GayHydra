@@ -178,7 +178,8 @@ the cache key shape.
 | #35-3c | Name the exhausted pass in the partial-result header (`…on pass flow_analysis…`) | done |
 | #35-3d | `data_flow` yield point — decoupled per-sweep cap on the `oppool1` simplification pool, bypass-on-own-exhaustion; see note below | done |
 | #35-4a | Per-pass iteration tracking in the tracker (per-pass count/cap/own-exhaustion, `passIterationExhausted()`), so several passes can be budgeted independently; header-only, inert (flow_analysis/data_flow unchanged), unit-tested | done |
-| #35-4 | Add the remaining passes; general pass-bypass-mode façade on the `#35-4a` per-pass foundation | in progress |
+| #35-4b | General pass-bypass-mode façade (`passShouldBypass()`) on the `#35-4a` per-pass foundation: bypass on own per-pass iteration cap *or* function-global wall-clock/pcode pressure, never on another pass's iteration cap; header-only, inert, unit-tested | done |
+| #35-4 | Add the remaining passes (type_inference/value_analysis/block_structure), wiring each onto the `#35-4b` façade | in progress |
 | #35-5 | UI banner + retry path | not started |
 | #35-6 | Cache partial results keyed by budget | not started |
 | #35-7 | Tune defaults from production telemetry (after one release) | not started |

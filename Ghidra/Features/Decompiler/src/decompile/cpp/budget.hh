@@ -232,6 +232,43 @@ public:
     return (it == passes.end()) ? 0 : it->second.iterations;
   }
 
+  /// \brief Façade for the coarse/bypass-mode decision a bypassable pass makes
+  ///        on each visit. \b true once the named pass should stop precise work
+  ///        and run in its coarser mode.
+  ///
+  /// Bypass is triggered by either of two budget signals:
+  ///   - the pass has spent its \e own per-pass iteration budget
+  ///     (passIterationExhausted) — independent per pass, and
+  ///   - the function as a whole is out of budget: a function-global cap
+  ///     (wall-clock soft or hard, or pcode-op) has tripped, so precise work
+  ///     anywhere is no longer affordable.
+  ///
+  /// Crucially it does \e not bypass on another pass's iteration cap: an
+  /// \ref BudgetExhaustion::iterationLimit recorded by a \e different pass leaves
+  /// this one free to keep running, preserving the per-pass independence the
+  /// #35-4a foundation provides. A pass within all budgets, or never entered,
+  /// reports false.
+  ///
+  /// This generalises the bypass condition #35-3d hand-rolled for the data_flow
+  /// pool so the remaining bypassable passes (type_inference, value_analysis,
+  /// block_structure) each degrade on the same rule rather than re-deriving it;
+  /// the non-bypassable passes (flow_analysis, output_emission) do not consult
+  /// it — they truncate in place. Like check(), it reads the sticky exhaustion
+  /// state, so a yield-point check() (or tickIteration) must have run first.
+  bool passShouldBypass(const std::string &name) const {
+    if (passIterationExhausted(name)) {
+      return true;  // this pass spent its own iteration budget
+    }
+    switch (exhaust) {  // or the function is globally out of budget
+      case BudgetExhaustion::wallClock:
+      case BudgetExhaustion::wallClockHard:
+      case BudgetExhaustion::pcodeOpLimit:
+        return true;
+      default:  // none, or another pass's iterationLimit (independence preserved)
+        return false;
+    }
+  }
+
   /// \brief The caps this tracker enforces.
   const DecompileBudgetCaps &budget(void) const { return caps; }
 
