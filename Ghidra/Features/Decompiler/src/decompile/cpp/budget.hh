@@ -33,6 +33,7 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <string>
 
 namespace ghidra {
@@ -72,6 +73,15 @@ struct DecompileBudgetCaps {
 /// fast and deterministic. The exhaustion class and the pass on which it was
 /// first observed are sticky until reset(), so the diagnostic always names the
 /// pass that originally ran out of budget.
+///
+/// Iteration counts are tracked \e per pass: each named pass keeps its own
+/// running count and its own iteration cap, registered on first enterPass and
+/// accumulated across re-entries within the function (the data_flow rule-pool is
+/// re-performed many times by the mainloop). This lets several passes be
+/// budgeted independently in one function — one pass reaching its own iteration
+/// cap (passIterationExhausted()) does not stop another from making progress —
+/// which is what the remaining-pass wiring (DECOMPILER_BUDGETS.md #35-4) needs.
+/// The function-global wall-clock and pcode-op caps remain shared across passes.
 class DecompileBudgetTracker {
 public:
   using ClockMs = std::function<uint64_t()>;
@@ -91,18 +101,17 @@ public:
     reset();
   }
 
-  /// \brief Restart the wall clock and clear all counters and the diagnostic.
+  /// \brief Restart the wall clock and clear all per-pass counters and the diagnostic.
   void reset(void) {
     startMs = clock();
     pcodeOps = 0;
-    passIterations = 0;
-    activeIterationLimit = caps.iteration_limit_per_pass;
+    passes.clear();
     exhaust = BudgetExhaustion::none;
     exhaustPass.clear();
     currentPass.clear();
   }
 
-  /// \brief Mark entry to a named pass, resetting the per-pass iteration count.
+  /// \brief Mark entry to a named pass, registering it under the default cap.
   ///
   /// The pass is bounded by the default per-pass cap (iteration_limit_per_pass).
   /// Does not clear an already-recorded exhaustion: a budget exhausted in an
@@ -116,20 +125,28 @@ public:
   /// Different passes count iterations on different scales (flow_analysis counts
   /// processed instructions; the data_flow rule-pool counts simplification
   /// sweeps), so each pass supplies the cap it is bounded by from the caps
-  /// rather than sharing one number. Resets the per-pass iteration count; does
-  /// not clear an already-recorded exhaustion.
+  /// rather than sharing one number.
+  ///
+  /// Registration is \e once per pass per function: the first entry creates the
+  /// pass's counter at zero with this cap; later entries to the same pass only
+  /// make it current again and keep the accumulated count (the data_flow pool is
+  /// re-performed many times within one function and must accumulate across those
+  /// re-entries, not reset each visit). reset() — the per-function boundary —
+  /// clears every pass. Does not clear an already-recorded exhaustion.
   void enterPass(const std::string &name, uint32_t iterLimit) {
     currentPass = name;
-    passIterations = 0;
-    activeIterationLimit = iterLimit;
+    passes.emplace(name, PassBudgetState{0, iterLimit, false});
   }
 
   /// \brief Count one iteration of the current pass's fixed-point loop.
-  /// \return \b true once the per-pass iteration cap has been reached, so the
-  ///         loop can break; records iterationLimit exhaustion on the first hit.
+  /// \return \b true once the current pass's own iteration cap has been reached,
+  ///         so the loop can break; marks the pass iteration-exhausted and
+  ///         records the (sticky, function-global) diagnostic on the first hit.
   bool tickIteration(void) {
-    passIterations += 1;
-    if (passIterations >= activeIterationLimit) {
+    PassBudgetState &st = passState(currentPass);
+    st.iterations += 1;
+    if (st.iterations >= st.iterationLimit) {
+      st.iterExhausted = true;
       record(BudgetExhaustion::iterationLimit);
       return true;
     }
@@ -174,7 +191,8 @@ public:
     if (pcodeOps >= caps.pcode_op_limit) {
       return record(BudgetExhaustion::pcodeOpLimit);
     }
-    if (passIterations >= activeIterationLimit) {
+    auto it = passes.find(currentPass);
+    if (it != passes.end() && it->second.iterations >= it->second.iterationLimit) {
       return record(BudgetExhaustion::iterationLimit);
     }
     return BudgetExhaustion::none;
@@ -196,10 +214,35 @@ public:
   ///        than resetting it on every visit.
   const std::string &currentPassName(void) const { return currentPass; }
 
+  /// \brief \b true once the named pass has reached its \e own iteration cap.
+  ///
+  /// Per-pass and independent of every other pass and of the function-global
+  /// caps: a pass that spent its iteration budget reports true here so its
+  /// fixpoint can be bypassed on later visits, while other passes keep running.
+  /// A pass never entered (or still within its cap) reports false.
+  bool passIterationExhausted(const std::string &name) const {
+    auto it = passes.find(name);
+    return it != passes.end() && it->second.iterExhausted;
+  }
+
+  /// \brief Iterations counted against the named pass since reset(); 0 if the
+  ///        pass has not been entered.
+  uint32_t passIterations(const std::string &name) const {
+    auto it = passes.find(name);
+    return (it == passes.end()) ? 0 : it->second.iterations;
+  }
+
   /// \brief The caps this tracker enforces.
   const DecompileBudgetCaps &budget(void) const { return caps; }
 
 private:
+  /// \brief Per-pass fixed-point iteration state (one entry per named pass).
+  struct PassBudgetState {
+    uint32_t iterations;      ///< Iterations counted against this pass since reset().
+    uint32_t iterationLimit;  ///< This pass's own iteration cap.
+    bool iterExhausted;       ///< \b true once this pass reached its own cap.
+  };
+
   /// \brief Record \b cls as the exhaustion class if none was recorded yet,
   ///        pinning the diagnostic to the current pass; return \b cls.
   BudgetExhaustion record(BudgetExhaustion cls) {
@@ -210,12 +253,20 @@ private:
     return cls;
   }
 
+  /// \brief The current pass's state, lazily registered under the default cap if
+  ///        a tick arrives before any enterPass (mirrors the historical default).
+  PassBudgetState &passState(const std::string &name) {
+    auto it = passes.find(name);
+    if (it == passes.end())
+      it = passes.emplace(name, PassBudgetState{0, caps.iteration_limit_per_pass, false}).first;
+    return it->second;
+  }
+
   DecompileBudgetCaps caps;     ///< The budget for this function.
   ClockMs clock;                ///< Millisecond clock source.
   uint64_t startMs = 0;         ///< Clock value captured at construction/reset.
   uint64_t pcodeOps = 0;        ///< Pcode-ops accumulated since reset.
-  uint32_t passIterations = 0;  ///< Iterations of the current pass since enterPass.
-  uint32_t activeIterationLimit = 0;  ///< Per-pass iteration cap for the current pass.
+  std::map<std::string, PassBudgetState> passes;  ///< Per-pass iteration counters, cleared by reset().
   BudgetExhaustion exhaust = BudgetExhaustion::none;  ///< Sticky exhaustion class.
   std::string exhaustPass;      ///< Pass that first ran out of budget.
   std::string currentPass;      ///< Pass currently executing.

@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): track analysis-budget iterations *per pass* (`#35-4a`), the
+  foundation for budgeting the remaining passes (DECOMPILER_BUDGETS.md `#35-4`).
+  `DecompileBudgetTracker` previously held a single iteration counter and a
+  single sticky exhaustion flag, so only one pass could be budgeted per function:
+  once any pass ran out, no other pass could tick. The tracker now keeps a
+  per-pass record (count + cap + own-exhaustion), registered once per pass per
+  function and accumulated across re-entries, with the function-global wall-clock
+  and pcode-op caps still shared. New `passIterationExhausted(name)` /
+  `passIterations(name)` queries expose a pass's own state so its fixpoint can be
+  bypassed independently while other passes keep running. The change is
+  header-only and inert: `flow_analysis` and `data_flow` still consult the
+  unchanged single-pass methods, so both byte-sensitive truncation paths
+  (`decompbudget.xml`, `decompbudget_dataflow.xml`) are preserved exactly. Four
+  new unit tests pin per-pass independence, re-entry accumulation, and per-pass
+  reset (319-case unit suite + 679-case datatest suite green).
 - feat(decompiler): wire the cooperative budget into the `data_flow`
   simplification fixpoint (`#35-3d`). The `#35-3b`/`#35-3c` work bounded
   `flow_analysis`; this extends the budget to the data-flow rule pool

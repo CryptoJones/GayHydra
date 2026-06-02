@@ -189,4 +189,81 @@ TEST(budget_zero_cap_trips_immediately) {
   ASSERT_EQUALS((int)t.check(), (int)BudgetExhaustion::wallClock);
 }
 
+// Rec 35 (#35-4): each pass keeps its own iteration count and its own cap. Two
+// passes are driven in turn; switching back to the first keeps (does not reset)
+// its accumulated count, and reaching one pass's cap is visible only on that
+// pass, leaving the other free to keep ticking. This is the per-pass
+// independence the remaining-pass wiring depends on.
+TEST(budget_two_passes_independent_iteration) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+
+  t.enterPass("flow_analysis", 2);
+  ASSERT(!t.tickIteration());        // flow_analysis = 1
+  t.enterPass("data_flow", 4);
+  ASSERT(!t.tickIteration());        // data_flow = 1
+  t.enterPass("flow_analysis", 2);   // re-enter: keeps flow_analysis's count of 1
+  ASSERT(t.tickIteration());         // flow_analysis = 2 -> its own cap
+
+  ASSERT(t.passIterationExhausted("flow_analysis"));
+  ASSERT(!t.passIterationExhausted("data_flow"));
+  ASSERT_EQUALS((int)t.passIterations("flow_analysis"), 2);
+  ASSERT_EQUALS((int)t.passIterations("data_flow"), 1);
+}
+
+// One pass reaching its own iteration cap does not stop another from making
+// progress: data_flow keeps ticking under its own cap after flow_analysis has
+// run out. The function-global diagnostic stays sticky on the first pass to
+// exhaust, but per-pass exhaustion is independent.
+TEST(budget_pass_exhaustion_is_independent) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+
+  t.enterPass("flow_analysis", 1);
+  ASSERT(t.tickIteration());         // flow_analysis reaches its cap immediately
+  ASSERT(t.passIterationExhausted("flow_analysis"));
+  ASSERT(t.exhausted());
+  ASSERT_EQUALS(t.exhaustedPass(), std::string("flow_analysis"));
+
+  t.enterPass("data_flow", 3);
+  ASSERT(!t.tickIteration());        // data_flow 1 -- not blocked by flow's exhaustion
+  ASSERT(!t.tickIteration());        // data_flow 2
+  ASSERT(!t.passIterationExhausted("data_flow"));
+  ASSERT_EQUALS(t.exhaustedPass(), std::string("flow_analysis"));  // sticky on first exhauster
+}
+
+// enterPass registers a pass once per function: re-entering a pass makes it
+// current again but keeps its accumulated count rather than resetting it, so a
+// pass re-driven many times by the mainloop (the data_flow pool) accrues toward
+// its own cap across those re-entries.
+TEST(budget_enterPass_accumulates_on_reentry) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+
+  t.enterPass("data_flow", 3);
+  ASSERT(!t.tickIteration());        // 1
+  t.enterPass("data_flow", 3);       // re-enter must NOT reset to 0
+  ASSERT(!t.tickIteration());        // 2
+  t.enterPass("data_flow", 3);
+  ASSERT(t.tickIteration());         // 3 -> cap reached via accumulation
+  ASSERT(t.passIterationExhausted("data_flow"));
+  ASSERT_EQUALS((int)t.passIterations("data_flow"), 3);
+}
+
+// reset() (the per-function boundary) clears every pass's counter and per-pass
+// exhaustion, so a reused tracker starts the next function with no pass history.
+TEST(budget_reset_clears_per_pass) {
+  uint64_t fake = 0;
+  DecompileBudgetTracker t(DecompileBudgetCaps(), [&fake]() { return fake; });
+  t.enterPass("data_flow", 2);
+  ASSERT(!t.tickIteration());
+  ASSERT(t.tickIteration());
+  ASSERT(t.passIterationExhausted("data_flow"));
+  ASSERT_EQUALS((int)t.passIterations("data_flow"), 2);
+
+  t.reset();
+  ASSERT(!t.passIterationExhausted("data_flow"));
+  ASSERT_EQUALS((int)t.passIterations("data_flow"), 0);
+}
+
 }  // namespace ghidra
