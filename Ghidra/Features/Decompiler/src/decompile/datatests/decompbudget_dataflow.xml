@@ -1,0 +1,44 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 35 (#35-3d): the data_flow yield point. The cooperative budget's optional
+    second parameter caps the data_flow simplification fixpoint (the "oppool1"
+    rule pool), counted in changing rule-pool sweeps accumulated across the whole
+    function, a finer scale than the flow_analysis per-instruction count.
+    Reaching it stops the pool at a sweep boundary, bypasses it on every
+    later visit (so total data_flow work is genuinely bounded despite the outer
+    mainloop re-driving the pool), and records the same partial-result diagnostic,
+    now naming data_flow as the pass that ran out.
+
+    Here flow_analysis is left effectively unbounded (cap 1000 instructions, far
+    above this ~40-instruction function) so only data_flow truncates. condconst1
+    converges naturally in 8 changing data_flow sweeps; a cap of 2 stops it well
+    short, leaving the constant-folding visibly incomplete (the "+ b", "+ 9" and
+    "+ 8" terms are not folded) and emitting the data_flow partial-result header.
+    The unbudgeted decompile of the same function is exercised by condconst.xml,
+    and the flow_analysis-truncation path by decompbudget.xml.
+
+    The function bytes are condconst1 from condconst.xml.
+-->
+<bytechunk space="ram" offset="0x1006fa" readonly="true">
+                    554889e54889
+7df88975f48955f0894dec837df40075
+0e8b55f48b45f001c2488b45f8891048
+8b45f8488d50048b45f48902837df40a
+750d488b45f8488d50088b45f4890283
+7dec077412488b45f84883c00c8b55ec
+83c2088910eb10488b45f84883c0108b
+55ec83c2098910905dc3
+</bytechunk>
+<symbol space="ram" offset="0x1006fa" name="condconst1"/>
+</binaryimage>
+<script>
+  <com>parse line extern void condconst1(int4 *ptr,int4 a,int4 b,int4 c);</com>
+  <com>option decompilebudget 1000 2</com>
+  <com>lo fu condconst1</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="data_flow budget exhausted warning header names the pass" min="1" max="1">WARNING: Exceeded decompilation budget on pass data_flow: Some analysis is truncated</stringmatch>
+</decompilertest>

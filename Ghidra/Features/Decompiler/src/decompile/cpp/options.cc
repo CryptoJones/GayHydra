@@ -956,10 +956,14 @@ string OptionMaxInstruction::apply(Architecture *glb,const string &p1,const stri
 /// \class OptionDecompileBudget
 /// \brief Engage the cooperative per-function analysis budget (Rec 35)
 ///
-/// The first parameter is an integer giving the per-pass iteration cap. Setting
-/// it engages the budget so the flow_analysis yield point will truncate flow and
-/// emit a partial-result diagnostic once a pass reaches the cap. With no budget
-/// engaged (the default) the analysis loop is unaffected.
+/// The first parameter is an integer giving the flow_analysis per-pass iteration
+/// cap (counted in processed instructions). The optional second parameter sets
+/// the data_flow simplification cap (counted in rule-pool sweeps, a different
+/// scale); when omitted, data_flow keeps its large default and only
+/// flow_analysis truncates. Setting either engages the budget so the matching
+/// yield point truncates and emits a partial-result diagnostic once its pass
+/// reaches the cap. With no budget engaged (the default) the analysis loop is
+/// unaffected.
 string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
 
 {
@@ -974,6 +978,15 @@ string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const str
     throw ParseError("Bad decompilebudget parameter");
   DecompileBudgetCaps caps;
   caps.iteration_limit_per_pass = (uint4)newLimit;
+  if (p2.size() != 0) {
+    int4 dataflowLimit = -1;
+    istringstream s2(p2);
+    s2.unsetf(ios::dec | ios::hex | ios::oct); // Let user specify base
+    s2 >> dataflowLimit;
+    if (dataflowLimit < 0)
+      throw ParseError("Bad decompilebudget data_flow parameter");
+    caps.dataflow_iteration_limit = (uint4)dataflowLimit;
+  }
   glb->budget.setCaps(caps);
   glb->budget.engage();
   return "Decompilation budget engaged";
