@@ -12,7 +12,14 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
-_Nothing yet._
+- ci(unit-tests): stop running the platform-independent MicrosoftDmang demangler
+  suite on the slower macOS/windows legs of the `unit_tests` matrix. `MDMangBaseTest`
+  plus its `VS2013`/`VS2015`/`Ghidra`/`Genericize`/`ParseInfo` subclasses each re-run
+  the same ~15.7k-line combinatorial assertion set; on the ~2x-slower macOS runner
+  that was the ~88-90 min long pole that previously near-missed the job timeout. The
+  suite is pure string processing with no platform-specific surface, so it now runs
+  once on the fast ubuntu leg (`gradle test`) and is excluded on macOS/windows
+  (`-x :MicrosoftDmang:test`); every platform-sensitive suite still runs on all three.
 
 ---
 
