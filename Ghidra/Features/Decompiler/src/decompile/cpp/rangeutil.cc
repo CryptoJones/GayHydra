@@ -15,6 +15,7 @@
  */
 #include "rangeutil.hh"
 #include "block.hh"
+#include "budget.hh"		// Rec 35 (#35-4): value_analysis cooperative budget yield point
 
 namespace ghidra {
 
@@ -2521,7 +2522,7 @@ void ValueSetSolver::establishValueSets(const vector<Varnode *> &sinks,const vec
 /// at various levels until a fixed point is reached.
 /// \param max is the maximum number of iterations to allow before forcing termination
 /// \param widener is the Widening strategy to use to accelerate stabilization
-void ValueSetSolver::solve(int4 max,Widener &widener)
+void ValueSetSolver::solve(int4 max,Widener &widener,DecompileBudgetTracker *budget)
 
 {
   maxIterations = max;
@@ -2536,6 +2537,19 @@ void ValueSetSolver::solve(int4 max,Widener &widener)
   while(curSet != (ValueSet *)0) {
     numIterations += 1;
     if (numIterations > maxIterations) break;	// Quit if max iterations exceeded
+    // Rec 35 (#35-4): value_analysis is a bypassable pass. Each value-set
+    // iteration is one unit on its own scale (distinct from flow_analysis'
+    // processed-instructions and data_flow's rule-pool sweeps). The budget
+    // accumulates across every solve() the heritage passes drive; once this pass
+    // spends its own iteration cap (tickIteration) — or the function is globally
+    // out of budget (passShouldBypass) — the fixpoint stops at a partition
+    // boundary, leaving the partially-widened value sets in place. The load-guard
+    // ranges simply stay coarser ("any value"), which is the already-supported
+    // non-convergence path, so the partial result is still valid.
+    if (budget != (DecompileBudgetTracker *)0 && budget->engaged()) {
+      if (budget->tickIteration() || budget->passShouldBypass("value_analysis"))
+	break;
+    }
     if (curSet->partHead != (Partition *)0 && curSet->partHead != curComponent) {
       componentStack.push_back(curSet->partHead);
       curComponent = curSet->partHead;

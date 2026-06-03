@@ -30,6 +30,7 @@ src/decompile/datatests/deadvolatile.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget_dataflow.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget_typeinfer.xml||GHIDRA||||END|
+src/decompile/datatests/decompbudget_valueanalysis.xml||GHIDRA||||END|
 src/decompile/datatests/deindirect.xml||GHIDRA||||END|
 src/decompile/datatests/deindirect2.xml||GHIDRA||||END|
 src/decompile/datatests/displayformat.xml||GHIDRA||||END|

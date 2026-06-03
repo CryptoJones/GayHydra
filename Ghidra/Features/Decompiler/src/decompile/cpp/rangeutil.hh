@@ -102,6 +102,7 @@ public:
 
 class Partition;		// Forward declaration
 class Widener;			// Forward declaration
+class DecompileBudgetTracker;	// Forward declaration (Rec 35 value_analysis yield point)
 
 /// \brief A range of values attached to a Varnode within a data-flow subsystem
 ///
@@ -315,7 +316,7 @@ class ValueSetSolver {
 public:
   void establishValueSets(const vector<Varnode *> &sinks,const vector<PcodeOp *> &reads,Varnode *stackReg,bool indirectAsCopy);
   int4 getNumIterations(void) const { return numIterations; }	///< Get the current number of iterations
-  void solve(int4 max,Widener &widener);			///< Iterate the ValueSet system until it stabilizes
+  void solve(int4 max,Widener &widener,DecompileBudgetTracker *budget=(DecompileBudgetTracker *)0);	///< Iterate the ValueSet system until it stabilizes
   list<ValueSet>::const_iterator beginValueSets(void) const { return valueNodes.begin(); }	///< Start of all ValueSets in the system
   list<ValueSet>::const_iterator endValueSets(void) const { return valueNodes.end(); }	///< End of all ValueSets in the system
   map<SeqNum,ValueSetRead>::const_iterator beginValueSetReads(void) const { return readNodes.begin(); }	///< Start of ValueSetReads

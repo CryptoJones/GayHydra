@@ -64,6 +64,7 @@ struct DecompileBudgetCaps {
   uint32_t iteration_limit_per_pass = 100;    ///< Soft per-pass fixed-point cap.
   uint32_t dataflow_iteration_limit = 100000; ///< Soft data_flow sweep cap (own scale).
   uint32_t typeinfer_iteration_limit = 100;   ///< Soft type_inference propagation-pass cap (own scale).
+  uint32_t valueanalysis_iteration_limit = 1000000; ///< Soft value_analysis value-set-iteration cap (own scale, cumulative across the function's solves; large default leaves it effectively unbounded).
 };
 
 /// \brief Cooperative, single-thread budget tracker for the analysis loop.
@@ -136,7 +137,7 @@ public:
   /// clears every pass. Does not clear an already-recorded exhaustion.
   void enterPass(const std::string &name, uint32_t iterLimit) {
     currentPass = name;
-    passes.emplace(name, PassBudgetState{0, iterLimit, false});
+    passes.emplace(name, PassBudgetState{0, iterLimit, false, false});
   }
 
   /// \brief Count one iteration of the current pass's fixed-point loop.
@@ -270,6 +271,23 @@ public:
     }
   }
 
+  /// \brief Claim the right to emit the named pass's partial-result header,
+  ///        exactly once per function.
+  ///
+  /// A bypassable pass whose apply()/yield point is revisited many times within a
+  /// function (the value_analysis value-set solve, for example, is re-driven by
+  /// every heritage pass that surfaces new load guards) needs to print its
+  /// "budget exhausted" warning header only on the first truncation. \b true the
+  /// first time it is called for \b name since reset(); \b false on every later
+  /// call. Lets a pass guard its diagnostic in the budget mechanism itself rather
+  /// than borrowing an unrelated Funcdata flag.
+  bool claimDiagnostic(const std::string &name) {
+    PassBudgetState &st = passState(name);
+    if (st.diagnosticEmitted) return false;
+    st.diagnosticEmitted = true;
+    return true;
+  }
+
   /// \brief The caps this tracker enforces.
   const DecompileBudgetCaps &budget(void) const { return caps; }
 
@@ -279,6 +297,7 @@ private:
     uint32_t iterations;      ///< Iterations counted against this pass since reset().
     uint32_t iterationLimit;  ///< This pass's own iteration cap.
     bool iterExhausted;       ///< \b true once this pass reached its own cap.
+    bool diagnosticEmitted;   ///< \b true once this pass's partial-result header was printed.
   };
 
   /// \brief Record \b cls as the exhaustion class if none was recorded yet,
@@ -296,7 +315,7 @@ private:
   PassBudgetState &passState(const std::string &name) {
     auto it = passes.find(name);
     if (it == passes.end())
-      it = passes.emplace(name, PassBudgetState{0, caps.iteration_limit_per_pass, false}).first;
+      it = passes.emplace(name, PassBudgetState{0, caps.iteration_limit_per_pass, false, false}).first;
     return it->second;
   }
 

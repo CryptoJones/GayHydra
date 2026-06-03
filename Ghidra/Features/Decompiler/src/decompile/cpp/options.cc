@@ -130,6 +130,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionAliasBlock>().release());
   registerOption(make_unique<OptionMaxInstruction>().release());
   registerOption(make_unique<OptionDecompileBudget>().release());
+  registerOption(make_unique<OptionDecompileBudgetPass>().release());
   registerOption(make_unique<OptionNamespaceStrategy>().release());
   registerOption(make_unique<OptionSplitDatatypes>().release());
   registerOption(make_unique<OptionNanIgnore>().release());
@@ -1001,6 +1002,45 @@ string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const str
   glb->budget.setCaps(caps);
   glb->budget.engage();
   return "Decompilation budget engaged";
+}
+
+/// \class OptionDecompileBudgetPass
+/// \brief Set one named pass's cooperative-budget cap by name (Rec 35)
+///
+/// The positional \ref OptionDecompileBudget form is limited to the three
+/// flow_analysis / data_flow / type_inference slots; the bypassable passes wired
+/// onto the façade afterward (value_analysis, and later block_structure) have no
+/// positional slot. This name=value form sets exactly one pass's cap and leaves
+/// every other cap at its current value, so several passes can be budgeted by
+/// issuing the option once per pass. The first parameter is the pass name; the
+/// second is its iteration cap on that pass's own scale. Setting any cap engages
+/// the budget. Recognised names: \b flow_analysis, \b data_flow,
+/// \b type_inference, \b value_analysis.
+string OptionDecompileBudgetPass::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  if (p1.size() == 0)
+    throw ParseError("Must specify a pass name");
+  int4 newLimit = -1;
+  istringstream s(p2);
+  s.unsetf(ios::dec | ios::hex | ios::oct); // Let user specify base
+  s >> newLimit;
+  if (newLimit < 0)
+    throw ParseError("Bad decompilebudgetpass iteration cap");
+  DecompileBudgetCaps caps = glb->budget.budget();	// keep every other pass's cap
+  if (p1 == "flow_analysis")
+    caps.iteration_limit_per_pass = (uint4)newLimit;
+  else if (p1 == "data_flow")
+    caps.dataflow_iteration_limit = (uint4)newLimit;
+  else if (p1 == "type_inference")
+    caps.typeinfer_iteration_limit = (uint4)newLimit;
+  else if (p1 == "value_analysis")
+    caps.valueanalysis_iteration_limit = (uint4)newLimit;
+  else
+    throw ParseError("Unknown decompilebudgetpass pass: " + p1);
+  glb->budget.setCaps(caps);
+  glb->budget.engage();
+  return "Decompilation budget engaged for pass " + p1;
 }
 
 /// \class OptionNamespaceStrategy
