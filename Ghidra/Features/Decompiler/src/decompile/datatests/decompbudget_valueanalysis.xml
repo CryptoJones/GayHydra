@@ -1,0 +1,50 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 35 (#35-4): the value_analysis yield point, the second concrete bypassable
+    pass wired onto the general pass-bypass facade (passShouldBypass, #35-4b).
+    value_analysis is the value-set analysis the heritage passes drive over LOAD
+    /STORE guards (Heritage::analyzeNewLoadGuards -> ValueSetSolver::solve) to bound
+    indexed memory accesses. The cooperative budget caps it in value-set iterations
+    (its own scale, distinct from flow_analysis' processed-instruction count,
+    data_flow's rule-pool sweeps and type_inference's propagation passes). Because
+    the positional `decompilebudget` form is full at three slots (flow / data_flow
+    / type_inference), the cap is set by name through `decompilebudgetpass`.
+
+    value_analysis is bypassable: on truncation the partially-widened value sets
+    are left in place and the load guards simply keep their coarser ("any value")
+    ranges, which is the solver's already-supported non-convergence path, so the
+    function stays valid and printable. access_array1 settles its value sets
+    naturally in 6 iterations; a cap of 3 stops it well short and emits the
+    value_analysis partial-result header exactly once (even though heritage
+    re-drives the solve on every pass that surfaces new guards). The array index is
+    still recovered by the ordinary data-flow, so the partial result remains fully
+    printable (the struct-array access still resolves), demonstrating that a
+    bypassed pass yields a valid partial rather than a broken result.
+
+    The unbudgeted decompile of the same function is exercised by offsetarray.xml;
+    the flow_analysis-truncation path by decompbudget.xml, the data_flow path by
+    decompbudget_dataflow.xml and the type_inference path by
+    decompbudget_typeinfer.xml.
+
+    The function bytes are access_array1 from offsetarray.xml.
+-->
+<bytechunk space="ram" offset="0x100000" readonly="true">
+534889fb4881ec900000004889e7e8ed
+0f00008b049c4881c4900000005bc3
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="access_array1"/>
+<symbol space="ram" offset="0x101000" name="populate_mystruct"/>
+</binaryimage>
+<script>
+  <com>parse line struct mystruct { int4 firstfield; int4 array[32]; };</com>
+  <com>parse line extern void populate_mystruct(mystruct *ptr);</com>
+  <com>lo fu access_array1</com>
+  <com>option decompilebudgetpass value_analysis 3</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="value_analysis budget exhausted warning header names the pass" min="1" max="1">WARNING: Exceeded decompilation budget on pass value_analysis: Some analysis is truncated</stringmatch>
+<stringmatch name="value_analysis partial result remains valid and printable" min="1" max="1">return mStack.*array\[param_1 (?:\+ -|- )1L?\]</stringmatch>
+</decompilertest>

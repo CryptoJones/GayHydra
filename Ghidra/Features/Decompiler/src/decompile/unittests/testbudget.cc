@@ -330,4 +330,20 @@ TEST(budget_bypass_on_pcode_limit) {
   ASSERT(t.passShouldBypass("block_structure"));
 }
 
+// A bypassable pass whose yield point is revisited many times within a function
+// (value_analysis is re-driven by every heritage pass that surfaces new load
+// guards) must print its partial-result header exactly once. claimDiagnostic
+// returns true on the first claim per pass and false thereafter, and tracks each
+// pass independently; reset() clears the claims for the next function.
+TEST(budget_claim_diagnostic_emits_once) {
+  DecompileBudgetTracker t;
+  t.enterPass("value_analysis", 2);
+  ASSERT(t.claimDiagnostic("value_analysis"));    // first claim wins
+  ASSERT(!t.claimDiagnostic("value_analysis"));   // every later claim is denied
+  ASSERT(!t.claimDiagnostic("value_analysis"));
+  ASSERT(t.claimDiagnostic("type_inference"));    // a different pass claims independently
+  t.reset();
+  ASSERT(t.claimDiagnostic("value_analysis"));    // reset re-arms for the next function
+}
+
 }  // namespace ghidra

@@ -12,6 +12,44 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+---
+
+## [v26.2.3] — 2026-06-03
+
+Release closing the Rec 35 `#35-4` `value_analysis` step: the
+cooperative decompilation budget gains its *second* concrete
+*bypassable* pass. The value-set analysis the heritage passes drive
+over LOAD/STORE guards is now wired onto the general pass-bypass façade
+(`#35-4b`), so a runaway value-set fixpoint degrades to a valid,
+printable partial result instead of spinning. The default budget is
+unchanged, so no existing decompilation output moves; only an explicit
+cap changes behaviour. `block_structure` is the last bypassable pass and
+is deferred to its own PR (it needs a goto-emitting unstructured
+fallback, not a simple yield-point early-return).
+
+- feat(decompiler): wire the `value_analysis` pass onto the budget bypass façade
+  (`#35-4`), the second concrete bypassable pass on the `#35-4b` foundation
+  (DECOMPILER_BUDGETS.md `#35-4`). The value-set analysis the heritage passes
+  drive over LOAD/STORE guards (`Heritage::analyzeNewLoadGuards` →
+  `ValueSetSolver::solve`) now consults the cooperative budget at a yield point
+  inside the value-set iteration loop: each value-set iteration is one unit on
+  value_analysis's own scale, accumulated across every solve the heritage passes
+  drive. Once the pass spends its own iteration budget (or the function is
+  globally out of budget) the solver stops at a partition boundary and the load
+  guards keep their coarser ("any value") ranges — the solver's already-supported
+  non-convergence path, so the partial result stays valid and printable. Because
+  the positional `decompilebudget` form is full at its three
+  flow/data_flow/type_inference slots, the cap is set by name through a new
+  `decompilebudgetpass <pass> <cap>` option (recognises `flow_analysis`,
+  `data_flow`, `type_inference`, `value_analysis`). A new deterministic fixture
+  (`decompbudget_valueanalysis.xml`, the `access_array1` function from
+  `offsetarray.xml`) pins the truncation: its value sets settle naturally in 6
+  iterations, a cap of 3 truncates them, the partial-result header naming
+  `value_analysis` appears exactly once, and the array access still resolves. The
+  pre-existing flow / data_flow / type_inference truncation paths
+  (`decompbudget.xml`, `decompbudget_dataflow.xml`, `decompbudget_typeinfer.xml`)
+  are preserved exactly (324-case unit suite + 683-case datatest suite green;
+  cppRaiiAudit 229 protected clean; `:Decompiler:ip` clean).
 - ci(unit-tests): stop running the platform-independent MicrosoftDmang demangler
   suite on the slower macOS/windows legs of the `unit_tests` matrix. `MDMangBaseTest`
   plus its `VS2013`/`VS2015`/`Ghidra`/`Genericize`/`ParseInfo` subclasses each re-run

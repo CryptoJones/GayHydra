@@ -863,14 +863,26 @@ void Heritage::analyzeNewLoadGuards(void)
     reads.push_back(guard.op);
     sinks.push_back(guard.op->getIn(1));	// The CPUI_STORE pointer
   }
-  AddrSpace *stackSpc = fd->getArch()->getStackSpace();
+  Architecture *glb = fd->getArch();
+  AddrSpace *stackSpc = glb->getStackSpace();
   Varnode *stackReg = (Varnode *)0;
   if (stackSpc != (AddrSpace *)0 && stackSpc->numSpacebase() > 0)
     stackReg = fd->findSpacebaseInput(stackSpc);
+  // Rec 35 (#35-4): value_analysis is a bypassable pass driven by the value-set
+  // solver here. Register the pass (its cap counted in value-set iterations) and
+  // thread the cooperative budget into each solve(); when it has spent its own
+  // budget — or the function is globally out of budget — the solver stops early
+  // and the load guards keep their coarser ("any value") ranges.
+  DecompileBudgetTracker *budget = (DecompileBudgetTracker *)0;
+  if (glb->budget.engaged()) {
+    budget = &glb->budget;
+    budget->enterPass("value_analysis", budget->budget().valueanalysis_iteration_limit);
+    budget->check();
+  }
   ValueSetSolver vsSolver;
   vsSolver.establishValueSets(sinks, reads, stackReg, false);
   WidenerNone widener;
-  vsSolver.solve(10000,widener);
+  vsSolver.solve(10000,widener,budget);
   list<LoadGuard>::iterator iter;
   bool runFullAnalysis = false;
   for(iter=loadIter;iter!=loadGuard.end(); ++iter) {
@@ -887,7 +899,7 @@ void Heritage::analyzeNewLoadGuards(void)
   }
   if (runFullAnalysis) {
     WidenerFull fullWidener;
-    vsSolver.solve(10000, fullWidener);
+    vsSolver.solve(10000, fullWidener, budget);
     for (iter = loadIter; iter != loadGuard.end(); ++iter) {
       LoadGuard &guard(*iter);
       guard.finalizeRange(vsSolver.getValueSetRead(guard.op->getSeqNum()));
@@ -896,6 +908,14 @@ void Heritage::analyzeNewLoadGuards(void)
       LoadGuard &guard(*iter);
       guard.finalizeRange(vsSolver.getValueSetRead(guard.op->getSeqNum()));
     }
+  }
+  // Rec 35 (#35-4): if value_analysis exhausted its own budget (or the function
+  // ran globally out of budget) during this solve, surface the partial-result
+  // header — exactly once per function, even though heritage re-drives this
+  // value-set analysis on every pass that surfaces new load guards.
+  if (budget != (DecompileBudgetTracker *)0 && budget->passShouldBypass("value_analysis")) {
+    if (budget->claimDiagnostic("value_analysis"))
+      fd->warningHeader("Exceeded decompilation budget on pass value_analysis: Some analysis is truncated");
   }
 }
 
