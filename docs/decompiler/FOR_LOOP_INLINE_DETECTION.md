@@ -159,17 +159,60 @@ the user always has the underlying code one click away.
 The pattern-library approach is the smallest design that solves
 the user-visible problem.
 
+## Phase 1 status (2026-06-03): already provided by upstream
+
+Before implementing #39-2, a survey of the tree found that **canonical
+`for`-loop detection already exists in upstream Ghidra and is present in
+this fork**, so #39-2 and #39-3 are already satisfied and reimplementing
+a separate `ForLoopPattern` pass would be wasted, regression-prone
+duplication. The evidence:
+
+- **Detection + transform.** `BlockWhileDo::finalTransform`
+  (`block.cc:3434`) converts a `whiledo` loop into a `for` loop: it
+  finds the induction variable (`findLoopVariable`), extracts the
+  iterator statement from the loop tail and the initializer from the
+  head block (`findInitializer`), and stores them on the `BlockWhileDo`.
+  It is gated by the `analyze_for_loops` architecture flag
+  (`architecture.hh:180`, default **on**;
+  `OptionForLoops` / `analyzeforloops`). This is the same canonical shape
+  this doc's Phase 1 describes - induction variable with an init, a
+  single back-edge update, and the loop's exit condition - just realised
+  as a `whiledo` -> `for` transform at `finalTransform` time rather than
+  as a standalone "ForLoopPattern" pass.
+- **Emission.** `PrintC::emitForLoop` (`printc.cc:3250`, dispatched from
+  `printc.cc:3301`) renders the recognised loop as `for (init; cond;
+  iterate)`.
+- **Test corpus (#39-3).** Upstream's "New combined decompiler testing
+  framework" ships positive fixtures `forloop1.xml`, `forloop_varused.xml`,
+  `forloop_withskip.xml`, `forloop_loaditer.xml`, `forloop_thruspecial.xml`
+  and negative fixtures `noforloop_globcall.xml`, `noforloop_iterused.xml`,
+  `noforloop_alias.xml` under `src/decompile/datatests/`. All pass in this
+  fork's build (verified 2026-06-03), so the canonical-detection contract
+  #39-3 asks for is already covered and guarded against regression.
+
+The "What we are NOT matching" cases above (unrolled loops, multiple
+induction variables, while-with-trailing-update) remain out of scope and
+are *also* not handled by upstream - consistent with this doc.
+
+**Net:** Phase 1 (#39-2, #39-3) is **complete via upstream**; no fork
+implementation is needed. The fork's remaining Rec 39 value is entirely
+**Phase 2 - inlined-function detection** (#39-4+), which upstream does
+*not* provide and which is the genuinely novel work. Phase 2 should open
+with its own design-decision record (the pattern-library matching engine,
+annotation layer, and conservative opt-in display) before implementation,
+following the project's design-step-first pattern.
+
 ## Sequencing
 
-| PR | Scope |
-|---|---|
-| #39-1 (this PR) | This design doc |
-| #39-2 | `ForLoopPattern` analysis pass + output emission |
-| #39-3 | `for`-loop unit tests on the existing decompiler datatest corpus |
-| #39-4 | `InlinedFunctionPattern` analysis pass + pattern-library loader |
-| #39-5 | Initial patterns: `memcpy`, `memset`, `strlen` |
-| #39-6 | Additional patterns: `strcmp`, `memcmp`, popcount |
-| #39-7 | UI hover/override for inline-call recognition |
+| PR | Scope | Status |
+|---|---|---|
+| #39-1 | This design doc | done |
+| #39-2 | `ForLoopPattern` analysis pass + output emission | **provided by upstream** (`BlockWhileDo::finalTransform` + `emitForLoop`); no fork work needed - see "Phase 1 status" above |
+| #39-3 | `for`-loop unit tests on the existing decompiler datatest corpus | **provided by upstream** (`forloop*.xml` / `noforloop*.xml`, verified passing) |
+| #39-4 | `InlinedFunctionPattern` analysis pass + pattern-library loader | not started (open with a design-decision record) |
+| #39-5 | Initial patterns: `memcpy`, `memset`, `strlen` | not started |
+| #39-6 | Additional patterns: `strcmp`, `memcmp`, popcount | not started |
+| #39-7 | UI hover/override for inline-call recognition | not started |
 
 ## Coordination with Rec 37 (C++ frontend)
 
