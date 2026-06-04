@@ -168,8 +168,8 @@ first implementation tier.
 - [ ] **Rec 35 PR #35-3:** UI partial-result banner + Retry-with-2x path.
 - [ ] **Rec 36 PR #36-2 + PR #36-3:** per-function dependency bitmaps replace global-flush invalidation.
 - [ ] **Rec 36 PR #36-4:** in-place rewrite paths for local rename / type / comment.
-- [ ] **Rec 39 PR #39-2:** `ForLoopPattern` analysis pass + output emission.
-- [ ] **Rec 39 PR #39-4 + #39-5:** `InlinedFunctionPattern` + initial pattern library (`memcpy`, `memset`, `strlen`).
+- [x] ~~**Rec 39 PR #39-2 + #39-3:** `for`-loop detection + datatest corpus.~~ **Already provided by upstream** — `BlockWhileDo::finalTransform`/`PrintC::emitForLoop` (gated by `analyze_for_loops`, default on) already render canonical `for` loops, and upstream's `forloop*.xml` / `noforloop*.xml` datatests cover + guard it (verified passing 2026-06-03). No fork reimplementation; see the "Phase 1 status" section in [`FOR_LOOP_INLINE_DETECTION.md`](docs/decompiler/FOR_LOOP_INLINE_DETECTION.md). Remaining Rec 39 value is Phase 2 below.
+- [ ] **Rec 39 PR #39-4 + #39-5:** `InlinedFunctionPattern` + initial pattern library (`memcpy`, `memset`, `strlen`) — the genuinely novel fork work (upstream does not recognise inlined library calls). Open with a design-decision record first.
 
 ---
 
