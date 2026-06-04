@@ -1,0 +1,53 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 39 (#39-4a): inlined memset detection (DD-0007). A run of STORE ops writing one repeated
+    constant value to a contiguous region is folded into a single builtin_memset CALLOTHER, the same
+    way RuleStringStore folds a run of distinct character STOREs into builtin_strncpy. RuleMemset reuses
+    HeapSequence's STORE collection in fill mode and runs AFTER RuleStringStore, so it only claims the
+    sequences that rule declines: zero fills (a stored 0 is a string terminator to RuleStringStore, so a
+    pure zero fill is never a string) and non-char fills (RuleStringStore is char-gated). Genuine string
+    fills keep their strncpy/memcpy rendering, guarded by heapstring.xml / stackstring.xml.
+
+    zerofill   - five byte stores of 0 to a char* (the canonical zero fill): memset(ptr->val, 0, 5).
+    intzero    - four 4-byte stores of 0 to an int* (non-char, which RuleStringStore cannot fold):
+                 memset(p, 0, 0x10).
+    fill_off   - five byte stores of 0xff at a +8 offset off a char* (non-zero fill value AND a non-zero
+                 base offset, exercising the destination-pointer arithmetic): memset(ptr->val + 8, 0xff, 5).
+-->
+<bytechunk space="ram" offset="0x100000" readonly="true">
+f30f1efa488b07c60000c6400100c64002
+00c6400300c6400400c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100040" readonly="true">
+f30f1efac70700000000c7470400000000
+c7470800000000c7470c00000000c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100080" readonly="true">
+f30f1efa488b07c64008ffc64009ffc640
+0affc6400bffc6400cffc3
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="zerofill"/>
+<symbol space="ram" offset="0x100040" name="intzero"/>
+<symbol space="ram" offset="0x100080" name="fill_off"/>
+</binaryimage>
+<script>
+  <com>parse line struct mystring { char *val; int4 len; };</com>
+  <com>parse line extern void zerofill(mystring *ptr);</com>
+  <com>parse line extern void intzero(int4 *p);</com>
+  <com>parse line extern void fill_off(mystring *ptr);</com>
+  <com>lo fu zerofill</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu intzero</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu fill_off</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="memset zero fill of char buffer" min="1" max="1">builtin_memset\(ptr-\>val, ?0, ?5\);</stringmatch>
+<stringmatch name="memset zero fill of non-char (int) buffer" min="1" max="1">builtin_memset\(p, ?0, ?0x10\);</stringmatch>
+<stringmatch name="memset non-zero fill at offset" min="1" max="1">builtin_memset\(ptr-\>val \+ 8L?, ?0xff, ?5\);</stringmatch>
+</decompilertest>

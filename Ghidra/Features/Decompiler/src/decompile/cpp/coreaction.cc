@@ -5882,6 +5882,7 @@ void ActionDatabase::universalAction(Architecture *conf)
     actcleanup->addRule(make_unique<RuleSplitStore>("splitpointer").release());
     actcleanup->addRule(make_unique<RuleStringCopy>("constsequence").release());
     actcleanup->addRule(make_unique<RuleStringStore>("constsequence").release());
+    actcleanup->addRule(make_unique<RuleMemset>("constsequence").release());	// Rec 39 (#39-4a): after RuleStringStore so strings keep their rendering
     actcleanup->addRule(make_unique<RuleBitFieldStore>("bitfields").release());
     actcleanup->addRule(make_unique<RuleBitFieldOut>("bitfields").release());
     actcleanup->addRule(make_unique<RuleBitFieldLoad>("bitfields").release());
