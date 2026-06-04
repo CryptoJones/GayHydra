@@ -1015,7 +1015,7 @@ string OptionDecompileBudget::apply(Architecture *glb,const string &p1,const str
 /// issuing the option once per pass. The first parameter is the pass name; the
 /// second is its iteration cap on that pass's own scale. Setting any cap engages
 /// the budget. Recognised names: \b flow_analysis, \b data_flow,
-/// \b type_inference, \b value_analysis.
+/// \b type_inference, \b value_analysis, \b block_structure.
 string OptionDecompileBudgetPass::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
 
 {
@@ -1036,6 +1036,8 @@ string OptionDecompileBudgetPass::apply(Architecture *glb,const string &p1,const
     caps.typeinfer_iteration_limit = (uint4)newLimit;
   else if (p1 == "value_analysis")
     caps.valueanalysis_iteration_limit = (uint4)newLimit;
+  else if (p1 == "block_structure")
+    caps.blockstructure_iteration_limit = (uint4)newLimit;
   else
     throw ParseError("Unknown decompilebudgetpass pass: " + p1);
   glb->budget.setCaps(caps);

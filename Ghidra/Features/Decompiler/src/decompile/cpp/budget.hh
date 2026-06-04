@@ -65,6 +65,7 @@ struct DecompileBudgetCaps {
   uint32_t dataflow_iteration_limit = 100000; ///< Soft data_flow sweep cap (own scale).
   uint32_t typeinfer_iteration_limit = 100;   ///< Soft type_inference propagation-pass cap (own scale).
   uint32_t valueanalysis_iteration_limit = 1000000; ///< Soft value_analysis value-set-iteration cap (own scale, cumulative across the function's solves; large default leaves it effectively unbounded).
+  uint32_t blockstructure_iteration_limit = 1000000; ///< Soft block_structure block-scan-sweep cap (own scale, cumulative across the function's collapseInternal calls; large default leaves it effectively unbounded).
 };
 
 /// \brief Cooperative, single-thread budget tracker for the analysis loop.

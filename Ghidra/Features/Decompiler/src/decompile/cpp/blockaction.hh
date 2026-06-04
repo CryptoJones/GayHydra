@@ -23,6 +23,8 @@
 
 namespace ghidra {
 
+class DecompileBudgetTracker;	///< Rec 35 (#35-4): cooperative per-function budget (budget.hh), threaded into structuring
+
 /// \brief Class for holding an edge while the underlying graph is being manipulated
 ///
 /// The original FlowBlock nodes that define the end-points of the edge may get
@@ -198,6 +200,8 @@ class CollapseStructure {
   list<LoopBody>::iterator loopbodyiter;	///< Current (innermost) loop being structured
   BlockGraph &graph;				///< The control-flow graph
   int4 dataflow_changecount;			///< Number of data-flow changes made during structuring
+  DecompileBudgetTracker *budget;		///< Rec 35 (#35-4): cooperative budget, or null when block_structure is unbudgeted
+  bool budgetBypass(void);			///< \b true once block_structure should drop to goto-only coarse mode
   bool checkSwitchSkips(FlowBlock *switchbl,FlowBlock *exitblock);
   void onlyReachableFromRoot(FlowBlock *root,vector<FlowBlock *> &body);
   int4 markExitsAsGotos(vector<FlowBlock *> &body);	///< Mark edges exiting the body as \e unstructured gotos
@@ -206,6 +210,7 @@ class CollapseStructure {
   void orderLoopBodies(void);			///< Identify and label all loop structure for this graph
   bool updateLoopBody(void);			///< Find likely \e unstructured edges within the innermost loop body
   FlowBlock *selectGoto(void);			///< Select an edge to mark as  \e unstructured
+  FlowBlock *forceCollapseGoto(void);		///< Rec 35 (#35-4): goto-only bypass fallback - force an edge to a goto so ruleBlockGoto can fold
   bool ruleBlockGoto(FlowBlock *bl);		///< Attempt to apply the BlockGoto structure
   bool ruleBlockCat(FlowBlock *bl);		///< Attempt to apply a BlockList structure
   bool ruleBlockOr(FlowBlock *bl);		///< Attempt to apply a BlockCondition structure
@@ -220,7 +225,7 @@ class CollapseStructure {
   int4 collapseInternal(FlowBlock *targetbl);	///< The main collapsing loop
   void collapseConditions(void);		///< Simplify conditionals
 public:
-  CollapseStructure(BlockGraph &g);		///< Construct given a control-flow graph
+  CollapseStructure(BlockGraph &g,DecompileBudgetTracker *budget=(DecompileBudgetTracker *)0);	///< Construct given a control-flow graph (and optional budget)
   int4 getChangeCount(void) const { return dataflow_changecount; }	///< Get number of data-flow changes
   void collapseAll(void);			///< Run the whole algorithm
 };

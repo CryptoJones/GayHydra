@@ -1278,6 +1278,40 @@ FlowBlock *CollapseStructure::selectGoto(void)
   return (FlowBlock *)0;
 }
 
+/// \brief Goto-only fallback for the block_structure budget-bypass coarse mode (Rec 35 #35-4).
+///
+/// When block_structure is bypassed (DD-0006), collapseInternal stops attempting the
+/// precise structuring rules, so selectGoto's loop-analysis-driven \e likely-goto list
+/// is no longer the right driver: it only ever marks the residual edges the precise
+/// rules were expected to leave behind, and runs dry (throwing) on a graph that was
+/// never precisely structured. This fallback instead marks \e any one remaining
+/// non-goto out-edge as a goto, on a block ruleBlockGoto can then fold (a switch, or a
+/// block with one or two out-edges). Each call strictly converts one structured edge
+/// into an unstructured goto, after which ruleBlockGoto folds the block on the next
+/// sweep (2-out -> if-goto, 1-out -> goto, switch -> multigoto), so the graph collapses
+/// monotonically to a single root using only goto/cat folds - the all-goto
+/// "unstructured" rendering. Marking an edge as a goto never changes the control flow,
+/// only how it is rendered, so the result stays a valid, printable function.
+/// \return the block whose edge was forced to a goto, or null if none remains foldable.
+FlowBlock *CollapseStructure::forceCollapseGoto(void)
+
+{
+  for(int4 i=0;i<graph.getSize();++i) {
+    FlowBlock *bl = graph.getBlock(i);
+    if ((bl->sizeIn()==0)&&(bl->sizeOut()==0)) continue;	// already collapsed to an isolated block
+    int4 sizeout = bl->sizeOut();
+    // Only mark a block ruleBlockGoto will subsequently fold, so progress is guaranteed.
+    if (!bl->isSwitchOut() && sizeout > 2) continue;
+    for(int4 j=0;j<sizeout;++j) {
+      if (!bl->isGotoOut(j)) {
+	bl->setGotoBranch(j);	// mark edge as goto; ruleBlockGoto folds it next sweep
+	return bl;
+      }
+    }
+  }
+  return (FlowBlock *)0;
+}
+
 /// Try to concatenate a straight sequences of blocks starting with the given FlowBlock.
 /// All of the internal edges should be DAG  (no \e exit, \e goto,or \e loopback).
 /// The final edge can be an exit or loopback
@@ -1774,6 +1808,11 @@ int4 CollapseStructure::collapseInternal(FlowBlock *targetbl)
   bool change,fullchange;
   int4 isolated_count;
   FlowBlock *bl;
+  // Rec 35 (#35-4): once block_structure is bypassed, skip the precise structuring
+  // rules and run goto-only; collapse still completes to a single root via the
+  // selectGoto/clipExtraRoots fallback (DD-0006). Re-evaluated as the per-sweep
+  // tick below may flip it part-way through this call.
+  bool bypass = budgetBypass();
 
   do {
     do {
@@ -1795,7 +1834,9 @@ int4 CollapseStructure::collapseInternal(FlowBlock *targetbl)
 	  isolated_count += 1;
 	  continue;		// This does not constitute a chanage
 	}
-	// Try each rule on the block
+	// Try each rule on the block. ruleBlockGoto + ruleBlockCat are the cheap,
+	// always-valid folds kept even in goto-only coarse mode; the rest are the
+	// precise structuring rules skipped under budget bypass.
 	if (ruleBlockGoto(bl)) {
 	  change = true;
 	  continue;
@@ -1804,48 +1845,65 @@ int4 CollapseStructure::collapseInternal(FlowBlock *targetbl)
 	  change = true;
 	  continue;
 	}
-	if (ruleBlockProperIf(bl)) {
-	  change = true;
-	  continue;
+	if (!bypass) {
+	  if (ruleBlockProperIf(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  if (ruleBlockIfElse(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  if (ruleBlockWhileDo(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  if (ruleBlockDoWhile(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  if (ruleBlockInfLoop(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  if (ruleBlockSwitch(bl)) {
+	    change = true;
+	    continue;
+	  }
+	  //      if (ruleBlockOr(bl)) {
+	  //	change = true;
+	  //	continue;
+	  //      }
 	}
-	if (ruleBlockIfElse(bl)) {
-	  change = true;
-	  continue;
-	}
-	if (ruleBlockWhileDo(bl)) {
-	  change = true;
-	  continue;
-	}
-	if (ruleBlockDoWhile(bl)) {
-	  change = true;
-	  continue;
-	}
-	if (ruleBlockInfLoop(bl)) {
-	  change = true;
-	  continue;
-	}
-	if (ruleBlockSwitch(bl)) {
-	  change = true;
-	  continue;
-	}
-	//      if (ruleBlockOr(bl)) {
-	//	change = true;
-	//	continue;
-	//      }
+      }
+      // Rec 35 (#35-4): one full block-scan sweep is one block_structure iteration
+      // (the same per-sweep scale data_flow and value_analysis use). Tick once per
+      // sweep and observe function-global wall-clock/pcode pressure; once this pass
+      // (or the function) is out of budget, flip to goto-only for the remaining
+      // sweeps. The structure built in earlier (precise) sweeps stays in place.
+      if (budget != (DecompileBudgetTracker *)0 && budget->engaged() &&
+	  budget->currentPassName() == "block_structure") {
+	budget->tickIteration();
+	budget->check();
+	if (!bypass && budget->passShouldBypass("block_structure"))
+	  bypass = true;
       }
     } while(change);
     // Applying IfNoExit rule too early can cause other (preferable) rules to miss
-    // Only apply the rule if nothing else can apply
+    // Only apply the rule if nothing else can apply. These are precise rules too,
+    // so goto-only coarse mode skips them and relies on the goto-injection path.
     fullchange = false;
-    for(index=0;index<graph.getSize();++index) {
-      bl = graph.getBlock(index);
-      if (ruleBlockIfNoExit(bl)) { // If no other change is possible but still blocks left, try ifnoexit
-	fullchange = true;
-	break;
-      }
-      if (ruleCaseFallthru(bl)) { // Check for fallthru cases in a switch
-	fullchange = true;
-	break;
+    if (!bypass) {
+      for(index=0;index<graph.getSize();++index) {
+	bl = graph.getBlock(index);
+	if (ruleBlockIfNoExit(bl)) { // If no other change is possible but still blocks left, try ifnoexit
+	  fullchange = true;
+	  break;
+	}
+	if (ruleCaseFallthru(bl)) { // Check for fallthru cases in a switch
+	  fullchange = true;
+	  break;
+	}
       }
     }
   } while(fullchange);
@@ -1869,10 +1927,31 @@ void CollapseStructure::collapseConditions(void)
 /// The initial BlockGraph should be a copy of the permanent control-flow graph.
 /// In particular the FlowBlock nodes should be BlockCopy instances.
 /// \param g is the (copy of the) control-flow graph
-CollapseStructure::CollapseStructure(BlockGraph &g)
+CollapseStructure::CollapseStructure(BlockGraph &g,DecompileBudgetTracker *budget)
   : graph(g)
 {
   dataflow_changecount = 0;
+  this->budget = budget;
+}
+
+/// \brief Decide whether structuring should drop to its goto-only coarse mode.
+///
+/// Rec 35 (#35-4): block_structure is a bypassable pass. It is bypassed when the
+/// pass has spent its own per-sweep iteration budget, or the function as a whole
+/// is out of budget (a function-global wall-clock / pcode-op cap tripped) — the
+/// general bypass façade (DecompileBudgetTracker::passShouldBypass). Unlike the
+/// other bypassable passes, "bypass" here does not mean "stop"; collapseInternal
+/// keeps reducing the graph to its single root (so the printer's postcondition
+/// holds), but stops attempting the precise structuring rules and lets the
+/// existing selectGoto / clipExtraRoots goto-injection path finish the collapse —
+/// the all-goto "unstructured" rendering (DD-0006). Inert when unbudgeted.
+/// \return \b true once block_structure should run goto-only.
+bool CollapseStructure::budgetBypass(void)
+
+{
+  if (budget == (DecompileBudgetTracker *)0 || !budget->engaged())
+    return false;
+  return budget->passShouldBypass("block_structure");
 }
 
 /// Collapse everything in the control-flow graph to isolated blocks with no inputs and outputs.
@@ -1887,9 +1966,29 @@ void CollapseStructure::collapseAll(void)
 
   collapseConditions();
 
+  // Rec 35 (#35-4): enter the block_structure pass so the per-sweep yield point in
+  // collapseInternal counts against it. enterPass keeps the accumulated count on
+  // re-entry, so the sweep count carries across every collapseInternal call in
+  // this collapseAll and across the function's structuring Actions (DD-0006).
+  if (budget != (DecompileBudgetTracker *)0 && budget->engaged()) {
+    budget->enterPass("block_structure", budget->budget().blockstructure_iteration_limit);
+    budget->check();
+  }
+
   isolated_count = collapseInternal((FlowBlock *)0);
   while(isolated_count < graph.getSize()) {
-    FlowBlock *targetbl = selectGoto();
+    FlowBlock *targetbl;
+    // Rec 35 (#35-4): once block_structure is bypassed the precise rules are skipped,
+    // so drive the residual collapse with the cheap goto-only fallback rather than
+    // selectGoto's loop analysis (which would run dry on an un-structured graph and
+    // throw). Fall back to selectGoto only if nothing is left to force (DD-0006).
+    if (budgetBypass()) {
+      targetbl = forceCollapseGoto();
+      if (targetbl == (FlowBlock *)0)
+	targetbl = selectGoto();
+    }
+    else
+      targetbl = selectGoto();
     isolated_count = collapseInternal(targetbl);
   }
 }
@@ -2179,9 +2278,19 @@ int4 ActionBlockStructure::apply(Funcdata &data)
   data.installSwitchDefaults();
   graph.buildCopy(data.getBasicBlocks());
 
-  CollapseStructure collapse(graph);
+  // Rec 35 (#35-4): thread the cooperative budget into structuring when engaged so
+  // collapseAll can drop to its goto-only coarse mode under budget pressure (DD-0006).
+  Architecture *glb = data.getArch();
+  CollapseStructure collapse(graph, glb->budget.engaged() ? &glb->budget : (DecompileBudgetTracker *)0);
   collapse.collapseAll();
   count += collapse.getChangeCount();
+
+  // If block_structure ran goto-only because it was out of budget, surface the
+  // partial-result diagnostic, exactly once per function.
+  if (glb->budget.engaged() && glb->budget.passShouldBypass("block_structure")) {
+    if (glb->budget.claimDiagnostic("block_structure"))
+      data.warningHeader("Exceeded decompilation budget on pass block_structure: Some analysis is truncated");
+  }
 
   return 0;
 }
@@ -2295,9 +2404,18 @@ int4 ActionRevertISC::apply(Funcdata &data)
     // to reapply ActionBlockStructure::apply()
     data.installSwitchDefaults();
     graph.buildCopy(data.getBasicBlocks());
-    CollapseStructure collapse(graph);
+    // Rec 35 (#35-4): same budget threading as ActionBlockStructure — this
+    // re-structure path must also be bounded (DD-0006). The block_structure sweep
+    // count accumulates across both Actions within the function.
+    Architecture *glb = data.getArch();
+    CollapseStructure collapse(graph, glb->budget.engaged() ? &glb->budget : (DecompileBudgetTracker *)0);
     collapse.collapseAll();
     count += collapse.getChangeCount();
+
+    if (glb->budget.engaged() && glb->budget.passShouldBypass("block_structure")) {
+      if (glb->budget.claimDiagnostic("block_structure"))
+        data.warningHeader("Exceeded decompilation budget on pass block_structure: Some analysis is truncated");
+    }
 
     if (data.hasNoStructBlocks()) {
       data.getArch()->printMessage("FuncData has no structured blocks!");

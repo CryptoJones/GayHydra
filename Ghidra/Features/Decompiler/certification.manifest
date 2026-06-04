@@ -28,6 +28,7 @@ src/decompile/datatests/convert.xml||GHIDRA||||END|
 src/decompile/datatests/copytrim.xml||GHIDRA||||END|
 src/decompile/datatests/deadvolatile.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget.xml||GHIDRA||||END|
+src/decompile/datatests/decompbudget_blockstructure.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget_dataflow.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget_typeinfer.xml||GHIDRA||||END|
 src/decompile/datatests/decompbudget_valueanalysis.xml||GHIDRA||||END|

@@ -346,4 +346,37 @@ TEST(budget_claim_diagnostic_emits_once) {
   ASSERT(t.claimDiagnostic("value_analysis"));    // reset re-arms for the next function
 }
 
+// block_structure (Rec 35 #35-4) ticks once per collapseInternal block-scan
+// sweep and re-enters the pass on each selectGoto-driven recollapse (and across
+// the two structuring Actions) via enterPass, which must keep the accumulated
+// sweep count rather than reset it. Once the accumulated count crosses the cap
+// the pass stays bypassed for every later sweep — that is what flips
+// collapseInternal into its goto-only coarse mode for the tail of structuring.
+TEST(budget_block_structure_accumulates_across_recollapse) {
+  uint64_t fake = 0;
+  DecompileBudgetCaps caps;
+  caps.blockstructure_iteration_limit = 3;
+  DecompileBudgetTracker t(caps, [&fake]() { return fake; });
+
+  // First collapseInternal call: two sweeps, still within the cap of 3.
+  t.enterPass("block_structure", caps.blockstructure_iteration_limit);
+  ASSERT(!t.tickIteration());
+  ASSERT(!t.tickIteration());
+  ASSERT(!t.passShouldBypass("block_structure"));
+
+  // selectGoto recollapse re-enters the pass; the count must carry over, so the
+  // third sweep reaches the cap and the pass is bypassed from here on.
+  t.enterPass("block_structure", caps.blockstructure_iteration_limit);
+  ASSERT_EQUALS((int)t.passIterations("block_structure"), 2);  // accumulated, not reset
+  ASSERT(t.tickIteration());                                   // third sweep hits the cap
+  ASSERT(t.passShouldBypass("block_structure"));
+  ASSERT(t.passShouldBypass("block_structure"));               // sticky for the tail
+
+  // A new function clears the accumulated sweeps.
+  t.reset();
+  t.enterPass("block_structure", caps.blockstructure_iteration_limit);
+  ASSERT_EQUALS((int)t.passIterations("block_structure"), 0);
+  ASSERT(!t.passShouldBypass("block_structure"));
+}
+
 }  // namespace ghidra
