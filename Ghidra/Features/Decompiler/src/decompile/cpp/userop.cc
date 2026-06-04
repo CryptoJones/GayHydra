@@ -33,6 +33,7 @@ const uint4 UserPcodeOp::BUILTIN_VOLATILE_WRITE = 0x10000002;
 const uint4 UserPcodeOp::BUILTIN_MEMCPY = 0x10000003;
 const uint4 UserPcodeOp::BUILTIN_STRNCPY = 0x10000004;
 const uint4 UserPcodeOp::BUILTIN_WCSNCPY = 0x10000005;
+const uint4 UserPcodeOp::BUILTIN_MEMSET = 0x10000006;
 
 int4 UserPcodeOp::extractAnnotationSize(const Varnode *vn,const PcodeOp *op)
 
@@ -474,6 +475,17 @@ UserPcodeOp *UserOpManage::registerBuiltin(uint4 i)
       Datatype *ptrType = glb->types->getTypePointer(ptrSize,cType,wordSize);
       Datatype *intType = glb->types->getBase(4,TYPE_INT);
       res = make_unique<DatatypeUserOp>("builtin_wcsncpy",glb,UserPcodeOp::BUILTIN_WCSNCPY,ptrType,ptrType,ptrType,intType).release();
+      break;
+    }
+    case UserPcodeOp::BUILTIN_MEMSET:		// Fill a region with a constant byte (Rec 39 #39-4a)
+    {
+      int4 ptrSize = glb->types->getSizeOfPointer();
+      int4 wordSize = glb->getDefaultDataSpace()->getWordSize();
+      Datatype *vType = glb->types->getTypeVoid();
+      Datatype *ptrType = glb->types->getTypePointer(ptrSize,vType,wordSize);
+      Datatype *intType = glb->types->getBase(4,TYPE_INT);
+      // void *memset(void *dest, int value, size_t count)
+      res = make_unique<DatatypeUserOp>("builtin_memset",glb,UserPcodeOp::BUILTIN_MEMSET,ptrType,ptrType,intType,intType).release();
       break;
     }
     default:

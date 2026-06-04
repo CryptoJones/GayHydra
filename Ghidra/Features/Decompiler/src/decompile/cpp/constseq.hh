@@ -48,9 +48,10 @@ protected:
   int4 numElements;		///< Number of elements in the final sequence
   vector<WriteNode> moveOps;	///< COPY/STORE into the array memory region
   vector<uint1> byteArray;	///< Constants collected in a single array
+  uint1 fillValue;		///< Rec 39 (#39-4a): the single repeated byte when the sequence is a constant fill (memset)
   static bool interfereBetween(PcodeOp *startOp,PcodeOp *endOp);	///< Check for interfering ops between the two given ops
   bool checkInterference(void);	///< Find maximal set of ops containing the root with no interfering ops in between
-  int4 formByteArray(int4 sz,int4 slot,uint8 rootOff,bool bigEndian);	///< Put constant values from COPYs into a single byte array
+  int4 formByteArray(int4 sz,int4 slot,uint8 rootOff,bool bigEndian,bool fillMode=false);	///< Put constant values from COPYs into a single byte array
   uint4 selectStringCopyFunction(int4 &index);	///< Pick either strncpy, wcsncpy, or memcpy function used to copy string
 public:
   ArraySequence(Funcdata &fdata,Datatype *ct,PcodeOp *root);	///< Constructor
@@ -108,13 +109,16 @@ class HeapSequence : public ArraySequence {
   static bool setsEqual(const vector<Varnode *> &op1,const vector<Varnode *> &op2);
   bool testValue(PcodeOp *op);		///< Test if a STORE value has the matching form for the sequence
   bool collectStoreOps(void);		///< Collect ops STOREing into a memory region from the same root pointer
+  Varnode *buildDestPointer(PcodeOp *insertPoint);	///< Build the destination pointer (base + offset) for the sequence
   PcodeOp *buildStringCopy(void);	///< Build the strncpy,wcsncpy, or memcpy function with string as input
+  PcodeOp *buildMemset(void);		///< Rec 39 (#39-4a): build a memset user-op for a constant-fill sequence
   void gatherIndirectPairs(vector<PcodeOp *> &indirects,vector<IndirectPair> &pairs);
   bool deduplicatePairs(vector<IndirectPair> &pairs);	///< Find and eliminate duplicate INDIRECT pairs
   void removeStoreOps(vector<PcodeOp *> &indirects,vector<IndirectPair> &indirectPairs,PcodeOp *replaceOp);	///< Remove all STORE ops from the basic block
+  bool fillMode;			///< Rec 39 (#35-4a): \b true if collecting a constant fill (memset) rather than a string
 public:
-  HeapSequence(Funcdata &fdata,Datatype *ct,PcodeOp *root);
-  bool transform(void);		///< Transform STOREs into a single memcpy user-op
+  HeapSequence(Funcdata &fdata,Datatype *ct,PcodeOp *root,bool fill=false);
+  bool transform(void);		///< Transform STOREs into a single memcpy/memset user-op
 };
 
 class RuleStringCopy : public Rule {
@@ -134,6 +138,25 @@ public:
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
     return make_unique<RuleStringStore>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+
+/// \class RuleMemset
+/// \brief Replace a sequence of STORE ops writing the same constant value with a single \b memset CALLOTHER
+///
+/// Rec 39 (#39-4a). A constant fill (e.g. zeroing a buffer, or `memset(p,c,n)` inlined as a run of
+/// equal stores) is recognised by reusing HeapSequence's STORE-collection in \e fill mode and emitting
+/// a \b builtin_memset user-op. This runs \e after RuleStringStore, so genuine string fills keep their
+/// existing strncpy/memcpy rendering; RuleMemset only claims sequences that rule declines (zero fills,
+/// non-char fills), where memset is the idiomatic representation.
+class RuleMemset : public Rule {
+public:
+  RuleMemset(const string &g) : Rule( g, 0, "memset") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleMemset>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

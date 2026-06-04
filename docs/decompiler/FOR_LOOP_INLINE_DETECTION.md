@@ -210,7 +210,7 @@ following the project's design-step-first pattern.
 | #39-2 | `ForLoopPattern` analysis pass + output emission | **provided by upstream** (`BlockWhileDo::finalTransform` + `emitForLoop`); no fork work needed - see "Phase 1 status" above |
 | #39-3 | `for`-loop unit tests on the existing decompiler datatest corpus | **provided by upstream** (`forloop*.xml` / `noforloop*.xml`, verified passing) |
 | #39-4 | `InlinedFunctionPattern` analysis pass + pattern-library loader | **design landed at [DD-0007](../decisions/0007-rec39-phase2-inline-detection.md)** — *revised*: extend the existing `constseq` + builtin-user-op (CALLOTHER) mechanism that already renders inlined memcpy/strncpy, **not** a new XML pattern-library engine. Re-sequenced below. |
-| #39-4a | `BUILTIN_MEMSET` + `RuleMemset` (non-char constant fill) + option gate + datatest | not started |
+| #39-4a | `BUILTIN_MEMSET` + `RuleMemset` (constant fill -> memset) + datatest | **done** — `RuleMemset` reuses `HeapSequence`'s STORE collection in a new fill mode and runs after `RuleStringStore`, so it claims only the zero-fills and non-char fills that rule declines (no regression to string rendering). No option gate: it adds no new *recognition* (those sequences were already collected), only a clearer rendering, so it carries no new false-positive risk. Validated by `datatests/heapmemset.xml`. |
 | #39-4b | `BUILTIN_POPCOUNT` + `RulePopcount` dataflow-idiom rule + datatest | not started |
 | #39-5 | Extend `memset` element-type coverage (word/dword/AVX-shaped fills) | not started |
 | #39-6 | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops) — post-structuring loop-region matcher; opens with its own sub-DD | not started |

@@ -105,7 +105,7 @@ bool ArraySequence::checkInterference(void)
 /// \param rootOff is the root offset
 /// \param bigEndian is \b true if constant inputs have big endian encoding
 /// \return the number of characters in the contiguous region
-int4 ArraySequence::formByteArray(int4 sz,int4 slot,uint8 rootOff,bool bigEndian)
+int4 ArraySequence::formByteArray(int4 sz,int4 slot,uint8 rootOff,bool bigEndian,bool fillMode)
 
 {
   byteArray.resize(sz,0);
@@ -132,16 +132,41 @@ int4 ArraySequence::formByteArray(int4 sz,int4 slot,uint8 rootOff,bool bigEndian
   int4 bigElSize = charType->getAlignSize();
   int4 maxEl = used.size() / bigElSize;
   int4 count;
-  for(count=0;count<maxEl;count += 1) {
-    uint1 val = used[ count * bigElSize ];
-    if (val != 1) {		// Count number of characters not including null terminator
-      if (val == 2)
-	count += 1;		// Allow a single null terminator
-      break;
+  // Step a byte position rather than indexing with count*bigElSize, so there is no int*int
+  // multiplication implicitly widened to the index type (CodeQL cpp/integer-multiplication-cast-to-long).
+  if (fillMode) {
+    // Rec 39 (#39-4a): a memset fill counts the contiguous run of written elements regardless of value
+    // (a stored 0 is a fill byte here, not a string terminator); a real gap ends the region.
+    int4 bytePos = 0;
+    for(count=0;count<maxEl;count += 1, bytePos += bigElSize) {
+      if (used[ bytePos ] == 0)			// 0 == not written (a gap); 1 or 2 == written
+	break;
+    }
+  }
+  else {
+    int4 bytePos = 0;
+    for(count=0;count<maxEl;count += 1, bytePos += bigElSize) {
+      uint1 val = used[ bytePos ];
+      if (val != 1) {		// Count number of characters not including null terminator
+	if (val == 2)
+	  count += 1;		// Allow a single null terminator
+	break;
+      }
     }
   }
   if (count < MINIMUM_SEQUENCE_LENGTH)
     return 0;
+  if (fillMode) {
+    // Every byte across the contiguous region must be the same value to be a memset. With the
+    // size==alignSize precondition (no padding) the region [0, count*elSize) is fully written.
+    int4 numBytes = count * elSize;
+    uint1 fv = byteArray[0];
+    for(int4 i=1;i<numBytes;++i) {
+      if (byteArray[i] != fv)
+	return 0;		// Not a single repeated byte -> not a memset
+    }
+    fillValue = fv;
+  }
   if (count != moveOps.size()) {
     uint8 maxOff = rootOff + count * bigElSize;
     vector<WriteNode> finalOps;
@@ -718,16 +743,16 @@ bool HeapSequence::collectStoreOps(void)
 /// third parameter is the constant indicating the length of the string.  The \e user-op is inserted just before
 /// the last PcodeOp moving a character into the memory region.
 /// \return the constructed PcodeOp representing the \b memcpy
-PcodeOp *HeapSequence::buildStringCopy(void)
+/// Compute the destination pointer for the sequence: the base pointer plus the base offset and any
+/// non-constant index Varnodes, materialised as a PTRADD when needed.  Any new ops are inserted just
+/// before \b insertPoint.  Shared by buildStringCopy() and buildMemset() (Rec 39 #39-4a).
+/// \param insertPoint is the op before which any new pointer-arithmetic ops are inserted
+/// \return the Varnode holding the destination pointer
+Varnode *HeapSequence::buildDestPointer(PcodeOp *insertPoint)
 
 {
-  PcodeOp *insertPoint = moveOps[0].op;		// Earliest STORE in the block
-  Datatype *charPtrType = rootOp->getIn(1)->getTypeReadFacing(rootOp);
-  int4 numBytes = numElements * charType->getSize();
   Architecture *glb = data.getArch();
-  Varnode *srcPtr = data.getInternalString(byteArray.data(), numBytes, charPtrType, insertPoint);
-  if (srcPtr == (Varnode *)0)
-    return (PcodeOp *)0;
+  Datatype *charPtrType = rootOp->getIn(1)->getTypeReadFacing(rootOp);
   Varnode *destPtr = basePointer;
   if (baseOffset != 0 || !nonConstAdds.empty()) {	// Create the index Varnode
     Varnode *indexVn = (Varnode *)0;
@@ -771,6 +796,20 @@ PcodeOp *HeapSequence::buildStringCopy(void)
     if (basePointer->getType()->needsResolution())
       data.inheritUnionField(basePointer->getType(), ptrAdd, 0, immedRead, immedRead->getSlot(basePointer));
   }
+  return destPtr;
+}
+
+PcodeOp *HeapSequence::buildStringCopy(void)
+
+{
+  PcodeOp *insertPoint = moveOps[0].op;		// Earliest STORE in the block
+  Datatype *charPtrType = rootOp->getIn(1)->getTypeReadFacing(rootOp);
+  int4 numBytes = numElements * charType->getSize();
+  Architecture *glb = data.getArch();
+  Varnode *srcPtr = data.getInternalString(byteArray.data(), numBytes, charPtrType, insertPoint);
+  if (srcPtr == (Varnode *)0)
+    return (PcodeOp *)0;
+  Varnode *destPtr = buildDestPointer(insertPoint);
   int4 index;
   uint4 builtInId = selectStringCopyFunction(index);
   glb->userops.registerBuiltin(builtInId);
@@ -786,6 +825,36 @@ PcodeOp *HeapSequence::buildStringCopy(void)
   if (destPtr->getType()->needsResolution())
     data.inheritUnionField(destPtr->getType(), copyOp, 1, immedRead, immedRead->getSlot(destPtr));
   return copyOp;
+}
+
+/// Rec 39 (#39-4a): build a \b builtin_memset CALLOTHER for a constant-fill sequence.  The destination
+/// pointer is the base pointer (plus offset); the value is the single repeated byte (\b fillValue); the
+/// length is the byte size of the contiguous region.  The user-op is inserted just before the earliest
+/// STORE.  No source string is created (unlike buildStringCopy).
+/// \return the constructed PcodeOp representing the \b memset
+PcodeOp *HeapSequence::buildMemset(void)
+
+{
+  PcodeOp *insertPoint = moveOps[0].op;		// Earliest STORE in the block
+  Architecture *glb = data.getArch();
+  Varnode *destPtr = buildDestPointer(insertPoint);
+  uint4 builtInId = UserPcodeOp::BUILTIN_MEMSET;
+  glb->userops.registerBuiltin(builtInId);
+  PcodeOp *setOp = data.newOp(4,insertPoint->getAddr());
+  data.opSetOpcode(setOp, CPUI_CALLOTHER);
+  data.opSetInput(setOp, data.newConstant(4, builtInId), 0);
+  data.opSetInput(setOp, destPtr, 1);
+  Varnode *valVn = data.newConstant(4, (uint8)fillValue);	// The repeated fill byte
+  valVn->updateType(setOp->inputTypeLocal(2));
+  data.opSetInput(setOp, valVn, 2);
+  int4 numBytes = numElements * charType->getSize();
+  Varnode *lenVn = data.newConstant(4, numBytes);
+  lenVn->updateType(setOp->inputTypeLocal(3));
+  data.opSetInput(setOp, lenVn, 3);
+  data.opInsertBefore(setOp, insertPoint);
+  if (destPtr->getType()->needsResolution())
+    data.inheritUnionField(destPtr->getType(), setOp, 1, immedRead, immedRead->getSlot(destPtr));
+  return setOp;
 }
 
 /// \brief Gather INDIRECT ops attached to the final sequence STOREs and their input/output Varnode pairs
@@ -931,12 +1000,19 @@ void HeapSequence::removeStoreOps(vector<PcodeOp *> &indirects,vector<IndirectPa
 /// \param fdata is the function containing the sequence
 /// \param ct is the character data-type being STOREd
 /// \param root is the given (putative) initial STORE in the sequence
-HeapSequence::HeapSequence(Funcdata &fdata,Datatype *ct,PcodeOp *root)
+HeapSequence::HeapSequence(Funcdata &fdata,Datatype *ct,PcodeOp *root,bool fill)
   : ArraySequence(fdata,ct,root)
 {
+  fillMode = fill;
+  fillValue = 0;
   baseOffset = 0;
   storeSpace = root->getIn(0)->getSpaceFromConst();
   ptrAddMult = AddrSpace::byteToAddressInt(charType->getAlignSize(), storeSpace->getWordSize());
+  // Rec 39 (#39-4a): memset is a byte-granular contiguous fill, so only attempt it on element types
+  // with no inter-element padding (size == alignSize); otherwise the contiguous-byte argument to
+  // memset would be ill-defined.
+  if (fillMode && charType->getSize() != charType->getAlignSize())
+    return;
   findBasePointer();
   if (!collectStoreOps())
     return;
@@ -944,7 +1020,7 @@ HeapSequence::HeapSequence(Funcdata &fdata,Datatype *ct,PcodeOp *root)
     return;
   int4 arrSize = moveOps.size() * charType->getAlignSize();
   bool bigEndian = storeSpace->isBigEndian();
-  numElements = formByteArray(arrSize, 2, 0, bigEndian);
+  numElements = formByteArray(arrSize, 2, 0, bigEndian, fillMode);
 }
 
 /// The user-op representing the string move is created and all the STORE ops are removed.
@@ -959,7 +1035,7 @@ bool HeapSequence::transform(void)
   gatherIndirectPairs(indirects, indirectPairs);
   if (!deduplicatePairs(indirectPairs))
     return false;
-  PcodeOp *memCpyOp = buildStringCopy();
+  PcodeOp *memCpyOp = fillMode ? buildMemset() : buildStringCopy();	// Rec 39 (#39-4a)
   if (memCpyOp == (PcodeOp *)0)
     return false;
   removeStoreOps(indirects,indirectPairs,memCpyOp);
@@ -1021,6 +1097,38 @@ int4 RuleStringStore::applyOp(PcodeOp *op,Funcdata &data)
   if (!ct->isCharPrint()) return 0;			// Copied to a "char" data-type Varnode
   if (ct->isOpaqueString()) return 0;
   HeapSequence sequence(data,ct,op);
+  if (!sequence.isValid())
+    return 0;
+  if (!sequence.transform())
+    return 0;
+  return 1;
+}
+
+void RuleMemset::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_STORE);
+}
+
+/// \class RuleMemset
+/// \brief Replace a sequence of STORE ops writing one repeated constant value with a single \b memset
+///
+/// Rec 39 (#39-4a). Reuses HeapSequence's STORE collection in \e fill mode: given a root STORE of a
+/// constant, collect the other STOREs off the same base pointer that form a contiguous region all holding
+/// the same byte value, and replace them with a single \b builtin_memset CALLOTHER.  Unlike
+/// \ref RuleStringStore this is not gated on a character element type and does not treat a stored zero as a
+/// string terminator, so it recognises the zero-fills and non-char fills that rule declines.  It runs after
+/// RuleStringStore, so genuine string fills keep their existing strncpy/memcpy rendering.
+int4 RuleMemset::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!op->getIn(2)->isConstant()) return 0;		// Constant value being STOREd
+  Varnode *ptrvn = op->getIn(1);
+  Datatype *ct = ptrvn->getTypeReadFacing(op);
+  if (ct->getMetatype() != TYPE_PTR) return 0;
+  ct = ((TypePointer *)ct)->getPtrTo();
+  if (ct->getSize() == 0) return 0;			// Need a concrete element size
+  HeapSequence sequence(data,ct,op,true);		// fill mode (Rec 39 #39-4a)
   if (!sequence.isValid())
     return 0;
   if (!sequence.transform())
