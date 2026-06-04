@@ -1,0 +1,63 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 35 (#35-4): the block_structure yield point, the last bypassable pass
+    wired onto the general pass-bypass facade (passShouldBypass, #35-4b). Design
+    at DD-0006. block_structure is CollapseStructure::collapseAll
+    (ActionBlockStructure), which must reduce the control-flow graph all the way
+    to a single root before PrintC can emit it. Unlike the other bypassable
+    passes it therefore cannot early-return on truncation (that would hand the
+    printer a multi-root graph); instead its coarse mode is "collapse with gotos
+    instead of structure"  -  once the budget is spent it stops attempting the
+    precise structuring rules (proper-if, if-else, while-do, do-while, infloop,
+    switch, ifnoexit, casefallthru) and drives the graph to its single root
+    through the existing selectGoto/clipExtraRoots goto-injection path, the same
+    all-goto "unstructured" rendering the decompiler already emits for genuinely
+    unstructurable control flow. So the result is always valid and printable.
+
+    The cooperative budget caps block_structure in block-scan sweeps (its own
+    scale: one full collapseInternal pass over every block, the same per-sweep
+    scale data_flow and value_analysis use). Because the positional
+    `decompilebudget` form is full at its three flow/data_flow/type_inference
+    slots, the cap is set by name through `decompilebudgetpass`.
+
+    The first sweep always runs precise (bypass cannot be set before the first
+    tick), so a cap of 1 keeps one sweep of real structuring and forces the tail
+    goto-only  -  exactly the "keep the structure the budget bought, degrade the
+    rest" contract. The block_structure partial-result header is emitted exactly
+    once per function (claimDiagnostic), and the function still prints, which is
+    the key invariant DD-0006 turns on: a bypassed structuring pass yields a
+    valid partial (a printable single-root function), not a broken result.
+
+    condconst1 has several conditionals, so collapseAll needs more than one
+    block-scan sweep to structure it; the unbudgeted decompile of the same
+    function is exercised by condconst.xml, the flow_analysis-truncation path by
+    decompbudget.xml, data_flow by decompbudget_dataflow.xml, type_inference by
+    decompbudget_typeinfer.xml and value_analysis by
+    decompbudget_valueanalysis.xml.
+
+    The function bytes are condconst1 from condconst.xml.
+-->
+<bytechunk space="ram" offset="0x1006fa" readonly="true">
+                    554889e54889
+7df88975f48955f0894dec837df40075
+0e8b55f48b45f001c2488b45f8891048
+8b45f8488d50048b45f48902837df40a
+750d488b45f8488d50088b45f4890283
+7dec077412488b45f84883c00c8b55ec
+83c2088910eb10488b45f84883c0108b
+55ec83c2098910905dc3
+</bytechunk>
+<symbol space="ram" offset="0x1006fa" name="condconst1"/>
+</binaryimage>
+<script>
+  <com>parse line extern void condconst1(int4 *ptr,int4 a,int4 b,int4 c);</com>
+  <com>option decompilebudgetpass block_structure 1</com>
+  <com>lo fu condconst1</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="block_structure budget exhausted warning header names the pass" min="1" max="1">WARNING: Exceeded decompilation budget on pass block_structure: Some analysis is truncated</stringmatch>
+<stringmatch name="block_structure partial result remains valid and printable" min="1" max="1">void condconst1\(</stringmatch>
+</decompilertest>

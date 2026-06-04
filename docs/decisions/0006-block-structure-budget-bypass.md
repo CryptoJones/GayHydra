@@ -122,23 +122,37 @@ unstructurable control flow: a function whose body is mostly
    `ruleBlockWhileDo`, `ruleBlockDoWhile`, `ruleBlockInfLoop`,
    `ruleBlockSwitch`, and the second-stage `ruleBlockIfNoExit` /
    `ruleCaseFallthru`) and runs in **goto-only mode**: it keeps only
-   `ruleBlockGoto` + `ruleBlockCat` (cheap, always-valid folds) and lets
-   the outer `selectGoto` / `clipExtraRoots` path force every remaining
-   decision edge to a goto. So the first N sweeps structure precisely
-   (keeping whatever structure the budget bought) and the tail runs
-   goto-only — the structure already built in earlier sweeps stays. The
-   graph still collapses to a single root — `selectGoto` +
-   `clipExtraRoots` is a total function over any connected graph — so
-   the postcondition holds and the printer is safe. The only thing lost
-   is the *structure* of the not-yet-collapsed remainder, which is
-   exactly the coarse-mode contract.
+   `ruleBlockGoto` + `ruleBlockCat` (cheap, always-valid folds). So the
+   first N sweeps structure precisely (keeping whatever structure the
+   budget bought) and the tail runs goto-only — the structure already
+   built in earlier sweeps stays. The only thing lost is the *structure*
+   of the not-yet-collapsed remainder, which is exactly the coarse-mode
+   contract.
 
-   Termination in coarse mode does not depend on the precise rules: the
-   goto-injection path is monotone (each `selectGoto` strictly reduces
-   the number of non-goto decision edges, `clipExtraRoots` strictly
-   reduces the number of roots), so goto-only collapse always reaches a
-   single root in a bounded number of rounds. Skipping the precise rules
-   only removes work; it cannot remove termination.
+   **Driving the residual collapse — `forceCollapseGoto`, not
+   `selectGoto`.** The original draft of this DD assumed the existing
+   `selectGoto` / `clipExtraRoots` goto-injection path would finish the
+   collapse once the precise rules were skipped. That is **wrong**, and
+   the first implementation crashed on it (`LowlevelError: Could not
+   finish collapsing block structure`): `selectGoto` only marks the
+   residual *likely-goto* edges that the loop analysis predicts the
+   precise rules will leave behind, so on a graph that was never
+   precisely structured it runs dry and throws. The precise rules and
+   `selectGoto` are co-designed — you cannot drop the former and keep the
+   latter as the driver. So `collapseAll`'s residual loop, when bypassed,
+   drives the collapse with a new `forceCollapseGoto` instead: it marks
+   *any* one remaining non-goto out-edge on a block `ruleBlockGoto` can
+   then fold (a switch, or a one-/two-out block) as a goto. Each call
+   strictly converts one structured edge into an unstructured goto, after
+   which `ruleBlockGoto` folds that block on the next sweep (2-out →
+   if-goto, 1-out → goto, switch → multigoto). Marking an edge as a goto
+   never changes the control flow, only its rendering, so the result
+   stays a valid, printable single-root function. Termination is monotone
+   — finitely many edges, each forced at most once, every force followed
+   by a fold — so goto-only collapse always reaches a single root.
+   `selectGoto` remains the fallback if `forceCollapseGoto` finds nothing
+   to force (it never does on a non-collapsed graph, but the guard keeps
+   the original path available).
 
 4. **Diagnostic, exactly once.** On the first round that bypasses, emit
    `warningHeader("Exceeded decompilation budget on pass block_structure:
@@ -170,18 +184,19 @@ unstructurable control flow: a function whose body is mostly
   goto-injection fallback is strictly less code and reuses a path that
   is already exercised on real unstructurable functions.
 
-- **Convert *all* remaining decision edges to gotos in one sweep on
-  bypass** (a new `markAllAsGotos`), instead of letting `selectGoto`
-  drive them one at a time. Rejected as the *first* implementation: it
-  is a genuinely new code path (a new method, new ordering questions
-  about loop bodies vs. inter-component edges) that the existing
-  `selectGoto`/`clipExtraRoots` already solves correctly. The
-  skip-the-precise-rules approach reaches the same all-goto endpoint
-  through code that is already there. If profiling later shows the
-  one-at-a-time `selectGoto` loop is itself the runaway cost on some
-  pathological graph, a batch `markAllAsGotos` is a clean follow-up — it
-  is *not* needed to make the pass bounded, because goto-only collapse
-  is already monotone and bounded.
+- **Reuse `selectGoto`/`clipExtraRoots` to drive the goto-only
+  residual** (the original draft's plan). Rejected *after implementation
+  proved it crashes*: `selectGoto` only ever marks the loop-analysis
+  *likely-goto* residual the precise rules were expected to leave, so on
+  a never-precisely-structured graph it runs dry and throws
+  `LowlevelError: Could not finish collapsing block structure`. The
+  shipped design instead adds a minimal `forceCollapseGoto` (mark one
+  foldable edge at a time, let `ruleBlockGoto` fold it) — the
+  incremental form of the "convert remaining decision edges to gotos"
+  idea, which turned out to be *necessary*, not optional. It is a small,
+  self-contained method (no loop-body/inter-component ordering questions
+  — `ruleBlockGoto` already handles switch / 2-out / 1-out folds), and it
+  is what makes goto-only collapse monotone and bounded.
 
 - **Bound by a wall-clock check only, no iteration cap.** Rejected for
   parity: every other pass has a deterministic per-pass iteration cap
