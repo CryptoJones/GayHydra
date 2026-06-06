@@ -23,8 +23,8 @@ import java.util.List;
  * expressions supplied by its caller.
  *
  * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016), {@code #37-8} (up/down-cast form,
- * DD-0017), and {@code #37-9} (heap-construction form, DD-0018). This is the headless half of RFC
- * §5. It holds no
+ * DD-0017), {@code #37-9} (heap-construction form, DD-0018), and {@code #37-9c} (explicit
+ * destructor-call form, DD-0019). This is the headless half of RFC §5. It holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
@@ -155,6 +155,42 @@ public final class CppDecompilerHints {
 			throw new IllegalArgumentException("argument expression list must not be null");
 		}
 		return "new " + type.getName() + "(" + renderArguments(argumentExprs) + ")";
+	}
+
+	/**
+	 * Renders an <em>explicit</em> (non-virtual) destructor call — the in-place-destruction idiom a
+	 * {@code Foo::~Foo(ptr)} direct call denotes (placement-new teardown, a member or stack object's
+	 * destructor) — as {@code receiver->~ClassName()} for a pointer receiver or
+	 * {@code receiver.~ClassName()} for a value receiver, where {@code ClassName} is
+	 * {@code type.getName()}. The parentheses are always empty: a C++ destructor takes no explicit
+	 * arguments, so this form has no argument-list parameter.
+	 *
+	 * <p>The destructor name comes from the <em>class</em> ({@code ~} prepended to {@code getName()}),
+	 * not a vtable slot: a destructor that dispatches through the vtable (a virtual destructor) is
+	 * already the {@link #renderVirtualCall} form, driven by a name-resolved {@code ~ClassName} slot.
+	 * This form does not consult the vtable.
+	 *
+	 * <p>Like {@link #renderConstruction}, it has <em>no neutral fallback</em>: the only model fact it
+	 * needs is the class name, which is total ({@code getName()} never fails for a defined class), so
+	 * there is nothing to fall back from. It validates only its boundary inputs.
+	 *
+	 * @param type the class being destructed; must not be null
+	 * @param receiverExpr the already-rendered receiver expression; must not be null or blank
+	 * @param receiverIsPointer true to render pointer access ({@code ->}), false for value access
+	 *            ({@code .})
+	 * @return the rendered C++ destructor-call expression
+	 * @throws IllegalArgumentException if {@code type} is null or {@code receiverExpr} is null or blank
+	 */
+	public String renderDestructorCall(CppClass type, String receiverExpr,
+			boolean receiverIsPointer) {
+		if (type == null) {
+			throw new IllegalArgumentException("destructed type must not be null");
+		}
+		if (receiverExpr == null || receiverExpr.isBlank()) {
+			throw new IllegalArgumentException("receiver expression must not be null or blank");
+		}
+		String access = receiverIsPointer ? "->" : ".";
+		return receiverExpr + access + "~" + type.getName() + "()";
 	}
 
 	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,

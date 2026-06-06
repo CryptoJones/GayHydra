@@ -28,8 +28,9 @@ import ghidra.program.model.data.StructureDataType;
 
 /**
  * Headless unit tests for the {@code CppDecompilerHints} renderer: the virtual-method-call form
- * (Rec 37 {@code #37-7}, DD-0016), the up/down-cast form (Rec 37 {@code #37-8}, DD-0017), and the
- * heap-construction form (Rec 37 {@code #37-9}, DD-0018). These
+ * (Rec 37 {@code #37-7}, DD-0016), the up/down-cast form (Rec 37 {@code #37-8}, DD-0017), the
+ * heap-construction form (Rec 37 {@code #37-9}, DD-0018), and the explicit destructor-call form
+ * (Rec 37 {@code #37-9c}, DD-0019). These
  * build the resolved model state directly through the model setters — a {@link CppClass} with a
  * {@link CppVTable} whose slots already reference name-resolved {@link CppMethod}s, and
  * {@link CppBaseClass} inheritance edges as the {@code #37-4} feeder would record them — with no
@@ -332,5 +333,64 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("new Widget(a, b)", hints.renderConstruction(widget, List.of("a", "b")));
 		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
 		assertEquals("new Widget()", hints.renderConstruction(widget, List.of()));
+	}
+
+	// ----- explicit destructor-call renderer (#37-9c) -----
+
+	@Test
+	public void testPointerReceiverRendersArrowTildeDestructor() {
+		CppClass widget = new CppClass(struct("Widget"));
+		String rendered = new CppDecompilerHints().renderDestructorCall(widget, "p", true);
+		assertEquals("p->~Widget()", rendered);
+	}
+
+	@Test
+	public void testValueReceiverRendersDotTildeDestructor() {
+		CppClass widget = new CppClass(struct("Widget"));
+		String rendered = new CppDecompilerHints().renderDestructorCall(widget, "w", false);
+		assertEquals("w.~Widget()", rendered);
+	}
+
+	@Test
+	public void testDestructorNameComesFromClassNotVtableSlot() {
+		// A vtable / base edges on the type do not change the explicit destructor rendering: the name
+		// is "~" + getName(), not a slot lookup (virtual-dispatch destruction is the #37-7 form).
+		CppClass shape = classWithVtable("Shape", slot("area"), slot("~Other"));
+		withBase(shape, new CppClass(struct("Base")), 8, false, true);
+		assertEquals("s->~Shape()", new CppDecompilerHints().renderDestructorCall(shape, "s", true));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullDestructedType() {
+		new CppDecompilerHints().renderDestructorCall(null, "p", true);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullDestructorReceiver() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderDestructorCall(widget, null, true);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsBlankDestructorReceiver() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderDestructorCall(widget, "  ", false);
+	}
+
+	@Test
+	public void testDestructorSharesOneStatelessInstanceWithCallCastAndConstruction() {
+		CppDecompilerHints hints = new CppDecompilerHints();
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		CppClass widget = new CppClass(struct("Widget"));
+
+		// Interleaving a destructor render among the call, cast, and construction renders on one
+		// instance must not let the renders bleed into one another.
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+		assertEquals("new Widget(a)", hints.renderConstruction(widget, List.of("a")));
+		assertEquals("p->~Widget()", hints.renderDestructorCall(widget, "p", true));
+		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
+		assertEquals("w.~Widget()", hints.renderDestructorCall(widget, "w", false));
 	}
 }
