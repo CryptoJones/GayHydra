@@ -12,6 +12,25 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 3 — ground `#36-3b` (cross-function
+  dependency invalidation) before implementing. Grounding the demoted
+  single-"dependency bitmap" proposal against the real event-firing and
+  decompile-result APIs shows the residual is two cases with different cost and
+  risk, and that only one needs a recorded dependency set. **Case A** (a callee's
+  signature or caller-visible modifier changes — `PARAMETERS_CHANGED` /
+  `RETURN_TYPE_CHANGED` / `INLINE` / `NO_RETURN` / `CALL_FIXUP` / `PURGE` /
+  `THUNK`) is resolvable from the existing call-reference graph:
+  `Function.getCallingFunctions` yields the affected callers, whose bodies union
+  into the same `invalidate(AddressSetView)` path #36-3a already provides — **no
+  bitmap**. **Case B** (a shared datatype edit) has no address (`DATA_TYPE_CHANGED`
+  fires with null `start`/`end` and null `getObject()`; the type is in
+  `getNewValue()`, identity by `DataTypeManager.getID`) and no reverse type→function
+  index, so it is the one case needing a per-cached-result referenced-type-id set
+  derived from `HighFunction`'s prototype + local/global symbol maps. Re-sequences
+  `#36-3b` into `#36-3b-1` (callers, low risk) and `#36-3b-2` (datatype-ref set,
+  ships with the debug-assert recompute backstop). Docs-only; precedes the
+  `#36-3b-1` implementation, mirroring the addendum-2 → `#36-3a-2` rhythm.
+  See [DD-0009 addendum 3](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-3-2026-06-06-36-3b-cross-function-residual-splits-into-callers-no-bitmap-and-datatype-refs-recorded-set).
 - feat(decompiler): Rec 36 `#36-3a-2` — extend selective cache invalidation to
   local-variable and parameter renames. Building on `#36-3a` (comment-only), a
   local/parameter *name* rename is now scoped to its owning function instead of
