@@ -63,6 +63,24 @@ public final class CppVTable {
 	}
 
 	/**
+	 * Replaces the method occupying an existing slot in place, leaving the slot count and the order
+	 * of every other slot unchanged. Used by the {@code CppVtableReconciler} ({@code #37-6c}) to
+	 * point a slot at the canonical declared {@link CppMethod} once the two have been matched, so a
+	 * single method object is reachable from both this table and {@link CppClass#getMethods()}.
+	 *
+	 * @param index the zero-based slot index to overwrite
+	 * @param method the method to occupy the slot; must not be null
+	 * @throws IndexOutOfBoundsException if {@code index} is out of range
+	 * @throws IllegalArgumentException if {@code method} is null
+	 */
+	public void setSlot(int index, CppMethod method) {
+		if (method == null) {
+			throw new IllegalArgumentException("vtable slot method must not be null");
+		}
+		slots.set(index, method);
+	}
+
+	/**
 	 * {@return the number of slots in this vtable}
 	 */
 	public int getSlotCount() {
