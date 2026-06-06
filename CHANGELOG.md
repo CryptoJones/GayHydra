@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-3b-2b` — selective GUI cache invalidation for
+  datatype **renames**. A `DATA_TYPE_RENAMED` batch now invalidates only the
+  cached functions that reference the renamed type (the decompiler renders the
+  type *name*, which a cached result freezes), instead of flushing the whole
+  cache. Per [DD-0009 addendum 6](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-6-2026-06-06-the-three-36-3b-2b-events-are-not-alike--renamed-folds-into-the-2a-id-path-moved-is-rendering-invariant-only-replaced-stays-full-flush),
+  a rename keeps the same program-managed instance and `DataTypeManager` id, so it
+  folds into the existing `invalidateByDataTypeIds` recompute path (id from
+  `getNewValue()`, same `Pointer`/`Array`/`TypeDef` unwrap) with no new controller
+  machinery — the change is confined to the listener's `collectChangedDataTypeIds`
+  gate. `DATA_TYPE_MOVED` joins the benign-companion set (it changes only the
+  category path, which is never rendered). `DATA_TYPE_REPLACED` stays on the
+  full-flush path (its changed id is dropped from the change record). A headed
+  `DecompilerCachingTest` case renames a struct referenced only through a pointer
+  and asserts the referencing function is invalidated while an unrelated one stays
+  cached; full suite green (12 tests, 0 failures).
 - docs(decompiler): DD-0009 addendum 6 — ground `#36-3b-2b` before implementing
   and **correct** addendum 4's framing of the three deferred events. Reading the
   firing sites (`ProgramDataTypeManager` → `ProgramDB.dataTypeChanged:890`) shows
