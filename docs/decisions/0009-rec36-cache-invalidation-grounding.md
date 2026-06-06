@@ -491,3 +491,78 @@ nor classified here still full-flushes, so liveness can only shrink.
 referenced-type-id set recorded per cache value and a datatype-keyed invalidation
 entry point on `DecompilerController`, sitting beside the existing
 address-keyed `invalidate(AddressSetView)` rather than replacing it.
+
+## Addendum 4 (2026-06-06): #36-3b-2's type-ref set is recomputed from the cached HighFunction, not recorded; split into 2a (DATA_TYPE_CHANGED) and 2b (instance-swap events)
+
+Addendum 3 grounded Case B's design but projected its plumbing as a
+**referenced-type-id set recorded per cache value** — the "Higher risk: new
+per-cached-result state" tier. Verifying the type-resolution path before
+implementing #36-3b-2 shows that recorded state is **not needed for the common
+case**, which both lowers the risk and removes the only genuinely new per-result
+machinery this DD had outstanding.
+
+### The cached HighFunction's symbol types are live program-managed instances
+
+A `HighSymbol`'s data type is decoded via
+`HighSymbol.decode → dtmanage.decodeDataType(decoder)`
+(`HighSymbol.java:479`), where `dtmanage` is a `PcodeDataTypeManager`.
+`PcodeDataTypeManager.decodeDataType` resolves a non-builtin type through
+`findBaseType(name, id)` (`PcodeDataTypeManager.java:213-247`), which returns
+`progDataTypes.getDataType(id)` (`:181-184`) — and `progDataTypes` is exactly
+`prog.getDataTypeManager()` (`:137`). So the `DataType` that
+`HighSymbol.getDataType()` (`HighSymbol.java:212`) hands back is the **same
+program-`DataTypeManager`-managed instance** the editor mutates, carrying the
+**same id** that `DataTypeManager.getID` (`DataTypeManager.java:263`) returns and
+that the `DATA_TYPE_CHANGED` event reports.
+
+Consequence: for an **in-place** `DATA_TYPE_CHANGED` (a struct/union/enum/typedef
+field/member edit — the instance and its id are stable), the referenced-type-id
+set is **recomputable on demand** from the already-cached
+`DecompileResults.getHighFunction()`. There is no need to record it at
+insertion time. The cache is the bounded GUI cache (single-digit-to-dozens of
+entries), so an O(cached entries × symbols) walk per datatype edit — a rare,
+human-paced action — is cheap. This **supersedes addendum 3's "record per cache
+value"** for #36-3b-2a: no new per-cached-result state, no `RemovalListener`
+lifecycle to keep a side map in sync with eviction. The only new machinery is the
+datatype-id-keyed entry point `DecompilerController.invalidateByDataTypeIds`,
+beside the existing address-keyed `invalidate(AddressSetView)`.
+
+### Enumerating a cached function's referenced types
+
+From `hf = results.getHighFunction()` (null ⇒ no model to prove non-reference ⇒
+**conservatively invalidate**, liveness only shrinks):
+
+- `hf.getFunctionPrototype()` (`HighFunction.java:109`) → `getReturnType()`
+  (`FunctionPrototype.java:243`) and `getParam(i).getDataType()` for
+  `i < getNumParams()` (`:204-216`);
+- `hf.getLocalSymbolMap().getSymbols()` (`HighFunction.java:127`,
+  `LocalSymbolMap.java:381`) and `hf.getGlobalSymbolMap().getSymbols()`
+  (`:134`, `GlobalSymbolMap.java:172`) → each `HighSymbol.getDataType()`.
+
+### Matching must unwrap derived types (the real correctness hazard)
+
+A symbol typed `MyStruct *` or `MyStruct[10]` has a **different** id than
+`MyStruct`, so a top-level `getID` compare misses functions that reference the
+edited type only through a pointer/array/typedef. Addendum 3 hoped the auto-change
+cascade would cover containment, but the cascade fires for *stored dependent
+types*, and pointers/arrays to a type are frequently derived on the fly, not
+separate manager entries that receive their own `DATA_TYPE_CHANGED`. So matching
+must **recursively unwrap** each candidate type and test the changed-id set at
+every level: `Pointer.getDataType()` (`Pointer.java:34`),
+`Array.getDataType()` (`Array.java:51`), `TypeDef.getDataType()`
+(`TypeDef.java:47`). Skip the `NULL_DATATYPE_ID` (`-1`) /
+`BAD_DATATYPE_ID` (`-2`) sentinels (`DataTypeManager.java:47-52`). This unwrap —
+not the cascade — is what the #36-3b-2a test must pin down (edit a struct; assert
+a function whose only use is `struct *` is invalidated).
+
+### Re-sequencing #36-3b-2
+
+| PR | Scope | Risk |
+|---|---|---|
+| #36-3b-2a | `DATA_TYPE_CHANGED` only → `invalidateByDataTypeIds` recomputed from each cached `HighFunction`, with the derived-type unwrap above. Ships **with** the debug-assert recompute backstop. | Moderate — first non-address invalidation, but **no recorded per-result state** (recompute), and the unwrap removes the cascade dependency. Anything not a pure-`DATA_TYPE_CHANGED` batch still full-flushes. |
+| #36-3b-2b | `DATA_TYPE_REPLACED` / `DATA_TYPE_MOVED` / `DATA_TYPE_RENAMED` — instance-swap / path-change events where the cached `HighFunction` may hold the **old** instance, so the id must come from `getOldValue()` and recompute-from-cache no longer matches cleanly. Deferred. | Higher — instance identity churns; may reintroduce a recorded id set or fall back to full-flush. Conservative full-flush remains the default until shipped. |
+
+Docs-only; precedes the #36-3b-2a implementation, mirroring the addendum-3 →
+#36-3b-1 rhythm. The conservative default (rule 2) is unchanged: any datatype
+event that is not an in-place `DATA_TYPE_CHANGED`, and any batch mixing datatype
+records with other event types, still full-flushes — liveness can only shrink.
