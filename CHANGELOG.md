@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-5a` — **decompiler cache telemetry counters**. Adds
+  explicit `LongAdder` counters in `DecompilerController` at the call sites
+  DD-0009 addendum 9 grounded — navigation hit/miss (`loadFromCache`), full flush
+  (`clearCache`), and the two selective-invalidation paths (`invalidate(AddressSetView)`
+  and `invalidateByDataTypeIds`) each with an entries-dropped tally — exposed as an
+  immutable `CacheStatsSnapshot` via `getCacheStats()`. Unlike Guava `recordStats()`
+  these distinguish a full flush from a selective invalidation, so the
+  `selective ÷ (selective + full)` ratio and per-path entries-dropped — the data that
+  gates `#36-4` — are now observable. Four headed `DecompilerCachingTest` cases assert
+  the counter deltas for a hit/miss, a function-local (address-keyed) edit, an in-place
+  shared-datatype (id-keyed) edit, and a non-local full flush (17 tests, 0 failures). No
+  UI surface; latency telemetry is `#36-5b`. Per
+  [DD-0009 addendum 9](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-9-2026-06-06-grounding-the-36-5-telemetry-surface--explicit-hit-and-invalidation-counters-first-36-5a-async-decompile-latency-split-out-36-5b).
 - docs(decompiler): DD-0009 addendum 9 — **ground the `#36-5` telemetry surface**.
   Every metric maps to one call site in `DecompilerController` (`loadFromCache`
   hit/miss, `clearCache` full flush, `invalidate(AddressSetView)` and

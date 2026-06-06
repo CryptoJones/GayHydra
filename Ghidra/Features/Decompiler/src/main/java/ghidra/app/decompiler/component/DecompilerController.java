@@ -18,6 +18,7 @@ package ghidra.app.decompiler.component;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -52,6 +53,17 @@ public class DecompilerController {
 	private ProgramSelection currentSelection;
 	private Cache<Function, DecompileResults> decompilerCache;
 	private int cacheSize;
+
+	// Cache telemetry counters (Rec 36 #36-5a, DD-0009 addendum 9). LongAdder, not AtomicLong:
+	// increments come from both the Swing thread (the program listener's invalidations) and the
+	// asynchronous decompile callback, and a settled snapshot read is all the gate needs.
+	private final LongAdder cacheHits = new LongAdder();
+	private final LongAdder cacheMisses = new LongAdder();
+	private final LongAdder fullFlushes = new LongAdder();
+	private final LongAdder selectiveAddressInvalidations = new LongAdder();
+	private final LongAdder addressEntriesDropped = new LongAdder();
+	private final LongAdder selectiveDataTypeInvalidations = new LongAdder();
+	private final LongAdder dataTypeEntriesDropped = new LongAdder();
 
 	public DecompilerController(ServiceProvider serviceProvider, DecompilerCallbackHandler handler,
 			DecompileOptions options,
@@ -159,13 +171,16 @@ public class DecompilerController {
 		Function function = functionManager.getFunctionContaining(location.getAddress());
 
 		if (function == null) { // cache can't handle null keys
+			cacheMisses.increment();
 			return false;
 		}
 
 		DecompileResults results = decompilerCache.getIfPresent(function);
 		if (results == null) {
+			cacheMisses.increment();
 			return false;
 		}
+		cacheHits.increment();
 
 		// cancel pending decompile tasks; previous requests shouldn't overwrite the latest request
 		decompilerMgr.cancelAll();
@@ -384,6 +399,7 @@ public class DecompilerController {
 	}
 
 	public void clearCache() {
+		fullFlushes.increment();
 		decompilerCache.invalidateAll();
 	}
 
@@ -400,12 +416,16 @@ public class DecompilerController {
 		if (changedAddresses == null || changedAddresses.isEmpty()) {
 			return;
 		}
+		long dropped = 0;
 		for (Function function : decompilerCache.asMap().keySet()) {
 			AddressSetView body = function.getBody();
 			if (body != null && body.intersects(changedAddresses)) {
 				decompilerCache.invalidate(function);
+				dropped++;
 			}
 		}
+		selectiveAddressInvalidations.increment();
+		addressEntriesDropped.add(dropped);
 	}
 
 	/**
@@ -432,11 +452,15 @@ public class DecompilerController {
 		// would match the unwrap floor and over-invalidate. Debug-assert the contract. (DD-0009 #4)
 		assert !changedIds.contains(DataTypeManager.NULL_DATATYPE_ID) &&
 			!changedIds.contains(DataTypeManager.BAD_DATATYPE_ID) : "sentinel datatype id in set";
+		long dropped = 0;
 		for (Map.Entry<Function, DecompileResults> entry : decompilerCache.asMap().entrySet()) {
 			if (referencesAnyDataType(entry.getValue(), changedIds)) {
 				decompilerCache.invalidate(entry.getKey());
+				dropped++;
 			}
 		}
+		selectiveDataTypeInvalidations.increment();
+		dataTypeEntriesDropped.add(dropped);
 	}
 
 	private boolean referencesAnyDataType(DecompileResults results, Set<Long> changedIds) {
@@ -514,4 +538,37 @@ public class DecompilerController {
 			}
 		}
 	}
+
+	/**
+	 * Returns an immutable snapshot of the cache telemetry counters: navigation hit/miss, full
+	 * flushes, and the two selective-invalidation paths (address-keyed and datatype-keyed) with the
+	 * number of entries each dropped. The {@code selective / (selective + edit-driven full)} ratio
+	 * and the entries-dropped totals are the data that gate Rec 36 #36-4 -- they measure how often
+	 * an edit took the cheap selective path versus a full flush, and how much each selective call
+	 * saved. Unlike Guava {@code recordStats()}, these counters distinguish a full flush from a
+	 * selective invalidation, which is the whole point. See DD-0009 addendum 9.
+	 *
+	 * @return a point-in-time copy of the counters
+	 */
+	public CacheStatsSnapshot getCacheStats() {
+		return new CacheStatsSnapshot(cacheHits.sum(), cacheMisses.sum(), fullFlushes.sum(),
+			selectiveAddressInvalidations.sum(), addressEntriesDropped.sum(),
+			selectiveDataTypeInvalidations.sum(), dataTypeEntriesDropped.sum());
+	}
+
+	/**
+	 * Immutable point-in-time snapshot of the decompiler cache telemetry counters. Named to avoid
+	 * collision with Guava's {@code CacheStats}. See {@link #getCacheStats()} and DD-0009 addendum 9.
+	 *
+	 * @param hits navigations served from the cache
+	 * @param misses navigations that had to decompile (cache empty for the function, or no function)
+	 * @param fullFlushes whole-cache {@link #clearCache} invalidations
+	 * @param selectiveAddressInvalidations calls to {@link #invalidate(AddressSetView)}
+	 * @param addressEntriesDropped entries dropped across all address-keyed selective invalidations
+	 * @param selectiveDataTypeInvalidations calls to {@link #invalidateByDataTypeIds(Set)}
+	 * @param dataTypeEntriesDropped entries dropped across all datatype-keyed selective invalidations
+	 */
+	public record CacheStatsSnapshot(long hits, long misses, long fullFlushes,
+			long selectiveAddressInvalidations, long addressEntriesDropped,
+			long selectiveDataTypeInvalidations, long dataTypeEntriesDropped) {}
 }
