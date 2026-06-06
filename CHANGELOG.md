@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-2` — **the model-only `CppTypeSystem` skeleton**. Adds the C++ frontend's
+  data model under `Features/Base` package `ghidra.app.util.cpp`: `CppTypeSystem` (a name-keyed,
+  insertion-ordered registry of classes, optionally bound to a `DataTypeManager`), `CppClass` (a
+  *projection* over a required backing `Structure` plus optional `GhidraClass` — it never mutates the
+  structure, so existing tools reading the layout keep working), `CppMethod` (virtual/pure-virtual/
+  const/static qualifiers + optional signature/convention), `CppVTable` (ordered slot list + recovered
+  address), `CppBaseClass` (an inheritance edge: base + offset + virtual/access), and `CppCallingConvention`
+  (`this`-pointer placement). Pure value holders with no analysis behaviour — the feeder (`#37-3`) and
+  RTTI/vtable analyzers (`#37-4`/`#37-5`) will populate them in later slices. Covered by fast headless
+  JUnit (`CppTypeSystemTest`) exercising projection, idempotent registration, inheritance round-trip,
+  vtable slot mapping, method qualifiers, the no-clobber-of-backing-`Structure` guardrail, and
+  null-rejection. Per [DD-0011](docs/decisions/0011-rec37-cpptypesystem-skeleton.md).
 - docs(decompiler): DD-0011 — **grounds Rec 37 `#37-2`, the `CppTypeSystem` skeleton, as a model-only
   overlay**. Surveys what the tree already provides for C++ analysis (the `DemangledObject`/
   `DemangledFunction` model in `Features/Base`; the formal MSVC `RttiAnalyzer` vs. the script-based
