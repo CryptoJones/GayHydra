@@ -12,6 +12,23 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): scope the Rec 35 `#35-4` `block_structure` yield point before
+  wiring it (`#35-4 (block_structure design)`). `block_structure` is the last
+  bypassable pass and the only one where "degrades to unstructured" is *not* a
+  yield-point early-return: `CollapseStructure::collapseAll` must collapse the
+  control-flow graph to a single root before the printer can emit it, so a half
+  collapsed graph is not a renderable partial result. The new implementation note
+  in DECOMPILER_BUDGETS.md records the resolution — the bypass reuses the
+  algorithm's own `selectGoto` forced-goto loop to finish collapsing cheaply
+  (the "degrades to unstructured" path, collapse-to-root invariant preserved)
+  rather than returning early; the yield point counts forced-goto rounds on
+  block_structure's own scale; a new `blockstructure_iteration_limit` cap is set
+  by name through the existing `decompilebudgetpass block_structure <cap>` option;
+  and `collapseAll`'s per-`nodeSplit` re-entry maps onto the existing
+  accumulate-and-emit-once pattern (`enterPass`/`claimDiagnostic`). Splits the
+  sequencing table's `block_structure` row into this design step (done) and the
+  code step (not started). Documentation only; no code or behaviour change.
+
 ---
 
 ## [v26.2.3] — 2026-06-03

@@ -181,7 +181,8 @@ the cache key shape.
 | #35-4b | General pass-bypass-mode façade (`passShouldBypass()`) on the `#35-4a` per-pass foundation: bypass on own per-pass iteration cap *or* function-global wall-clock/pcode pressure, never on another pass's iteration cap; header-only, inert, unit-tested | done |
 | #35-4 (type_inference) | Wire the first concrete bypassable pass, `type_inference`, onto the `#35-4b` façade: a yield point in `ActionInferTypes::apply` (each changing propagation pass is one iteration; bypass-on-own-exhaustion leaves partial types in place), the optional third `decompilebudget <flow> <dataflow> <typeinfer>` parameter, and a deterministic `decompbudget_typeinfer.xml` fixture (`readstruct` truncated at a cap of 2 of its natural 4 passes) | done |
 | #35-4 (value_analysis) | Wire `value_analysis` (the heritage load-guard `ValueSetSolver::solve` fixpoint) onto the `#35-4b` façade: a yield point in the value-set iteration loop counted on its own scale; the `decompilebudgetpass <pass> <cap>` name=value option (the positional `decompilebudget` form is full at its three flow/data_flow/type_inference slots); and a deterministic `decompbudget_valueanalysis.xml` fixture (`access_array1`, truncated at a cap of 3 of its natural 6 value-set iterations). Truncation leaves the load guards at the solver's already-supported non-convergence ("any value") ranges, so the partial result stays valid and printable. | done |
-| #35-4 (block_structure) | Wire `block_structure` onto the façade. Deferred from the value_analysis PR: unlike the other bypassable passes, `CollapseStructure::collapseAll` must collapse the control-flow graph down to a single root before the printer can emit it, so "degrades to unstructured" needs a real goto-emitting fallback path, not a simple early-return at the yield point — its own design step. | not started |
+| #35-4 (block_structure design) | Scope the `block_structure` yield point and its goto-forcing bypass before wiring any code: unlike the other four bypassable passes, "degrades to unstructured" is not a yield-point early-return, because `CollapseStructure::collapseAll` must collapse the control-flow graph down to a single root before the printer can emit it. Documentation only; see the implementation note below. | done |
+| #35-4 (block_structure) | Wire `block_structure` (`CollapseStructure::collapseAll`) onto the façade per the design note: a yield point counted on the forced-goto collapse round, a bypass that drives the algorithm's own `selectGoto` machinery to force every remaining edge to a goto (preserving the collapse-to-single-root invariant the printer requires) instead of the precise structuring rules, a new `blockstructure_iteration_limit` cap set by name through `decompilebudgetpass block_structure <cap>`, and a deterministic fixture truncating a goto-heavy function. | not started |
 | #35-5 | UI banner + retry path | not started |
 | #35-6 | Cache partial results keyed by budget | not started |
 | #35-7 | Tune defaults from production telemetry (after one release) | not started |
@@ -237,6 +238,70 @@ each obstacle the original analysis raised, as follows.
 The remaining passes and a general pass-bypass façade are still **#35-4**;
 `#35-3d` lands the data_flow pass on the same mechanism so that work can follow
 the pattern rather than invent it.
+
+### Implementation note: the `block_structure` yield point
+
+`block_structure` is the last bypassable pass and the only one that does *not*
+fit the "stop the fixpoint and keep the coarser result" shape the other four
+share. Its product is the structured block tree the printer walks, built by
+`CollapseStructure::collapseAll` (`blockaction.cc`, driven once per function by
+`ActionBlockStructure::apply` and re-driven after each `nodeSplit`). The other
+passes leave a *valid coarser value* behind when truncated — `void *` types,
+"any value" ranges, partially-simplified IR — but a half-collapsed block graph
+is not a renderable result: the printer needs a single root. So the bypass
+cannot be an early `return`; it has to *finish collapsing, cheaply*. The wiring
+PR resolves each obstacle as follows.
+
+- **Early-return breaks the printer → reuse the goto path the algorithm already
+  owns.** `collapseAll` is two phases: the precise structuring rules
+  (`collapseConditions` + `collapseInternal`, applying
+  `ruleBlockCat`/`ruleBlockIfElse`/`ruleBlockWhileDo`/… until quiescent), then a
+  `while(isolated_count < graph.getSize())` loop that calls `selectGoto` to mark
+  one more edge as a goto and re-collapses, until the graph is a single isolated
+  root (or `selectGoto` throws `"Could not finish collapsing block structure"`).
+  That second loop *is* the unstructured fallback: forcing gotos is how the
+  algorithm already guarantees termination on irreducible control flow. Bypass
+  mode stops applying the precise rules and drives that machinery directly —
+  force every remaining unstructured edge to a goto until `isolated_count`
+  reaches `graph.getSize()`. The output is a valid, single-rooted, goto-heavy
+  tree: exactly the "degrades to unstructured" the design promised, with the
+  collapse-to-root invariant the printer depends on preserved.
+- **The yield point is the forced-goto round, counted on its own scale.**
+  flow_analysis counts processed instructions, data_flow counts rule-pool
+  sweeps, type_inference counts changing propagation passes, value_analysis
+  counts value-set iterations; block_structure counts **forced-goto rounds** —
+  each turn of the `while(isolated_count < graph.getSize())` loop is one
+  iteration. That is the pass's natural fixpoint granularity and the one a
+  deterministic fixture can pin (a function whose structuring needs N goto
+  rounds, capped at M < N). The cap rides as `blockstructure_iteration_limit` in
+  `DecompileBudgetCaps`, large by default so default decompilation is
+  byte-identical, and is set by name through the existing
+  `decompilebudgetpass block_structure <cap>` option (the positional
+  `decompilebudget` form is full at its three flow/data_flow/type_inference
+  slots).
+- **`collapseAll` re-runs per function → accumulate and emit once.**
+  `ActionBlockStructure::apply` rebuilds the graph copy and re-runs `collapseAll`
+  after every `nodeSplit`, so — exactly like the value_analysis solve the
+  heritage passes re-drive — the pass registers itself with `enterPass` once and
+  accumulates its round count across those re-entries (guarded on
+  `currentPassName()`), and the partial-result header naming `block_structure` is
+  emitted once via `claimDiagnostic("block_structure")`. Bypass triggers on the
+  pass's own round cap *or* a function-global wall-clock/pcode breach
+  (`passShouldBypass`), never on another pass's iteration cap — the same rule the
+  other bypassable passes follow.
+- **Needs a deterministic harness → a goto-heavy fixture.** The fixture must be a
+  function whose collapse naturally needs several goto rounds (irreducible or
+  switch-dense control flow), capped below that count, so the truncation forces
+  the remaining edges to gotos and the partial result still prints. Selecting and
+  pinning that fixture (likely from an existing `datatests` control-flow case) is
+  the first task of the code PR; the cap exercise asserts the single
+  `block_structure` partial-result header and a stable, fully-collapsed
+  (goto-annotated) listing.
+
+This note is `#35-4 (block_structure design)`; the wiring is
+`#35-4 (block_structure)`. Scoping it first keeps the code following the pattern
+the other four passes established rather than re-deriving the bypass shape
+against the one pass where "stop" is not a legal partial result.
 
 ## What this does *not* do
 
