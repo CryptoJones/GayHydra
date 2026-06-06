@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 10 — **defer `#36-6` (budget cache-key) to the Rec 35
+  partial-result line**. Grounds that `#36-6` is the cache side of Rec 35 `#35-6` ("cache
+  partial results keyed by budget", not started) and is blocked on Rec 35 `#35-5` (the GUI
+  "Retry with 2x budget" path, not started): the interactive decompile path carries no budget
+  today — `DecompileOptions` has no budget field and `Decompiler.decompile(...)` no budget
+  parameter — so `Function` is already a correct cache key and any future budget *option* would
+  full-flush via `setOptions`→`clearCache` (`testCacheIsClearedWhenOptionsChange`). The
+  `(function, budget)` key earns its keep only once `#35-5` lets the GUI hold a budget-exhausted
+  partial alongside its larger-budget retry; building it now would be untestable speculative
+  machinery (cf. the DD-0005 `#33-2.6` deferral). With `#36-6` deferred here and `#36-4` deferred
+  behind telemetry (addendum 8), the Rec 36 GUI-cache sprint has no remaining independently-
+  actionable item. Marks `#36-5a`/`#36-5b` done in the Status section. Per
+  [DD-0009 addendum 10](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-10-2026-06-06-36-6-is-the-rec-35-partial-result-cache-key-35-6-and-is-blocked-on-the-gui-retry-path-35-5--defer).
 - feat(decompiler): Rec 36 `#36-5b` — **decompile latency telemetry**. Stamps a request
   timestamp on each `DecompileRunnable` at construction and records the request-to-callback
   wall-clock in `DecompilerController` (count + total + max, with a derived
