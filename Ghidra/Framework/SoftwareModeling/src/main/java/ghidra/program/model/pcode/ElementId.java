@@ -459,6 +459,7 @@ public record ElementId(String name, int id) {
 	public static final ElementId ELEM_JOIN_DUAL_CLASS = new ElementId("join_dual_class", 285);
 	public static final ElementId ELEM_EXTRA_STACK = new ElementId("extra_stack", 287);
 	public static final ElementId ELEM_CONSUME_REMAINING = new ElementId("consume_remaining", 288);
+	public static final ElementId ELEM_DECOMPILEBUDGET = new ElementId("decompilebudget", 290);
 
-	public static final ElementId ELEM_UNKNOWN = new ElementId("XMLunknown", 290);
+	public static final ElementId ELEM_UNKNOWN = new ElementId("XMLunknown", 291);
 }

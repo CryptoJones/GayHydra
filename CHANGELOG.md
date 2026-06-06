@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 35 `#35-5a-1` — **the GUI can now *set* a decompilation budget**. Adds a
+  `decompileBudget` field to `DecompileOptions` (tool option *Analysis.Iteration budget (0 =
+  unlimited)*, default `0` = disengaged) whose `encode()` emits the already worker-registered
+  `<decompilebudget>` option element, so a budget chosen in the tool options reaches
+  `OptionDecompileBudget::apply` in the decompiler process. Because options travel over
+  `PackedEncode` (which writes the element *id*, not its name), the new Java
+  `ELEM_DECOMPILEBUDGET` is pinned to id `290` to match the C++ `ELEM_DECOMPILEBUDGET`
+  (`options.cc:32`), and the Java `ELEM_UNKNOWN` sentinel is bumped `290`→`291` to mirror the
+  fork's `marshal.cc:1269`. Fast `gradle :Decompiler:test` round-trip coverage asserts the element
+  is emitted with the cap when set and omitted when `0`. The *detect* half (marshalling
+  `budgetexhausted_present` into a first-class `DecompileResults.isPartial()`) follows in
+  `#35-5a-2`. Per [DD-0010](docs/decisions/0010-rec35-partial-result-gui-surfacing.md).
 - docs(decompiler): DD-0010 — **Rec 35 `#35-5` partial-result GUI surfacing needs a plumbing
   prerequisite first; split into `#35-5a` + `#35-5b`**. A pre-implementation survey found the GUI
   decompile path can neither *set* a budget nor *detect* a partial result, even though the C++

@@ -97,6 +97,14 @@ public class DecompileOptions {
 	private final static boolean ANALYZEFORLOOPS_OPTIONDEFAULT = true;	// Must match Architecture::resetDefaultsInternal
 	private boolean analyzeForLoops;
 
+	private final static String DECOMPILEBUDGET_OPTIONSTRING = "Analysis.Iteration budget (0 = unlimited)";
+	private final static String DECOMPILEBUDGET_OPTIONDESCRIPTION =
+		"If greater than 0, caps the number of flow-analysis iterations the decompiler performs on a " +
+			"single function. When the cap is reached the decompiler returns a partial result annotated " +
+			"with a budget-exhausted warning header. 0 (the default) leaves analysis unbounded.";
+	private final static int DECOMPILEBUDGET_OPTIONDEFAULT = 0;	// 0 means the budget is disengaged
+	private int decompileBudget;
+
 	private final static String SPLITSTRUCTURES_OPTIONSTRING =
 		"Analysis.Split combined structure fields";
 	private final static String SPLITSTRUCTURES_OPTIONDESCRIPTION =
@@ -545,6 +553,7 @@ public class DecompileOptions {
 		ignoreunimpl = IGNOREUNIMPL_OPTIONDEFAULT;
 		inferconstptr = INFERCONSTPTR_OPTIONDEFAULT;
 		analyzeForLoops = ANALYZEFORLOOPS_OPTIONDEFAULT;
+		decompileBudget = DECOMPILEBUDGET_OPTIONDEFAULT;
 		nullToken = NULLTOKEN_OPTIONDEFAULT;
 		inplaceTokens = INPLACEOP_OPTIONDEFAULT;
 		aliasBlock = ALIASBLOCK_OPTIONDEFAULT;
@@ -604,6 +613,7 @@ public class DecompileOptions {
 		inferconstptr = opt.getBoolean(INFERCONSTPTR_OPTIONSTRING, INFERCONSTPTR_OPTIONDEFAULT);
 		analyzeForLoops =
 			opt.getBoolean(ANALYZEFORLOOPS_OPTIONSTRING, ANALYZEFORLOOPS_OPTIONDEFAULT);
+		decompileBudget = opt.getInt(DECOMPILEBUDGET_OPTIONSTRING, DECOMPILEBUDGET_OPTIONDEFAULT);
 		splitStructures =
 			opt.getBoolean(SPLITSTRUCTURES_OPTIONSTRING, SPLITSTRUCTURES_OPTIONDEFAULT);
 		splitArrays = opt.getBoolean(SPLITARRAYS_OPTIONSTRING, SPLITARRAYS_OPTIONDEFAULT);
@@ -722,6 +732,9 @@ public class DecompileOptions {
 		opt.registerOption(INFERCONSTPTR_OPTIONSTRING, INFERCONSTPTR_OPTIONDEFAULT,
 			new HelpLocation(HelpTopics.DECOMPILER, "AnalysisInferConstants"),
 			INFERCONSTPTR_OPTIONDESCRIPTION);
+		opt.registerOption(DECOMPILEBUDGET_OPTIONSTRING, DECOMPILEBUDGET_OPTIONDEFAULT,
+			new HelpLocation(HelpTopics.DECOMPILER, "AnalysisIterationBudget"),
+			DECOMPILEBUDGET_OPTIONDESCRIPTION);
 		opt.registerOption(ANALYZEFORLOOPS_OPTIONSTRING, ANALYZEFORLOOPS_OPTIONDEFAULT,
 			new HelpLocation(HelpTopics.DECOMPILER, "AnalysisForLoops"),
 			ANALYZEFORLOOPS_OPTIONDESCRIPTION);
@@ -940,6 +953,9 @@ public class DecompileOptions {
 		}
 		if (analyzeForLoops != ANALYZEFORLOOPS_OPTIONDEFAULT) {
 			appendOption(encoder, ELEM_ANALYZEFORLOOPS, analyzeForLoops ? "on" : "off", "", "");
+		}
+		if (decompileBudget != DECOMPILEBUDGET_OPTIONDEFAULT) {
+			appendOption(encoder, ELEM_DECOMPILEBUDGET, Integer.toString(decompileBudget), "", "");
 		}
 		if (nullToken != NULLTOKEN_OPTIONDEFAULT) {
 			appendOption(encoder, ELEM_NULLPRINTING, nullToken ? "on" : "off", "", "");
@@ -1492,6 +1508,24 @@ public class DecompileOptions {
 	 */
 	public void setMaxInstructions(int num) {
 		maxIntructionsPer = num;
+	}
+
+	/**
+	 * {@return the per-function flow-analysis iteration budget, or 0 if the budget is disengaged.}
+	 * @see #DECOMPILEBUDGET_OPTIONDESCRIPTION
+	 */
+	public int getDecompileBudget() {
+		return decompileBudget;
+	}
+
+	/**
+	 * Set the per-function flow-analysis iteration budget. When greater than 0, the decompiler
+	 * truncates flow once the cap is reached and returns a partial result with a budget-exhausted
+	 * warning header. A value of 0 leaves analysis unbounded.
+	 * @param budget the iteration cap, or 0 to disengage the budget
+	 */
+	public void setDecompileBudget(int budget) {
+		decompileBudget = budget;
 	}
 
 	/**
