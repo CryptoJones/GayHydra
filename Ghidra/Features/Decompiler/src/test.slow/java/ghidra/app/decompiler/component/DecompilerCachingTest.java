@@ -38,6 +38,7 @@ import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginException;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Variable;
@@ -210,28 +211,53 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
-	public void testCallerAffectingFunctionChangeStillClearsTheCache() throws Exception {
-		// A function change that other functions can observe (here, marking the first function
-		// no-return, which makes code after calls to it unreachable in CALLERS) is not
-		// function-local: it fires a FunctionChangeRecord with a non-UNSPECIFIED change type, which
-		// is deliberately excluded from the local allow-list, so the cache must fully flush and
-		// revisiting any function is a miss. See DD-0009 addendum 2.
+	public void testCalleeModifierChangeInvalidatesCalleeAndCallers() throws Exception {
+		// A signature or caller-visible modifier change (here, marking the first function no-return,
+		// which makes code after calls to it unreachable in CALLERS) invalidates the changed function
+		// AND every function that calls it -- resolved from the call-reference graph, no dependency
+		// bitmap -- while leaving unrelated functions cached. See DD-0009 addendum 3 case A.
+		//
+		// Asserted on cache contents rather than post-navigation hit/miss stats: selective
+		// invalidation is what we are verifying, and a contents check is immune to the
+		// revisiting-the-current-display no-op that a navigation-based check would trip over.
+		makeSecondFunctionCallFirst();
+		Function callee = functionAt(0); // fun1: the callee being changed
+		Function caller = functionAt(1); // fun2: a caller of fun1
+		Function unrelated = functionAt(2); // fun3: neither callee nor caller
+
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
 		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(callee) && isCached(caller) && isCached(unrelated));
 
-		CacheStats stats1 = cache.stats();
+		markFirstFunctionNoReturn(); // NO_RETURN_CHANGED: caller-affecting
 
-		markFirstFunctionNoReturn();
+		// the changed callee and its caller are dropped; the unrelated function stays cached
+		waitForCondition(() -> !isCached(callee) && !isCached(caller) && isCached(unrelated));
+	}
+
+	@Test
+	public void testBareUnspecifiedFunctionChangeStillClearsTheCache() throws Exception {
+		// A bare FUNCTION_CHANGED/UNSPECIFIED with no sibling local rename (here, retyping a local
+		// variable) is not provably function-local -- UNSPECIFIED is overloaded across function-local
+		// and caller-affecting edits -- so it must fall back to the conservative full cache flush,
+		// dropping even functions unrelated to the edit. See DD-0009 addenda 2 and 3.
+		//
+		// The full flush is buffered through a SwingUpdateManager, so this asserts on cache contents
+		// via waitForCondition (which waits out the async flush) rather than on post-navigation stats.
+		createLocalVarOnFirstFunction();
+		Function unrelated = functionAt(1); // not the edited function and not the current display
 
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(functionAt(0)) && isCached(unrelated));
 
-		CacheStats stats2 = cache.stats();
+		retypeLocalVarOnFirstFunction();
 
-		assertEquals("Expected hitCount to not change", stats1.hitCount(), stats2.hitCount());
-		assertEquals("Expected missCount to increment by 2 (full flush)", stats1.missCount() + 2,
-			stats2.missCount());
+		// full flush: a function unrelated to the edit is dropped, which a selective invalidation
+		// (scoped to the edited function alone) would have kept cached
+		waitForCondition(() -> !isCached(unrelated));
 	}
 
 	@Test
@@ -325,7 +351,17 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	private Function firstFunction() {
-		return program.getFunctionManager().getFunctionAt(functionAddrs.get(0));
+		return functionAt(0);
+	}
+
+	private Function functionAt(int index) {
+		return program.getFunctionManager().getFunctionAt(functionAddrs.get(index));
+	}
+
+	// asMap() does not record a hit/miss against the cache stats, so probing contents is side-effect
+	// free and will not perturb the stat-based assertions in the sibling tests.
+	private boolean isCached(Function function) {
+		return cache.asMap().containsKey(function);
 	}
 
 	private void createLocalVarOnFirstFunction() throws Exception {
@@ -340,6 +376,17 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	private void markFirstFunctionNoReturn() throws Exception {
 		Function function = firstFunction();
 		builder.tx(() -> function.setNoReturn(true));
+	}
+
+	private void retypeLocalVarOnFirstFunction() throws Exception {
+		Variable local = firstFunction().getLocalVariables()[0];
+		builder.tx(() -> local.setDataType(new ByteDataType(), SourceType.USER_DEFINED));
+	}
+
+	private void makeSecondFunctionCallFirst() {
+		// A call from inside fun2's body (0x1004002) to fun1's entry (0x1004000) makes fun2 a caller
+		// of fun1 in the reference graph that Function.getCallingFunctions walks.
+		builder.createMemoryCallReference("0x1004002", "0x1004000");
 	}
 
 	private void installPlugins() throws PluginException {

@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-3b-1` — selective cache invalidation for
+  caller-affecting function changes. Implements **case A** of
+  [DD-0009 addendum 3](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-3-2026-06-06-36-3b-cross-function-residual-splits-into-callers-no-bitmap-and-datatype-refs-recorded-set):
+  a function *signature* change (`PARAMETERS_CHANGED` / `RETURN_TYPE_CHANGED`) or
+  caller-visible *modifier* change (`INLINE` / `NO_RETURN` / `CALL_FIXUP` /
+  `PURGE` / `THUNK`) now invalidates only the changed function **and its callers**
+  instead of flushing the whole GUI decompiler cache. The callers are resolved
+  from the existing call-reference graph via `Function.getCallingFunctions` (no
+  per-function dependency bitmap), and every affected body unions into the same
+  `DecompilerController.invalidate(AddressSetView)` path `#36-3a` already provides.
+  A bare `FUNCTION_CHANGED/UNSPECIFIED` with no sibling local/parameter rename
+  (e.g. a local retype) remains on the conservative full-flush path, since
+  `UNSPECIFIED` is overloaded across function-local and caller-affecting edits.
+  Shared-datatype edits (`#36-3b-2`) are still full-flush, deferred.
 - docs(decompiler): DD-0009 addendum 3 — ground `#36-3b` (cross-function
   dependency invalidation) before implementing. Grounding the demoted
   single-"dependency bitmap" proposal against the real event-firing and

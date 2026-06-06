@@ -35,6 +35,7 @@ import ghidra.program.util.FunctionChangeRecord.FunctionChangeType;
 import ghidra.program.util.ProgramChangeRecord;
 import ghidra.program.util.ProgramEvent;
 import ghidra.util.task.SwingUpdateManager;
+import ghidra.util.task.TaskMonitor;
 
 /**
  * Listener of {@link Program} events for decompiler panels. Program events are buffered using 
@@ -121,13 +122,12 @@ public class DecompilerProgramListener implements DomainObjectListener {
 	}
 
 	/**
-	 * Returns the address set of a change batch iff <em>every</em> record in it is a function-local
-	 * edit that can be mapped to the body of exactly one changed function. Returns {@code null} the
-	 * moment any record is not provably function-local, so the caller falls back to a full cache
-	 * flush (the conservative default: liveness can only shrink, never grow stale). See DD-0009 and
-	 * its addendum 2.
+	 * Returns the address set of a change batch iff <em>every</em> record in it can be mapped to the
+	 * bodies of a bounded, provably-correct set of changed functions. Returns {@code null} the moment
+	 * any record is not so mappable, so the caller falls back to a full cache flush (the conservative
+	 * default: liveness can only shrink, never grow stale). See DD-0009 and its addenda 2 and 3.
 	 *
-	 * <p>Three record shapes qualify:
+	 * <p>Function-<em>local</em> record shapes (invalidate only the owning function):
 	 * <ul>
 	 * <li>{@link ProgramEvent#COMMENT_CHANGED} — its record carries the code address of the comment,
 	 * which lies in the owning function's body, so its range maps directly.</li>
@@ -140,19 +140,31 @@ public class DecompilerProgramListener implements DomainObjectListener {
 	 * {@link FunctionChangeType#UNSPECIFIED} — admitted <em>only by correlation</em>, i.e. iff its
 	 * function was already resolved from a sibling local/parameter rename in the same batch. A bare
 	 * {@code UNSPECIFIED} function change (e.g. a stack-return-offset edit, which alters the callee
-	 * purge that callers track) has no such sibling and forces the full flush.</li>
+	 * purge that callers track, or a local retype) has no such sibling and forces the full flush.</li>
 	 * </ul>
 	 *
-	 * <p>Any other record — including signature/modifier function changes
-	 * ({@code PARAMETERS_CHANGED}/{@code RETURN_TYPE_CHANGED}/{@code INLINE_CHANGED}/…, which affect
-	 * callers) and symbol changes that are not local/parameter renames — returns {@code null}.
+	 * <p>Cross-function record shape (invalidate the changed function <em>and its callers</em>),
+	 * DD-0009 addendum 3 case A:
+	 * <ul>
+	 * <li>A {@link FunctionChangeRecord} that {@link FunctionChangeRecord#isFunctionSignatureChange()
+	 * is a signature change} ({@code PARAMETERS_CHANGED}/{@code RETURN_TYPE_CHANGED}) or
+	 * {@link FunctionChangeRecord#isFunctionModifierChange() is a modifier change}
+	 * ({@code INLINE}/{@code NO_RETURN}/{@code CALL_FIXUP}/{@code PURGE}/{@code THUNK}) — every caller
+	 * may render differently. The callers are resolved from the existing call-reference graph via
+	 * {@link Function#getCallingFunctions(ghidra.util.task.TaskMonitor)} (no dependency bitmap), and
+	 * the changed function's body plus each caller's body are added to the set.</li>
+	 * </ul>
+	 *
+	 * <p>Any other record — a shared data type edit (no address; the {@code #36-3b-2} job) or symbol
+	 * changes that are not local/parameter renames — returns {@code null}.
 	 *
 	 * @param ev the change event
-	 * @return the changed addresses, or {@code null} if the batch is not entirely function-local
+	 * @return the changed addresses, or {@code null} if the batch is not entirely mappable
 	 */
 	private AddressSetView collectLocalChangeAddresses(DomainObjectChangedEvent ev) {
 		AddressSet set = new AddressSet();
 		Set<Function> localFunctions = new HashSet<>();
+		Set<Function> callerAffectingFunctions = new HashSet<>();
 		List<Function> companionFunctionChanges = new ArrayList<>();
 
 		for (DomainObjectChangeRecord record : ev) {
@@ -172,11 +184,22 @@ public class DecompilerProgramListener implements DomainObjectListener {
 				localFunctions.add(owner);
 			}
 			else if (record.getEventType() == ProgramEvent.FUNCTION_CHANGED) {
-				if (!(record instanceof FunctionChangeRecord fcr) ||
-					fcr.getSpecificChangeType() != FunctionChangeType.UNSPECIFIED) {
+				if (!(record instanceof FunctionChangeRecord fcr)) {
 					return null;
 				}
-				companionFunctionChanges.add(fcr.getFunction());
+				if (fcr.isFunctionSignatureChange() || fcr.isFunctionModifierChange()) {
+					Function changed = fcr.getFunction();
+					if (changed == null) {
+						return null;
+					}
+					callerAffectingFunctions.add(changed);
+				}
+				else if (fcr.getSpecificChangeType() == FunctionChangeType.UNSPECIFIED) {
+					companionFunctionChanges.add(fcr.getFunction());
+				}
+				else {
+					return null;
+				}
 			}
 			else {
 				return null;
@@ -185,8 +208,8 @@ public class DecompilerProgramListener implements DomainObjectListener {
 
 		// A FUNCTION_CHANGED/UNSPECIFIED record is admitted only as the companion that
 		// ProgramDB.symbolChanged fires alongside a local/parameter rename; one that arrives without
-		// such a sibling (e.g. setStackReturnOffset) is not provably function-local. See DD-0009
-		// addendum 2.
+		// such a sibling (e.g. setStackReturnOffset, or a local retype) is not provably function-local
+		// and forces the full flush. See DD-0009 addendum 2.
 		for (Function function : companionFunctionChanges) {
 			if (!localFunctions.contains(function)) {
 				return null;
@@ -201,6 +224,23 @@ public class DecompilerProgramListener implements DomainObjectListener {
 				return null;
 			}
 			set.add(body);
+		}
+
+		// A signature or caller-visible modifier change invalidates the changed function and every
+		// function that calls it; the callers come from the existing call-reference graph, so no
+		// per-function dependency bitmap is needed. See DD-0009 addendum 3 case A.
+		for (Function function : callerAffectingFunctions) {
+			AddressSetView body = function.getBody();
+			if (body == null) {
+				return null;
+			}
+			set.add(body);
+			for (Function caller : function.getCallingFunctions(TaskMonitor.DUMMY)) {
+				AddressSetView callerBody = caller.getBody();
+				if (callerBody != null) {
+					set.add(callerBody);
+				}
+			}
 		}
 
 		return set.isEmpty() ? null : set;
