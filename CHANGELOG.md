@@ -12,6 +12,17 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0017](docs/decisions/0017-rec37-cast-renderer.md) grounds Rec 37 `#37-8` — the
+  **second `CppDecompilerHints` form**, the up/down-cast renderer (RFC §5 bullet 2). It matches a recognised
+  constant pointer offset against the derived class's `CppBaseClass` edges (`getOffset`) and, by cast
+  direction, renders `static_cast<Base*>(src)` for an upcast (base type name) or `static_cast<Derived*>(src)`
+  for a downcast (derived type name) — `static_cast`, never `dynamic_cast`, because the recovered constant
+  offset *is* the compiler's structural base-subobject adjustment. It **declines** the cast for a `virtual`
+  base (whose offset is dynamic, not a compile-time constant) and for an offset matching no edge, falling back
+  to the neutral `src + offset` / `src - offset` form rather than fabricating a cast — the same advisory
+  fallback `#37-7` uses for an unresolvable slot. Access (`isPublic`) does not change the form. Still headless
+  model→string, no new model type/mutator; the recognition pass is the deferred `#37-8b` wrapper. Validated by
+  extending headless `CppDecompilerHintsTest`.
 - feat(decompiler): Rec 37 `#37-7` — **the `CppDecompilerHints` renderer**, the headless half of RFC §5
   ([DD-0016](docs/decisions/0016-rec37-decompiler-hints-renderer.md)). A stateless producer of C++-style
   rendering strings from already-resolved `CppTypeSystem` facts plus the operand expressions a caller hands
