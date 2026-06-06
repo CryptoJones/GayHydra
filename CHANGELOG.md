@@ -21,6 +21,19 @@ generated from the GitHub Releases UI at sprint close.
   existing op rather than mint a redundant `BUILTIN_POPCOUNT` builtin.
   Documents the asymmetry, the SWAR shape to match, and the unchanged
   exactness/option-gate bar.
+- feat(decompiler): recognise the inlined SWAR popcount idiom (`#39-4b`,
+  DD-0007). New `RulePopcount` anchors on the terminating `(x * 0x01..) >>
+  (W-8)` shift, walks the four magic-constant stages backwards, and on a
+  fully-determined match folds the whole expansion into the native
+  `POPCOUNT(x)` op — minting no builtin, per the DD-0007 correction. Because
+  the rule lives in the `actcleanup` pool (no following dead-code pass) it
+  sweeps the now-dead arithmetic itself via `opDestroyRecursive`, yielding a
+  clean `return POPCOUNT(a);`. The match is exact, so near-miss masks (e.g.
+  `0x55555554`) are declined. Scope is the 32-bit width that survives
+  Ghidra's simplification; the 64-bit multiply variant, whose `imul
+  0x0101010101010101 >> 56` terminator is strength-reduced before cleanup,
+  is left intact and deferred to a follow-up. New `datatests/popcount.xml`
+  covers all three cases.
 
 ---
 

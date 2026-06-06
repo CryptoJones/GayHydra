@@ -1,0 +1,67 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 39 (#39-4b, DD-0007): inlined popcount detection. The GCC/Clang software population-count
+    expansion for a target without a hardware instruction is a fixed, loop-free dataflow shape over
+    magic constants:
+        x = x - ((x >> 1) & 0x55..);
+        x = (x & 0x33..) + ((x >> 2) & 0x33..);
+        x = (x + (x >> 4)) & 0x0f..;
+        result = (x * 0x01..) >> (W - 8);
+    RulePopcount anchors on the terminating multiply-then-shift, walks the four stages backwards,
+    verifies every width-scaled magic constant, and on a complete match rewrites the root shift in
+    place to the native POPCOUNT op (then sweeps the now-dead SWAR arithmetic). Unlike RuleMemset
+    (#39-4a) it mints no builtin: Ghidra already ships CPUI_POPCOUNT / TypeOpPopcount, so the idiom
+    folds into POPCOUNT(x).
+
+    pc32   - 32-bit SWAR popcount, subtract stage-1 form: folds to a clean `return POPCOUNT(a);`,
+             with the intermediate masking/shift arithmetic removed.
+    pc64   - 64-bit SWAR popcount. gcc -O2 strength-reduces the 64-bit `imul 0x0101010101010101 >> 56`
+             terminator into a truncated 32-bit byte-sum BEFORE the cleanup pool runs, so the canonical
+             shape RulePopcount keys on no longer exists. This is the documented boundary of #39-4b:
+             the rule must NOT misfire here, leaving the 64-bit stage-1 mask 0x5555555555555555 intact.
+             (Recognising the reduced 64-bit terminator is deferred to a follow-up.)
+    pcbad  - 32-bit near-miss; stage-1 mask is 0x55555554 (not 0x55555555). The match is exact, so
+             RulePopcount must DECLINE and the raw arithmetic is preserved (no POPCOUNT).
+-->
+<bytechunk space="ram" offset="0x100000" readonly="true">
+f30f1efa89f8d1e8255555555529c789fac1ef02
+81e23333333381e73333333301fa89d0c1e80401
+d0250f0f0f0f69c001010101c1e818c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100040" readonly="true">
+f30f1efa48ba55555555555555554889f848d1e8
+4821d04829c748b833333333333333334889fa48
+c1ef024821c24821c74801fa4889d048c1e80448
+01d048ba0f0f0f0f0f0f0f0f4821d048ba010101
+0101010101480fafc248c1e838c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100080" readonly="true">
+f30f1efa89f8d1e8255455555529c789fac1ef02
+81e23333333381e73333333301fa89d0c1e80401
+d0250f0f0f0f69c001010101c1e818c3
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="pc32"/>
+<symbol space="ram" offset="0x100040" name="pc64"/>
+<symbol space="ram" offset="0x100080" name="pcbad"/>
+</binaryimage>
+<script>
+  <com>parse line extern uint4 pc32(uint4 a);</com>
+  <com>parse line extern uint8 pc64(uint8 b);</com>
+  <com>parse line extern uint4 pcbad(uint4 c);</com>
+  <com>lo fu pc32</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu pc64</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu pcbad</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="32-bit popcount folds to a clean POPCOUNT(a)" min="1" max="1">return POPCOUNT\(a\);</stringmatch>
+<stringmatch name="only the 32-bit case folds (no other POPCOUNT)" min="1" max="1">POPCOUNT\(</stringmatch>
+<stringmatch name="64-bit boundary left intact (stage-1 mask survives)" min="1" max="1">0x5555555555555555</stringmatch>
+<stringmatch name="near-miss mask not folded" min="1" max="1">c - \(c >> 1 &amp; 0x55555554\)</stringmatch>
+</decompilertest>

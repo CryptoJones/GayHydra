@@ -1136,4 +1136,183 @@ int4 RuleMemset::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \brief Split a binary op into its single constant operand and its variable operand
+///
+/// For a commutative op (INT_AND, INT_ADD, INT_MULT) where exactly one input is constant, pass back the
+/// constant value and the other (variable) input.  Used by the popcount idiom matcher to peel a masking
+/// or scaling constant off a stage of the SWAR expansion.
+/// \param op is the binary op
+/// \param constVal passes back the constant operand value
+/// \param varIn passes back the variable operand
+/// \return \b true if exactly one operand is constant
+static bool popcountSplitConstant(PcodeOp *op,uintb &constVal,Varnode *&varIn)
+
+{
+  Varnode *in0 = op->getIn(0);
+  Varnode *in1 = op->getIn(1);
+  if (in0->isConstant()) {
+    if (in1->isConstant()) return false;
+    constVal = in0->getOffset();
+    varIn = in1;
+    return true;
+  }
+  if (!in1->isConstant()) return false;
+  constVal = in1->getOffset();
+  varIn = in0;
+  return true;
+}
+
+/// \brief If \b vn is an unsigned right-shift by the constant \b sa, return the shifted input
+///
+/// \param vn is the Varnode to test
+/// \param sa is the required shift amount (in bits)
+/// \return the shift's input Varnode, or null if \b vn is not `something >> sa`
+static Varnode *popcountShiftRight(Varnode *vn,int4 sa)
+
+{
+  if (!vn->isWritten()) return (Varnode *)0;
+  PcodeOp *op = vn->getDef();
+  if (op->code() != CPUI_INT_RIGHT) return (Varnode *)0;
+  Varnode *cvn = op->getIn(1);
+  if (!cvn->isConstant()) return (Varnode *)0;
+  if (cvn->getOffset() != (uintb)sa) return (Varnode *)0;
+  return op->getIn(0);
+}
+
+/// \brief Match `base + (base >> sa)` and pass back \b base
+///
+/// \param op is the candidate INT_ADD
+/// \param sa is the shift amount (in bits)
+/// \return \b base, or null if \b op is not of this shape
+static Varnode *popcountSelfPlusShift(PcodeOp *op,int4 sa)
+
+{
+  if (op->code() != CPUI_INT_ADD) return (Varnode *)0;
+  Varnode *a = op->getIn(0);
+  Varnode *b = op->getIn(1);
+  Varnode *base = popcountShiftRight(a,sa);
+  if (base != (Varnode *)0 && base == b) return base;
+  base = popcountShiftRight(b,sa);
+  if (base != (Varnode *)0 && base == a) return base;
+  return (Varnode *)0;
+}
+
+/// \brief Match `(base & m) + ((base >> sa) & m)` and pass back \b base
+///
+/// Both INT_AND operands must mask with the same constant \b m.  This is the shape of the stage-2 (and the
+/// alternate stage-1) reduction in the SWAR population-count expansion.
+/// \param op is the candidate INT_ADD
+/// \param m is the required mask constant
+/// \param sa is the shift amount (in bits)
+/// \return \b base, or null if \b op is not of this shape
+static Varnode *popcountAndShiftAnd(PcodeOp *op,uintb m,int4 sa)
+
+{
+  if (op->code() != CPUI_INT_ADD) return (Varnode *)0;
+  Varnode *aOut = op->getIn(0);
+  Varnode *bOut = op->getIn(1);
+  if (!aOut->isWritten() || !bOut->isWritten()) return (Varnode *)0;
+  PcodeOp *aDef = aOut->getDef();
+  PcodeOp *bDef = bOut->getDef();
+  if (aDef->code() != CPUI_INT_AND || bDef->code() != CPUI_INT_AND) return (Varnode *)0;
+  uintb ca,cb;
+  Varnode *va,*vb;
+  if (!popcountSplitConstant(aDef,ca,va)) return (Varnode *)0;
+  if (!popcountSplitConstant(bDef,cb,vb)) return (Varnode *)0;
+  if (ca != m || cb != m) return (Varnode *)0;
+  Varnode *base = popcountShiftRight(va,sa);	// va == base>>sa  =>  vb == base
+  if (base != (Varnode *)0 && base == vb) return base;
+  base = popcountShiftRight(vb,sa);		// vb == base>>sa  =>  va == base
+  if (base != (Varnode *)0 && base == va) return base;
+  return (Varnode *)0;
+}
+
+/// \brief Match the stage-1 reduction of the SWAR popcount and pass back the original operand
+///
+/// Stage 1 is either the subtract form `x - ((x >> 1) & m1)` (GCC/Clang default) or the symmetric
+/// add form `(x & m1) + ((x >> 1) & m1)`.  Either way the recovered \b x is the value being counted.
+/// \param op is the op defining the stage-1 result
+/// \param m1 is the width-scaled 0x55.. mask
+/// \return the counted operand \b x, or null
+static Varnode *popcountStage1(PcodeOp *op,uintb m1)
+
+{
+  if (op->code() == CPUI_INT_SUB) {
+    Varnode *x = op->getIn(0);
+    Varnode *rhs = op->getIn(1);			// must be (x >> 1) & m1
+    if (!rhs->isWritten()) return (Varnode *)0;
+    PcodeOp *andOp = rhs->getDef();
+    if (andOp->code() != CPUI_INT_AND) return (Varnode *)0;
+    uintb c;
+    Varnode *v;
+    if (!popcountSplitConstant(andOp,c,v)) return (Varnode *)0;
+    if (c != m1) return (Varnode *)0;
+    if (popcountShiftRight(v,1) == x) return x;
+    return (Varnode *)0;
+  }
+  return popcountAndShiftAnd(op,m1,1);			// symmetric add form
+}
+
+void RulePopcount::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_RIGHT);
+}
+
+/// \class RulePopcount
+/// \brief Fold the constant-masked SWAR population-count idiom into a single \b POPCOUNT op
+///
+/// Rec 39 (#39-4b, DD-0007).  Anchored on the terminating `(x * 0x01..) >> (W-8)` shift, walk the four
+/// stages of the GCC/Clang software popcount expansion backwards, verifying every width-scaled magic
+/// constant (0x55.., 0x33.., 0x0f.., 0x01..) and the exact dataflow wiring.  On a fully-determined match
+/// the recovered operand \b x is provably the value being counted, so the root shift is rewritten in place
+/// to \b POPCOUNT(x).  This rule runs in the \b actcleanup pool, which is not followed by an ActionDeadCode
+/// pass, so the now-dead SWAR arithmetic is swept explicitly with opDestroyRecursive (the same way
+/// RuleStringStore/RuleMemset remove their obsoleted STORE ops).  The rewrite is exact (it fires only on a
+/// complete match), so it is unconditional, mirroring \ref RuleMemset.
+int4 RulePopcount::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  Varnode *saVn = op->getIn(1);
+  if (!saVn->isConstant()) return 0;
+  Varnode *multOut = op->getIn(0);
+  int4 sz = multOut->getSize();
+  if (sz < 4) return 0;					// width-scaled constants need at least 32 bits
+  if (saVn->getOffset() != (uintb)(sz * 8 - 8)) return 0;
+  if (!multOut->isWritten()) return 0;
+  PcodeOp *multOp = multOut->getDef();
+  if (multOp->code() != CPUI_INT_MULT) return 0;
+  uintb fullmask = calc_mask(sz);
+  uintb h01 = (uintb)0x0101010101010101ULL & fullmask;
+  uintb m1 = (uintb)0x5555555555555555ULL & fullmask;
+  uintb m2 = (uintb)0x3333333333333333ULL & fullmask;
+  uintb m4 = (uintb)0x0f0f0f0f0f0f0f0fULL & fullmask;
+  uintb mc;
+  Varnode *s3;						// stage-3 result: (x2 + (x2>>4)) & m4
+  if (!popcountSplitConstant(multOp,mc,s3)) return 0;
+  if (mc != h01) return 0;
+  if (!s3->isWritten()) return 0;
+  PcodeOp *andOp3 = s3->getDef();
+  if (andOp3->code() != CPUI_INT_AND) return 0;
+  uintb c3;
+  Varnode *add4Out;
+  if (!popcountSplitConstant(andOp3,c3,add4Out)) return 0;
+  if (c3 != m4) return 0;
+  if (!add4Out->isWritten()) return 0;
+  Varnode *x2 = popcountSelfPlusShift(add4Out->getDef(),4);
+  if (x2 == (Varnode *)0) return 0;
+  if (!x2->isWritten()) return 0;
+  Varnode *x1 = popcountAndShiftAnd(x2->getDef(),m2,2);	// stage 2: (x1&m2)+((x1>>2)&m2)
+  if (x1 == (Varnode *)0) return 0;
+  if (!x1->isWritten()) return 0;
+  Varnode *x = popcountStage1(x1->getDef(),m1);		// stage 1
+  if (x == (Varnode *)0) return 0;
+  data.opRemoveInput(op,1);				// POPCOUNT is unary
+  data.opSetInput(op,x,0);
+  data.opSetOpcode(op,CPUI_POPCOUNT);
+  vector<PcodeOp *> scratch;
+  data.opDestroyRecursive(multOp,scratch);		// remove the now-dead SWAR arithmetic chain (preserves x)
+  return 1;
+}
+
 } // End namespace ghidra

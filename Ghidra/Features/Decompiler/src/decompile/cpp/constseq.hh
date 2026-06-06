@@ -162,5 +162,33 @@ public:
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
 
+/// \class RulePopcount
+/// \brief Recognise the constant-masked SWAR \e popcount idiom and fold it into a single \b POPCOUNT op
+///
+/// Rec 39 (#39-4b, DD-0007). The GCC/Clang software population-count expansion for a target without a
+/// hardware instruction is a fixed, loop-free dataflow shape over magic constants:
+/// \code
+///   x = x - ((x >> 1) & 0x55..);            // (or the (x&m1)+((x>>1)&m1) form)
+///   x = (x & 0x33..) + ((x >> 2) & 0x33..);
+///   x = (x + (x >> 4)) & 0x0f..;
+///   result = (x * 0x01..) >> (W - 8);
+/// \endcode
+/// Unlike \ref RuleMemset, popcount already has a native p-code op (\b CPUI_POPCOUNT, rendered
+/// \b POPCOUNT(x)), so the rule rewrites the root shift into that op rather than minting a builtin. It
+/// fires only on a fully-determined magic-constant match (all four stages, exact width-scaled constants),
+/// so the rewrite is exact and unconditional. Like \ref RuleMemset it runs in the \b actcleanup pool and
+/// sweeps its own now-dead arithmetic (there is no following ActionDeadCode pass). The 64-bit multiply
+/// variant, whose terminating \c imul/shift is strength-reduced before cleanup, is out of scope here.
+class RulePopcount : public Rule {
+public:
+  RulePopcount(const string &g) : Rule( g, 0, "popcount") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RulePopcount>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+
 } // End namespace ghidra
 #endif
