@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 9 — **ground the `#36-5` telemetry surface**.
+  Every metric maps to one call site in `DecompilerController` (`loadFromCache`
+  hit/miss, `clearCache` full flush, `invalidate(AddressSetView)` and
+  `invalidateByDataTypeIds` selective drops), and the `selective ÷ (selective +
+  full)` ratio plus per-call entries-dropped is exactly the data that gates `#36-4`
+  (addendum 8). Decides **explicit counters over Guava `recordStats()`** (which
+  can't distinguish a manual `invalidate` from `invalidateAll`, so the
+  full-vs-selective breakdown — the whole point — is invisible to `stats()`), and
+  **splits `#36-5`**: `#36-5a` = hit/miss + full-flush + selective-address +
+  selective-datatype counters (with entries-dropped), exposed via `getCacheStats()`
+  and fully testable in `DecompilerCachingTest` — **lands next**; `#36-5b` =
+  decompile latency (request→callback wall-clock), which is async and
+  cross-thread/non-deterministic, sequenced after. No UI surface. Per
+  [DD-0009 addendum 9](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-9-2026-06-06-grounding-the-36-5-telemetry-surface--explicit-hit-and-invalidation-counters-first-36-5a-async-decompile-latency-split-out-36-5b);
+  docs-only, no production code change.
 - docs(decompiler): DD-0009 addendum 8 — **defer `#36-4`** (in-place rewrite for
   local name / comment) behind `#36-5` telemetry. The `FieldPanel` bakes each
   token's text *and* width into an immutable `AttributedString` at layout-build

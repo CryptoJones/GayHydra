@@ -242,7 +242,9 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
   - #36-3b-2b — instance-swap event triage (addendum 6): `DATA_TYPE_RENAMED` folds into the 2a id-path, `DATA_TYPE_MOVED` is a rendering-invariant benign companion, `DATA_TYPE_REPLACED` **stays permanently full-flush** (its id is dropped at `ProgramDB.dataTypeChanged:890`) — **done**
   - #36-3b-2 recompute backstop — the addendum-3 debug-assert recompute mode, regrounded as a **test-harness corpus assertion** (addendum 7) — **done** (`DecompilerCachingTest.testKeptEntriesReDecompileUnchangedAfterDataTypeEdit`)
 - #36-4 — in-place rewrite for local name / comment — **deferred behind #36-5 telemetry** (see addendum 8): the `FieldPanel` bakes token text+width at layout build, and #36-3a/3a-2 already reduce a rename/comment to a single-function re-decompile, so the optimisation is not worth its staleness risk until telemetry shows a real cost
-- #36-5 — telemetry (hit rate, in-place/selective rate, decompile latency) — **next**
+- #36-5 — telemetry (hit rate, in-place/selective rate, decompile latency) — grounded in addendum 9; split into:
+  - #36-5a — hit/miss + full-flush + selective-address + selective-datatype counters, exposed via `getCacheStats()` — **next**
+  - #36-5b — decompile latency (request→callback wall-clock), async/cross-thread — sequenced after #36-5a
 - #36-6 — `budget` cache-key extension (Rec 35) — sequenced above
 
 ## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
@@ -871,3 +873,81 @@ real user-visible cost. This is the same "measure before optimising; liveness on
 shrinks" discipline the rest of the DD follows. If telemetry later justifies it,
 the implementation path is the layout-rebuild-without-native-decompile route above
 — recorded here so the analysis is not redone.
+
+## Addendum 9 (2026-06-06): grounding the #36-5 telemetry surface — explicit hit and invalidation counters first (#36-5a), async decompile latency split out (#36-5b)
+
+Addendum 8 deferred #36-4 *behind* #36-5: the in-place rewrite is only worth
+building if telemetry shows the single-function re-decompile it would save is a
+real, frequent cost. So #36-5 is no longer a vague "add some metrics" item — it
+has a **specific job**: measure how often a program edit takes the cheap
+selective path versus a full flush, and how expensive the resulting re-decompile
+actually is. This addendum grounds that surface against the real
+`DecompilerController` touchpoints before any code is written.
+
+### What the cache code already exposes to count
+
+Every event #36-5 needs to measure is already a single, identifiable call site in
+`DecompilerController.java`:
+
+| Metric | Touchpoint | Today's behaviour |
+|---|---|---|
+| navigation hit / miss | `loadFromCache` — `getIfPresent` non-null vs null (`:165–168`); the early `function == null` return (`:161`) is also a non-hit | returns a boolean; nothing recorded |
+| cache populate | `updateCache` — `decompilerCache.put` (`:242`) | unconditional put on a completed decompile |
+| full flush | `clearCache` — `invalidateAll` (`:386–387`) | called by the listener's buffered fallback, plus `setOptions`/`dispose`/`refreshDisplay` |
+| selective address invalidation | `invalidate(AddressSetView)` (`:399–409`) | walks the key set, drops body-intersecting entries |
+| selective datatype invalidation | `invalidateByDataTypeIds(Set<Long>)` (`:427–440`) | walks entries, drops type-referencing ones |
+
+The **ratio that gates #36-4** falls straight out of the last three rows:
+`selective ÷ (selective + edit-driven full)` is "how often an edit hit the cheap
+path", and the per-call *entries-dropped* count on the two selective rows is "how
+much work the cheap path saved". A rename/comment edit that consistently lands on
+`invalidate(AddressSetView)` dropping one entry is exactly the already-cheap case
+addendum 8 said in-place rewrite would only marginally improve.
+
+### Decision 1 — explicit counters, not Guava `recordStats()`
+
+Guava's `CacheBuilder.recordStats()` is the obvious free option, but it measures
+the **wrong surface** for this gate:
+
+- It counts hits/misses at the `getIfPresent` mechanic, so it would miss the
+  `function == null` non-hit (`:161`) that still drives a decompile, and it folds
+  soft-value evictions into its miss count — noise for a "did the user's
+  navigation re-use a decompile" question.
+- It records **nothing** about *why* an entry left the cache: a manual
+  `invalidate` and a manual `invalidateAll` are both just "manual removals" to
+  Guava, so the full-vs-selective breakdown — the entire point of #36-5 — is
+  invisible to `stats()`.
+
+So #36-5 uses explicit counters at the five call sites above. They are semantic
+("a navigation missed", "an edit took the selective datatype path dropping N
+entries"), which is what the gate and the headed test both need to assert on.
+
+### Decision 2 — split latency (#36-5b) out from the counters (#36-5a)
+
+Hit/invalidation counters are **synchronous and single-threaded-ish**: they
+increment inside `loadFromCache` / the `invalidate*` methods, which the test
+drives directly and can read back deterministically. Decompile *latency* is not:
+the work spans `decompilerMgr.decompile(...)` (`:124`/`:283`) to the async
+`setDecompileData` callback (`:230`) on a different thread, crossing the native
+C++ process boundary, and its wall-clock varies run to run — so it neither lives
+at a single call site nor yields a deterministic test assertion. Threading a
+request timestamp through `DecompileData`/`DecompilerManager` is a larger, more
+invasive change than the counters and belongs in its own slice.
+
+Following the "scope shrinks; ground before building" discipline of addenda 4/8:
+
+- **#36-5a** — hit/miss + full-flush + selective-address + selective-datatype
+  counters (with entries-dropped on the selective paths), exposed as an immutable
+  snapshot via a `getCacheStats()` accessor; counters held as `AtomicLong`/`LongAdder`
+  since `setDecompileData`/`updateCache` can fire on the async callback thread
+  while the listener invalidates on Swing. Fully testable in
+  `DecompilerCachingTest` (it already holds the controller and cache directly and
+  drives real edits), so it ships first.
+- **#36-5b** — decompile latency (request→callback wall-clock), threaded through
+  the decompile path; non-deterministic, so it carries an observational/log
+  surface rather than a byte-exact test assertion. Sequenced after #36-5a.
+
+No UI surface is introduced by either: the gate needs the numbers *queryable*
+(test + a debug log/action later), not a panel. This addendum is docs-only and
+carries no C++/manifest/RAII-audit gate; #36-5a lands next as the first
+implementation slice.
