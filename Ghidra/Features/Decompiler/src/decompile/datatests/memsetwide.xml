@@ -1,0 +1,61 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    Rec 39 (#39-5): regression guard for "wide" constant fills folding into a single builtin_memset.
+
+    DD-0007's #39-5 row anticipated that word/dword and vector-shaped fills would need new
+    element-type coverage in RuleMemset. A pre-implementation survey (DD-0007 #39-5 addendum) found
+    the store width is already decomposed to bytes by formByteArray, so a run of equal-valued STOREs
+    wider than the pointed-to element already folds today. This test pins that behaviour so a future
+    refactor cannot silently regress it. The one genuine residual gap (>=2 vector movups stores, which
+    render as a mixed byte/aggregate-store blob) is intentionally NOT asserted here; it is a separate
+    aggregate-store normalisation problem, not constseq element-type coverage.
+
+    qwfill    - four 8-byte (qword) stores of 0 to a char*: memset(a, 0, 0x20). Store width 8 > element 1.
+    dwfill    - four 4-byte (dword) stores of 0 to a char*: memset(b, 0, 0x10). Store width 4 > element 1.
+    xmmfill16 - one 16-byte vector (movups of a zeroed xmm) store to a char*: memset(c, 0, 0x10).
+    nearmiss  - four qword stores of 0x00000000000000ff (a non-uniform byte pattern): must NOT fold,
+                since memset requires every byte across the region to be the same value.
+-->
+<bytechunk space="ram" offset="0x100000" readonly="true">
+48c7070000000048c747080000000048c747100000000048c7471800000000c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100040" readonly="true">
+c70700000000c7470400000000c7470800000000c7470c00000000c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100080" readonly="true">
+660fefc00f1107c3
+</bytechunk>
+<bytechunk space="ram" offset="0x1000c0" readonly="true">
+48c707ff00000048c74708ff00000048c74710ff00000048c74718ff000000c3
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="qwfill"/>
+<symbol space="ram" offset="0x100040" name="dwfill"/>
+<symbol space="ram" offset="0x100080" name="xmmfill16"/>
+<symbol space="ram" offset="0x1000c0" name="nearmiss"/>
+</binaryimage>
+<script>
+  <com>parse line extern void qwfill(char *a);</com>
+  <com>parse line extern void dwfill(char *b);</com>
+  <com>parse line extern void xmmfill16(char *c);</com>
+  <com>parse line extern void nearmiss(char *d);</com>
+  <com>lo fu qwfill</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu dwfill</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu xmmfill16</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>lo fu nearmiss</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="qword fill folds to memset" min="1" max="1">builtin_memset\(a, ?0, ?0x20\);</stringmatch>
+<stringmatch name="dword fill folds to memset" min="1" max="1">builtin_memset\(b, ?0, ?0x10\);</stringmatch>
+<stringmatch name="single vector fill folds to memset" min="1" max="1">builtin_memset\(c, ?0, ?0x10\);</stringmatch>
+<stringmatch name="exactly three fills fold (near-miss excluded)" min="3" max="3">builtin_memset\(</stringmatch>
+<stringmatch name="non-uniform fill is not folded" min="1" max="1">d\[0L?\] = -1;</stringmatch>
+</decompilertest>

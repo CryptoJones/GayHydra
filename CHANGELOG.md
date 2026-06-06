@@ -12,6 +12,17 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs+test(decompiler): reframe DD-0007's Rec 39 `#39-5` row. A
+  pre-implementation survey found word/dword **and** single-vector constant
+  fills *already* fold to `builtin_memset` — `formByteArray` decomposes each
+  STORE's value to bytes, so the store width being wider than the pointed-to
+  element never mattered. `#39-5` therefore ships only `datatests/memsetwide.xml`,
+  a regression guard pinning the already-correct qword/dword/single-`movups`
+  folding, plus the DD-0007 addendum recording the finding. The one real
+  residual — `≥2` vector-store fills, which render as a mixed byte/aggregate
+  blob — is an aggregate-store normalisation problem upstream of `constseq`,
+  so it is deferred (revisited with `#39-6` or its own investigation), not
+  asserted, to avoid cementing the current messy rendering.
 - docs(decompiler): correct DD-0007's Rec 39 `#39-4b` popcount approach. A
   pre-implementation survey found Ghidra already ships a native
   `CPUI_POPCOUNT` op (`TypeOpPopcount`, `OpBehaviorPopcount`, and the
