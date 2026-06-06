@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0021](docs/decisions/0021-rec37-placement-new-renderer.md) grounds Rec 37 `#37-9e` —
+  the sixth `CppDecompilerHints` form, the **placement-new renderer** (the placement sibling of the `#37-9` scalar
+  construction form): `renderPlacementConstruction(CppClass type, String placementExpr, List<String> argumentExprs)`
+  emits `new (ptr) ClassName(args)` (name is `CppClass.getName()`; the bracketed placement target distinguishes it
+  from ordinary `new`). Like `#37-9`/`#37-9d`, **no neutral fallback** (the class name is a *total* model fact);
+  rejects null type / null-or-blank placement / null arg list / null arg element with `IllegalArgumentException`.
+  **No vtable lookup, no overload resolution** (constructor selection stays the DTM-coupled `#37-10+` band). Stays
+  headless; the placement-allocation + ctor recognition pass is the deferred Program-coupled wrapper. After `#37-9e`,
+  only the `delete e` form (reads no model fact) remains before the headless renderer family is exhausted. The
+  docs-first step preceding the `#37-9e` implementation.
 - feat(decompiler): Rec 37 `#37-9d` — **the `CppDecompilerHints` array-construction renderer**, the fifth form and
   the array sibling of the `#37-9` scalar construction renderer
   ([DD-0020](docs/decisions/0020-rec37-array-construction-renderer.md)). `renderArrayConstruction(CppClass type,
