@@ -278,24 +278,40 @@ public class DecompilerProgramListener implements DomainObjectListener {
 
 	/**
 	 * Returns the set of data-type ids changed by a batch iff <em>every</em> record in it is an
-	 * in-place {@link ProgramEvent#DATA_TYPE_CHANGED}. Returns {@code null} the moment any record is
-	 * not such an event (so the caller falls back to a full cache flush), and also for a sentinel id
+	 * id-stable datatype edit — an in-place {@link ProgramEvent#DATA_TYPE_CHANGED} or a
+	 * {@link ProgramEvent#DATA_TYPE_RENAMED} (both carry the live {@link DataType} in
+	 * {@link DomainObjectChangeRecord#getNewValue() getNewValue()} and leave its
+	 * {@link DataTypeManager} id stable) — possibly mixed with the benign companions below. Returns
+	 * {@code null} the moment any record is none of these (so the caller falls back to a full cache
+	 * flush), and also for a sentinel id
 	 * ({@link DataTypeManager#NULL_DATATYPE_ID}/{@link DataTypeManager#BAD_DATATYPE_ID}) that cannot
-	 * be matched against a referenced type. Instance-swap events
-	 * ({@code DATA_TYPE_REPLACED}/{@code MOVED}/{@code RENAMED}) are deliberately excluded — their
-	 * old/new identity churn is handled by #36-3b-2b and stays on the full-flush path until then.
-	 * See DD-0009 addendum 4.
+	 * be matched against a referenced type.
+	 *
+	 * <p>A rename leaves the type's name stale in every cached {@code DecompileResults} (the name is
+	 * rendered into the frozen {@code ClangToken} text), and the renamed instance is the same
+	 * program-managed object a cached {@code HighFunction} holds, carrying the same id — so it folds
+	 * into the same recompute-from-cache path as {@code DATA_TYPE_CHANGED}. See DD-0009 addendum 6.
+	 *
+	 * <p>Benign companions, admitted without contributing ids: {@code DATA_TYPE_ADDED} (a newly added
+	 * type cannot be referenced by any already-cached function), {@code SOURCE_ARCHIVE_CHANGED}
+	 * (archive-sync metadata, no per-function rendering impact; see addendum 5), and
+	 * {@code DATA_TYPE_MOVED} (only the category path changes, which the decompiler never renders; see
+	 * addendum 6). {@code DATA_TYPE_REPLACED} is <em>not</em> tolerated: it is a true instance swap
+	 * whose changed id is dropped from the record ({@code ProgramDB.dataTypeChanged}), so it falls
+	 * through to {@code null} and the conservative full flush.
 	 *
 	 * @param ev the change event
-	 * @return the changed data-type ids, or {@code null} if the batch is not entirely in-place
-	 * datatype edits
+	 * @return the changed data-type ids, or {@code null} if the batch is not entirely id-stable
+	 * datatype edits plus benign companions
 	 */
 	private Set<Long> collectChangedDataTypeIds(DomainObjectChangedEvent ev) {
 		Set<Long> ids = new HashSet<>();
-		boolean sawDataTypeChange = false;
+		boolean sawTypeIdEvent = false;
 		for (DomainObjectChangeRecord record : ev) {
 			EventType type = record.getEventType();
-			if (type == ProgramEvent.DATA_TYPE_CHANGED) {
+			if (type == ProgramEvent.DATA_TYPE_CHANGED || type == ProgramEvent.DATA_TYPE_RENAMED) {
+				// Both carry the changed type in getNewValue() and keep its DataTypeManager id stable
+				// (a rename mutates only the name field, not the DB id). See DD-0009 addendum 6.
 				if (!(record.getNewValue() instanceof DataType dt)) {
 					return null;
 				}
@@ -308,23 +324,24 @@ public class DecompilerProgramListener implements DomainObjectListener {
 					return null;
 				}
 				ids.add(id);
-				sawDataTypeChange = true;
+				sawTypeIdEvent = true;
 			}
 			else if (type == ProgramEvent.DATA_TYPE_ADDED ||
-				type == ProgramEvent.SOURCE_ARCHIVE_CHANGED) {
-				// Benign companions an in-place datatype edit fires in the same batch: a newly ADDED
-				// type cannot be referenced by any already-cached function (it did not exist when they
-				// were decompiled), and a SOURCE_ARCHIVE_CHANGED is archive-sync metadata with no
-				// per-function rendering impact. Skip them without contributing ids; they do not force
-				// the full flush. Empirically an in-place struct edit always carries these, so without
-				// this tolerance the selective path would be dead code. See DD-0009 addendum 5.
+				type == ProgramEvent.SOURCE_ARCHIVE_CHANGED ||
+				type == ProgramEvent.DATA_TYPE_MOVED) {
+				// Benign companions that contribute no ids: a newly ADDED type cannot be referenced by
+				// any already-cached function (it did not exist when they were decompiled), a
+				// SOURCE_ARCHIVE_CHANGED is archive-sync metadata, and a MOVED changes only the
+				// category path, which the decompiler never renders. Skipping them does not force the
+				// full flush; a batch whose only datatype record is benign still returns null below
+				// (liveness only shrinks). See DD-0009 addenda 5 and 6.
 				continue;
 			}
 			else {
 				return null;
 			}
 		}
-		return sawDataTypeChange ? ids : null;
+		return sawTypeIdEvent ? ids : null;
 	}
 
 	/**

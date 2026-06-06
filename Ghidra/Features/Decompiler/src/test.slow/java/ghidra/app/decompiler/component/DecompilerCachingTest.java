@@ -292,6 +292,31 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
+	public void testDataTypeRenameInvalidatesOnlyFunctionsReferencingItThroughAPointer()
+			throws Exception {
+		// Renaming a shared type must invalidate only the functions that reference it -- INCLUDING via
+		// a derived type such as MyStruct* -- while leaving unrelated functions cached. The decompiler
+		// renders the type *name* into the cached output, so a rename leaves it stale until the
+		// referencing functions re-decompile; DATA_TYPE_RENAMED carries the same program-managed
+		// instance with the same DataTypeManager id, so it folds into the same recompute-from-cache
+		// path as an in-place DATA_TYPE_CHANGED. See DD-0009 addendum 6.
+		Structure sharedStruct = createSharedStruct("MyStruct");
+		setFirstFunctionReturnsPointerTo(sharedStruct);
+		Function referencing = functionAt(0); // fun1: returns MyStruct*
+		Function unrelated = functionAt(1); // fun2: references nothing shared
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(referencing) && isCached(unrelated));
+
+		renameStruct(sharedStruct, "MyRenamedStruct"); // DATA_TYPE_RENAMED, same instance/id
+
+		// the function that uses MyStruct only via MyStruct* is dropped; unrelated stays cached
+		waitForCondition(() -> !isCached(referencing) && isCached(unrelated));
+	}
+
+	@Test
 	public void testCacheIsClearedWhenProgramIsClosed() {
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
@@ -435,6 +460,12 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 		// DATA_TYPE_CHANGED on the struct alongside the benign DATA_TYPE_ADDED / SOURCE_ARCHIVE_CHANGED
 		// companions the selective path must tolerate. See DD-0009 addendum 5.
 		builder.tx(() -> struct.add(new ByteDataType(), "extra", null));
+	}
+
+	private void renameStruct(Structure struct, String newName) throws Exception {
+		// A rename fires DATA_TYPE_RENAMED on the same struct instance, keeping its DataTypeManager id;
+		// the selective path treats it like an in-place edit. See DD-0009 addendum 6.
+		builder.tx(() -> struct.setName(newName));
 	}
 
 	private void makeSecondFunctionCallFirst() {
