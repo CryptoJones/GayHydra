@@ -100,11 +100,19 @@ the for-loop detector (`BlockWhileDo::finalTransform`) than to
    pattern is also *more* precise than a generic template matcher —
    precision is the whole point (a false `memset` is worse than none).
 
-2. **Sequence-shaped patterns first, as `constseq` rules.** Land
-   `memset` and `popcount` as new `Rule`s in `constseq.cc` (or a sibling
-   file) plus `BUILTIN_MEMSET` / `BUILTIN_POPCOUNT` builtins. These slot
-   directly into the existing single-block matcher and the existing
-   `cleanup` rule pool in the decompile action group.
+2. **Sequence-shaped patterns first, as new `Rule`s.** Land `memset` and
+   `popcount` as new `Rule`s in `constseq.cc` (or a sibling file). They
+   diverge on *what they rewrite to*, because their rendering targets
+   differ (see the [2026-06-06 addendum](#addendum-2026-06-06-popcount-folds-into-the-native-cpui_popcount-op)):
+   - `memset` has **no** native p-code op, so it follows the
+     memcpy/strncpy precedent — a new `BUILTIN_MEMSET` CALLOTHER builtin
+     rendered through the user-op call path.
+   - `popcount` **does** have a native op (`CPUI_POPCOUNT`), already
+     typed/behaviour'd/printed, so its rule rewrites the recognised SWAR
+     idiom into that op directly — **no new builtin**.
+
+   Both slot into the existing `cleanup` rule pool in the decompile
+   action group.
 
 3. **Loop-shaped patterns are their own sub-design.** `strlen` /
    `strcmp` / `memcmp` / copy-loops need a post-structuring loop-region
@@ -152,7 +160,7 @@ the for-loop detector (`BlockWhileDo::finalTransform`) than to
 Each new pattern ships a deterministic datatest under
 `src/decompile/datatests/` modelled on the existing string-copy
 fixtures (an inlined `memset`/`popcount` sequence, asserting the
-rendered `builtin_memset(...)` / `popcount(...)` call appears) plus a
+rendered `builtin_memset(...)` / `POPCOUNT(...)` call appears) plus a
 negative fixture (a near-miss that must *not* be folded). These run in
 `decomp_test_dbg` (locally buildable per
 [[local-decomp-test-build-apple-silicon]] — note datatest XML must stay
@@ -165,10 +173,51 @@ against regressions in the unbudgeted/normal path.
 | PR | Scope |
 |---|---|
 | #39-4a | `BUILTIN_MEMSET` builtin + `RuleMemset` (non-char constant fill) in `constseq.cc` + option gate + datatest |
-| #39-4b | `BUILTIN_POPCOUNT` builtin + `RulePopcount` dataflow-idiom rule + datatest |
+| #39-4b | `RulePopcount` SWAR-idiom rule folding into the **existing native** `CPUI_POPCOUNT` op — no new builtin (see [addendum](#addendum-2026-06-06-popcount-folds-into-the-native-cpui_popcount-op)) + datatest |
 | #39-5 | Tighten/extend the `memset` element-type coverage (word/dword fills, AVX-shaped fills) |
 | #39-6 (sub-DD) | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops): post-structuring loop-region matcher — opens with its own design record |
 | #39-7 | Optional per-occurrence UI override (only if exactness ever relaxes) |
+
+## Addendum (2026-06-06): popcount folds into the native `CPUI_POPCOUNT` op
+
+The original sequencing row (above, now corrected) proposed a
+`BUILTIN_POPCOUNT` CALLOTHER builtin for `#39-4b`, by analogy with the
+`#39-4a` `BUILTIN_MEMSET` work. A pre-implementation survey of the
+in-tree decompiler found that analogy is wrong: **popcount already has a
+first-class native p-code op**, so minting a CALLOTHER builtin for it
+would be redundant and *less* faithful than the existing path.
+
+What already exists for `CPUI_POPCOUNT`:
+
+- **The op itself** — `CPUI_POPCOUNT`, a unary op.
+- **Type/printer** — `TypeOpPopcount` (`typeop.cc:2739`), a `TypeOpFunc`
+  named `"POPCOUNT"`, so it renders as `POPCOUNT(x)` through the ordinary
+  functional-operator path (`PrintC::opFunc`). No printer change needed.
+- **Behaviour** — `OpBehaviorPopcount` (constant folding / emulation).
+- **An existing simplification rule** — `RulePopcountBoolXor`
+  (`ruleaction.cc:10279`) already *consumes* `CPUI_POPCOUNT`
+  (`popcount(b1<<6 | b2<<2) & 1 => b1 ^ b2`). It does **not** *create*
+  the op from raw arithmetic — that is exactly the remaining gap.
+
+So `memset` and `popcount` are not symmetric:
+
+| pattern | native p-code op? | `#39-4b`/`#39-4a` rewrite target |
+|---|---|---|
+| `memset` | no | new `BUILTIN_MEMSET` CALLOTHER user-op (the memcpy precedent) |
+| `popcount` | **yes** (`CPUI_POPCOUNT`) | rewrite the SWAR idiom into that op — no new builtin |
+
+**Decision:** `RulePopcount` recognises the constant-masked SWAR
+("parallel bit-count") expansion — the
+`x -= (x>>1)&0x55..; x = (x&0x33..)+((x>>2)&0x33..); x = (x+(x>>4))&0x0f..;`
+`(x*0x0101..)>>(W-8)` dataflow shape, including the common
+add-of-shifts variant of the final reduction — and rewrites the root to
+a single `CPUI_POPCOUNT` whose input is the original operand. This reuses
+the native type/behaviour/printer wholesale, keeps the existing
+`RulePopcountBoolXor` simplification composable on top, and holds the
+same exactness bar as the string/`memset` rules (fire only on a
+fully-determined magic-constant match). The architecture option gate
+(decision point 4) still applies. No `userop.cc` change is part of
+`#39-4b`.
 
 ## References
 
@@ -181,6 +230,11 @@ against regressions in the unbudgeted/normal path.
 - `Ghidra/Features/Decompiler/src/decompile/cpp/coreaction.cc` — the
   `cleanup` rule pool in `ActionDatabase::buildDefaultGroups` where the
   string rules live and the new rules attach.
+- `Ghidra/Features/Decompiler/src/decompile/cpp/typeop.cc:2739`
+  (`TypeOpPopcount`, the `"POPCOUNT"` `TypeOpFunc`),
+  `ruleaction.cc:10279` (`RulePopcountBoolXor`, consumes but does not
+  create `CPUI_POPCOUNT`) — the native popcount support the addendum
+  builds on.
 - `docs/decompiler/FOR_LOOP_INLINE_DETECTION.md` — Rec 39 design + the
   Phase 1 upstream reframe.
 - [DD-0006](0006-block-structure-budget-bypass.md) — the

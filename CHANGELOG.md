@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): correct DD-0007's Rec 39 `#39-4b` popcount approach. A
+  pre-implementation survey found Ghidra already ships a native
+  `CPUI_POPCOUNT` op (`TypeOpPopcount`, `OpBehaviorPopcount`, and the
+  consuming `RulePopcountBoolXor`), so — unlike `#39-4a`'s `memset`, which
+  has no native op and needed a `BUILTIN_MEMSET` CALLOTHER — `RulePopcount`
+  will fold the recognised SWAR ("parallel bit-count") idiom into that
+  existing op rather than mint a redundant `BUILTIN_POPCOUNT` builtin.
+  Documents the asymmetry, the SWAR shape to match, and the unchanged
+  exactness/option-gate bar.
+
 ---
 
 ## [v26.2.3] — 2026-06-03
