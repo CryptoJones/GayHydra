@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0020](docs/decisions/0020-rec37-array-construction-renderer.md) grounds Rec 37 `#37-9d` —
+  the fifth `CppDecompilerHints` form, the **array-construction renderer** (the array sibling of the `#37-9` scalar
+  construction form): `renderArrayConstruction(CppClass type, String countExpr)` emits `new ClassName[count]` (name
+  is `CppClass.getName()`; count verbatim inside the brackets). **No constructor argument list** — array `new T[n]`
+  value/default-initializes each element and C++ has no syntax to pass per-element ctor args (parallels `#37-9c`'s
+  no-args decision). Like `#37-9`/`#37-9c`, **no neutral fallback** (the class name is a *total* model fact); rejects
+  null type / null-or-blank count with `IllegalArgumentException`. **No vtable lookup, no overload resolution** (the
+  element ctor is the implicit default). Stays headless; the `operator new[]` + per-element-ctor-loop recognition
+  pass is the deferred Program-coupled wrapper (`#37-9d` recognition band). The docs-first step preceding the
+  `#37-9d` implementation.
 - feat(decompiler): Rec 37 `#37-9c` — **the `CppDecompilerHints` explicit destructor-call renderer**, the fourth
   form and the destruction sibling of the `#37-9` construction renderer
   ([DD-0019](docs/decisions/0019-rec37-destructor-call-renderer.md)). `renderDestructorCall(CppClass type, String
