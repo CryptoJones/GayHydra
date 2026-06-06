@@ -566,3 +566,69 @@ Docs-only; precedes the #36-3b-2a implementation, mirroring the addendum-3 →
 #36-3b-1 rhythm. The conservative default (rule 2) is unchanged: any datatype
 event that is not an in-place `DATA_TYPE_CHANGED`, and any batch mixing datatype
 records with other event types, still full-flushes — liveness can only shrink.
+
+## Addendum 5 (2026-06-06): an in-place datatype edit never arrives as a *pure* `DATA_TYPE_CHANGED` batch — the gate must tolerate benign companions
+
+Addendum 4 closed by restating the conservative default as: "any batch mixing
+datatype records with other event types still full-flushes." Implementing
+#36-3b-2a and exercising it under the headed `DecompilerCachingTest` showed that
+restated-as-written, that default makes the selective path **dead code**: an
+in-place struct edit *never* produces a batch containing only
+`DATA_TYPE_CHANGED`.
+
+### What the editor actually fires
+
+Adding a field to a resolved struct (the headed test's
+`struct.add(new ByteDataType(), …)`) produces the batch:
+
+```
+SOURCE_ARCHIVE_CHANGED  DATA_TYPE_ADDED  DATA_TYPE_CHANGED
+```
+
+and even reusing a type already in the manager (so no new type is pulled in)
+still yields:
+
+```
+SOURCE_ARCHIVE_CHANGED  SOURCE_ARCHIVE_CHANGED  DATA_TYPE_CHANGED
+```
+
+So `SOURCE_ARCHIVE_CHANGED` is an unavoidable companion of an in-place edit, and
+`DATA_TYPE_ADDED` accompanies the common case of adding a field whose type is not
+yet present. A strict "only `DATA_TYPE_CHANGED`" gate rejects both and
+full-flushes every real edit — the optimisation would never fire.
+
+### The two companions are provably benign for *already-cached* functions
+
+The gate is therefore broadened to admit these two record types **without
+contributing ids**, keying invalidation solely on the `DATA_TYPE_CHANGED` ids:
+
+- `DATA_TYPE_ADDED` — a type that has just been added did not exist when any
+  currently-cached function was decompiled, so no cached `HighFunction` can
+  reference it. Skipping it cannot under-invalidate.
+- `SOURCE_ARCHIVE_CHANGED` — data-type source-archive sync metadata (a
+  `UniversalID`, no address, no per-function rendering impact). It cannot change
+  how any cached function renders.
+
+Every *other* record type — `FUNCTION_CHANGED`, any `SYMBOL_*`, `REFERENCE_*`,
+the instance-swap datatype events, etc. — still forces the full flush, so the
+conservative default holds for anything that *could* carry cross-function impact.
+A batch with no `DATA_TYPE_CHANGED` at all (e.g. a pure type import:
+`SOURCE_ARCHIVE_CHANGED`/`DATA_TYPE_ADDED` only) contributes no ids and falls back
+to the full flush rather than being specially treated — still safe, since
+liveness only shrinks.
+
+### Corrects, does not replace, addendum 4
+
+Addendum 4's substantive contributions stand and were confirmed by the
+implementation: the type-ref set is **recomputed from the cached `HighFunction`**
+(no recorded per-result state), and matching **recursively unwraps**
+`Pointer`/`Array`/`TypeDef` — verified by the headed test, in which `fun1`'s
+committed return type is a *transient* `MyStruct *` whose own
+`getID` is `NULL_DATATYPE_ID` (it is not a manager-registered pointer), yet whose
+`getDataType()` is the live program `MyStruct`; the unwrap is what lets the edit
+reach it. Only addendum 4's *pure-`DATA_TYPE_CHANGED`* phrasing of the gate is
+superseded here.
+
+This addendum is shipped as the docs-first step for the broadened gate, and the
+#36-3b-2a implementation lands the gate, the `invalidateByDataTypeIds`
+entry point, and the headed test together.
