@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 7 — reground the `#36-3b-2` recompute
+  backstop (the addendum-3 "debug-assert recompute mode") as a **test-harness
+  corpus assertion**, not a runtime `DecompilerController` mode. The GUI decompile
+  path is asynchronous and single-process, so re-decompiling the entries a
+  selective invalidation *kept* cannot run inline in `invalidateByDataTypeIds`
+  without blocking the Swing thread on the one shared decompiler process; the
+  headed `DecompilerCachingTest` already drives real decompiles, holds the cache
+  directly, and exposes a stable comparison surface
+  (`DecompileResults.getDecompiledFunction().getC()`), which is where addendum 3
+  always wanted the corpus assert ("caught in test/CI"). Also marks the shipped
+  `#36-3b` phases (`-1`, `-2a`, `-2b`) done in the Status section. Per
+  [DD-0009 addendum 7](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-7-2026-06-06-the-36-3b-2-recompute-backstop-is-a-test-harness-corpus-assertion-not-a-runtime-decompilercontroller-mode);
+  docs-only, the backstop test lands next.
 - feat(decompiler): Rec 36 `#36-3b-2b` — selective GUI cache invalidation for
   datatype **renames**. A `DATA_TYPE_RENAMED` batch now invalidates only the
   cached functions that reference the renamed type (the decompiler renders the
