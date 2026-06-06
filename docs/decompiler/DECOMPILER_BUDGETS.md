@@ -165,7 +165,10 @@ protocol (already structurally additive).
 The decompiler cache (Rec 36) needs to store partial results
 keyed by `(function, budget)` so a "Retry with 2x" run starts
 from the partial it has cached. This is a small extension to
-the cache key shape.
+the cache key shape. It depends on #35-5a first making the
+budget a GUI-observable value (today the GUI carries no budget
+to key on) — see [DD-0010](../decisions/0010-rec35-partial-result-gui-surfacing.md)
+and [DD-0009 addendum 10](../decisions/0009-rec36-cache-invalidation-grounding.md).
 
 ## Sequencing
 
@@ -182,8 +185,9 @@ the cache key shape.
 | #35-4 (type_inference) | Wire the first concrete bypassable pass, `type_inference`, onto the `#35-4b` façade: a yield point in `ActionInferTypes::apply` (each changing propagation pass is one iteration; bypass-on-own-exhaustion leaves partial types in place), the optional third `decompilebudget <flow> <dataflow> <typeinfer>` parameter, and a deterministic `decompbudget_typeinfer.xml` fixture (`readstruct` truncated at a cap of 2 of its natural 4 passes) | done |
 | #35-4 (value_analysis) | Wire `value_analysis` (the heritage load-guard `ValueSetSolver::solve` fixpoint) onto the `#35-4b` façade: a yield point in the value-set iteration loop counted on its own scale; the `decompilebudgetpass <pass> <cap>` name=value option (the positional `decompilebudget` form is full at its three flow/data_flow/type_inference slots); and a deterministic `decompbudget_valueanalysis.xml` fixture (`access_array1`, truncated at a cap of 3 of its natural 6 value-set iterations). Truncation leaves the load guards at the solver's already-supported non-convergence ("any value") ranges, so the partial result stays valid and printable. | done |
 | #35-4 (block_structure) | Wire `block_structure` onto the façade. Deferred from the value_analysis PR: unlike the other bypassable passes, `CollapseStructure::collapseAll` must collapse the control-flow graph down to a single root before the printer can emit it, so "degrades to unstructured" needs a real goto-emitting fallback path, not a simple early-return at the yield point — its own design step. **Design landed at [DD-0006](../decisions/0006-block-structure-budget-bypass.md):** coarse mode skips the precise structuring rules and drives the graph to its single root through the existing `selectGoto`/`clipExtraRoots` goto-injection path (the all-goto "unstructured" rendering), so the postcondition the printer depends on always holds. `CollapseStructure` takes an optional budget tracker; `collapseInternal` ticks per block-scan sweep and flips to goto-only on `passShouldBypass`; cap set by name via `decompilebudgetpass block_structure`. Both structuring Actions wired. | done |
-| #35-5 | UI banner + retry path | not started |
-| #35-6 | Cache partial results keyed by budget | not started |
+| #35-5a | Thread the budget + partial-result flag through the GUI `DecompInterface` path (`DecompileOptions` budget fields + `encode()` of the already-registered `<decompilebudget>`/`<decompilebudgetpass>`; marshal `budgetexhausted_present` + exhausted-pass name into the result; `DecompileResults.isPartial()`/`getBudgetExhaustedPass()`). Prerequisite for the banner; also unblocks #36-6. See [DD-0010](../decisions/0010-rec35-partial-result-gui-surfacing.md) | not started |
+| #35-5b | UI partial-result banner + Retry-with-2x path (depends on #35-5a) | not started |
+| #35-6 | Cache partial results keyed by budget (blocked on #35-5a's GUI budget surface) | not started |
 | #35-7 | Tune defaults from production telemetry (after one release) | not started |
 
 ### Implementation note: the `data_flow` yield point
