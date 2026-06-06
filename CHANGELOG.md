@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): land DD-0009, grounding Rec 36's cache-invalidation
+  plan against the real GUI cache classes. Reading the in-tree code showed
+  the decompiler GUI cache is a Guava `Cache<Function, DecompileResults>`
+  in `DecompilerController` that every program edit flushes wholesale
+  (`doRefresh` → `setOptions`+`refreshDisplay`, two `clearCache` calls),
+  while `DecompilerProgramListener.domainObjectChanged` already receives —
+  and discards — the `ProgramChangeRecord` address payloads. DD-0009
+  concludes the issue's headline case ("renaming a variable") is reachable
+  with **address-range intersection alone**, so it re-sequences the
+  abstract `CACHE_FLUSH_1871.md` plan: land selective invalidation
+  address-intersection-first (#36-3a, a strict perf win with a conservative
+  full-flush default and no correctness risk) and **demote** the
+  dependency-bitmap subsystem (#36-2) to the smaller cross-function
+  residual (#36-3b). Mirrors the DD-0007 move of grounding an abstract
+  plan onto the simplest in-tree mechanism. Docs-only.
 - docs(decompiler): add a DD-0008 addendum reframing Rec 39 `#39-6a`. A
   pre-implementation survey of the in-tree primitives found that folding a
   `strlen` loop into a call is **not** a `constseq`-style splice: unlike the
