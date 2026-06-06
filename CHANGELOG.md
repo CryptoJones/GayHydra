@@ -12,6 +12,25 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): land DD-0008, the Rec 39 `#39-6` sub-design for
+  loop-shaped inlined-call detection (`strlen`, `strcmp`/`strncmp`,
+  `memcmp`, non-constant copy-loops). DD-0007 deferred these because — unlike
+  the sequence-shaped `memset`/`popcount` rules — a loop idiom is one
+  static LOAD/STORE on a back-edge whose result is consumed outside a
+  multi-block region, which `constseq`'s single-block walker cannot see.
+  DD-0008 decides recognition is a new control-flow `Action`
+  (`ActionLoopRecognize`) attached **after** `ActionFinalStructure`
+  (`coreaction.cc:5922`), not a `Rule` in the pre-structuring `actcleanup`
+  pool, so it reuses the structurer's induction-variable analysis
+  (`BlockWhileDo::findLoopVariable`) instead of re-deriving loop membership.
+  It reuses the proven CALLOTHER builtin rendering path (next free id
+  `0x10000007`), inherits DD-0007's exactness + option-gate discipline,
+  recognises only canonical scalar byte-at-a-time lowerings first, and
+  sequences `strlen` first (one pointer, one output, no stores) to validate
+  the post-structuring rewrite surgery before the harder two-pointer and
+  store-bearing idioms. Updates the `#39-6` rows in `FOR_LOOP_INLINE_DETECTION.md`
+  and DD-0007 to point at it (and refreshes the stale `#39-4b`/`#39-5`
+  "not started" markers in the former).
 - docs+test(decompiler): reframe DD-0007's Rec 39 `#39-5` row. A
   pre-implementation survey found word/dword **and** single-vector constant
   fills *already* fold to `builtin_memset` — `formByteArray` decomposes each

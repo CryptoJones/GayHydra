@@ -118,7 +118,9 @@ the for-loop detector (`BlockWhileDo::finalTransform`) than to
    `strcmp` / `memcmp` / copy-loops need a post-structuring loop-region
    matcher; defer them to a follow-up DD once the sequence-shaped
    patterns have validated the builtin-rendering end-to-end. Do not
-   block the tractable work on the hard work.
+   block the tractable work on the hard work. *(Now landed:
+   [DD-0008](0008-rec39-loop-region-matcher.md) — a new control-flow
+   `Action` after `ActionFinalStructure`, not a `constseq` `Rule`.)*
 
 4. **Keep it an always-on rewrite gated by an option — not the design's
    read-only opt-in annotation.** The original design wanted a read-only
@@ -175,7 +177,7 @@ against regressions in the unbudgeted/normal path.
 | #39-4a | `BUILTIN_MEMSET` builtin + `RuleMemset` (non-char constant fill) in `constseq.cc` + option gate + datatest |
 | #39-4b | `RulePopcount` SWAR-idiom rule folding into the **existing native** `CPUI_POPCOUNT` op — no new builtin (see [addendum](#addendum-2026-06-06-popcount-folds-into-the-native-cpui_popcount-op)) + datatest |
 | #39-5 | ~~Tighten/extend the `memset` element-type coverage (word/dword fills, AVX-shaped fills)~~ — a pre-implementation survey found word/dword **and** single-vector fills **already fold** to `builtin_memset`; reframed (see [#39-5 addendum](#addendum-2026-06-06-39-5-wide-fills-already-fold)) to ship only a regression datatest (`memsetwide.xml`) and defer the one residual (≥2-vector-store fills) |
-| #39-6 (sub-DD) | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops): post-structuring loop-region matcher — opens with its own design record |
+| #39-6 (sub-DD) | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops): post-structuring loop-region matcher — **design landed at [DD-0008](0008-rec39-loop-region-matcher.md)**, re-sequenced into #39-6a..#39-6d (new control-flow `Action` after `ActionFinalStructure`, not a `constseq` `Rule`; `strlen` first) |
 | #39-7 | Optional per-occurrence UI override (only if exactness ever relaxes) |
 
 ## Addendum (2026-06-06): popcount folds into the native `CPUI_POPCOUNT` op
