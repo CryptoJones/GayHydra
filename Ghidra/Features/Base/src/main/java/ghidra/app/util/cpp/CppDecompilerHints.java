@@ -22,8 +22,9 @@ import java.util.List;
  * strings from <em>already-resolved</em> {@link CppTypeSystem} model facts plus the operand
  * expressions supplied by its caller.
  *
- * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016) and {@code #37-8} (up/down-cast form,
- * DD-0017). This is the headless half of RFC §5. It holds no
+ * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016), {@code #37-8} (up/down-cast form,
+ * DD-0017), and {@code #37-9} (heap-construction form, DD-0018). This is the headless half of RFC
+ * §5. It holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
@@ -32,7 +33,7 @@ import java.util.List;
  * output is the rendered string. The decompiler-side pattern-recognition pass that walks a
  * {@code HighFunction}, recognises the raw C-style idiom, recovers the {@code (class, slot)} or
  * {@code (derived, offset, direction)} it denotes, and calls this renderer is the deferred
- * {@code #37-7b}/{@code #37-8b} Program-coupled wrapper, not part of this slice.
+ * {@code #37-7b}/{@code #37-8b}/{@code #37-9b} Program-coupled wrapper, not part of this slice.
  *
  * <p>Hints are advisory and additive: this renderer only produces a string; it never rewrites
  * p-code or replaces an analysis pass.
@@ -123,6 +124,37 @@ public final class CppDecompilerHints {
 	 */
 	public String renderDowncast(CppClass derivedClass, int baseOffset, String sourceExpr) {
 		return renderCast(derivedClass, baseOffset, sourceExpr, false);
+	}
+
+	/**
+	 * Renders a heap construction — a {@code malloc(...) + Ctor(...)} idiom fused into the C++
+	 * {@code new} expression — as {@code new ClassName(args)}, where {@code ClassName} is
+	 * {@code type.getName()} and {@code args} are the constructor argument expressions joined in call
+	 * order. A zero-argument construction renders {@code new ClassName()}; the parentheses are always
+	 * emitted so the rendering is unambiguously a construction.
+	 *
+	 * <p>Unlike {@link #renderVirtualCall} and the cast renderers, this form has <em>no neutral
+	 * fallback</em>: the only model fact it needs is the class name, which is total ({@code getName()}
+	 * never fails for a defined class), so there is nothing to fall back from. It does no
+	 * constructor-overload resolution — selecting among overloaded constructors is a
+	 * signature/{@code DataType} concern (the DTM-coupled {@code #37-10+} work), not a rendering one —
+	 * and simply formats the argument expressions the recognition pass supplies.
+	 *
+	 * @param type the class being constructed; must not be null
+	 * @param argumentExprs the already-rendered constructor argument expressions in call order; must
+	 *            not be null and must contain no null element (may be empty for a default construction)
+	 * @return the rendered C++ {@code new} expression
+	 * @throws IllegalArgumentException if {@code type} is null, or {@code argumentExprs} is null or
+	 *             contains a null element
+	 */
+	public String renderConstruction(CppClass type, List<String> argumentExprs) {
+		if (type == null) {
+			throw new IllegalArgumentException("constructed type must not be null");
+		}
+		if (argumentExprs == null) {
+			throw new IllegalArgumentException("argument expression list must not be null");
+		}
+		return "new " + type.getName() + "(" + renderArguments(argumentExprs) + ")";
 	}
 
 	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,
