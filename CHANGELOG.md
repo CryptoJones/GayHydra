@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0015](docs/decisions/0015-rec37-vtable-reconciler.md) grounds Rec 37 `#37-6c` — the
+  vtable↔declared-method **reconciliation** the `#37-6` feeder deferred. A class through both the `#37-3`
+  demangling feeder and the `#37-6` vtable feeder holds two disjoint `CppMethod` lists for the same functions:
+  declared methods (rich `const`/`static`/calling-convention qualifiers, `isVirtual() == false`) and fresh
+  vtable slot methods (`isVirtual() == true`, no qualifiers). DD-0015 grounds `CppVtableReconciler`, a pure
+  in-model pass that matches the two by **unqualified name, conservatively** — only a name unique among both
+  declared methods *and* slots (a 1:1 pairing) is reconciled, so overloads are never mis-stamped — then
+  unifies each match onto the canonical declared method (sets `isVirtual`/copies `isPureVirtual`, rewrites the
+  slot to reference it via a new bounds-checked `CppVTable.setSlot`). It scans no `Program`, touches no
+  `DataTypeManager`, parses no name, mutates no backing `Structure`, and is idempotent/order-independent —
+  the clean next headless step. Signature/parameter `DataType` resolution stays deferred (`#37-7+`) because it
+  is DTM/`Program`-coupled. Validated by headless `CppVtableReconcilerTest` in the impl slice.
 - feat(decompiler): Rec 37 `#37-6` — **the `CppVTableFeeder`**, the core that turns a recovered vtable into
   model slots. Given a class's name and its already-recovered slot facts (`SlotSpec`: method name +
   pure-virtual flag, in layout order), it resolves the owning `CppClass` — reusing a recovered class or
