@@ -211,9 +211,9 @@ following the project's design-step-first pattern.
 | #39-3 | `for`-loop unit tests on the existing decompiler datatest corpus | **provided by upstream** (`forloop*.xml` / `noforloop*.xml`, verified passing) |
 | #39-4 | `InlinedFunctionPattern` analysis pass + pattern-library loader | **design landed at [DD-0007](../decisions/0007-rec39-phase2-inline-detection.md)** — *revised*: extend the existing `constseq` + builtin-user-op (CALLOTHER) mechanism that already renders inlined memcpy/strncpy, **not** a new XML pattern-library engine. Re-sequenced below. |
 | #39-4a | `BUILTIN_MEMSET` + `RuleMemset` (constant fill -> memset) + datatest | **done** — `RuleMemset` reuses `HeapSequence`'s STORE collection in a new fill mode and runs after `RuleStringStore`, so it claims only the zero-fills and non-char fills that rule declines (no regression to string rendering). No option gate: it adds no new *recognition* (those sequences were already collected), only a clearer rendering, so it carries no new false-positive risk. Validated by `datatests/heapmemset.xml`. |
-| #39-4b | `BUILTIN_POPCOUNT` + `RulePopcount` dataflow-idiom rule + datatest | not started |
-| #39-5 | Extend `memset` element-type coverage (word/dword/AVX-shaped fills) | not started |
-| #39-6 | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops) — post-structuring loop-region matcher; opens with its own sub-DD | not started |
+| #39-4b | `RulePopcount` SWAR-idiom rule folding into the **existing native** `CPUI_POPCOUNT` op — no new builtin (see [DD-0007 addendum](../decisions/0007-rec39-phase2-inline-detection.md#addendum-2026-06-06-popcount-folds-into-the-native-cpui_popcount-op)) + datatest | **done** (revised: folds into native `CPUI_POPCOUNT`, not a new builtin) |
+| #39-5 | ~~Extend `memset` element-type coverage (word/dword/AVX-shaped fills)~~ — word/dword **and** single-vector fills **already fold**; reframed to a regression guard (`memsetwide.xml`), residual multi-vector fill deferred (see [DD-0007 #39-5 addendum](../decisions/0007-rec39-phase2-inline-detection.md#addendum-2026-06-06-39-5-wide-fills-already-fold)) | **done** (docs+test only) |
+| #39-6 | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops) — post-structuring loop-region matcher | **sub-DD landed at [DD-0008](../decisions/0008-rec39-loop-region-matcher.md)**; re-sequenced into #39-6a..#39-6d there |
 | #39-7 | Optional per-occurrence UI override (only if exactness relaxes) | not started |
 
 > **Note (2026-06-03):** the original Phase 2 design (the `## Phase 2:
