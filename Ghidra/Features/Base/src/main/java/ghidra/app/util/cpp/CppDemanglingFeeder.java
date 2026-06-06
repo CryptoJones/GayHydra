@@ -18,7 +18,6 @@ package ghidra.app.util.cpp;
 import ghidra.app.util.demangler.Demangled;
 import ghidra.app.util.demangler.DemangledFunction;
 import ghidra.app.util.demangler.DemangledObject;
-import ghidra.program.model.data.StructureDataType;
 
 /**
  * Populates a {@link CppTypeSystem} from already-demangled symbols. Given a {@link DemangledObject}
@@ -78,27 +77,13 @@ public final class CppDemanglingFeeder {
 			return null;
 		}
 
-		CppClass cppClass = resolveClass(className);
+		CppClass cppClass = CppClassResolution.resolveOrPlaceholder(typeSystem, className);
 		CppMethod method = new CppMethod(function.getName());
 		method.setConst(function.isTrailingConst());
 		method.setStatic(function.isStatic());
 		method.setCallingConvention(toCallingConvention(function));
 		cppClass.addMethod(method);
 		return method;
-	}
-
-	/**
-	 * Resolves the {@link CppClass} for a fully-qualified class name, defining one over a fresh
-	 * empty placeholder {@link StructureDataType} when the model has none yet. This preserves the
-	 * model's non-null backing-{@code Structure} invariant without the feeder needing a recovered
-	 * layout; a later layout-recovery slice fills the placeholder in.
-	 */
-	private CppClass resolveClass(String className) {
-		CppClass existing = typeSystem.getCppClass(className);
-		if (existing != null) {
-			return existing;
-		}
-		return typeSystem.defineClass(new StructureDataType(className, 0));
 	}
 
 	/**
