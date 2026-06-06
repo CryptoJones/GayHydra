@@ -12,6 +12,25 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-3a-2` — extend selective cache invalidation to
+  local-variable and parameter renames. Building on `#36-3a` (comment-only), a
+  local/parameter *name* rename is now scoped to its owning function instead of
+  flushing the whole GUI decompiler cache. Because the renamed symbol's address
+  is in stack/register space (not the code body), address intersection alone
+  cannot scope it; `DecompilerProgramListener` now resolves the owning function
+  from the `SYMBOL_RENAMED` record's `SymbolType` (`LOCAL_VAR`/`PARAMETER` →
+  owning `Function` via parent namespace) and unions that function's body into
+  the same address set handed to `DecompilerController.invalidate`. The
+  companion `FunctionChangeRecord` that `ProgramDB.symbolChanged` fires for a
+  variable change is admitted only by correlation to such a rename in the same
+  batch, so a bare `FUNCTION_CHANGED/UNSPECIFIED` (e.g. a stack-return-offset
+  edit, which alters the callee purge callers track) still full-flushes. Any
+  signature/modifier function change (`PARAMETERS_CHANGED` / `RETURN_TYPE_CHANGED`
+  / `INLINE_CHANGED` / `NO_RETURN_CHANGED` / …) is caller-affecting and stays on
+  the conservative full-flush path; a parameter *retype* is therefore deferred
+  to `#36-3b`. Grounded by the [DD-0009 addendum 2](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-2-2026-06-06-36-3a-2-keys-off-the-symbols-symboltype-not-function_changed-trust).
+  Validated by two new `DecompilerCachingTest` cases (a local rename invalidates
+  only the renamed function; a no-return change still full-flushes).
 - docs(decompiler): DD-0009 addendum 2 — ground `#36-3a-2` (local/parameter
   rename invalidation) before implementing. Grounding the "symbol→owning-function
   mapping" addendum 1 promised revealed the naive form is unsafe: a local rename

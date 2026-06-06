@@ -38,8 +38,11 @@ import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginException;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Variable;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.ProgramLocation;
 import ghidra.test.*;
 
@@ -180,6 +183,58 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
+	public void testLocalVariableRenameInvalidatesOnlyAffectedFunction() throws Exception {
+		// A local-variable rename is function-local, but its symbol address is in stack/register
+		// space, not the code body, so address intersection alone cannot scope it. The listener must
+		// resolve the owning function from the renamed symbol's SymbolType and invalidate ONLY that
+		// function's body, leaving unrelated functions cached. See DD-0009 addendum 2.
+		createLocalVarOnFirstFunction();
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+
+		CacheStats stats1 = cache.stats();
+
+		renameLocalVarOnFirstFunction();
+
+		goTo(functionAddrs.get(0)); // renamed function: invalidated -> cache miss
+		goTo(functionAddrs.get(1)); // untouched function: stayed cached -> cache hit
+
+		CacheStats stats2 = cache.stats();
+
+		assertEquals("Expected one miss (only the renamed function was invalidated)",
+			stats1.missCount() + 1, stats2.missCount());
+		assertEquals("Expected one hit (the untouched function stayed cached)",
+			stats1.hitCount() + 1, stats2.hitCount());
+	}
+
+	@Test
+	public void testCallerAffectingFunctionChangeStillClearsTheCache() throws Exception {
+		// A function change that other functions can observe (here, marking the first function
+		// no-return, which makes code after calls to it unreachable in CALLERS) is not
+		// function-local: it fires a FunctionChangeRecord with a non-UNSPECIFIED change type, which
+		// is deliberately excluded from the local allow-list, so the cache must fully flush and
+		// revisiting any function is a miss. See DD-0009 addendum 2.
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+
+		CacheStats stats1 = cache.stats();
+
+		markFirstFunctionNoReturn();
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+
+		CacheStats stats2 = cache.stats();
+
+		assertEquals("Expected hitCount to not change", stats1.hitCount(), stats2.hitCount());
+		assertEquals("Expected missCount to increment by 2 (full flush)", stats1.missCount() + 2,
+			stats2.missCount());
+	}
+
+	@Test
 	public void testCacheIsClearedWhenProgramIsClosed() {
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
@@ -267,6 +322,24 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 
 	private void generateDomainObjectChange() {
 		builder.createFunctionComment("0x1004000", "Hey There");
+	}
+
+	private Function firstFunction() {
+		return program.getFunctionManager().getFunctionAt(functionAddrs.get(0));
+	}
+
+	private void createLocalVarOnFirstFunction() throws Exception {
+		builder.createLocalVariable(firstFunction(), "myLocal", new IntegerDataType(), -0x8);
+	}
+
+	private void renameLocalVarOnFirstFunction() throws Exception {
+		Variable local = firstFunction().getLocalVariables()[0];
+		builder.tx(() -> local.setName("renamedLocal", SourceType.USER_DEFINED));
+	}
+
+	private void markFirstFunctionNoReturn() throws Exception {
+		Function function = firstFunction();
+		builder.tx(() -> function.setNoReturn(true));
 	}
 
 	private void installPlugins() throws PluginException {
