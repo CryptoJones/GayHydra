@@ -109,11 +109,24 @@ This is the "Retry with 2x budget" path's cheap entry point.
 
 ## Sequencing
 
+> **Re-sequenced (2026-06-06) — see [DD-0009](../decisions/0009-rec36-cache-invalidation-grounding.md).**
+> Grounding this plan against the real GUI cache classes
+> (`DecompilerController`'s Guava `Cache<Function, DecompileResults>`, the
+> `doRefresh` double-flush, and the discarded `ProgramChangeRecord`
+> address payloads) showed the issue's headline case — "renaming a
+> variable" — is reachable with **address-range intersection alone**, no
+> dependency-bitmap subsystem. DD-0009 therefore lands selective
+> invalidation **address-intersection-first** (#36-3a, a strict perf win
+> with conservative full-flush default and no correctness risk) and
+> **demotes** the dependency bitmap (#36-2) to the smaller cross-function
+> residual (#36-3b). The table below is the original abstract plan,
+> retained for motivation; DD-0009 is the authoritative sequencing.
+
 | PR | Scope |
 |---|---|
 | #36-1 (this PR) | This design doc |
-| #36-2 | Add per-function dependency-bitmap recording to `DecompileResult` |
-| #36-3 | Wire the program-modification callbacks to invalidate by bitmap intersection (replaces the global-flush path) |
+| #36-2 | ~~Add per-function dependency-bitmap recording to `DecompileResult`~~ — **demoted** to #36-3b (cross-function residual) per DD-0009 |
+| #36-3 | ~~Wire the callbacks to invalidate by bitmap intersection~~ — **reframed** to #36-3a: invalidate by **address-set** intersection, no bitmap, conservative allow-list, full-flush default (DD-0009) |
 | #36-4 | Add in-place rewrite paths for: local name, local type, comment add/edit, function name |
 | #36-5 | Telemetry: cache-hit rate, in-place-rewrite rate (measured against synthetic workloads) |
 | #36-6 | Extend the cache key with `budget` (depends on Rec 35 landing) |
