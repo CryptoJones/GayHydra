@@ -18,6 +18,7 @@ package ghidra.app.decompiler.component;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.google.common.cache.Cache;
@@ -64,6 +65,15 @@ public class DecompilerController {
 	private final LongAdder addressEntriesDropped = new LongAdder();
 	private final LongAdder selectiveDataTypeInvalidations = new LongAdder();
 	private final LongAdder dataTypeEntriesDropped = new LongAdder();
+
+	// Decompile latency telemetry (Rec 36 #36-5b, DD-0009 addendum 9). The request-to-callback
+	// wall-clock is non-deterministic (it crosses the native decompiler process boundary on another
+	// thread), so unlike the #36-5a counters it carries no exact assertion -- only count/total/max
+	// for an observational mean. Recorded by DecompilerManager once per completed decompile; a cache
+	// hit or a clear never reaches that path, so it never produces a sample.
+	private final LongAdder decompilesMeasured = new LongAdder();
+	private final LongAdder decompileLatencyNanosTotal = new LongAdder();
+	private final LongAccumulator decompileLatencyNanosMax = new LongAccumulator(Math::max, 0L);
 
 	public DecompilerController(ServiceProvider serviceProvider, DecompilerCallbackHandler handler,
 			DecompileOptions options,
@@ -256,6 +266,26 @@ public class DecompilerController {
 		if (function != null && results != null && results.decompileCompleted()) {
 			decompilerCache.put(function, results);
 		}
+	}
+
+	/**
+	 * Records the wall-clock latency of one completed decompile, measured by
+	 * {@link DecompilerManager} from the request entering it to the result reaching this controller.
+	 * Rec 36 #36-5b (DD-0009 addendum 9): the gate for the #36-4 in-place rewrite needs to know how
+	 * expensive a re-decompile actually is, not just how often the cheap selective path is taken
+	 * (#36-5a). Only completed decompiles are recorded -- cache hits and clears bypass the manager,
+	 * so they never produce a sample. The latency is non-deterministic, so this surface is
+	 * observational (count/total/max for a mean), not an exact-value assertion.
+	 *
+	 * @param elapsedNanos the request-to-callback wall-clock in nanoseconds
+	 */
+	public void recordDecompileLatency(long elapsedNanos) {
+		if (elapsedNanos < 0) {
+			return; // a monotonic clock should not run backwards; never record garbage if it does
+		}
+		decompilesMeasured.increment();
+		decompileLatencyNanosTotal.add(elapsedNanos);
+		decompileLatencyNanosMax.accumulate(elapsedNanos);
 	}
 
 	void decompilerStatusChanged() {
@@ -548,12 +578,20 @@ public class DecompilerController {
 	 * saved. Unlike Guava {@code recordStats()}, these counters distinguish a full flush from a
 	 * selective invalidation, which is the whole point. See DD-0009 addendum 9.
 	 *
+	 * <p>The trailing fields are the #36-5b decompile-latency surface: how many completed decompiles
+	 * were measured and the total/max of their request-to-callback wall-clock, from which
+	 * {@link CacheStatsSnapshot#meanDecompileLatencyNanos()} derives a mean. They answer the other
+	 * half of the #36-4 gate -- not just how often the cheap path is taken, but how costly the
+	 * re-decompile it avoids actually is. See DD-0009 addendum 9.
+	 *
 	 * @return a point-in-time copy of the counters
 	 */
 	public CacheStatsSnapshot getCacheStats() {
 		return new CacheStatsSnapshot(cacheHits.sum(), cacheMisses.sum(), fullFlushes.sum(),
 			selectiveAddressInvalidations.sum(), addressEntriesDropped.sum(),
-			selectiveDataTypeInvalidations.sum(), dataTypeEntriesDropped.sum());
+			selectiveDataTypeInvalidations.sum(), dataTypeEntriesDropped.sum(),
+			decompilesMeasured.sum(), decompileLatencyNanosTotal.sum(),
+			decompileLatencyNanosMax.get());
 	}
 
 	/**
@@ -567,8 +605,22 @@ public class DecompilerController {
 	 * @param addressEntriesDropped entries dropped across all address-keyed selective invalidations
 	 * @param selectiveDataTypeInvalidations calls to {@link #invalidateByDataTypeIds(Set)}
 	 * @param dataTypeEntriesDropped entries dropped across all datatype-keyed selective invalidations
+	 * @param decompilesMeasured completed decompiles whose latency was recorded (#36-5b)
+	 * @param decompileLatencyNanosTotal summed request-to-callback wall-clock, nanoseconds (#36-5b)
+	 * @param decompileLatencyNanosMax slowest single decompile observed, nanoseconds (#36-5b)
 	 */
 	public record CacheStatsSnapshot(long hits, long misses, long fullFlushes,
 			long selectiveAddressInvalidations, long addressEntriesDropped,
-			long selectiveDataTypeInvalidations, long dataTypeEntriesDropped) {}
+			long selectiveDataTypeInvalidations, long dataTypeEntriesDropped,
+			long decompilesMeasured, long decompileLatencyNanosTotal,
+			long decompileLatencyNanosMax) {
+
+		/**
+		 * @return the mean request-to-callback decompile latency in nanoseconds, or 0 if no
+		 *         decompile has been measured yet
+		 */
+		public long meanDecompileLatencyNanos() {
+			return decompilesMeasured == 0 ? 0 : decompileLatencyNanosTotal / decompilesMeasured;
+		}
+	}
 }

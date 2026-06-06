@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-5b` — **decompile latency telemetry**. Stamps a request
+  timestamp on each `DecompileRunnable` at construction and records the request-to-callback
+  wall-clock in `DecompilerController` (count + total + max, with a derived
+  `meanDecompileLatencyNanos()`) when `DecompilerManager` delivers a *completed* decompile —
+  so cache hits and clears, which never make the manager round-trip, produce no sample. The
+  numbers join the `#36-5a` counters in `CacheStatsSnapshot`, answering the other half of the
+  `#36-4` gate: not just how often the cheap selective path is taken, but how costly the
+  re-decompile it avoids actually is. Latency is non-deterministic, so the surface is
+  observational — two headed `DecompilerCachingTest` cases assert the structural facts (a real
+  navigation records a sample with a positive mean; a cache hit records none) rather than an
+  exact duration (19 tests, 0 failures). No UI surface. Per
+  [DD-0009 addendum 9](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-9-2026-06-06-grounding-the-36-5-telemetry-surface--explicit-hit-and-invalidation-counters-first-36-5a-async-decompile-latency-split-out-36-5b).
 - feat(decompiler): Rec 36 `#36-5a` — **decompiler cache telemetry counters**. Adds
   explicit `LongAdder` counters in `DecompilerController` at the call sites
   DD-0009 addendum 9 grounded — navigation hit/miss (`loadFromCache`), full flush
