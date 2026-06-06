@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0011 — **grounds Rec 37 `#37-2`, the `CppTypeSystem` skeleton, as a model-only
+  overlay**. Surveys what the tree already provides for C++ analysis (the `DemangledObject`/
+  `DemangledFunction` model in `Features/Base`; the formal MSVC `RttiAnalyzer` vs. the script-based
+  GCC classrecovery `GccTypeinfo`/`Vtable`; `StructureDataType`/`GhidraClass`/`FunctionDefinition` in
+  SoftwareModeling) and decides the first slice: model-only (`CppTypeSystem`/`CppClass`/`CppMethod`/
+  `CppVTable`, no analyzer/feeder/hints), landing in `Features/Base` package `ghidra.app.util.cpp`,
+  ABI-agnostic, projecting over — never replacing — the backing `Structure`/`GhidraClass`, covered by
+  fast headless JUnit. Unlike the other open items (`#35-5b-2` GUI retry, `#39-6` loop-collapse) it
+  clears the test-before-push bar with no display or new infrastructure. Defers a dedicated `Features/Cpp`
+  module to `#37-6` and templates/operators/obfuscated-RTTI to later slices. Mirrors
+  [DD-0008](docs/decisions/0008-rec39-loop-region-matcher.md)'s "ground only the first slice" discipline;
+  RFC-0001's #37-2 sign-off gate. Per [DD-0011](docs/decisions/0011-rec37-cpptypesystem-skeleton.md).
 - feat(decompiler): Rec 35 `#35-5b-1` — **the decompiler panel now shows a partial-result banner**.
   When a fresh decompile comes back budget-truncated (`DecompileResults.isPartial()`),
   `DecompilerProvider.decompileDataChanged` overlays *"Decompilation partial - budget exhausted on
