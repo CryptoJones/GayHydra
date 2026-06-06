@@ -191,6 +191,14 @@ public class DecompilerManager {
 		}
 
 		decompilerController.setDecompileData(decompileData);
+
+		// #36-5b decompile-latency telemetry: record only genuinely completed decompiles. A cancel
+		// delivers an EmptyDecompileData (no results), and cache hits/clears never reach this method
+		// at all, so neither pollutes the latency sample. See DD-0009 addendum 9.
+		if (decompileData.hasDecompileResults()) {
+			decompilerController
+					.recordDecompileLatency(System.nanoTime() - runnable.getRequestNanos());
+		}
 	}
 
 }

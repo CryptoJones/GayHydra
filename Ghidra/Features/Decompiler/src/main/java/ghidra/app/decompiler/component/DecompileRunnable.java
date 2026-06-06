@@ -38,6 +38,11 @@ class DecompileRunnable implements SwingRunnable {
 
 	private final DecompilerManager decompilerManager;
 
+	// Request timestamp for the #36-5b decompile-latency telemetry: stamped when the request is
+	// constructed (the user-perceived start) and read back by the manager when the result is
+	// delivered, to record request-to-callback wall-clock. See DD-0009 addendum 9.
+	private final long requestNanos = System.nanoTime();
+
 	/**
 	 * Constructor for a scheduled Decompile runnable
 	 * @param program the program containing the function to be decompiled
@@ -53,6 +58,14 @@ class DecompileRunnable implements SwingRunnable {
 		this.debugFile = debugFile;
 		this.viewerPosition = viewerPosition;
 		this.decompilerManager = decompilerManager;
+	}
+
+	/**
+	 * @return {@link System#nanoTime()} captured when this request was created, for #36-5b
+	 *         request-to-callback decompile-latency telemetry. See DD-0009 addendum 9.
+	 */
+	long getRequestNanos() {
+		return requestNanos;
 	}
 
 	public boolean update(DecompileRunnable newRunnable) {

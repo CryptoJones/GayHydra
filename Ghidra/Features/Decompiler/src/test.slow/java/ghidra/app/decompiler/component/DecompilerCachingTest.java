@@ -492,6 +492,57 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 			before.selectiveDataTypeInvalidations(), after.selectiveDataTypeInvalidations());
 	}
 
+	@Test
+	public void testDecompileLatencyIsMeasuredOnRealDecompiles() {
+		// #36-5b telemetry: navigating to a never-decompiled function takes the real decompile path
+		// (a cache miss -> DecompilerManager round-trip), so getCacheStats() records a latency sample.
+		// The wall-clock value is non-deterministic, so this asserts only the structural facts -- a
+		// sample was recorded and its totals are sane -- not an exact duration. See DD-0009 addendum 9.
+		DecompilerController controller = decompilerProvider.getController();
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		// three first-time visits -> at least one is a real decompile regardless of what setup left
+		// displayed, so the latency sample count must rise
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(
+			() -> controller.getCacheStats().decompilesMeasured() > before.decompilesMeasured());
+
+		CacheStatsSnapshot after = controller.getCacheStats();
+		assertTrue("a completed decompile records at least one latency sample",
+			after.decompilesMeasured() >= before.decompilesMeasured() + 1);
+		assertTrue("total latency only grows", after.decompileLatencyNanosTotal() >=
+			before.decompileLatencyNanosTotal());
+		assertTrue("max latency is non-negative", after.decompileLatencyNanosMax() >= 0);
+		assertTrue("a measured decompile has a positive mean latency",
+			after.meanDecompileLatencyNanos() > 0);
+	}
+
+	@Test
+	public void testCacheHitDoesNotRecordDecompileLatency() {
+		// #36-5b telemetry: a cache hit is served entirely inside the controller (loadFromCache), never
+		// reaching the DecompilerManager round-trip, so it must NOT record a latency sample even though
+		// it does count as a navigation hit. This is the deterministic proof that the request timestamp
+		// is threaded through the decompile path only -- not stamped on every setDecompileData (which
+		// the cache-hit path also calls). See DD-0009 addendum 9.
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+
+		DecompilerController controller = decompilerProvider.getController();
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		goTo(functionAddrs.get(0)); // still cached -> a hit, served without a decompile
+		waitForSwing();
+
+		CacheStatsSnapshot after = controller.getCacheStats();
+		assertEquals("a cache hit must not record a decompile-latency sample",
+			before.decompilesMeasured(), after.decompilesMeasured());
+		assertEquals("the total latency is unchanged by a cache hit",
+			before.decompileLatencyNanosTotal(), after.decompileLatencyNanosTotal());
+		assertTrue("the navigation was in fact a cache hit", after.hits() >= before.hits() + 1);
+	}
+
 	private void initializeTool() throws Exception {
 		installPlugins();
 
