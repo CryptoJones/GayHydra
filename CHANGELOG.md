@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-4` — **the `CppRttiFeeder`**, the ABI-neutral core that turns recovered
+  C++ RTTI inheritance into model edges. Given a derived class's name and its already-recovered direct
+  base facts (`BaseSpec`: base name, offset, `virtual`, `public`), it resolves the derived and base
+  `CppClass`es — reusing a recovered class or synthesizing the same empty `StructureDataType(name, 0)`
+  placeholder the `#37-3` feeder uses (the resolution helper is now shared via `CppClassResolution`) —
+  and attaches one `CppBaseClass(base, (int) offset, isVirtual, isPublic)` per base, in order. The three
+  Itanium typeinfo kinds map to edge counts: `__class_type_info` → none (the class is still registered),
+  `__si_class_type_info` → one (offset 0, public, non-virtual), `__vmi_class_type_info` → one per base.
+  Like the demangling feeder it is a *pure consumer*: it does not walk a `Program` and does not depend on
+  the script-land `classrecovery.GccTypeinfo` recoverer; decoding the Itanium `offset_flags` word into
+  `BaseSpec` facts is the later program-scanning wrapper's job (`#37-4b` Itanium, `#37-5` MSVC — the same
+  neutral edge serves both). No vtable / `CppMethod.isVirtual` work (that's `#37-6`). Covered by headless
+  `CppRttiFeederTest` building `BaseSpec` facts directly — program-free, native-binary-free, no
+  cross-module dependency. Per [DD-0013](docs/decisions/0013-rec37-rtti-inheritance-feeder.md).
 - docs(decompiler): DD-0013 — **grounds Rec 37 `#37-4`, the Itanium RTTI path, as a pure
   inheritance-fact → `CppBaseClass` edge mapper** (`CppRttiFeeder`) in `Features/Base`, mirroring
   DD-0012's pure-mapper / deferred-scan split. Surveys the in-tree GCC RTTI recoverer
