@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0013 — **grounds Rec 37 `#37-4`, the Itanium RTTI path, as a pure
+  inheritance-fact → `CppBaseClass` edge mapper** (`CppRttiFeeder`) in `Features/Base`, mirroring
+  DD-0012's pure-mapper / deferred-scan split. Surveys the in-tree GCC RTTI recoverer
+  (`classrecovery.GccTypeinfo`/`RTTIGccClassRecoverer`) and pins the constraint that fixes the slice's
+  shape: that recoverer is **script-land** (`ghidra_scripts`, package `classrecovery`) so Base cannot
+  import it, and walking RTTI needs a real `Program`/analysis harness — so the headlessly-testable core
+  must consume *already-recovered* base facts, not scan a program. Decides: the feeder resolves the
+  derived and base `CppClass`es (reusing #37-3's placeholder rule on both endpoints) and adds one
+  `CppBaseClass(base, (int) offset, isVirtual, isPublic)` per direct base; the three Itanium typeinfo
+  kinds (`__class_type_info`/`__si_class_type_info`/`__vmi_class_type_info`) map to edge *counts* with
+  the `offset_flags` `__virtual_mask`/`__public_mask` decoding done by the **deferred** program-scan
+  wrapper (`#37-4b`), keeping the model ABI-neutral so the same edge serves MSVC (#37-5); no vtable/
+  `isVirtual` work (that's #37-6). Unit-tested by building base facts directly — program-free,
+  native-binary-free, no cross-module dependency. Per [DD-0013](docs/decisions/0013-rec37-rtti-inheritance-feeder.md).
 - feat(decompiler): Rec 37 `#37-3` — **the `CppDemanglingFeeder`**, the translation core that maps an
   already-demangled symbol onto the `#37-2` model. Given any demangler's `DemangledObject`, a namespaced
   `DemangledFunction` (a member function) resolves its enclosing `CppClass` by fully-qualified name —
