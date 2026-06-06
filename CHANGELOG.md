@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 35 `#35-5b-1` — **the decompiler panel now shows a partial-result banner**.
+  When a fresh decompile comes back budget-truncated (`DecompileResults.isPartial()`),
+  `DecompilerProvider.decompileDataChanged` overlays *"Decompilation partial - budget exhausted on
+  `<pass>`"* (falling back to *"… analysis budget exhausted"* when the pass name is blank) on the
+  existing `OverlayMessagePainter` surface, and clears it when a later complete decompile arrives —
+  the callback only fires on fresh data (never while the display is locked-stale), so resolving the
+  overlay there cannot clobber a refresh-needed message. The banner text is built from the
+  structured `<budgetexhausted>` signal, not scraped from the warning-header text (DD-0010). The
+  message builder is a pure static factory on `OverlayMessagePainter`, covered by a fast
+  `gradle :Decompiler:test` round-trip (named-pass, blank-pass fallback, complete, and null cases).
+  The interactive Retry-with-2×-budget action — which needs GUI-runtime validation — follows in
+  `#35-5b-2`. Per [DD-0010](docs/decisions/0010-rec35-partial-result-gui-surfacing.md).
 - feat(decompiler): Rec 35 `#35-5a-2` — **the GUI can now *detect* a budget-truncated (partial)
   result**. When a budget is engaged and analysis is truncated, the worker emits a structured
   `<budgetexhausted name="…">` child of `<doc>` (naming the exhausted pass) read straight from the

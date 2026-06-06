@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import generic.theme.GColor;
 import generic.theme.GThemeDefaults.Colors.Palette;
 import generic.theme.Gui;
+import ghidra.app.decompiler.DecompileResults;
 
 /**
  * Class to overlay a message on the decompiler panel to indicate the display is stale and
@@ -32,6 +33,26 @@ class OverlayMessagePainter {
 	private static final String FONT_ID = "font.graph.component.message";
 	private final Color gradientColor = new GColor("color.bg.visualgraph.message");
 	private String message;
+
+	/**
+	 * Builds the overlay text for a budget-truncated (partial) decompile result, or the empty
+	 * string when the result is complete. Rec 35 #35-5b-1 surfaces a partial result
+	 * ({@link DecompileResults#isPartial()}) as a passive banner naming the exhausted analysis
+	 * pass, off the structured marshalled signal rather than the warning-header text (DD-0010).
+	 *
+	 * @param results the decompile results, may be null
+	 * @return the banner text, or the empty string when the result is not partial
+	 */
+	static String getPartialResultMessage(DecompileResults results) {
+		if (results == null || !results.isPartial()) {
+			return "";
+		}
+		String pass = results.getBudgetExhaustedPass();
+		if (StringUtils.isBlank(pass)) {
+			return "Decompilation partial - analysis budget exhausted";
+		}
+		return "Decompilation partial - budget exhausted on " + pass;
+	}
 
 	void setMessage(String message) {
 		this.message = message;
