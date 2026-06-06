@@ -243,9 +243,9 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
   - #36-3b-2 recompute backstop — the addendum-3 debug-assert recompute mode, regrounded as a **test-harness corpus assertion** (addendum 7) — **done** (`DecompilerCachingTest.testKeptEntriesReDecompileUnchangedAfterDataTypeEdit`)
 - #36-4 — in-place rewrite for local name / comment — **deferred behind #36-5 telemetry** (see addendum 8): the `FieldPanel` bakes token text+width at layout build, and #36-3a/3a-2 already reduce a rename/comment to a single-function re-decompile, so the optimisation is not worth its staleness risk until telemetry shows a real cost
 - #36-5 — telemetry (hit rate, in-place/selective rate, decompile latency) — grounded in addendum 9; split into:
-  - #36-5a — hit/miss + full-flush + selective-address + selective-datatype counters, exposed via `getCacheStats()` — **next**
-  - #36-5b — decompile latency (request→callback wall-clock), async/cross-thread — sequenced after #36-5a
-- #36-6 — `budget` cache-key extension (Rec 35) — sequenced above
+  - #36-5a — hit/miss + full-flush + selective-address + selective-datatype counters, exposed via `getCacheStats()` — **done**
+  - #36-5b — decompile latency (request→callback wall-clock), async/cross-thread, recorded only for completed decompiles, exposed on `CacheStatsSnapshot` — **done** (see addendum 9)
+- #36-6 — `budget` cache-key extension (Rec 35) — **deferred** (see addendum 10): it is the cache side of Rec 35 #35-6 and is blocked on Rec 35 #35-5 (the GUI partial/retry path); the GUI carries no budget today, so `Function` is already a correct key and there is nothing budget-tagged to key on or test
 
 ## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
 
@@ -951,3 +951,72 @@ No UI surface is introduced by either: the gate needs the numbers *queryable*
 (test + a debug log/action later), not a panel. This addendum is docs-only and
 carries no C++/manifest/RAII-audit gate; #36-5a lands next as the first
 implementation slice.
+
+## Addendum 10 (2026-06-06): #36-6 is the Rec 35 partial-result cache key (#35-6) and is blocked on the GUI retry path (#35-5) — defer
+
+With #36-5a/#36-5b shipped, the only Rec 36 item left in the sequence is #36-6,
+"`budget` cache-key extension (Rec 35)". Grounding it against the real code and
+the Rec 35 plan shows it is **not an independent Rec 36 slice**: it is the cache
+side of Rec 35 #35-6, and it cannot be built or tested until Rec 35 #35-5 lands.
+Like #36-4 (addendum 8) it is deferred — but for a *harder* reason than #36-4's:
+#36-4 waits on telemetry ("is it worth it"); #36-6 waits on a missing
+**prerequisite feature** ("there is nothing yet to key on").
+
+### What #36-6 actually is
+
+[DECOMPILER_BUDGETS.md](../decompiler/DECOMPILER_BUDGETS.md) "Coordination with
+Rec 36" states it directly: the cache "needs to store partial results keyed by
+`(function, budget)` so a *Retry with 2x* run starts from the partial it has
+cached. This is a small extension to the cache key shape." The same work is
+tracked on the Rec 35 side as **#35-6 — "Cache partial results keyed by budget"
+(not started)**. #36-6 and #35-6 are one item seen from two recs.
+
+The `(function, budget)` key only earns its keep when the GUI can hold **two
+results for the same function at once** — a budget-exhausted *partial* and the
+larger-budget *retry* of it — so the retry resumes from the cached partial
+instead of recomputing. That two-result situation is created entirely by
+**#35-5 — "UI banner + retry path" (not started)**: the
+"Decompilation partial — budget exhausted… [Retry with 2x budget]" affordance.
+
+### Why it cannot ship before #35-5
+
+The interactive decompile path carries no budget today, so the cache never sees
+a budget to key on:
+
+- `DecompileOptions` has **no** budget field (the budget is a console/IPC
+  surface — `decompilebudget` / `decompilebudgetpass`, and the
+  `DecompileBudget` request sub-table in `ghidra.app.decompiler.ipc`).
+- The GUI decompile entry point,
+  `Decompiler.decompile(program, function, debugFile, monitor)`, has **no**
+  budget parameter. Every GUI decompile runs the default budget.
+
+So for the GUI, `Function` alone is already a **complete and correct** cache key
+— there is no second budget that could collide with a cached entry. And even if
+a budget were later exposed as a `DecompileOptions` field, changing it routes
+through `setOptions` → `clearCache` (a full flush, asserted by
+`DecompilerCachingTest.testCacheIsClearedWhenOptionsChange`), which is correct on
+its own. The `(function, budget)` *key* is needed only for the narrower
+partial-keeps-and-retry-resumes optimisation #35-5/#35-6 introduce — not for
+plain correctness under a changing budget.
+
+Building `(function, budget)` keying now would therefore add a key dimension no
+caller can vary and no test can exercise (there is no GUI path that produces a
+budget-tagged partial), which is exactly the untestable-speculative-machinery
+shape the test-before-push discipline rejects — the same reason the v1 IPC
+command-loop flip was deferred in [DD-0005](0005-ipc-framing-v1.md) #33-2.6.
+
+### Decision
+
+Defer #36-6 and fold it into Rec 35's #35-5 → #35-6 line. When #35-5 lands the
+GUI partial/retry affordance, #35-6/#36-6 becomes a real, testable slice:
+key the cache on `(function, budget)`, store the budget-exhausted partial, and
+let a retry-with-more-budget find it. The cache machinery #36-3a..#36-3b/#36-5
+already built (selective invalidation keyed on `Function`, telemetry) is
+forward-compatible: the key gains a `budget` component; the invalidation walks
+(by address set, by datatype id) stay keyed on the function and are unaffected.
+
+With #36-6 deferred to the Rec 35 line and #36-4 deferred behind telemetry
+(addendum 8), the Rec 36 GUI-cache-invalidation sprint has **no remaining
+independently-actionable item**: #36-3a/#36-3a-2/#36-3b and #36-5a/#36-5b are
+shipped, and both deferrals are grounded prerequisites rather than open work.
+This addendum is docs-only and carries no C++/manifest/RAII-audit gate.
