@@ -657,6 +657,13 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 
 	@Override
 	public void decompileDataChanged(DecompileData decompileData) {
+		// Rec 35 #35-5b-1: a fresh result just arrived (this callback never fires while the
+		// display is locked-stale), so resolve the overlay to the partial-result banner when the
+		// decompile was budget-truncated, or clear it otherwise.
+		DecompileResults results = (decompileData != null && decompileData.hasDecompileResults())
+				? decompileData.getDecompileResults()
+				: null;
+		overlayPainter.setMessage(OverlayMessagePainter.getPartialResultMessage(results));
 		updateTitle();
 		contextChanged();
 		controller.setSelection(currentSelection);

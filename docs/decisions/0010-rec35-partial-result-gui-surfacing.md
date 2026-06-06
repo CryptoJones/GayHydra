@@ -199,7 +199,8 @@ behaviour behind the same option gate, validated in the GUI.
 | PR | Scope |
 |---|---|
 | #35-5a | Thread the budget through the GUI: `DecompileOptions` budget fields + `encode()` emits the already-registered `<decompilebudget>`/`<decompilebudgetpass>`; marshal `budgetexhausted_present` + exhausted-pass name into the result stream; first-class `DecompileResults.isPartial()` / `getBudgetExhaustedPass()`; GUI tools-option control; integration test. **Actionable now; also unblocks #36-6.** |
-| #35-5b | Partial-result banner (`OverlayMessagePainter`/decoration surface in `DecompilerProvider`) + "Retry with 2× budget" / "Accept partial" actions, gated by the #35-5a option. Depends on #35-5a. |
+| #35-5b-1 | Partial-result banner (display): `DecompilerProvider.decompileDataChanged` resolves the `OverlayMessagePainter` surface to a passive banner naming the exhausted pass when `DecompileResults.isPartial()`, off the structured signal. Message builder is a pure static factory, fast-unit-testable. Depends on #35-5a. |
+| #35-5b-2 | Retry affordance: a docking action enabled only on a partial result that re-decompiles with `DecompileOptions` carrying 2× the prior `decompileBudget` ("Retry with 2× budget" / "Accept partial"). Split from #35-5b-1 because the re-decompile behaviour needs GUI-runtime validation, not a headless unit test. Depends on #35-5b-1. |
 
 #35-5a is the load-bearing one: it converts the budget from a
 console/headless-only capability into a GUI-observable one, which both
