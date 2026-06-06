@@ -27,11 +27,12 @@ import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 
 /**
- * Headless unit tests for the {@code CppDecompilerHints} virtual-method-call renderer (Rec 37
- * {@code #37-7}, grounded by DD-0016). These build the resolved model state directly through the
- * model setters — a {@link CppClass} with a {@link CppVTable} whose slots already reference
- * name-resolved {@link CppMethod}s, the shape a class has after the {@code #37-6}/{@code #37-6c}
- * feeders run — with no {@code Program}, no {@code DataTypeManager}, and no decompiler.
+ * Headless unit tests for the {@code CppDecompilerHints} renderer: the virtual-method-call form
+ * (Rec 37 {@code #37-7}, DD-0016) and the up/down-cast form (Rec 37 {@code #37-8}, DD-0017). These
+ * build the resolved model state directly through the model setters — a {@link CppClass} with a
+ * {@link CppVTable} whose slots already reference name-resolved {@link CppMethod}s, and
+ * {@link CppBaseClass} inheritance edges as the {@code #37-4} feeder would record them — with no
+ * {@code Program}, no {@code DataTypeManager}, and no decompiler.
  */
 public class CppDecompilerHintsTest extends AbstractGenericTest {
 
@@ -58,6 +59,13 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		}
 		c.setVtable(vt);
 		return c;
+	}
+
+	/** Adds a base-class edge to {@code derived} and returns {@code derived} for chaining. */
+	private static CppClass withBase(CppClass derived, CppClass base, int offset, boolean virtual,
+			boolean publicBase) {
+		derived.addBaseClass(new CppBaseClass(base, offset, virtual, publicBase));
+		return derived;
 	}
 
 	@Test
@@ -161,5 +169,110 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("s->vtable[9](p)", fallback);
 		assertEquals("s.area()", second);
 		assertEquals("s->draw(p)", hints.renderVirtualCall(shape, 0, "s", true, List.of("p")));
+	}
+
+	// ----- up/down-cast renderer (#37-8) -----
+
+	@Test
+	public void testUpcastAcrossNonVirtualBaseRendersStaticCastToBase() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		String rendered = new CppDecompilerHints().renderUpcast(derived, 8, "d");
+		assertEquals("static_cast<Base*>(d)", rendered);
+	}
+
+	@Test
+	public void testDowncastAcrossNonVirtualBaseRendersStaticCastToDerived() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		String rendered = new CppDecompilerHints().renderDowncast(derived, 8, "b");
+		assertEquals("static_cast<Derived*>(b)", rendered);
+	}
+
+	@Test
+	public void testPrimaryBaseAtOffsetZeroRendersStaticCast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 0, false, true);
+		assertEquals("static_cast<Base*>(d)", new CppDecompilerHints().renderUpcast(derived, 0, "d"));
+	}
+
+	@Test
+	public void testNonPublicBaseStillRendersStaticCast() {
+		// Access does not change the pointer adjustment; the hint is advisory, not a compilability
+		// claim, so a private base renders the same static_cast as a public one.
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Secret")), 4, false, false);
+		assertEquals("static_cast<Secret*>(d)", new CppDecompilerHints().renderUpcast(derived, 4, "d"));
+	}
+
+	@Test
+	public void testUpcastNeverRendersDynamicCast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		String rendered = new CppDecompilerHints().renderUpcast(derived, 8, "d");
+		assertTrue("a recovered constant offset is a static_cast", rendered.startsWith("static_cast<"));
+		assertFalse("must never assert an RTTI-checked conversion", rendered.contains("dynamic_cast"));
+	}
+
+	@Test
+	public void testVirtualBaseDeclinesStaticCastAndFallsBackUpcast() {
+		// A virtual base's offset is dynamic, so a constant static_cast would misrepresent it.
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("VBase")), 16, true, true);
+		assertEquals("d + 16", new CppDecompilerHints().renderUpcast(derived, 16, "d"));
+	}
+
+	@Test
+	public void testVirtualBaseDeclinesStaticCastAndFallsBackDowncast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("VBase")), 16, true, true);
+		assertEquals("b - 16", new CppDecompilerHints().renderDowncast(derived, 16, "b"));
+	}
+
+	@Test
+	public void testOffsetMatchingNoEdgeFallsBackUpcast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		// No base edge sits at offset 4: decline the cast, render the raw adjustment.
+		assertEquals("d + 4", new CppDecompilerHints().renderUpcast(derived, 4, "d"));
+	}
+
+	@Test
+	public void testOffsetMatchingNoEdgeFallsBackDowncast() {
+		CppClass derived = new CppClass(struct("Derived")); // no base edges at all
+		assertEquals("b - 12", new CppDecompilerHints().renderDowncast(derived, 12, "b"));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullDerivedClassUpcast() {
+		new CppDecompilerHints().renderUpcast(null, 8, "d");
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullSourceExprUpcast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		new CppDecompilerHints().renderUpcast(derived, 8, null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsBlankSourceExprDowncast() {
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		new CppDecompilerHints().renderDowncast(derived, 8, "   ");
+	}
+
+	@Test
+	public void testCastAndVirtualCallShareOneStatelessInstance() {
+		CppDecompilerHints hints = new CppDecompilerHints();
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+
+		// Interleaving a cast render between two call renders on one instance must not let the
+		// renders bleed into one another.
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
 	}
 }

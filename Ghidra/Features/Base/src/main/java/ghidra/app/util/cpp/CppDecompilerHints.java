@@ -22,15 +22,17 @@ import java.util.List;
  * strings from <em>already-resolved</em> {@link CppTypeSystem} model facts plus the operand
  * expressions supplied by its caller.
  *
- * <p>Rec 37 {@code #37-7}, grounded by DD-0016. This is the headless half of RFC §5. It holds no
+ * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016) and {@code #37-8} (up/down-cast form,
+ * DD-0017). This is the headless half of RFC §5. It holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
- * (a {@link CppClass}, a vtable slot index) plus operand expressions — the receiver and arguments —
- * handed in as opaque strings by whatever drives it. Its output is the rendered string. The
- * decompiler-side pattern-recognition pass that walks a {@code HighFunction}, recognises the raw
- * C-style idiom, recovers the {@code (class, slot)} it denotes, and calls this renderer is the
- * deferred {@code #37-7b} Program-coupled wrapper, not part of this slice.
+ * (a {@link CppClass}, a vtable slot index, an inheritance offset) plus operand expressions — the
+ * receiver, arguments, or source pointer — handed in as opaque strings by whatever drives it. Its
+ * output is the rendered string. The decompiler-side pattern-recognition pass that walks a
+ * {@code HighFunction}, recognises the raw C-style idiom, recovers the {@code (class, slot)} or
+ * {@code (derived, offset, direction)} it denotes, and calls this renderer is the deferred
+ * {@code #37-7b}/{@code #37-8b} Program-coupled wrapper, not part of this slice.
  *
  * <p>Hints are advisory and additive: this renderer only produces a string; it never rewrites
  * p-code or replaces an analysis pass.
@@ -77,6 +79,80 @@ public final class CppDecompilerHints {
 			return receiverExpr + access + "vtable[" + slotIndex + "](" + args + ")";
 		}
 		return receiverExpr + access + slotName + "(" + args + ")";
+	}
+
+	/**
+	 * Renders an <em>upcast</em> — a pointer adjustment from a derived object to one of its base
+	 * subobjects — as {@code static_cast<Base*>(src)}, where {@code Base} is the class on the
+	 * inheritance edge whose offset equals {@code baseOffset}.
+	 *
+	 * <p>{@code static_cast}, never {@code dynamic_cast}: the recovered constant offset is the
+	 * compiler's structural base-subobject adjustment, which is exactly what {@code static_cast}
+	 * denotes. If no non-virtual base edge sits at {@code baseOffset} — there is no such edge, or the
+	 * only edge there is a {@code virtual} base whose offset is dynamic rather than the compile-time
+	 * constant a {@code static_cast} represents — the renderer declines the cast and falls back to the
+	 * neutral pointer-adjustment form {@code src + baseOffset} rather than fabricating a cast.
+	 *
+	 * @param derivedClass the class the source pointer starts at; must not be null
+	 * @param baseOffset the recovered byte offset of the base subobject within the derived layout
+	 * @param sourceExpr the already-rendered source pointer expression; must not be null or blank
+	 * @return the rendered C++ cast, or the neutral adjustment when no eligible base edge matches
+	 * @throws IllegalArgumentException if {@code derivedClass} is null or {@code sourceExpr} is null or
+	 *             blank
+	 */
+	public String renderUpcast(CppClass derivedClass, int baseOffset, String sourceExpr) {
+		return renderCast(derivedClass, baseOffset, sourceExpr, true);
+	}
+
+	/**
+	 * Renders a <em>downcast</em> — a pointer adjustment from a base subobject back to the enclosing
+	 * derived object — as {@code static_cast<Derived*>(src)}, where {@code Derived} is
+	 * {@code derivedClass} itself, when a non-virtual base edge sits at {@code baseOffset}.
+	 *
+	 * <p>{@code static_cast}, never {@code dynamic_cast}: the recovered constant offset is the
+	 * compiler's structural base-subobject adjustment, not an RTTI-checked conversion. As with
+	 * {@link #renderUpcast}, an offset matching no non-virtual base edge declines the cast and falls
+	 * back to the neutral pointer-adjustment form — {@code src - baseOffset} for a downcast.
+	 *
+	 * @param derivedClass the derived class the cast targets; must not be null
+	 * @param baseOffset the recovered byte offset of the base subobject within the derived layout
+	 * @param sourceExpr the already-rendered source pointer expression; must not be null or blank
+	 * @return the rendered C++ cast, or the neutral adjustment when no eligible base edge matches
+	 * @throws IllegalArgumentException if {@code derivedClass} is null or {@code sourceExpr} is null or
+	 *             blank
+	 */
+	public String renderDowncast(CppClass derivedClass, int baseOffset, String sourceExpr) {
+		return renderCast(derivedClass, baseOffset, sourceExpr, false);
+	}
+
+	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,
+			boolean upcast) {
+		if (derivedClass == null) {
+			throw new IllegalArgumentException("derived class must not be null");
+		}
+		if (sourceExpr == null || sourceExpr.isBlank()) {
+			throw new IllegalArgumentException("source expression must not be null or blank");
+		}
+		CppBaseClass edge = matchNonVirtualBaseEdge(derivedClass, baseOffset);
+		if (edge == null) {
+			return sourceExpr + (upcast ? " + " : " - ") + baseOffset;
+		}
+		String targetType = upcast ? edge.getBaseClass().getName() : derivedClass.getName();
+		return "static_cast<" + targetType + "*>(" + sourceExpr + ")";
+	}
+
+	/**
+	 * {@return the non-virtual base edge of {@code derivedClass} sitting at {@code baseOffset}, or null
+	 * if none — a {@code virtual} base at that offset is treated as no match, since its dynamic offset
+	 * cannot be a static cast}
+	 */
+	private static CppBaseClass matchNonVirtualBaseEdge(CppClass derivedClass, int baseOffset) {
+		for (CppBaseClass edge : derivedClass.getBaseClasses()) {
+			if (!edge.isVirtual() && edge.getOffset() == baseOffset) {
+				return edge;
+			}
+		}
+		return null;
 	}
 
 	/**
