@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-9f` — **the `CppDecompilerHints` deallocation renderer**, the seventh and **final**
+  headless form and the death-side counterpart of the `#37-9` construction renderer
+  ([DD-0022](docs/decisions/0022-rec37-delete-renderer.md)). `renderDelete(String receiverExpr, boolean isArray)`
+  emits `delete e` (scalar) / `delete[] e` (array) — `delete` is a unary operator on the pointer, so there is no
+  class name, no parentheses, and no argument list, and the `[]` is the only thing `isArray` adds. **Uniquely among
+  the family it reads no `CppClass` model fact at all** — C++ `delete` names no type (it is inferred from the
+  pointer) — so it takes only an opaque receiver expression and the array-vs-scalar flag, consults no vtable, and
+  does no overload resolution. **No neutral fallback** (nothing to fall back from); rejects null-or-blank receiver
+  with `IllegalArgumentException`. Stateless and headless, extending the existing renderer; the dtor +
+  `operator delete` recognition pass is the deferred Program-coupled wrapper. **This closes out the headless
+  renderer family** — every RFC §5 idiom now has a renderer, and all remaining Rec 37 work (the recognition wrappers
+  `#37-7b`…`#37-9f` and the `#37-10+` DTM/signature band) is Program-coupled and a test-before-push blocker.
+  Validated by extending headless `CppDecompilerHintsTest` (6 new cases; 61 total).
 - docs(decompiler): [DD-0022](docs/decisions/0022-rec37-delete-renderer.md) grounds Rec 37 `#37-9f` — the
   seventh and **final** `CppDecompilerHints` form, the **deallocation renderer** (the death-side counterpart of the
   `#37-9` construction form): `renderDelete(String receiverExpr, boolean isArray)` emits `delete e` / `delete[] e`.
