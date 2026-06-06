@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 8 — **defer `#36-4`** (in-place rewrite for
+  local name / comment) behind `#36-5` telemetry. The `FieldPanel` bakes each
+  token's text *and* width into an immutable `AttributedString` at layout-build
+  time (`ClangLayoutController.createFieldElementsForLine`), and `ClangToken.setText`
+  is package-private, so an in-place edit cannot re-flow a rendered line without a
+  full layout rebuild; meanwhile `#36-3a`/`#36-3a-2` already reduce a rename or
+  comment edit to a single-function re-decompile, which upstream Ghidra also does
+  deliberately. The in-place path therefore trades real staleness risk (cached
+  `HighSymbol`s hold old names; the rendered name passes through name resolution +
+  `IllegalCharCppTransformer`) for a marginal saving on one already-cheap path, so
+  it is re-scoped from "next" to **telemetry-gated**: do `#36-5` (hit-rate /
+  in-place-rate / decompile-latency telemetry) next and only revisit `#36-4` if the
+  data shows a real cost. Per
+  [DD-0009 addendum 8](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-8-2026-06-06-36-4-in-place-rewrite-is-deferred-behind-36-5-telemetry--the-layout-bakes-token-text-and-width-and-a-rename-already-re-decompiles-only-one-function);
+  docs-only, no production code change.
 - test(decompiler): Rec 36 `#36-3b-2` recompute **backstop** — a headed
   `DecompilerCachingTest` corpus assertion that, after an in-place datatype edit,
   forces a fresh re-decompile of every cache entry the selective path *kept* and
