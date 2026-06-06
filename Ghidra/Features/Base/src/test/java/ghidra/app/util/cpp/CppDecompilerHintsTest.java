@@ -28,7 +28,8 @@ import ghidra.program.model.data.StructureDataType;
 
 /**
  * Headless unit tests for the {@code CppDecompilerHints} renderer: the virtual-method-call form
- * (Rec 37 {@code #37-7}, DD-0016) and the up/down-cast form (Rec 37 {@code #37-8}, DD-0017). These
+ * (Rec 37 {@code #37-7}, DD-0016), the up/down-cast form (Rec 37 {@code #37-8}, DD-0017), and the
+ * heap-construction form (Rec 37 {@code #37-9}, DD-0018). These
  * build the resolved model state directly through the model setters — a {@link CppClass} with a
  * {@link CppVTable} whose slots already reference name-resolved {@link CppMethod}s, and
  * {@link CppBaseClass} inheritance edges as the {@code #37-4} feeder would record them — with no
@@ -274,5 +275,62 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
 		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
 		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+	}
+
+	// ----- heap-construction renderer (#37-9) -----
+
+	@Test
+	public void testConstructionWithArgsRendersNewExpressionInOrder() {
+		CppClass widget = new CppClass(struct("Widget"));
+		String rendered = new CppDecompilerHints().renderConstruction(widget, List.of("a", "b"));
+		assertEquals("new Widget(a, b)", rendered);
+	}
+
+	@Test
+	public void testZeroArgConstructionRendersEmptyParens() {
+		CppClass widget = new CppClass(struct("Widget"));
+		String rendered = new CppDecompilerHints().renderConstruction(widget, List.of());
+		assertEquals("new Widget()", rendered);
+	}
+
+	@Test
+	public void testConstructionUsesClassNameNotVtableOrBases() {
+		// The form needs only the class name; a vtable / base edges on the type do not change it.
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		withBase(shape, new CppClass(struct("Base")), 8, false, true);
+		assertEquals("new Shape(x)", new CppDecompilerHints().renderConstruction(shape, List.of("x")));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullConstructedType() {
+		new CppDecompilerHints().renderConstruction(null, List.of());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullConstructionArgumentList() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderConstruction(widget, null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullConstructionArgumentElement() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderConstruction(widget, Arrays.asList("a", null));
+	}
+
+	@Test
+	public void testConstructionSharesOneStatelessInstanceWithCallAndCast() {
+		CppDecompilerHints hints = new CppDecompilerHints();
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		CppClass widget = new CppClass(struct("Widget"));
+
+		// Interleaving a construction render among call and cast renders on one instance must not let
+		// the renders bleed into one another.
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+		assertEquals("new Widget(a, b)", hints.renderConstruction(widget, List.of("a", "b")));
+		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
+		assertEquals("new Widget()", hints.renderConstruction(widget, List.of()));
 	}
 }

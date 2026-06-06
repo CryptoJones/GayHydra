@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-9` — **the `CppDecompilerHints` heap-construction renderer**, the third RFC §5
+  form ([DD-0018](docs/decisions/0018-rec37-construction-renderer.md)). `renderConstruction(CppClass type,
+  List<String> argumentExprs)` emits `new ClassName(args)` — `ClassName` is `CppClass.getName()`, args joined in
+  call order; a zero-argument construction renders `new ClassName()` (parentheses always present). Deliberately
+  **no neutral fallback** (a contrast with `#37-7`/`#37-8`): the class name is a *total* model fact, so the
+  renderer only rejects malformed boundary inputs (null type, null arg list, null arg element) with
+  `IllegalArgumentException`. **No constructor-overload resolution** — it formats the args the recognition pass
+  supplies; selecting an overload is the DTM-coupled `#37-10+` work. Stateless and headless, extending the
+  existing renderer; the `alloc + ctor-call` recognition pass is the deferred `#37-9b` wrapper. Validated by
+  extending headless `CppDecompilerHintsTest` (7 new cases; 33 total).
 - docs(decompiler): [DD-0018](docs/decisions/0018-rec37-construction-renderer.md) grounds Rec 37 `#37-9` — the
   third RFC §5 `CppDecompilerHints` form, the **heap-construction renderer**: `renderConstruction` emits
   `new ClassName(args)` (`ClassName` is `CppClass.getName()`, args joined in call order; a zero-arg construction
