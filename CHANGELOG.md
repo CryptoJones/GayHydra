@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0010 — **Rec 35 `#35-5` partial-result GUI surfacing needs a plumbing
+  prerequisite first; split into `#35-5a` + `#35-5b`**. A pre-implementation survey found the GUI
+  decompile path can neither *set* a budget nor *detect* a partial result, even though the C++
+  backend is complete: `OptionDecompileBudget`/`OptionDecompileBudgetPass` are registered in
+  `OptionDatabase` (`options.cc:132`–`133`, decodable from the `<optionslist>` the GUI already
+  sends) but `DecompileOptions.encode()` never emits them; and the structured
+  `FlowInfo::budgetexhausted_present` flag (`flow.hh:71`, accessor `hasBudgetExhausted()`) is not
+  marshalled into the result stream, so `DecompileResults` has no `isPartial()`. Decision:
+  **`#35-5a`** threads the budget through `DecompileOptions`→`encode()` and marshals the existing
+  partial flag + exhausted-pass name into a first-class `DecompileResults.isPartial()` /
+  `getBudgetExhaustedPass()`; **`#35-5b`** is the banner + Retry-with-2x UI on top. Unlike
+  `#36-6`/`#39-6`, `#35-5a` is **build-not-defer** — concrete, testable plumbing over shipped
+  infrastructure — and additionally unblocks `#36-6`. Surface the flag structurally, not by
+  scraping the `<warningheader>` text. Per
+  [DD-0010](docs/decisions/0010-rec35-partial-result-gui-surfacing.md).
 - docs(decompiler): DD-0009 addendum 10 — **defer `#36-6` (budget cache-key) to the Rec 35
   partial-result line**. Grounds that `#36-6` is the cache side of Rec 35 `#35-6` ("cache
   partial results keyed by budget", not started) and is blocked on Rec 35 `#35-5` (the GUI
