@@ -12,6 +12,22 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-6` — **the `CppVTableFeeder`**, the core that turns a recovered vtable into
+  model slots. Given a class's name and its already-recovered slot facts (`SlotSpec`: method name +
+  pure-virtual flag, in layout order), it resolves the owning `CppClass` — reusing a recovered class or
+  synthesizing the same empty `StructureDataType(name, 0)` placeholder the `#37-3`/`#37-4` feeders use (via
+  the shared `CppClassResolution`) — builds a `CppVTable`, and per slot appends a `CppMethod` marked
+  `setVirtual(true)` (occupying a vtable slot *is* virtual dispatch — this is where `CppMethod.isVirtual`
+  is finally populated, which `#37-2` deferred here) with `setPureVirtual` set consistently, then attaches
+  the table via `CppClass.setVtable`. Like the other feeders it is a *pure consumer*: it does not read the
+  function-pointer array out of a `Program` and does not depend on the script-land `classrecovery.Vftable`
+  or the MSVC `VfTableModel`; reading the recovered vftable, resolving+demangling each slot, and setting
+  the table address is the later program-scanning wrapper's job (`#37-6b`, also where the
+  dedicated-`Features/Cpp`-module question is decided). Slot methods are fresh — reconciling them with
+  demangling-fed methods is deferred (`#37-7+`) — and the feeder is `Address`-free (`tableAddress` left
+  null). Also corrects stale `#37-5` vtable-analyzer references in `CppVTable`/`CppClass` javadoc (the
+  vtable slice is `#37-6`). Covered by headless `CppVTableFeederTest` building `SlotSpec` facts directly —
+  program-free, no cross-module dependency. Per [DD-0014](docs/decisions/0014-rec37-vtable-feeder.md).
 - docs(decompiler): DD-0014 — **grounds Rec 37 `#37-6`, the vtable path, as a pure recovered-slot-fact →
   `CppVTable` + `CppMethod.isVirtual` mapper** (`CppVTableFeeder`) in `Features/Base`, mirroring DD-0012/
   DD-0013's pure-mapper / deferred-scan split. Surveys both in-tree vtable recoverers — the script-land

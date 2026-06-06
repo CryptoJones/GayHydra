@@ -27,9 +27,10 @@ import ghidra.program.model.address.Address;
  * program image.
  *
  * <p>Rec 37 {@code #37-2}, part of the model-only {@code CppTypeSystem} skeleton (DD-0011). This is
- * a plain mutable value holder. The {@code CppVTableAnalyzer} ({@code #37-5}) is responsible for
- * resolving slot order from the recovered vftable; the skeleton only stores what it is given and
- * preserves insertion order. Slot index is the zero-based position within this single table and
+ * a plain mutable value holder. The {@code CppVTableFeeder} ({@code #37-6}) builds the table from
+ * recovered slot facts and the program-scanning {@code CppVTableAnalyzer} ({@code #37-6b}) resolves
+ * slot order from the recovered vftable; the skeleton only stores what it is given and preserves
+ * insertion order. Slot index is the zero-based position within this single table and
  * does not attempt to model multiple-inheritance sub-vtables (deferred to a later slice).
  */
 public final class CppVTable {
