@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-3` — **the `CppDemanglingFeeder`**, the translation core that maps an
+  already-demangled symbol onto the `#37-2` model. Given any demangler's `DemangledObject`, a namespaced
+  `DemangledFunction` (a member function) resolves its enclosing `CppClass` by fully-qualified name —
+  reusing a recovered class or synthesizing an empty placeholder `StructureDataType(name, 0)` when the
+  model has none yet — and attaches a `CppMethod` carrying the symbol's name, `const`/`static` qualifiers
+  (from `isTrailingConst`/`isStatic`), and calling convention (verbatim from the demangler, with the
+  implicit `this` at ordinal 0 for a member and absent for a `static` member). It is a *pure consumer*:
+  it runs no demangler and scans no program (those are #37-4/#37-5), so it is demangler- and ABI-agnostic.
+  Virtual-ness is deliberately **not** inferred — a demangled name cannot reveal vtable membership (#37-6).
+  Free functions and non-function objects are a no-op. Covered by headless `CppDemanglingFeederTest` that
+  builds `DemangledFunction` fixtures directly, keeping the suite native-binary-free and free of any
+  cross-module dependency on the demangler implementations. Per [DD-0012](docs/decisions/0012-rec37-demangling-feeder.md).
 - docs(decompiler): DD-0012 — **grounds Rec 37 `#37-3`, the `CppDemanglingFeeder`, as a pure
   `DemangledObject`→`CppTypeSystem` mapper**. Surveys the feed mechanics against the real demangled
   model (`DemangledObject`/`DemangledFunction` getters + public ctor/setters in `Features/Base`) and
