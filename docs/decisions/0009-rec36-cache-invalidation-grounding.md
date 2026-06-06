@@ -632,3 +632,90 @@ superseded here.
 This addendum is shipped as the docs-first step for the broadened gate, and the
 #36-3b-2a implementation lands the gate, the `invalidateByDataTypeIds`
 entry point, and the headed test together.
+
+## Addendum 6 (2026-06-06): the three #36-3b-2b events are not alike — RENAMED folds into the 2a id-path, MOVED is rendering-invariant, only REPLACED stays full-flush
+
+Addendum 4 deferred `DATA_TYPE_REPLACED` / `DATA_TYPE_MOVED` / `DATA_TYPE_RENAMED`
+to #36-3b-2b under one banner: "instance-swap / path-change events where the
+cached `HighFunction` may hold the **old** instance, so the id must come from
+`getOldValue()` and recompute-from-cache no longer matches cleanly." Reading the
+actual firing sites before implementing shows that banner is **true of only one
+of the three**, and even there the id is not in `getOldValue()`.
+
+### What each event actually carries
+
+All three route through `ProgramDB.dataTypeChanged`
+(`ProgramDB.java:874-891`), which builds
+`new ProgramChangeRecord(eventType, null, null, null, oldValue, newValue)` — so
+`getStart`/`getEnd`/`getObject` are null and only `getOldValue()`/`getNewValue()`
+carry payload. The `dataTypeID` argument is used **only** to record the change set
+(`:878-880`) and is **not placed in the record**. The Program-side firing sites
+(`ProgramDataTypeManager.java`) are:
+
+| Event | `getOldValue()` | `getNewValue()` | id arg (dropped from record) |
+|---|---|---|---|
+| `DATA_TYPE_RENAMED` (`:218-221`) | `oldName` (`String`) | `dt` — the **same live instance**, renamed in place | `getID(dt)` |
+| `DATA_TYPE_MOVED` (`:210-215`) | old `Category` | `dt` — the **same live instance**, recategorised | `getID(dt)` |
+| `DATA_TYPE_REPLACED` (`:195-201`) | `existingPath` (`DataTypePath`) | `replacementDt` — a **different** instance | `existingDtID` |
+
+So `getOldValue()` is **never a `DataType`** for any of the three — addendum 4's
+"id must come from `getOldValue()`" does not hold. The split is by instance/id
+stability, which is the opposite of how addendum 4 grouped them.
+
+### RENAMED — stable id, renders by name → reuse the 2a id-path verbatim
+
+A rename mutates the type's name field; its DB id (a `DataTypeManager` key
+independent of name) and its instance are **stable**. `getNewValue()` is the same
+program-`DataTypeManager` instance a cached `HighFunction`'s
+`HighSymbol.getDataType()` hands back (addendum 4), carrying the **same id**.
+The decompiler renders the type *name* into its `ClangToken` text, which a cached
+`DecompileResults` froze at decode time — so a rename leaves the displayed name
+**stale** until the referencing functions re-decompile. Both facts mean RENAMED is
+handled by **exactly the addendum-4/5 recompute path**: extract the id from
+`getNewValue()` (identical to the `DATA_TYPE_CHANGED` branch — both put the
+`DataType` in `getNewValue()`), run it through `invalidateByDataTypeIds`, and the
+`Pointer`/`Array`/`TypeDef` unwrap catches functions that reference the renamed
+type only through a derived type. **No new controller machinery.**
+
+### MOVED — stable id, but category is not rendered → benign companion
+
+A move changes only the `CategoryPath`; the instance and id are stable and the
+**name is unchanged**. The Ghidra decompiler renders the bare type name, never its
+category path, so a move **cannot change any cached function's rendering**. MOVED
+is therefore admitted as a **benign companion** alongside `SOURCE_ARCHIVE_CHANGED`
+and `DATA_TYPE_ADDED` (addendum 5): it contributes no ids. Consistent with
+addendum 5's deliberate choice, a batch whose only datatype record is a MOVED
+(no RENAMED/CHANGED) sees no id-contributing event and falls back to the
+conservative full flush rather than a special no-op return — moves are rare and
+this keeps the gate's contract unchanged (liveness only shrinks).
+
+### REPLACED — the genuine residual, stays full-flush
+
+REPLACED is the only true instance swap: `getNewValue()` is a **different**
+instance (`replacementDt`) and the changed type's id (`existingDtID`) is the one
+piece addendum 4 wanted — but it is **dropped at `ProgramDB.dataTypeChanged:890`**,
+absent from the record. Recompute-from-cache cannot match it: a cached
+`HighFunction` may still hold the **old** instance, whose id after replacement no
+longer resolves cleanly, and the record offers no id to test against. REPLACED is
+also flagged `isAutoChange = true` (`ProgramDataTypeManager.java:199`), i.e. it is
+the program-DB's own replace bookkeeping. It therefore **stays on the full-flush
+path** (it falls through to the gate's `else → return null`); a correct selective
+handling would need a recorded id set keyed at replace time and is not pursued
+here.
+
+### Re-scope of #36-3b-2b
+
+The implementation is confined to `collectChangedDataTypeIds`:
+
+- the id-contributing branch widens from `DATA_TYPE_CHANGED` to
+  `DATA_TYPE_CHANGED || DATA_TYPE_RENAMED` (both carry the live `DataType` in
+  `getNewValue()`);
+- the benign-companion branch widens to include `DATA_TYPE_MOVED`;
+- `DATA_TYPE_REPLACED` and everything non-datatype keep forcing the full flush.
+
+`invalidateByDataTypeIds` and the recompute/unwrap helpers are **unchanged**. A
+headed `DecompilerCachingTest` case renames a struct referenced through a pointer
+and asserts only the referencing function is invalidated (mirroring the 2a test),
+proving the rename reaches the cached `HighFunction` via the live instance. This
+addendum is the docs-first step; the #36-3b-2b implementation lands the widened
+gate and the rename test together.

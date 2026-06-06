@@ -12,6 +12,24 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 6 — ground `#36-3b-2b` before implementing
+  and **correct** addendum 4's framing of the three deferred events. Reading the
+  firing sites (`ProgramDataTypeManager` → `ProgramDB.dataTypeChanged:890`) shows
+  they are not alike: `getOldValue()` is never a `DataType` for any of them, and
+  the changed id is dropped from the record. `DATA_TYPE_RENAMED` keeps the same
+  live instance and DB id (only the name field mutates) and the decompiler renders
+  the *name*, so it **folds into the existing `invalidateByDataTypeIds` id-path**
+  (id from `getNewValue()`, with the same `Pointer`/`Array`/`TypeDef` unwrap) — no
+  new machinery. `DATA_TYPE_MOVED` likewise keeps the instance/id but changes only
+  the category path, which the decompiler never renders, so it is a **benign
+  companion** (no ids; a move-only batch full-flushes, per addendum 5). Only
+  `DATA_TYPE_REPLACED` is a true instance swap with its id dropped at
+  `ProgramDB.dataTypeChanged:890`, so it **stays full-flush**. Re-scopes
+  `#36-3b-2b` to a `collectChangedDataTypeIds`-only change (widen the
+  id-contributing branch to RENAMED, the benign branch to MOVED). Docs-first;
+  precedes the `#36-3b-2b` implementation, mirroring the addendum-4/5 → `#36-3b-2a`
+  rhythm.
+  See [DD-0009 addendum 6](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-6-2026-06-06-the-three-36-3b-2b-events-are-not-alike--renamed-folds-into-the-2a-id-path-moved-is-rendering-invariant-only-replaced-stays-full-flush).
 - feat(decompiler): Rec 36 `#36-3b-2a` — selective GUI cache invalidation for
   in-place datatype edits. A `DATA_TYPE_CHANGED` batch (with the benign
   `SOURCE_ARCHIVE_CHANGED` / `DATA_TYPE_ADDED` companions per
