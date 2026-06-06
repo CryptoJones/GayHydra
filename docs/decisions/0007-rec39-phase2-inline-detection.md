@@ -174,7 +174,7 @@ against regressions in the unbudgeted/normal path.
 |---|---|
 | #39-4a | `BUILTIN_MEMSET` builtin + `RuleMemset` (non-char constant fill) in `constseq.cc` + option gate + datatest |
 | #39-4b | `RulePopcount` SWAR-idiom rule folding into the **existing native** `CPUI_POPCOUNT` op — no new builtin (see [addendum](#addendum-2026-06-06-popcount-folds-into-the-native-cpui_popcount-op)) + datatest |
-| #39-5 | Tighten/extend the `memset` element-type coverage (word/dword fills, AVX-shaped fills) |
+| #39-5 | ~~Tighten/extend the `memset` element-type coverage (word/dword fills, AVX-shaped fills)~~ — a pre-implementation survey found word/dword **and** single-vector fills **already fold** to `builtin_memset`; reframed (see [#39-5 addendum](#addendum-2026-06-06-39-5-wide-fills-already-fold)) to ship only a regression datatest (`memsetwide.xml`) and defer the one residual (≥2-vector-store fills) |
 | #39-6 (sub-DD) | Loop-shaped patterns (`strlen`, `strcmp`/`strncmp`, `memcmp`, copy-loops): post-structuring loop-region matcher — opens with its own design record |
 | #39-7 | Optional per-occurrence UI override (only if exactness ever relaxes) |
 
@@ -218,6 +218,56 @@ same exactness bar as the string/`memset` rules (fire only on a
 fully-determined magic-constant match). The architecture option gate
 (decision point 4) still applies. No `userop.cc` change is part of
 `#39-4b`.
+
+## Addendum (2026-06-06): #39-5 wide fills already fold
+
+The original `#39-5` row anticipated that "word/dword fills" and
+"AVX-shaped fills" would need new *element-type* coverage in
+`RuleMemset`, by analogy with the char/non-char split of `#39-4a`. A
+pre-implementation survey (probe shapes built at `-O1`/`-O2`, captured in
+the `memsetwide.xml` regression datatest) found that analogy is wrong:
+**the store width is already handled.**
+
+`ArraySequence::formByteArray` decomposes each STORE's constant operand
+into individual bytes and then requires every byte across the contiguous
+region to be equal. The pointed-to element type only sets the *stride*;
+it does not gate the *store width*. So a run of equal-valued stores
+wider than the element already collapses correctly today:
+
+| probe | shape | renders as |
+|---|---|---|
+| `qwfill` | 4× `mov qword [p+k], 0` (8-byte stores to `char*`) | `builtin_memset(p, 0, 0x20)` |
+| `dwfill` | 4× `mov dword [p+k], 0` (4-byte stores to `char*`) | `builtin_memset(p, 0, 0x10)` |
+| `xmmfill16` | 1× `movups [p], xmm0` (16-byte vector store of a `pxor`-zeroed reg) | `builtin_memset(p, 0, 0x10)` |
+| `nearmiss` | 4× `mov qword [p+k], 0xff` (non-uniform byte pattern) | *not folded* (byte-wise writes) — correct |
+
+The single genuine residual is the **multi-vector fill**: two or more
+16/32-byte `movups`/`vmovups` stores (the `-O2` lowering of a ~32-byte+
+`memset`). That does **not** fold, and renders as a mixed blob — part
+per-byte assignment, part raw aggregate store:
+
+```c
+void xmmfill32(char *p) {            // 2× movups xmm0(=0)
+  p[0] = '\0'; /* … p[1..0xf] = '\0' … */
+  *(xunknown1 (*)[16])(p + 0x10) = (xunknown1 [16])0x0;
+}
+```
+
+This is an **aggregate-store normalisation** problem (the 16-byte vector
+STORE is left as a single aggregate-typed write, and the two halves are
+even lowered inconsistently) — it sits *upstream* of `constseq`, not
+inside its element-type handling. Extending `RuleMemset`'s element
+coverage would not reach it; the STOREs never arrive as the byte/element
+COPYs the sequence collector consumes.
+
+**Decision:** `#39-5` ships only `memsetwide.xml`, a regression guard
+that pins the already-correct word/dword/single-vector folding so a
+future refactor cannot silently lose it. No `constseq.cc` change is part
+of `#39-5`. The multi-vector residual is **deferred** — it is revisited
+either as its own investigation into vector-aggregate STORE splitting, or
+folded into the `#39-6` post-structuring region matcher, whichever lands
+first. It is explicitly *not* asserted (positively or negatively) by the
+datatest, so cementing the current messy rendering is avoided.
 
 ## References
 
