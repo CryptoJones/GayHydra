@@ -12,6 +12,19 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0012 — **grounds Rec 37 `#37-3`, the `CppDemanglingFeeder`, as a pure
+  `DemangledObject`→`CppTypeSystem` mapper**. Surveys the feed mechanics against the real demangled
+  model (`DemangledObject`/`DemangledFunction` getters + public ctor/setters in `Features/Base`) and
+  pins two facts that fix the feeder's shape: the GNU demangler shells out to a native `c++filt`
+  process (`GnuDemangler.java:110-111`) while MSVC is pure-Java, and `Features/Base` cannot depend on
+  the demangler modules. Decides: the feeder is a *consumer* of an already-demangled symbol (it neither
+  runs a demangler nor scans a program — that's #37-4/#37-5), lands in `Features/Base`
+  `ghidra.app.util.cpp`, maps name/namespace→class+method with const/static qualifiers and calling
+  convention (no `isVirtual` — that needs the vtable, #37-6), synthesizes an empty placeholder
+  `StructureDataType(name, 0)` for layout-less classes to preserve #37-2's non-null backing invariant,
+  and is unit-tested by **constructing `DemangledFunction` fixtures directly** so the test stays
+  headless, native-binary-free, and cross-module-dependency-free. Mirrors DD-0011's "ground only the
+  next slice" discipline. Per [DD-0012](docs/decisions/0012-rec37-demangling-feeder.md).
 - feat(decompiler): Rec 37 `#37-2` — **the model-only `CppTypeSystem` skeleton**. Adds the C++ frontend's
   data model under `Features/Base` package `ghidra.app.util.cpp`: `CppTypeSystem` (a name-keyed,
   insertion-ordered registry of classes, optionally bound to a `DataTypeManager`), `CppClass` (a
