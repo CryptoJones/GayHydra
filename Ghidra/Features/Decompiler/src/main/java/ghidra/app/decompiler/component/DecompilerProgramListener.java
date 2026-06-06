@@ -26,6 +26,8 @@ import ghidra.program.database.SpecExtension;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.Symbol;
@@ -46,6 +48,7 @@ public class DecompilerProgramListener implements DomainObjectListener {
 	private DecompilerController controller;
 	private SwingUpdateManager updater;
 	private Consumer<AddressSetView> localChangeHandler;
+	private Consumer<Set<Long>> dataTypeChangeHandler;
 
 	/**
 	 * Construct a listener with a callback to be called when a decompile should occur. Program
@@ -80,9 +83,29 @@ public class DecompilerProgramListener implements DomainObjectListener {
 	 */
 	public DecompilerProgramListener(DecompilerController controller, SwingUpdateManager updater,
 			Consumer<AddressSetView> localChangeHandler) {
+		this(controller, updater, localChangeHandler, null);
+	}
+
+	/**
+	 * Construct a listener with a full-refresh updater, a selective function-local handler, and a
+	 * selective shared-datatype handler. When a change batch consists entirely of in-place
+	 * {@link ProgramEvent#DATA_TYPE_CHANGED} records, the datatype handler is invoked with just the
+	 * changed type ids so only the functions that reference those types are invalidated, instead of
+	 * kicking the updater (which flushes the whole cache). See DD-0009 addendum 4.
+	 * @param controller the DecompilerController
+	 * @param updater the SwingUpdateManager kicked for changes that require a full cache flush
+	 * @param localChangeHandler invoked with the changed address set for function-local edits, or
+	 * {@code null} to always take the full-flush path for those
+	 * @param dataTypeChangeHandler invoked with the changed datatype-id set for pure
+	 * {@code DATA_TYPE_CHANGED} batches, or {@code null} to always take the full-flush path for those
+	 */
+	public DecompilerProgramListener(DecompilerController controller, SwingUpdateManager updater,
+			Consumer<AddressSetView> localChangeHandler,
+			Consumer<Set<Long>> dataTypeChangeHandler) {
 		this.controller = controller;
 		this.updater = updater;
 		this.localChangeHandler = localChangeHandler;
+		this.dataTypeChangeHandler = dataTypeChangeHandler;
 	}
 
 	@Override
@@ -114,6 +137,13 @@ public class DecompilerProgramListener implements DomainObjectListener {
 			AddressSetView localChanges = collectLocalChangeAddresses(ev);
 			if (localChanges != null && localChangeHandler != null) {
 				localChangeHandler.accept(localChanges);
+				return;
+			}
+			// Or, if the whole batch is in-place shared-datatype edits, invalidate only the
+			// functions that reference those types. See DD-0009 addendum 4.
+			Set<Long> changedTypeIds = collectChangedDataTypeIds(ev);
+			if (changedTypeIds != null && dataTypeChangeHandler != null) {
+				dataTypeChangeHandler.accept(changedTypeIds);
 				return;
 			}
 		}
@@ -244,6 +274,57 @@ public class DecompilerProgramListener implements DomainObjectListener {
 		}
 
 		return set.isEmpty() ? null : set;
+	}
+
+	/**
+	 * Returns the set of data-type ids changed by a batch iff <em>every</em> record in it is an
+	 * in-place {@link ProgramEvent#DATA_TYPE_CHANGED}. Returns {@code null} the moment any record is
+	 * not such an event (so the caller falls back to a full cache flush), and also for a sentinel id
+	 * ({@link DataTypeManager#NULL_DATATYPE_ID}/{@link DataTypeManager#BAD_DATATYPE_ID}) that cannot
+	 * be matched against a referenced type. Instance-swap events
+	 * ({@code DATA_TYPE_REPLACED}/{@code MOVED}/{@code RENAMED}) are deliberately excluded — their
+	 * old/new identity churn is handled by #36-3b-2b and stays on the full-flush path until then.
+	 * See DD-0009 addendum 4.
+	 *
+	 * @param ev the change event
+	 * @return the changed data-type ids, or {@code null} if the batch is not entirely in-place
+	 * datatype edits
+	 */
+	private Set<Long> collectChangedDataTypeIds(DomainObjectChangedEvent ev) {
+		Set<Long> ids = new HashSet<>();
+		boolean sawDataTypeChange = false;
+		for (DomainObjectChangeRecord record : ev) {
+			EventType type = record.getEventType();
+			if (type == ProgramEvent.DATA_TYPE_CHANGED) {
+				if (!(record.getNewValue() instanceof DataType dt)) {
+					return null;
+				}
+				DataTypeManager dtm = dt.getDataTypeManager();
+				if (dtm == null) {
+					return null;
+				}
+				long id = dtm.getID(dt);
+				if (id == DataTypeManager.NULL_DATATYPE_ID || id == DataTypeManager.BAD_DATATYPE_ID) {
+					return null;
+				}
+				ids.add(id);
+				sawDataTypeChange = true;
+			}
+			else if (type == ProgramEvent.DATA_TYPE_ADDED ||
+				type == ProgramEvent.SOURCE_ARCHIVE_CHANGED) {
+				// Benign companions an in-place datatype edit fires in the same batch: a newly ADDED
+				// type cannot be referenced by any already-cached function (it did not exist when they
+				// were decompiled), and a SOURCE_ARCHIVE_CHANGED is archive-sync metadata with no
+				// per-function rendering impact. Skip them without contributing ids; they do not force
+				// the full flush. Empirically an in-place struct edit always carries these, so without
+				// this tolerance the selective path would be dead code. See DD-0009 addendum 5.
+				continue;
+			}
+			else {
+				return null;
+			}
+		}
+		return sawDataTypeChange ? ids : null;
 	}
 
 	/**

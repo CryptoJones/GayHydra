@@ -12,6 +12,23 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-3b-2a` — selective GUI cache invalidation for
+  in-place datatype edits. A `DATA_TYPE_CHANGED` batch (with the benign
+  `SOURCE_ARCHIVE_CHANGED` / `DATA_TYPE_ADDED` companions per
+  [DD-0009 addendum 5](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-5-2026-06-06-an-in-place-datatype-edit-never-arrives-as-a-pure-data_type_changed-batch--the-gate-must-tolerate-benign-companions))
+  now invalidates only the cached functions that reference the edited type,
+  instead of flushing the whole GUI decompiler cache. The referenced-type-id set
+  is **recomputed on demand** from each cached `DecompileResults.getHighFunction()`
+  (prototype return/params + local & global `HighSymbol` types) with no recorded
+  per-result state, and matching recursively unwraps `Pointer`/`Array`/`TypeDef`
+  so a function using only `MyStruct *` is caught — confirmed by a headed
+  `DecompilerCachingTest` case in which `fun1`'s committed return type is a
+  transient `MyStruct *` whose own `getID` is `NULL_DATATYPE_ID` yet whose
+  `getDataType()` is the live program `MyStruct`. A cached `HighFunction` that
+  decoded to `null` conservatively invalidates, backed by a debug-assert that no
+  sentinel id reaches the matcher. Any batch carrying a non-companion record type
+  (`FUNCTION_CHANGED`, `SYMBOL_*`, instance-swap datatype events) stays on the
+  full-flush path. Instance-swap events (`#36-3b-2b`) remain full-flush, deferred.
 - docs(decompiler): DD-0009 addendum 5 — correct addendum 4's gate phrasing. An
   in-place struct edit never arrives as a *pure* `DATA_TYPE_CHANGED` batch:
   `SOURCE_ARCHIVE_CHANGED` is an unavoidable companion and `DATA_TYPE_ADDED`
