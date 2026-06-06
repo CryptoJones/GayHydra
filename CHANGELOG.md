@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0022](docs/decisions/0022-rec37-delete-renderer.md) grounds Rec 37 `#37-9f` — the
+  seventh and **final** `CppDecompilerHints` form, the **deallocation renderer** (the death-side counterpart of the
+  `#37-9` construction form): `renderDelete(String receiverExpr, boolean isArray)` emits `delete e` / `delete[] e`.
+  **Uniquely among the family it reads no `CppClass` model fact** — C++ `delete` names no type (it is inferred from
+  the pointer), so the renderer takes only an opaque receiver expression and an array-vs-scalar flag. No neutral
+  fallback (nothing to fall back from); rejects null-or-blank receiver with `IllegalArgumentException`. **Marks the
+  headless ceiling**: after `#37-9f` the headless renderer family is exhausted — every RFC §5 idiom has a renderer,
+  and all remaining work (the recognition wrappers `#37-7b`…`#37-9f` and the `#37-10+` DTM/signature band) is
+  Program-coupled and a test-before-push blocker, so the next step after the `#37-9f` impl is to flag that ceiling,
+  not invent further micro-forms. The docs-first step preceding the `#37-9f` implementation.
 - feat(decompiler): Rec 37 `#37-9e` — **the `CppDecompilerHints` placement-new renderer**, the sixth form and the
   placement sibling of the `#37-9` scalar construction renderer
   ([DD-0021](docs/decisions/0021-rec37-placement-new-renderer.md)). `renderPlacementConstruction(CppClass type,
