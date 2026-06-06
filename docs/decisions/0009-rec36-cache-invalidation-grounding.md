@@ -236,7 +236,11 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
 - This DD (#36 grounding + re-sequencing) — **done**
 - #36-3a — address-intersection selective invalidation — **done** (comment-only; see addendum 1)
 - #36-3a-2 — symbol→owning-function invalidation for local/param renames — **done** (see addendum 2)
-- #36-3b — cross-function dependency invalidation — **design grounded** (see addendum 3); splits into #36-3b-1 (callee signature/modifier → callers, no bitmap) + #36-3b-2 (shared-datatype → referencing functions, recorded datatype-ID set); impl pending
+- #36-3b — cross-function dependency invalidation — **design grounded** (see addendum 3); splits into #36-3b-1 (callee signature/modifier → callers) + #36-3b-2 (shared-datatype → referencing functions):
+  - #36-3b-1 — callee signature/modifier change → invalidate callee + its `getCallingFunctions` set via the existing `invalidate(AddressSetView)` path, no bitmap — **done**
+  - #36-3b-2a — in-place `DATA_TYPE_CHANGED` → `invalidateByDataTypeIds`, type-ref set **recomputed** from the cached `HighFunction` (no recorded per-result state, addendum 4), gate tolerates the benign `DATA_TYPE_ADDED`/`SOURCE_ARCHIVE_CHANGED` companions (addendum 5) — **done**
+  - #36-3b-2b — instance-swap event triage (addendum 6): `DATA_TYPE_RENAMED` folds into the 2a id-path, `DATA_TYPE_MOVED` is a rendering-invariant benign companion, `DATA_TYPE_REPLACED` **stays permanently full-flush** (its id is dropped at `ProgramDB.dataTypeChanged:890`) — **done**
+  - #36-3b-2 recompute backstop — the addendum-3 debug-assert recompute mode, regrounded as a **test-harness corpus assertion** (addendum 7) — **design grounded; impl pending**
 - #36-4 / #36-5 / #36-6 — sequenced above
 
 ## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
@@ -719,3 +723,77 @@ and asserts only the referencing function is invalidated (mirroring the 2a test)
 proving the rename reaches the cached `HighFunction` via the live instance. This
 addendum is the docs-first step; the #36-3b-2b implementation lands the widened
 gate and the rename test together.
+
+## Addendum 7 (2026-06-06): the #36-3b-2 recompute backstop is a test-harness corpus assertion, not a runtime DecompilerController mode
+
+Addendum 3 committed #36-3b-2 to ship *behind a debug-assert recompute mode*:
+"in an assert build, after a cross-function edit, re-decompile the entries
+selective invalidation **kept** and assert their output is unchanged. A violation
+means the dependency set under-approximated, and is caught in test/CI rather than
+as a user-visible stale render." #36-3b-2a and #36-3b-2b shipped the selective
+datatype-keyed invalidation but **not** that backstop. Grounding *where* the
+backstop can run, against the real decompile/cache plumbing, shows it cannot be a
+runtime mode on `DecompilerController` and belongs in the headed test harness —
+which, as addendum 3 itself anticipated ("caught in test/CI"), is where the
+corpus assert was always meant to live.
+
+### What the backstop has to do
+
+`invalidateByDataTypeIds` (`DecompilerController.java:427-440`) and its
+address-keyed sibling `invalidate(AddressSetView)` (`:399-409`) work by *keeping*
+every cache entry they cannot prove is affected. The backstop's contract is the
+dual of that decision: for each entry the selective path **kept**, prove a fresh
+decompile would render identically; a difference means
+`referencesAnyDataType` (`:442-466`) under-approximated the dependency set.
+
+### Why it cannot be a runtime DecompilerController mode
+
+The GUI decompile path is **asynchronous and single-process**. A decompile is
+dispatched through `decompilerMgr.decompile(...)`
+(`DecompilerController.java:124`, `:283`) and its result is delivered back later
+on the Swing thread via `setDecompileData` → `updateCache`
+(`:230-244`), which is the only place a `DecompileResults` is `put` into the
+cache (`:242`). `invalidateByDataTypeIds` runs synchronously inside the
+`domainObjectChanged` listener dispatch; it has **no** synchronous
+re-decompile-and-compare available to it. Bolting one on would mean, for every
+kept entry, blocking the Swing thread on the single shared decompiler process
+while it re-runs — serialising the whole UI on a correctness check, on every
+datatype edit. That is the opposite of Rec 36's goal (the cache exists to *avoid*
+re-decompiling), and an `-ea` assert is supposed to be cheap. So the
+"debug-assert recompute mode" as a property of the live controller is rejected.
+
+### Where it does belong: a corpus assertion in DecompilerCachingTest
+
+The headed `DecompilerCachingTest`
+(`src/test.slow/.../component/DecompilerCachingTest.java`) already has every
+primitive the backstop needs and none of the constraints:
+
+- it drives real decompiles through the GUI (`goTo(addr)`) and waits for them to
+  settle (`waitForBusyDecompile`, `:491-495`), so a fresh decompile is a method
+  call, not an inline block on the dispatch thread;
+- it holds the cache directly (`cache.asMap()`, `:386`) and can enumerate exactly
+  which entries a selective invalidation kept;
+- the comparison surface is already frozen in each cached value:
+  `DecompileResults.getDecompiledFunction().getC()`
+  (`DecompileResults.java:206-213`) is the rendered C text, and
+  `getCCodeMarkup()` (`:195`) the token tree — either is a stable equality key.
+
+So the backstop is a **test helper**: snapshot the C of every entry the edit
+*kept*, force each of those functions to re-decompile, and assert the C is
+byte-identical (and, dually, that every entry the edit *dropped* was one whose C
+actually changes). Run over the datatype-edit corpus (the 2a/2b struct-edit and
+rename cases, extended), it is exactly addendum 3's "re-decompile the kept
+entries and assert unchanged", realised as a CI assertion rather than a
+production code path.
+
+### Corrects, does not replace, addendum 3
+
+Addendum 3's intent stands unchanged — the backstop exists, it guards the
+headline risk (a missed type/caller dependency → stale render), and it is
+"caught in test/CI". Only its projected *form* ("a debug-assert recompute mode"
+read as a runtime `DecompilerController` behaviour) is superseded: the async,
+single-process decompiler makes an inline runtime recompute self-defeating, and
+the headed test is the correct host. This mirrors addenda 4/5/6, each of which
+corrected a projected plumbing detail against the real APIs before the matching
+implementation PR. This addendum is the docs-first step; the #36-3b-2 recompute
+backstop lands as a `DecompilerCachingTest` corpus assertion next.
