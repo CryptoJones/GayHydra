@@ -18,7 +18,7 @@ package ghidra.app.decompiler.component;
 import static ghidra.framework.model.DomainObjectEvent.*;
 import static ghidra.program.util.ProgramEvent.*;
 
-import java.util.Iterator;
+import java.util.*;
 import java.util.function.Consumer;
 
 import ghidra.framework.model.*;
@@ -26,7 +26,12 @@ import ghidra.program.database.SpecExtension;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolType;
+import ghidra.program.util.FunctionChangeRecord;
+import ghidra.program.util.FunctionChangeRecord.FunctionChangeType;
 import ghidra.program.util.ProgramChangeRecord;
 import ghidra.program.util.ProgramEvent;
 import ghidra.util.task.SwingUpdateManager;
@@ -117,39 +122,109 @@ public class DecompilerProgramListener implements DomainObjectListener {
 
 	/**
 	 * Returns the address set of a change batch iff <em>every</em> record in it is a function-local
-	 * edit whose effect is bounded by an address range inside the changed function's body. Returns
-	 * {@code null} the moment any record is not provably function-local, so the caller falls back to
-	 * a full cache flush (the conservative default: liveness can only shrink, never grow stale).
+	 * edit that can be mapped to the body of exactly one changed function. Returns {@code null} the
+	 * moment any record is not provably function-local, so the caller falls back to a full cache
+	 * flush (the conservative default: liveness can only shrink, never grow stale). See DD-0009 and
+	 * its addendum 2.
 	 *
-	 * <p>Only {@link ProgramEvent#COMMENT_CHANGED} qualifies today: its record carries the code
-	 * address of the comment, which lies in the owning function's body, so intersecting it against
-	 * the cached function bodies invalidates exactly the right entries. Symbol renames are
-	 * deliberately excluded — a local variable's symbol address is in stack/register space, not the
-	 * function's code body, so it cannot be scoped by address intersection alone (see the DD-0009
-	 * addendum); they remain on the full-flush path until a symbol-to-function mapping is added.
+	 * <p>Three record shapes qualify:
+	 * <ul>
+	 * <li>{@link ProgramEvent#COMMENT_CHANGED} — its record carries the code address of the comment,
+	 * which lies in the owning function's body, so its range maps directly.</li>
+	 * <li>{@link ProgramEvent#SYMBOL_RENAMED} for a {@link SymbolType#LOCAL_VAR} or
+	 * {@link SymbolType#PARAMETER} symbol — a local/parameter <em>name</em> change does not alter the
+	 * signature callers render, so it is function-local. The symbol's address is in stack/register
+	 * space (not the body), so it is mapped via its owning function's {@link Function#getBody() body}
+	 * rather than by its own address.</li>
+	 * <li>A companion {@link FunctionChangeRecord} with
+	 * {@link FunctionChangeType#UNSPECIFIED} — admitted <em>only by correlation</em>, i.e. iff its
+	 * function was already resolved from a sibling local/parameter rename in the same batch. A bare
+	 * {@code UNSPECIFIED} function change (e.g. a stack-return-offset edit, which alters the callee
+	 * purge that callers track) has no such sibling and forces the full flush.</li>
+	 * </ul>
+	 *
+	 * <p>Any other record — including signature/modifier function changes
+	 * ({@code PARAMETERS_CHANGED}/{@code RETURN_TYPE_CHANGED}/{@code INLINE_CHANGED}/…, which affect
+	 * callers) and symbol changes that are not local/parameter renames — returns {@code null}.
 	 *
 	 * @param ev the change event
 	 * @return the changed addresses, or {@code null} if the batch is not entirely function-local
 	 */
 	private AddressSetView collectLocalChangeAddresses(DomainObjectChangedEvent ev) {
 		AddressSet set = new AddressSet();
-		Iterator<DomainObjectChangeRecord> iter = ev.iterator();
-		while (iter.hasNext()) {
-			DomainObjectChangeRecord record = iter.next();
-			if (record.getEventType() != ProgramEvent.COMMENT_CHANGED) {
+		Set<Function> localFunctions = new HashSet<>();
+		List<Function> companionFunctionChanges = new ArrayList<>();
+
+		for (DomainObjectChangeRecord record : ev) {
+			if (record.getEventType() == ProgramEvent.COMMENT_CHANGED) {
+				if (!(record instanceof ProgramChangeRecord pcr) || pcr.getStart() == null) {
+					return null;
+				}
+				Address start = pcr.getStart();
+				Address end = pcr.getEnd() != null ? pcr.getEnd() : start;
+				set.addRange(start, end);
+			}
+			else if (record.getEventType() == ProgramEvent.SYMBOL_RENAMED) {
+				Function owner = localRenameOwner(record);
+				if (owner == null) {
+					return null;
+				}
+				localFunctions.add(owner);
+			}
+			else if (record.getEventType() == ProgramEvent.FUNCTION_CHANGED) {
+				if (!(record instanceof FunctionChangeRecord fcr) ||
+					fcr.getSpecificChangeType() != FunctionChangeType.UNSPECIFIED) {
+					return null;
+				}
+				companionFunctionChanges.add(fcr.getFunction());
+			}
+			else {
 				return null;
 			}
-			if (!(record instanceof ProgramChangeRecord pcr)) {
-				return null;
-			}
-			Address start = pcr.getStart();
-			if (start == null) {
-				return null;
-			}
-			Address end = pcr.getEnd() != null ? pcr.getEnd() : start;
-			set.addRange(start, end);
 		}
+
+		// A FUNCTION_CHANGED/UNSPECIFIED record is admitted only as the companion that
+		// ProgramDB.symbolChanged fires alongside a local/parameter rename; one that arrives without
+		// such a sibling (e.g. setStackReturnOffset) is not provably function-local. See DD-0009
+		// addendum 2.
+		for (Function function : companionFunctionChanges) {
+			if (!localFunctions.contains(function)) {
+				return null;
+			}
+		}
+
+		// Map each resolved local/parameter rename to its owning function's body, reusing the same
+		// address-intersection path as comment edits.
+		for (Function function : localFunctions) {
+			AddressSetView body = function.getBody();
+			if (body == null) {
+				return null;
+			}
+			set.add(body);
+		}
+
 		return set.isEmpty() ? null : set;
+	}
+
+	/**
+	 * Resolves the function that owns a {@link ProgramEvent#SYMBOL_RENAMED} record iff it is a
+	 * local-variable or parameter rename — the only symbol renames that are function-local. Returns
+	 * {@code null} for any other symbol (labels, globals, the function's own name symbol, …), whose
+	 * rename can affect other functions and must take the full-flush path.
+	 *
+	 * @param record the symbol-rename change record
+	 * @return the owning function, or {@code null} if the rename is not a local/parameter rename
+	 */
+	private Function localRenameOwner(DomainObjectChangeRecord record) {
+		if (!(record instanceof ProgramChangeRecord pcr) ||
+			!(pcr.getObject() instanceof Symbol symbol)) {
+			return null;
+		}
+		SymbolType symbolType = symbol.getSymbolType();
+		if (symbolType != SymbolType.LOCAL_VAR && symbolType != SymbolType.PARAMETER) {
+			return null;
+		}
+		return symbol.getParentNamespace() instanceof Function function ? function : null;
 	}
 
 	public void dispose() {
