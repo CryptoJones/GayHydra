@@ -12,6 +12,17 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0018](docs/decisions/0018-rec37-construction-renderer.md) grounds Rec 37 `#37-9` — the
+  third RFC §5 `CppDecompilerHints` form, the **heap-construction renderer**: `renderConstruction` emits
+  `new ClassName(args)` (`ClassName` is `CppClass.getName()`, args joined in call order; a zero-arg construction
+  renders `new ClassName()` with parentheses always present). Deliberately **no neutral fallback** — a contrast
+  with `#37-7`/`#37-8` — because the class name is a *total* model fact (`getName()` never fails for a defined
+  class); the renderer only rejects malformed boundary inputs (null type, null arg list, null arg element) with
+  `IllegalArgumentException`. **No constructor-overload resolution** (that needs parameter `DataType`s/signatures,
+  the DTM-coupled `#37-10+` work); it formats the args the deferred recognition pass supplies. Scalar heap
+  construction only — `delete e`, the explicit destructor call, array `new[]`, and placement `new` are each
+  deferred as follow-ons (each needs an input this slice does not carry). Stateless and headless, extending the
+  existing renderer; the `alloc + ctor-call` recognition pass is the deferred `#37-9b` wrapper.
 - feat(decompiler): Rec 37 `#37-8` — **the `CppDecompilerHints` up/down-cast renderer**, the second RFC §5 form
   ([DD-0017](docs/decisions/0017-rec37-cast-renderer.md)). `renderUpcast`/`renderDowncast` match a recognised
   constant byte offset against the derived class's `CppBaseClass` edges (`getOffset`) and render
