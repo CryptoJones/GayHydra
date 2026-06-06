@@ -15,6 +15,7 @@
  */
 package ghidra.app.decompiler;
 
+import static ghidra.program.model.pcode.AttributeId.*;
 import static ghidra.program.model.pcode.ElementId.*;
 
 import ghidra.program.model.lang.CompilerSpec;
@@ -60,6 +61,7 @@ public class DecompileResults {
 	private HighParamID hparamid; //Parameter ID information
 	private ClangTokenGroup docroot; // C code parsed from XML
 	private String errMsg; // Error message from decompiler
+	private String budgetExhaustedPass; // Pass named by a <budgetexhausted> result element, else null
 	private DecompileProcess.DisposeState processState;
 
 	public DecompileResults(Function f, Language language, CompilerSpec compilerSpec,
@@ -167,6 +169,31 @@ public class DecompileResults {
 	}
 
 	/**
+	 * Returns true if these results were truncated because the decompiler
+	 * exhausted its per-function analysis budget (Rec 35).  A partial result
+	 * still decompiles &mdash; {@link #decompileCompleted()} can be true and the
+	 * HighFunction / C markup are populated &mdash; but some analysis was cut
+	 * short, so the output may be less refined than an unbudgeted run.  The
+	 * signal is carried by a structured {@code <budgetexhausted>} element in the
+	 * result stream rather than scraped from the warning-header text (DD-0010).
+	 * @return true if a budget-exhaustion marker was present in these results
+	 */
+	public boolean isPartial() {
+		return budgetExhaustedPass != null;
+	}
+
+	/**
+	 * If these results are {@link #isPartial() partial} because the analysis
+	 * budget was exhausted, returns the name of the analysis pass on which the
+	 * budget first ran out (for example {@code "data_flow"} or
+	 * {@code "type_inference"}); otherwise null.
+	 * @return the exhausted pass name, or null if the result is not partial
+	 */
+	public String getBudgetExhaustedPass() {
+		return budgetExhaustedPass;
+	}
+
+	/**
 	 * Get the high-level function structure associated
 	 * with these decompilation results, or null if there
 	 * was an error during decompilation
@@ -220,13 +247,19 @@ public class DecompileResults {
 			hfunc = null;
 			hparamid = null;
 			docroot = null;
+			budgetExhaustedPass = null;
 			int docel = decoder.openElement(ELEM_DOC);
 			for (;;) {
 				int el = decoder.peekElement();
 				if (el == 0) {
 					break;
 				}
-				if (el == ELEM_FUNCTION.id()) {
+				if (el == ELEM_BUDGETEXHAUSTED.id()) {
+					int budgetel = decoder.openElement(ELEM_BUDGETEXHAUSTED);
+					budgetExhaustedPass = decoder.readString(ATTRIB_NAME);
+					decoder.closeElement(budgetel);
+				}
+				else if (el == ELEM_FUNCTION.id()) {
 					if (hfunc == null) {
 						hfunc = new HighFunction(function, language, compilerSpec, dtmanage);
 						hfunc.decode(decoder);

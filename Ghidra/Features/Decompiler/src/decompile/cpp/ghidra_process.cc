@@ -73,6 +73,7 @@ void connect_to_console(Funcdata *fd)
 #endif
 
 ElementId ELEM_DOC = ElementId("doc",229);
+ElementId ELEM_BUDGETEXHAUSTED = ElementId("budgetexhausted",291);	// Rec 35 #35-5a-2
 
 vector<ArchitectureGhidra *> archlist; // List of architectures currently running
 
@@ -316,6 +317,15 @@ void DecompileAt::rawAction(void)
   if (fd->isProcComplete()) {
     PackedEncode encoder(sout);
     encoder.openElement(ELEM_DOC);
+    if (ghidra->budget.engaged() && ghidra->budget.exhausted()) {
+      // Rec 35 #35-5a-2: surface a budget-truncated (partial) result as a
+      // structured child element naming the exhausted pass, so the Java client
+      // can flag DecompileResults.isPartial() without scraping the
+      // warning-header text (DD-0010).
+      encoder.openElement(ELEM_BUDGETEXHAUSTED);
+      encoder.writeString(ATTRIB_NAME, ghidra->budget.exhaustedPass());
+      encoder.closeElement(ELEM_BUDGETEXHAUSTED);
+    }
     if (ghidra->getSendParamMeasures() && (ghidra->allacts.getCurrentName() == "paramid")) {
       ParamIDAnalysis pidanalysis( fd, true ); // Only send back final prototype
       pidanalysis.encode( encoder, true );

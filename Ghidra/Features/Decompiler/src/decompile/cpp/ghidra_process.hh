@@ -35,6 +35,7 @@ using std::cout;
 class GhidraCommand;
 
 extern ElementId ELEM_DOC;		///< Marshaling element \<doc>
+extern ElementId ELEM_BUDGETEXHAUSTED;	///< Marshaling element \<budgetexhausted> (Rec 35 #35-5a-2)
 
 /// \brief Registration point and dispatcher for commands sent to the decompiler
 ///
