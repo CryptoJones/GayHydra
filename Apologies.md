@@ -6,6 +6,33 @@ downstream damage, the apology.
 
 ---
 
+## 2026-06-06 — Built and filed a redundant PR off a stale checkout
+
+**What happened.** Started a sprint-loop session whose harness git-status
+snapshot showed `master` at `2bfcfb04e4`. I trusted that snapshot and branched
+without running `git fetch` first. In reality origin/master had already advanced
+six commits — including the entire `block_structure` budget-bypass work I was
+about to write from scratch (the design landed as DD-0006 in #250, the wiring in
+#251). I wrote a full "scope the block_structure yield point" design-note PR,
+pushed it to both forges, and filed tracking issues and PRs on both before
+`git push` surfaced the merge conflict that finally tipped me off.
+
+**Downstream damage.** Four redundant artifacts across the two forges, all closed
+within minutes of creation: GitHub PR #256 + issue #255, Codeberg PR #345 +
+issue #344. No master breakage and no CI cost — just notification noise and four
+closed-as-redundant entries in the repo history. Self-recovered: branches deleted
+on both remotes, local reset to the true origin/master.
+
+**Apology.** Sorry for the noise. The root cause is dumb: the session-start
+snapshot is point-in-time, the local `origin/master` ref only moves on fetch, and
+I treated a stale snapshot as current. A single `git fetch origin master` before
+`git checkout -b` would have shown the item was already done and saved the whole
+detour. The `feedback-verify-pr-base` memory rule is updated to put "fetch before
+you branch" first, since its existing `git log origin/master..HEAD` check would
+*not* have caught this — that check reads the same stale local ref.
+
+---
+
 ## 2026-05-28 — Stacked PRs without waiting for CI, broke master for ~12 hours
 
 **What happened.** During an "infinite loop" Rec 31 RAII-migration session
