@@ -240,8 +240,10 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
   - #36-3b-1 — callee signature/modifier change → invalidate callee + its `getCallingFunctions` set via the existing `invalidate(AddressSetView)` path, no bitmap — **done**
   - #36-3b-2a — in-place `DATA_TYPE_CHANGED` → `invalidateByDataTypeIds`, type-ref set **recomputed** from the cached `HighFunction` (no recorded per-result state, addendum 4), gate tolerates the benign `DATA_TYPE_ADDED`/`SOURCE_ARCHIVE_CHANGED` companions (addendum 5) — **done**
   - #36-3b-2b — instance-swap event triage (addendum 6): `DATA_TYPE_RENAMED` folds into the 2a id-path, `DATA_TYPE_MOVED` is a rendering-invariant benign companion, `DATA_TYPE_REPLACED` **stays permanently full-flush** (its id is dropped at `ProgramDB.dataTypeChanged:890`) — **done**
-  - #36-3b-2 recompute backstop — the addendum-3 debug-assert recompute mode, regrounded as a **test-harness corpus assertion** (addendum 7) — **design grounded; impl pending**
-- #36-4 / #36-5 / #36-6 — sequenced above
+  - #36-3b-2 recompute backstop — the addendum-3 debug-assert recompute mode, regrounded as a **test-harness corpus assertion** (addendum 7) — **done** (`DecompilerCachingTest.testKeptEntriesReDecompileUnchangedAfterDataTypeEdit`)
+- #36-4 — in-place rewrite for local name / comment — **deferred behind #36-5 telemetry** (see addendum 8): the `FieldPanel` bakes token text+width at layout build, and #36-3a/3a-2 already reduce a rename/comment to a single-function re-decompile, so the optimisation is not worth its staleness risk until telemetry shows a real cost
+- #36-5 — telemetry (hit rate, in-place/selective rate, decompile latency) — **next**
+- #36-6 — `budget` cache-key extension (Rec 35) — sequenced above
 
 ## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
 
@@ -797,3 +799,75 @@ the headed test is the correct host. This mirrors addenda 4/5/6, each of which
 corrected a projected plumbing detail against the real APIs before the matching
 implementation PR. This addendum is the docs-first step; the #36-3b-2 recompute
 backstop lands as a `DecompilerCachingTest` corpus assertion next.
+
+## Addendum 8 (2026-06-06): #36-4 in-place rewrite is deferred behind #36-5 telemetry — the layout bakes token text and width, and a rename already re-decompiles only one function
+
+With #36-3b complete (the selective-invalidation work and its recompute
+backstop), the next sequenced item is #36-4: the "in-place rewrite"
+optimisation this DD's section 4 kept as orthogonal — "modify the cached
+`DecompileResults` for a rename/comment without re-decompiling at all". Grounding
+it against the real render model before implementing shows the projected form is
+not worth building now, and that the honest move is to **defer it behind #36-5
+telemetry** rather than ship speculative, fragile token surgery. This continues
+the addenda-4/6/7 pattern of correcting a projected approach against the APIs;
+here the correction is to *not* implement the phase yet.
+
+### The token text is mutable, but the layout that displays it is baked
+
+`ClangToken` does carry a mutable text field (`ClangToken.java:51`) with a setter
+— but the setter is **package-private** (`ClangToken.java:187`), and, more
+decisively, the on-screen text is **not read from the token at paint time**. When
+the panel builds its layout, `ClangLayoutController.createFieldElementsForLine`
+snapshots each token's text into a fixed `AttributedString`
+(`ClangLayoutController.java:202`) wrapped in a `ClangFieldElement` (`:203`); the
+`FieldPanel` then measures line wrapping and column positions from those
+fixed-width elements. So calling `token.setText(newName)` on a cached
+`ClangTokenGroup` changes the model but **not the display**: the line keeps the
+old width and the rename never appears (and a length change — `x` →
+`myLongName` — would misalign even if it did). Reflecting an edit therefore
+requires rebuilding the layout (re-running `PrettyPrinter`/`ClangLine` →
+`FieldElement[]`), i.e. re-doing the **Java-side render**, not just a repaint.
+
+### What an in-place rewrite would and would not save
+
+The expensive part of a refresh is the **native decompiler round-trip** (the
+async, single-process C++ process that produces the markup), not the Java layout
+build. So an in-place rewrite *could* in principle save the native decompile by
+keeping the cached `ClangTokenGroup`, mutating the affected tokens, and rebuilding
+only the Java layout. But making that correct is the hard part:
+
+- A rename must update **every** token that renders the variable, matched by
+  `Varnode`/`HighSymbol` identity off the cached `HighFunction` (whose decoded
+  `HighSymbol`s still hold the *old* name). The displayed name is not the raw DB
+  symbol name either — it passes through the decompiler's own name resolution
+  (uniqueness suffixes, `IllegalCharCppTransformer`), so substituting the right
+  rendered string is decompiler-internal and brittle.
+- A comment edit looks simpler but the comment text is parsed for annotations
+  (`CommentUtils.parseTextForAnnotations`, `ClangLayoutController.java:198`) and
+  can be aggregated across tokens (`ClangCommentToken.derive`), so it has the same
+  rebuild-and-re-parse coupling.
+
+A wrong substitution shows a **stale or incorrect name** — strictly worse than a
+brief re-decompile.
+
+### Why deferral is the right call
+
+The optimisation's saving is only over an **already-selective single-function
+re-decompile**: #36-3a (comments) and #36-3a-2 (local renames) made these edits
+invalidate just the owning function (see addenda 1–2), so a rename today costs one
+function's native decompile, not a full-cache flush. Upstream Ghidra, written by
+people who know the decompiler internals, also **re-decompiles on rename** — there
+is no in-place token-rewrite path anywhere in the GUI (the `tokenRenamed`
+callback only repairs highlight state, then waits for the rebuilt tokens). Adding
+fragile token surgery to shave one single-function decompile, against an
+architecture that bakes the layout and an upstream that deliberately avoids it, is
+a premature optimisation that reintroduces a staleness risk Rec 36 spent its whole
+arc removing.
+
+So #36-4 is **re-scoped from "next" to "telemetry-gated"**: do **#36-5** (hit-rate
+/ in-place-rate / decompile-latency telemetry) next, and only revisit #36-4 if the
+measured single-function re-decompile latency × rename/comment frequency shows a
+real user-visible cost. This is the same "measure before optimising; liveness only
+shrinks" discipline the rest of the DD follows. If telemetry later justifies it,
+the implementation path is the layout-rebuild-without-native-decompile route above
+— recorded here so the analysis is not redone.
