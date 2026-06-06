@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): [DD-0016](docs/decisions/0016-rec37-decompiler-hints-renderer.md) grounds Rec 37 `#37-7` —
+  the `CppDecompilerHints` (RFC §5) split into a **headless renderer core** and a deferred decompiler pass.
+  Producing a C++-style hint takes two steps: *recognising* the raw C idiom in a decompiled function (that a
+  p-code graph is a vtable-load-then-indirect-call, or a pointer-add is a base-subobject adjustment) — which is
+  inseparable from a `Program`/`HighFunction` — and *rendering* the recognised fact as a string
+  (`receiver->method(args)`, `static_cast<Base*>(d)`, `new Foo(args)`) — which is a pure function of
+  already-resolved model facts. DD-0016 grounds the renderer as the headless half: a stateless
+  `CppDecompilerHints` that turns model objects (a `CppClass`, a vtable slot index, a `CppBaseClass` edge) plus
+  operand expressions into the rendering string, holding no `Program`/`DataTypeManager`/decompiler handle —
+  the same core/wrapper seam as the `#37-3`/`#37-4`/`#37-6` feeders vs. their deferred `#37-4b`/`#37-5`/`#37-6b`
+  scanners. The recognition pass becomes the deferred `#37-7b`/`#37-8b`/`#37-9b` wrapper. The first renderer
+  slice renders the **virtual-method-call** form — the direct consumer of the name-resolved vtable `#37-6c`
+  just produced — with up/down-cast and ctor/dtor renderers as follow-on headless slices. No new model type or
+  mutator is needed (the first such slice since `#37-2`). Validated by headless `CppDecompilerHintsTest`.
 - feat(decompiler): Rec 37 `#37-6c` — **the `CppVtableReconciler`**, the pure in-model pass that fuses the two
   disjoint `CppMethod` views a class accumulates after the `#37-3` and `#37-6` feeders run: the declared
   methods in `getMethods()` (rich `const`/`static`/calling-convention qualifiers, `isVirtual() == false`) and
