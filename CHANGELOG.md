@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- test(decompiler): Rec 36 `#36-3b-2` recompute **backstop** — a headed
+  `DecompilerCachingTest` corpus assertion that, after an in-place datatype edit,
+  forces a fresh re-decompile of every cache entry the selective path *kept* and
+  asserts byte-identical C, so a missed type dependency (a kept entry that should
+  have been invalidated) is caught in test rather than as a user-visible stale
+  render. The corpus includes a function referencing a *different, unedited*
+  struct, proving the id-keyed path keeps a type-referencing function without
+  over-invalidating and that the keep is render-safe. Realises the `#36-3b-2`
+  correctness backstop addendum 3 committed to, as the test-harness assertion
+  [DD-0009 addendum 7](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-7-2026-06-06-the-36-3b-2-recompute-backstop-is-a-test-harness-corpus-assertion-not-a-runtime-decompilercontroller-mode)
+  grounded (the async, single-process GUI decompiler rules out an inline runtime
+  mode). Test-only; no production code change.
 - docs(decompiler): DD-0009 addendum 7 — reground the `#36-3b-2` recompute
   backstop (the addendum-3 "debug-assert recompute mode") as a **test-harness
   corpus assertion**, not a runtime `DecompilerController` mode. The GUI decompile

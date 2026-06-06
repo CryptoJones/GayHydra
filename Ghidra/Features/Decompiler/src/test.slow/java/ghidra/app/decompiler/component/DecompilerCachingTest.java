@@ -317,6 +317,50 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
+	public void testKeptEntriesReDecompileUnchangedAfterDataTypeEdit() throws Exception {
+		// DD-0009 addendum 7: the #36-3b-2 recompute backstop, realised as a test-harness corpus
+		// assertion. For every cache entry an in-place datatype edit KEEPS, a fresh decompile must
+		// render byte-identical C -- otherwise referencesAnyDataType under-approximated and the kept
+		// entry would display stale output, which is Rec 36's headline risk (a missed type dependency
+		// -> stale render). It lives in the headed test, not as a runtime DecompilerController mode:
+		// the GUI decompiler is asynchronous and single-process, so re-decompiling kept entries inline
+		// would block the Swing thread on the one shared decompiler process. See DD-0009 addendum 7.
+		//
+		// fun2 referencing a DIFFERENT, unedited struct is what makes the assertion non-vacuous: it
+		// proves the id-keyed path kept a type-referencing function (no over-invalidation) AND that the
+		// keep is genuinely render-safe.
+		Structure editedStruct = createSharedStruct("MyStruct");
+		Structure otherStruct = createSharedStruct("MyOtherStruct");
+		setFunctionReturnsPointerTo(functionAt(0), editedStruct); // fun1: references the edited type
+		setFunctionReturnsPointerTo(functionAt(1), otherStruct);  // fun2: references a different type
+		Function referencing = functionAt(0);
+		Function keptReferencingOther = functionAt(1);
+		Function keptUnrelated = functionAt(2);                   // fun3: references nothing shared
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(referencing) && isCached(keptReferencingOther) &&
+			isCached(keptUnrelated));
+
+		String otherCBefore = decompiledC(keptReferencingOther);
+		String unrelatedCBefore = decompiledC(keptUnrelated);
+
+		addFieldToStruct(editedStruct); // in-place DATA_TYPE_CHANGED on MyStruct only
+
+		// selective invalidation drops only the MyStruct user; the MyOtherStruct user and the
+		// unrelated function are kept
+		waitForCondition(() -> !isCached(referencing) && isCached(keptReferencingOther) &&
+			isCached(keptUnrelated));
+
+		// backstop: every kept entry re-decompiles to identical C -- the keep was render-safe
+		assertEquals("kept fun2 (references unedited MyOtherStruct) must re-decompile unchanged",
+			otherCBefore, freshDecompiledC(keptReferencingOther));
+		assertEquals("kept fun3 (references nothing shared) must re-decompile unchanged",
+			unrelatedCBefore, freshDecompiledC(keptUnrelated));
+	}
+
+	@Test
 	public void testCacheIsClearedWhenProgramIsClosed() {
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
@@ -449,9 +493,13 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	private void setFirstFunctionReturnsPointerTo(DataType dt) throws Exception {
+		setFunctionReturnsPointerTo(firstFunction(), dt);
+	}
+
+	private void setFunctionReturnsPointerTo(Function f, DataType dt) throws Exception {
 		builder.tx(() -> {
 			DataType ptr = program.getDataTypeManager().getPointer(dt);
-			firstFunction().setReturnType(ptr, SourceType.USER_DEFINED);
+			f.setReturnType(ptr, SourceType.USER_DEFINED);
 		});
 	}
 
@@ -492,6 +540,28 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 		DecompilerController controller =
 			(DecompilerController) TestUtils.getInstanceField("controller", decompilerProvider);
 		waitForCondition(() -> !controller.isDecompiling());
+	}
+
+	private String decompiledC(Function f) {
+		DecompileResults results = cache.asMap().get(f);
+		assertNotNull("expected " + f.getName() + " to be cached", results);
+		return results.getDecompiledFunction().getC();
+	}
+
+	// Forces a fresh decompile of an already-cached function and returns its re-rendered C.
+	// forceRefresh re-decompiles without clearing the whole cache (unlike refreshDisplay) and
+	// replaces the entry via the normal updateCache path; waiting for a NEW results instance (not
+	// just !isDecompiling) avoids racing the asynchronous dispatch. See DD-0009 addendum 7.
+	private String freshDecompiledC(Function f) {
+		DecompilerController controller = decompilerProvider.getController();
+		DecompileResults before = cache.asMap().get(f);
+		ProgramLocation location = new ProgramLocation(program, f.getEntryPoint());
+		runSwing(() -> controller.forceRefresh(program, location, null));
+		waitForCondition(() -> {
+			DecompileResults now = cache.asMap().get(f);
+			return now != null && now != before && !controller.isDecompiling();
+		});
+		return decompiledC(f);
 	}
 
 }
