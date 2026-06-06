@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 35 `#35-5a-2` — **the GUI can now *detect* a budget-truncated (partial)
+  result**. When a budget is engaged and analysis is truncated, the worker emits a structured
+  `<budgetexhausted name="…">` child of `<doc>` (naming the exhausted pass) read straight from the
+  per-function `Architecture::budget` tracker at the result-encode site (`ghidra_process.cc`); the
+  read is sound because `Funcdata::followFlow` rebases `budget.reset()` at the start of every
+  function, so the marker reflects only the function just decompiled. `DecompileResults` decodes it
+  into a first-class `isPartial()` / `getBudgetExhaustedPass()` rather than scraping the
+  warning-header text (DD-0010). The new element is pinned to id `291` on both the C++
+  (`ghidra_process.cc`) and Java (`ElementId.java`) ends, and the `ELEM_UNKNOWN` sentinel bumps
+  `291`→`292` on both. Fast `gradle :Decompiler:test` round-trip coverage asserts a
+  `<budgetexhausted>` marker surfaces as `isPartial()` carrying the pass name and that a budgetless
+  doc stays complete; the C++ `--full` precheck (ghidra_dbg link + 697 datatests) confirms the
+  worker side builds clean and is regression-free. The banner + Retry-with-2× UI follows in
+  `#35-5b`. Per [DD-0010](docs/decisions/0010-rec35-partial-result-gui-surfacing.md).
 - feat(decompiler): Rec 35 `#35-5a-1` — **the GUI can now *set* a decompilation budget**. Adds a
   `decompileBudget` field to `DecompileOptions` (tool option *Analysis.Iteration budget (0 =
   unlimited)*, default `0` = disengaged) whose `encode()` emits the already worker-registered
