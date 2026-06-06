@@ -180,7 +180,8 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 		followUpWorkUpdater = new SwingUpdateManager(() -> doFollowUpWork());
 
 		plugin.getTool().addServiceListener(serviceListener);
-		programListener = new DecompilerProgramListener(controller, redecompileUpdater);
+		programListener =
+			new DecompilerProgramListener(controller, redecompileUpdater, this::localProgramChange);
 		setDefaultFocusComponent(controller.getDecompilerPanel());
 	}
 
@@ -356,6 +357,30 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 				controller.refreshDisplay(program, currentLocation, null);
 				overlayPainter.setMessage("");
 			}
+		}
+	}
+
+	/**
+	 * Handles a program-change batch that consists entirely of function-local edits (e.g. adding a
+	 * comment). Invalidates only the cache entries whose function bodies intersect the changed
+	 * addresses and re-decompiles the current display, instead of flushing the whole cache the way
+	 * {@link #doRefresh} does. This is the selective-invalidation path from DD-0009; the classifier
+	 * in {@link DecompilerProgramListener} routes only provably-local batches here and everything
+	 * else stays on the full-flush path.
+	 *
+	 * @param changed the addresses modified by the change batch
+	 */
+	void localProgramChange(AddressSetView changed) {
+		controller.invalidate(changed);
+		if (!isVisible() || currentLocation == null) {
+			return;
+		}
+		if (lockDisplay) {
+			overlayPainter.setMessage(getOverlayRefreshMessage());
+		}
+		else {
+			controller.forceRefresh(program, currentLocation, null);
+			overlayPainter.setMessage("");
 		}
 	}
 

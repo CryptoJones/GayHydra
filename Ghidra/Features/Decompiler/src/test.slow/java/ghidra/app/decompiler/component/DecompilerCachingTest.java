@@ -134,14 +134,40 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
-	public void testDomainChangeClearsTheCache() {
+	public void testLocalCommentChangeInvalidatesOnlyAffectedFunction() {
+		// A function-local edit (here, a comment on the first function) must invalidate ONLY that
+		// function's cache entry, leaving unrelated functions cached. See DD-0009.
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
 		goTo(functionAddrs.get(2));
 
 		CacheStats stats1 = cache.stats();
 
+		// comment on the first function only
 		generateDomainObjectChange();
+
+		goTo(functionAddrs.get(0)); // commented function: invalidated -> cache miss
+		goTo(functionAddrs.get(1)); // untouched function: stayed cached -> cache hit
+
+		CacheStats stats2 = cache.stats();
+
+		assertEquals("Expected one miss (only the commented function was invalidated)",
+			stats1.missCount() + 1, stats2.missCount());
+		assertEquals("Expected one hit (the untouched function stayed cached)",
+			stats1.hitCount() + 1, stats2.hitCount());
+	}
+
+	@Test
+	public void testNonLocalChangeStillClearsTheCache() {
+		// A change that is not provably function-local (here, adding a symbol) must fall back to the
+		// conservative full cache flush, so revisiting any function is a miss. See DD-0009.
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+
+		CacheStats stats1 = cache.stats();
+
+		builder.createLabel("0x1004000", "extraLabel"); // SYMBOL_ADDED, not on the local allow-list
 
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
@@ -149,7 +175,7 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 		CacheStats stats2 = cache.stats();
 
 		assertEquals("Expected hitCount to not change", stats1.hitCount(), stats2.hitCount());
-		assertEquals("Expected missCount to increment by 2", stats1.missCount() + 2,
+		assertEquals("Expected missCount to increment by 2 (full flush)", stats1.missCount() + 2,
 			stats2.missCount());
 	}
 

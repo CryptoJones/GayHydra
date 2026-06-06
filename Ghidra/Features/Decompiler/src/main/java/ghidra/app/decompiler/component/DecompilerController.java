@@ -26,6 +26,7 @@ import ghidra.app.decompiler.*;
 import ghidra.app.plugin.core.decompile.DecompilerClipboardProvider;
 import ghidra.framework.plugintool.ServiceProvider;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.*;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.util.ProgramLocation;
@@ -263,6 +264,20 @@ public class DecompilerController {
 	 */
 	public void refreshDisplay(Program program, ProgramLocation location, File debugFile) {
 		clearCache();
+		forceRefresh(program, location, debugFile);
+	}
+
+	/**
+	 * Forces a fresh decompile of the given location <em>without</em> clearing the whole cache
+	 * (unlike {@link #refreshDisplay}). Used by the selective-invalidation path for function-local
+	 * edits, where {@link #invalidate(AddressSetView)} has already dropped exactly the entries a
+	 * change can affect. See DD-0009.
+	 *
+	 * @param program the program for the given location
+	 * @param location the location to decompile
+	 * @param debugFile the debug file
+	 */
+	public void forceRefresh(Program program, ProgramLocation location, File debugFile) {
 		decompilerMgr.decompile(program, location, null, debugFile, true);
 	}
 
@@ -368,6 +383,27 @@ public class DecompilerController {
 
 	public void clearCache() {
 		decompilerCache.invalidateAll();
+	}
+
+	/**
+	 * Invalidates only the cache entries whose function bodies intersect the given changed address
+	 * set, leaving every other entry cached. This is the selective alternative to
+	 * {@link #clearCache} for function-local program edits: renaming a local or adding a comment in
+	 * function A should not flush the decompilation of unrelated functions B-Z. Generalises the
+	 * by-program key walk in {@link #programClosed} to a by-address-set walk. See DD-0009.
+	 *
+	 * @param changedAddresses the addresses modified by a program change
+	 */
+	public void invalidate(AddressSetView changedAddresses) {
+		if (changedAddresses == null || changedAddresses.isEmpty()) {
+			return;
+		}
+		for (Function function : decompilerCache.asMap().keySet()) {
+			AddressSetView body = function.getBody();
+			if (body != null && body.intersects(changedAddresses)) {
+				decompilerCache.invalidate(function);
+			}
+		}
 	}
 
 	public void programClosed(Program closedProgram) {

@@ -233,6 +233,56 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
 ## Status
 
 - #36-1 — design doc — **done** (CACHE_FLUSH_1871.md)
-- This DD (#36 grounding + re-sequencing) — **this PR**
-- #36-3a — address-intersection selective invalidation — **next**
+- This DD (#36 grounding + re-sequencing) — **done**
+- #36-3a — address-intersection selective invalidation — **done** (comment-only; see addendum)
 - #36-3b / #36-4 / #36-5 / #36-6 — sequenced above
+
+## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
+
+Implementing #36-3a surfaced a correctness constraint that narrows the
+"function-local" allow-list this DD sketched above (which named
+`COMMENT_CHANGED` **and** `SYMBOL_RENAMED` / `SYMBOL_ADDRESS_CHANGED` /
+`SYMBOL_DATA_CHANGED`). The narrowing:
+
+**Address-range intersection only correctly scopes an edit whose change
+record carries an address inside the owning function's *code body*.**
+That holds for `COMMENT_CHANGED`: `CommentChangeRecord` carries the code
+address of the comment (`start = end = address`,
+`CommentChangeRecord.java:39`), and a function comment routes through
+`FunctionDB.setComment` → `CodeManager.setComment(entryPoint, PLATE, …)`
+→ a single `COMMENT_CHANGED` at the function entry
+(`CodeManager.java:3006`), which lies in that function's body. Intersecting
+it against the cached `Function.getBody()` sets invalidates exactly the
+right entry.
+
+It does **not** hold for a **local-variable rename**. A local symbol's
+address is in **stack / register space**, not the function's code body, so
+intersecting a `SYMBOL_RENAMED` address against function bodies would match
+**nothing** and invalidate **nothing** — leaving the renamed variable's
+function showing the stale old name. That is precisely the
+"missed dependency → stale decompilation" failure
+[CACHE_FLUSH_1871.md](../decompiler/CACHE_FLUSH_1871.md) warns about.
+Correctly scoping a rename needs a **symbol → owning-function** mapping
+(map the changed symbol to its function, then invalidate that function),
+which is a different mechanism than address intersection.
+
+Therefore #36-3a's shipped allow-list is **`COMMENT_CHANGED` only** — the
+issue's "adding a comment" example, provably correct by intersection.
+Every other event, including all symbol renames, stays on the conservative
+full-flush path (unchanged from today), so no rename can go stale. This is
+consistent with this DD's rule 2 ("conservative default: anything not
+allow-listed still flushes") and rule 1's "the allow-list starts minimal".
+
+Re-sequenced follow-up:
+
+| PR | Scope |
+|---|---|
+| #36-3a (this) | `COMMENT_CHANGED` selective invalidation by address intersection |
+| #36-3a-2 | symbol → owning-function invalidation for local renames/retypes (the issue's "renaming a variable" headline) |
+| #36-3b | cross-function dependency bitmap (callee-signature / shared-datatype edits) |
+
+The shipped mechanism — `DecompilerController.invalidate(AddressSetView)`,
+the `DecompilerProgramListener` classifier, and the `localProgramChange`
+selective-refresh path — is the reusable foundation all three build on;
+#36-3a-2 and #36-3b add new *sources* of invalidation onto it, not new
+plumbing.

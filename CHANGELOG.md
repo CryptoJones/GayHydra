@@ -12,6 +12,24 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 36 `#36-3a` — selective decompiler-cache invalidation
+  for function-local comment edits. Previously *every* program edit flushed
+  the entire GUI decompiler cache (`DecompilerController`'s Guava
+  `Cache<Function, DecompileResults>`) via `doRefresh`'s two `clearCache`
+  calls, so adding a comment in one function forced every other function to
+  re-decompile. Now `DecompilerProgramListener` classifies the change batch:
+  if it is entirely `COMMENT_CHANGED` records (each carrying a code address
+  in the owning function's body), it routes to a new selective path
+  (`DecompilerController.invalidate(AddressSetView)` +
+  `DecompilerProvider.localProgramChange`) that drops only the cache entries
+  whose `Function.getBody()` intersects the changed addresses, leaving every
+  unrelated function cached. Anything not provably function-local — including
+  all symbol renames — stays on the conservative full-flush path, so nothing
+  can go stale. Symbol-rename scoping needs a symbol→function mapping (a
+  local variable's address is in stack/register space, not the code body)
+  and is deferred to `#36-3a-2`; see the [DD-0009 addendum](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-2026-06-06-36-3a-ships-comment-only-symbol-renames-are-not-address-scopable).
+  Validated by `DecompilerCachingTest` (comment edit invalidates only the
+  edited function; a non-comment change still full-flushes).
 - docs(decompiler): land DD-0009, grounding Rec 36's cache-invalidation
   plan against the real GUI cache classes. Reading the in-tree code showed
   the decompiler GUI cache is a Guava `Cache<Function, DecompileResults>`
