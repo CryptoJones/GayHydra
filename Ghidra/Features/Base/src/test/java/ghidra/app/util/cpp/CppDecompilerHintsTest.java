@@ -29,8 +29,9 @@ import ghidra.program.model.data.StructureDataType;
 /**
  * Headless unit tests for the {@code CppDecompilerHints} renderer: the virtual-method-call form
  * (Rec 37 {@code #37-7}, DD-0016), the up/down-cast form (Rec 37 {@code #37-8}, DD-0017), the
- * heap-construction form (Rec 37 {@code #37-9}, DD-0018), and the explicit destructor-call form
- * (Rec 37 {@code #37-9c}, DD-0019). These
+ * heap-construction form (Rec 37 {@code #37-9}, DD-0018), the explicit destructor-call form
+ * (Rec 37 {@code #37-9c}, DD-0019), and the array-construction form (Rec 37 {@code #37-9d},
+ * DD-0020). These
  * build the resolved model state directly through the model setters — a {@link CppClass} with a
  * {@link CppVTable} whose slots already reference name-resolved {@link CppMethod}s, and
  * {@link CppBaseClass} inheritance edges as the {@code #37-4} feeder would record them — with no
@@ -392,5 +393,65 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("p->~Widget()", hints.renderDestructorCall(widget, "p", true));
 		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
 		assertEquals("w.~Widget()", hints.renderDestructorCall(widget, "w", false));
+	}
+
+	// ----- array-construction renderer (#37-9d) -----
+
+	@Test
+	public void testArrayConstructionRendersNewBracketCount() {
+		CppClass widget = new CppClass(struct("Widget"));
+		String rendered = new CppDecompilerHints().renderArrayConstruction(widget, "n");
+		assertEquals("new Widget[n]", rendered);
+	}
+
+	@Test
+	public void testArrayConstructionPreservesCountExpressionVerbatim() {
+		// The count is an opaque expression the recognition pass recovers; it is emitted verbatim.
+		CppClass widget = new CppClass(struct("Widget"));
+		assertEquals("new Widget[count + 1]",
+			new CppDecompilerHints().renderArrayConstruction(widget, "count + 1"));
+	}
+
+	@Test
+	public void testArrayConstructionUsesClassNameNotVtableOrBases() {
+		// The form needs only the class name; a vtable / base edges on the type do not change it, and
+		// there is no per-element constructor argument list (array new[] default-initializes elements).
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		withBase(shape, new CppClass(struct("Base")), 8, false, true);
+		assertEquals("new Shape[k]", new CppDecompilerHints().renderArrayConstruction(shape, "k"));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullArrayConstructedType() {
+		new CppDecompilerHints().renderArrayConstruction(null, "n");
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullArrayCountExpr() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderArrayConstruction(widget, null);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsBlankArrayCountExpr() {
+		CppClass widget = new CppClass(struct("Widget"));
+		new CppDecompilerHints().renderArrayConstruction(widget, "  ");
+	}
+
+	@Test
+	public void testArrayConstructionSharesOneStatelessInstanceWithOtherForms() {
+		CppDecompilerHints hints = new CppDecompilerHints();
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		CppClass widget = new CppClass(struct("Widget"));
+
+		// Interleaving an array-construction render among the call, cast, construction, and destructor
+		// renders on one instance must not let the renders bleed into one another.
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+		assertEquals("new Widget(a)", hints.renderConstruction(widget, List.of("a")));
+		assertEquals("new Widget[n]", hints.renderArrayConstruction(widget, "n"));
+		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
+		assertEquals("p->~Widget()", hints.renderDestructorCall(widget, "p", true));
 	}
 }
