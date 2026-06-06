@@ -12,6 +12,17 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-9c` — **the `CppDecompilerHints` explicit destructor-call renderer**, the fourth
+  form and the destruction sibling of the `#37-9` construction renderer
+  ([DD-0019](docs/decisions/0019-rec37-destructor-call-renderer.md)). `renderDestructorCall(CppClass type, String
+  receiverExpr, boolean receiverIsPointer)` emits `receiver->~ClassName()` / `receiver.~ClassName()` — the name is
+  `~` + `CppClass.getName()`, parentheses always empty (a destructor takes no arguments, so no argument-list
+  parameter). Like `#37-9`, **no neutral fallback** (the class name is a *total* model fact); rejects null type /
+  null-or-blank receiver with `IllegalArgumentException`. **No vtable lookup** — virtual-dispatch destruction is
+  already the `#37-7` form via a name-resolved `~ClassName` slot; this is the explicit/non-virtual
+  in-place-destruction idiom whose name comes from the class, not a slot. Stateless and headless, extending the
+  existing renderer; the `Foo::~Foo(ptr)` recognition pass is the deferred Program-coupled wrapper. Validated by
+  extending headless `CppDecompilerHintsTest` (7 new cases; 40 total).
 - docs(decompiler): [DD-0019](docs/decisions/0019-rec37-destructor-call-renderer.md) grounds Rec 37 `#37-9c` —
   the fourth `CppDecompilerHints` form, the **explicit destructor-call renderer** (the destruction sibling of
   the `#37-9` construction form): `renderDestructorCall(CppClass type, String receiverExpr, boolean
