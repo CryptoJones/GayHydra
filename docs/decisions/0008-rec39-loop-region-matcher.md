@@ -232,14 +232,97 @@ Gating reminders specific to #39-6 (each a hard local gate before push):
 
 | PR | Scope |
 |---|---|
-| #39-6a | `ActionLoopRecognize` scaffold (post-`ActionFinalStructure` loop-region walker) + option gate + `BUILTIN_STRLEN` + `strlen` recognition (single induction pointer, byte LOAD, NUL-test exit, length = end − start) + positive/negative datatest |
+| #39-6a | `ActionLoopRecognize` scaffold (post-`ActionFinalStructure` loop-region walker) + option gate + `BUILTIN_STRLEN` + `strlen` recognition (single induction pointer, byte LOAD, NUL-test exit, length = end − start) + positive/negative datatest — **reframed by the [2026-06-06 addendum](#addendum-2026-06-06-39-6a-strlen-folding-needs-new-loop-collapse-infrastructure): the rewrite is not a `constseq`-style splice but foundational loop-collapse infrastructure; deferred** |
 | #39-6b | `strcmp` / `strncmp` / `memcmp` (two induction pointers, comparison loops) + builtins + datatests |
 | #39-6c | non-constant `memcpy` / `memmove` copy-loops (LOAD+STORE body; reuse `BUILTIN_MEMCPY`) + datatest |
 | #39-6d (opt) | absorb the DD-0007 [#39-5 multi-vector-fill residual](0007-rec39-phase2-inline-detection.md#addendum-2026-06-06-39-5-wide-fills-already-fold) if the region matcher's aggregate-store handling reaches it |
 
-#39-6a is the load-bearing one: it proves the post-structuring rewrite is
-safe and the builtin renders, after which b/c/d are incremental shapes on
-the same scaffold. Do not block the scaffold on the harder idioms.
+#39-6a is the load-bearing one: it must prove the post-structuring rewrite
+is safe before b/c/d become incremental shapes on the same scaffold. The
+[2026-06-06 addendum](#addendum-2026-06-06-39-6a-strlen-folding-needs-new-loop-collapse-infrastructure)
+records the pre-implementation survey of that rewrite — it is not a
+splice but new loop-collapse infrastructure, so #39-6a (and with it the
+whole #39-6 phase) is deferred until that infrastructure is prioritised.
+
+## Addendum (2026-06-06): #39-6a strlen folding needs new loop-collapse infrastructure
+
+The decision above (point 3) sequenced `strlen` first precisely to
+*discover* whether the post-structuring "rewrite surgery" is feasible
+before the harder idioms commit to it. A pre-implementation survey of the
+in-tree primitives did that discovery, and the answer reshapes the cost
+model: **collapsing a recognised loop into a call is not a `constseq`-style
+splice — it requires control-flow infrastructure the decompiler does not
+have.**
+
+Why the sequence-shaped rules were cheap and this is not. `RuleMemset` /
+`RuleStringStore` replace a run of **straight-line** STOREs with a
+`CPUI_CALLOTHER` (`constseq.cc` `transform()` → `buildMemset()` →
+`removeStoreOps`). There is **no control-flow change** — the ops live in
+one basic block, and removing them is local dataflow surgery. A `strlen`
+loop is the opposite: a real CFG cycle with a data-dependent back-edge,
+producing a value (`len = end − start`) consumed downstream.
+
+What the survey found:
+
+- **No loop-collapse primitive exists.** The CFG-mutation API on
+  `Funcdata` removes only **do-nothing** blocks
+  (`removeDoNothingBlock`, `funcdata.hh:572` — "a basic block ... that
+  performs no operations") and **unreachable** blocks
+  (`removeUnreachableBlocks`, `:573`), or **merges straight-line** blocks
+  (`spliceBlockBasic`, `:582`). None removes a reachable, data-dependent
+  loop. A grep of the whole `cpp/` tree finds no `removeLoop` /
+  `collapseLoop` / `foldLoop` / region-replace-with-op of any kind.
+- **Structuring nests loops, it never eliminates them.**
+  `CollapseStructure` (`blockaction.hh:194`) collapses the raw CFG into a
+  nested-block tree via `ruleBlockCat` / `ruleBlockOr` / `ruleBlockGoto`
+  (`blockaction.cc:1320`/`:1357`/…) — a `whiledo` becomes a
+  `BlockWhileDo`, it does not disappear.
+- **The only in-tree precedent for idiomatic loop rendering annotates;
+  it does not collapse.** `BlockWhileDo::finalTransform` stores
+  `initializeOp` / `iterateOp` on the structured block, and
+  `PrintC::emitForLoop` (`printc.cc:3250`, dispatched from
+  `emitBlockWhileDo`, `:3300`) reads them — but **still emits the entire
+  loop body** (`bl->getBlock(1)->emit(this)`, `printc.cc:3288`). It
+  changes *rendering*, not *structure* or *dataflow*.
+
+So both mechanisms DD-0008 weighed are large, novel subsystems for a
+**value-producing** loop:
+
+- *Collapse-rewrite* — must remove the recognised loop region from both
+  the basic-block CFG (`bblocks`) and the structured tree, prove it
+  side-effect-free (the body LOAD may fault), splice a `BUILTIN_STRLEN`
+  CALLOTHER, and rewrite the loop-exit pointer `MULTIEQUAL` and the
+  length output to consume it — all *after* `ActionFinalStructure`, with
+  **no** re-structuring or dead-code pass following to repair the graph
+  (`ActionStop` is next, `coreaction.cc:5924`). No primitive supports
+  loop removal; this is new CFG infrastructure.
+- *Annotate-and-print* (the for-loop precedent's mechanism) — cannot
+  simply suppress the loop's emission, because the length varnode is
+  *defined inside* the suppressed region. For-loops keep emitting the
+  body, so their value definitions stay consistent; a print-as-call would
+  reference a value whose defining ops it never emitted. Making that
+  consistent needs a printer-level region-suppression + synthetic-call
+  mechanism that also has no precedent.
+
+**Decision (revises #39-6a, and the #39-6 phase's cost model):** the
+loop-shaped folding does **not** ride the cheap CALLOTHER-splice path the
+sequence-shaped phase (#39-4a/#39-4b) validated, and must not be attempted
+as a quick `Rule`-like Action. #39-6a is reframed as **foundational
+loop-region-collapse infrastructure** — new primitives to remove a
+proven-side-effect-free recognised loop region and rewrite its live
+outputs — which is a materially larger, regression-prone effort than the
+sequence rules, for a readability-nicety payoff. It is **deferred**: if
+and when loop-collapse is prioritised it opens with its own
+*infrastructure* design (the primitives, the side-effect proof, the
+graph-repair story), with `strlen` as the first client.
+
+This leaves Rec 39 Phase 2's **shipped** value as the in-tree-mechanism-
+compatible sequence-shaped folding — `memset` (#39-4a) and `popcount`
+(#39-4b) — mirroring how the survey-first discipline already established
+that #39-2/#39-3 (for-loops) are upstream-provided and #39-5 (wide fills)
+already folds. The novel-but-tractable work that fit the proven mechanism
+is done; the loop-shaped remainder needs a mechanism that does not yet
+exist, and that build is its own decision, not a sprint rule.
 
 ## References
 
@@ -254,7 +337,14 @@ the same scaffold. Do not block the scaffold on the harder idioms.
   `:510`–`:511` (`BlockBasic::beginOp`/`endOp`), `:718`–`:719`
   (`getInitializeOp`/`getIterateOp`).
 - `Ghidra/Features/Decompiler/src/decompile/cpp/printc.cc:3250`
-  (`emitForLoop` — the body-iteration pattern the matcher mirrors).
+  (`emitForLoop` — the body-iteration pattern the matcher mirrors), `:3288`
+  (still emits the full body), `:3300` (`emitBlockWhileDo` dispatch) — the
+  addendum's evidence that idiomatic loop rendering annotates, not collapses.
+- `Ghidra/Features/Decompiler/src/decompile/cpp/funcdata.hh:572`
+  (`removeDoNothingBlock`), `:573` (`removeUnreachableBlocks`), `:582`
+  (`spliceBlockBasic`); `blockaction.hh:194` (`CollapseStructure`),
+  `blockaction.cc:1320`/`:1357` (`ruleBlockCat`/`ruleBlockOr`) — the
+  addendum's evidence that no primitive collapses a live loop.
 - `Ghidra/Features/Decompiler/src/decompile/cpp/userop.cc:30`–`36`
   (builtin ids; next free `0x10000007`), `:433`
   (`UserOpManage::registerBuiltin`); `userop.hh:141` (`DatatypeUserOp`).
