@@ -32,8 +32,8 @@ import ghidra.program.model.listing.GhidraClass;
  * key invariant is <b>projection, not replacement</b>: this class never mutates its backing
  * {@link Structure}, so every existing tool that reads the {@code Structure} keeps working
  * unchanged. The annotations layered here are additive C++ metadata only. Populating them is the
- * job of later slices (the demangling feeder {@code #37-3} and the RTTI / vtable analyzers
- * {@code #37-4} / {@code #37-5}); the skeleton just holds them.
+ * job of later slices (the demangling feeder {@code #37-3}, the RTTI feeders {@code #37-4} /
+ * {@code #37-5}, and the vtable feeder {@code #37-6}); the skeleton just holds them.
  */
 public final class CppClass {
 
