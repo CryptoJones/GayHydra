@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): add a DD-0008 addendum reframing Rec 39 `#39-6a`. A
+  pre-implementation survey of the in-tree primitives found that folding a
+  `strlen` loop into a call is **not** a `constseq`-style splice: unlike the
+  straight-line `memset`/`popcount` rewrites, a `strlen` loop is a live CFG
+  cycle producing a value, and no `Funcdata` primitive collapses a
+  reachable data-dependent loop (`removeDoNothingBlock`/`removeUnreachableBlocks`/
+  `spliceBlockBasic` only touch do-nothing/unreachable/straight-line blocks),
+  while the only idiomatic-loop-rendering precedent — the for-loop transform —
+  annotates and still emits the whole body (`printc.cc:3288`), it never
+  removes the loop. Both candidate mechanisms (collapse-rewrite, annotate-print)
+  are large novel subsystems for a value-producing loop, so `#39-6a` (and with
+  it the `#39-6` phase) is reframed as foundational loop-collapse infrastructure
+  and **deferred**, leaving the sequence-shaped `memset`/`popcount` folding as
+  Rec 39 Phase 2's shipped, mechanism-compatible value.
 - docs(decompiler): land DD-0008, the Rec 39 `#39-6` sub-design for
   loop-shaped inlined-call detection (`strlen`, `strcmp`/`strncmp`,
   `memcmp`, non-constant copy-loops). DD-0007 deferred these because — unlike
