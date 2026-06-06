@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 5 — correct addendum 4's gate phrasing. An
+  in-place struct edit never arrives as a *pure* `DATA_TYPE_CHANGED` batch:
+  `SOURCE_ARCHIVE_CHANGED` is an unavoidable companion and `DATA_TYPE_ADDED`
+  accompanies adding a field of a not-yet-present type, so a strict
+  "only `DATA_TYPE_CHANGED`" gate makes the selective path dead code. The gate is
+  broadened to admit those two record types **without contributing ids** (a
+  just-added type cannot be referenced by an already-cached `HighFunction`;
+  source-archive sync metadata cannot change how a cached function renders),
+  keying invalidation solely on the `DATA_TYPE_CHANGED` ids; every other record
+  type still forces the full flush. Corrects-not-replaces addendum 4: the
+  recompute-from-`HighFunction` and `Pointer`/`Array`/`TypeDef` unwrap both stand
+  and were confirmed by the headed test. Docs-first step for the broadened gate;
+  the `#36-3b-2a` implementation lands the gate, `invalidateByDataTypeIds`, and
+  the test together.
+  See [DD-0009 addendum 5](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-5-2026-06-06-an-in-place-datatype-edit-never-arrives-as-a-pure-data_type_changed-batch--the-gate-must-tolerate-benign-companions).
 - docs(decompiler): DD-0009 addendum 4 — ground `#36-3b-2` (shared-datatype
   invalidation) before implementing, and **revise** addendum 3's plumbing.
   Verifying the type-resolution path shows a cached `HighFunction`'s symbol types
