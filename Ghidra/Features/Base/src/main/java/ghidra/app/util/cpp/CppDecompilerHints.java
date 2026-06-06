@@ -24,8 +24,9 @@ import java.util.List;
  *
  * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016), {@code #37-8} (up/down-cast form,
  * DD-0017), {@code #37-9} (heap-construction form, DD-0018), {@code #37-9c} (explicit
- * destructor-call form, DD-0019), and {@code #37-9d} (array-construction form, DD-0020). This is the
- * headless half of RFC §5. It holds no
+ * destructor-call form, DD-0019), {@code #37-9d} (array-construction form, DD-0020), and
+ * {@code #37-9e} (placement-construction form, DD-0021). This is the headless half of RFC §5. It
+ * holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
@@ -224,6 +225,48 @@ public final class CppDecompilerHints {
 			throw new IllegalArgumentException("count expression must not be null or blank");
 		}
 		return "new " + type.getName() + "[" + countExpr + "]";
+	}
+
+	/**
+	 * Renders a placement construction — a constructor call into an already-owned buffer, fused into
+	 * the C++ placement-{@code new} expression — as {@code new (ptr) ClassName(args)}, where
+	 * {@code ptr} is the placement-target expression, {@code ClassName} is {@code type.getName()}, and
+	 * {@code args} are the constructor argument expressions joined in call order. A zero-argument
+	 * placement construction renders {@code new (ptr) ClassName()}; the constructor parentheses are
+	 * always emitted, as in {@link #renderConstruction}.
+	 *
+	 * <p>The bracketed placement target before the class name is exactly what distinguishes
+	 * placement-{@code new} from the ordinary {@link #renderConstruction} {@code new}: it is a
+	 * distinct expression shape, not a scalar {@code new} with a folded-in argument.
+	 *
+	 * <p>Like {@link #renderConstruction} and {@link #renderArrayConstruction}, this form has <em>no
+	 * neutral fallback</em>: the only model fact it needs is the class name, which is total
+	 * ({@code getName()} never fails for a defined class), so there is nothing to fall back from. It
+	 * does no constructor-overload resolution (a signature/{@code DataType} concern, the
+	 * {@code #37-10+} work) and no vtable lookup; it validates only its boundary inputs and formats
+	 * the placement and argument expressions the recognition pass supplies.
+	 *
+	 * @param type the class being constructed; must not be null
+	 * @param placementExpr the already-rendered placement-target expression; must not be null or blank
+	 * @param argumentExprs the already-rendered constructor argument expressions in call order; must
+	 *            not be null and must contain no null element (may be empty for a default construction)
+	 * @return the rendered C++ placement-{@code new} expression
+	 * @throws IllegalArgumentException if {@code type} is null, {@code placementExpr} is null or blank,
+	 *             or {@code argumentExprs} is null or contains a null element
+	 */
+	public String renderPlacementConstruction(CppClass type, String placementExpr,
+			List<String> argumentExprs) {
+		if (type == null) {
+			throw new IllegalArgumentException("constructed type must not be null");
+		}
+		if (placementExpr == null || placementExpr.isBlank()) {
+			throw new IllegalArgumentException("placement expression must not be null or blank");
+		}
+		if (argumentExprs == null) {
+			throw new IllegalArgumentException("argument expression list must not be null");
+		}
+		return "new (" + placementExpr + ") " + type.getName() + "("
+			+ renderArguments(argumentExprs) + ")";
 	}
 
 	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,

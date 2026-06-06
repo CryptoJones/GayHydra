@@ -12,6 +12,18 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-9e` — **the `CppDecompilerHints` placement-new renderer**, the sixth form and the
+  placement sibling of the `#37-9` scalar construction renderer
+  ([DD-0021](docs/decisions/0021-rec37-placement-new-renderer.md)). `renderPlacementConstruction(CppClass type,
+  String placementExpr, List<String> argumentExprs)` emits `new (ptr) ClassName(args)` — the bracketed placement
+  target before the class name distinguishes it from ordinary `new`; the name is `CppClass.getName()` and the args
+  are joined in call order (zero-arg renders `new (ptr) ClassName()`). Like `#37-9`/`#37-9d`, **no neutral fallback**
+  (the class name is a *total* model fact); rejects null type / null-or-blank placement / null arg list / null arg
+  element with `IllegalArgumentException`. **No vtable lookup, no overload resolution** (constructor selection stays
+  the DTM-coupled `#37-10+` band). Stateless and headless, extending the existing renderer; the placement-allocation
+  + ctor recognition pass is the deferred Program-coupled wrapper. After `#37-9e`, only the `delete e` form (reads no
+  model fact) remains before the headless renderer family is exhausted. Validated by extending headless
+  `CppDecompilerHintsTest` (8 new cases; 55 total).
 - docs(decompiler): [DD-0021](docs/decisions/0021-rec37-placement-new-renderer.md) grounds Rec 37 `#37-9e` —
   the sixth `CppDecompilerHints` form, the **placement-new renderer** (the placement sibling of the `#37-9` scalar
   construction form): `renderPlacementConstruction(CppClass type, String placementExpr, List<String> argumentExprs)`
