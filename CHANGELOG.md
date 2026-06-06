@@ -12,6 +12,17 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-7` — **the `CppDecompilerHints` renderer**, the headless half of RFC §5
+  ([DD-0016](docs/decisions/0016-rec37-decompiler-hints-renderer.md)). A stateless producer of C++-style
+  rendering strings from already-resolved `CppTypeSystem` facts plus the operand expressions a caller hands
+  in as opaque strings — it holds no `Program`/`DataTypeManager`/decompiler handle, never scans or mutates the
+  model. The first form renders the **virtual-method-call** (`receiver->method(args)` for a pointer receiver,
+  `receiver.method(args)` for a value receiver), reading the name-resolved vtable slot `#37-6` / `#37-6c`
+  produced. Real rendering logic, not concatenation: it bounds-checks the slot index against `getSlotCount()`
+  and falls back to a neutral indirect-call form `receiver->vtable[i](args)` — rather than throwing or
+  fabricating a name — when the class has no vtable, the index is out of range, or the slot's method name is
+  blank/unresolved. The `HighFunction` pattern-recognition pass that recognises the raw C idiom and drives the
+  renderer remains the deferred `#37-7b` wrapper. Validated by headless `CppDecompilerHintsTest`.
 - docs(decompiler): [DD-0016](docs/decisions/0016-rec37-decompiler-hints-renderer.md) grounds Rec 37 `#37-7` —
   the `CppDecompilerHints` (RFC §5) split into a **headless renderer core** and a deferred decompiler pass.
   Producing a C++-style hint takes two steps: *recognising* the raw C idiom in a decompiled function (that a
