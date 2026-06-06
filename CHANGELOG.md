@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-6c` — **the `CppVtableReconciler`**, the pure in-model pass that fuses the two
+  disjoint `CppMethod` views a class accumulates after the `#37-3` and `#37-6` feeders run: the declared
+  methods in `getMethods()` (rich `const`/`static`/calling-convention qualifiers, `isVirtual() == false`) and
+  the fresh vtable slot methods in `getVtable()` (`isVirtual() == true`, no qualifiers). It matches the two by
+  **unqualified name, conservatively** — only a name unique among *both* the declared methods and the slots (a
+  1:1 pairing) is reconciled, so overloaded names are left untouched and virtuality is never stamped onto the
+  wrong overload — then unifies each match onto the **canonical declared method** (sets `isVirtual(true)`,
+  copies the slot's `isPureVirtual`) and rewrites the vtable slot to reference it via the new bounds-/null-
+  checked `CppVTable.setSlot(int, CppMethod)`, leaving one `CppMethod` per function reachable from both the
+  class method list and the vtable. It walks one class (by reference or name) or the whole model
+  (`reconcileAll()` over `getCppClasses()`), scans no `Program`, touches no `DataTypeManager`, parses no name,
+  never adds/removes a method or mutates a backing `Structure`, and is idempotent/order-independent. Also
+  corrects the stale `#37-5` vtable-analyzer reference still in `CppTypeSystem.java`'s javadoc. Covered by
+  headless `CppVtableReconcilerTest` building the pre-reconciled two-list state directly — program-free, no
+  cross-module dependency. Per [DD-0015](docs/decisions/0015-rec37-vtable-reconciler.md).
 - docs(decompiler): [DD-0015](docs/decisions/0015-rec37-vtable-reconciler.md) grounds Rec 37 `#37-6c` — the
   vtable↔declared-method **reconciliation** the `#37-6` feeder deferred. A class through both the `#37-3`
   demangling feeder and the `#37-6` vtable feeder holds two disjoint `CppMethod` lists for the same functions:

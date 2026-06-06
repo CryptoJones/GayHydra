@@ -30,9 +30,10 @@ import ghidra.program.model.data.Structure;
  * <p>Rec 37 {@code #37-2}, the {@code CppTypeSystem} skeleton grounded by DD-0011. This is a plain
  * in-memory model holder with no analysis behaviour of its own: it does not scan a program, parse
  * symbols, or recover types. Those responsibilities belong to later slices — the demangling feeder
- * ({@code #37-3}), the RTTI analyzer ({@code #37-4}), and the vtable analyzer ({@code #37-5}) — which
- * call {@link #defineClass(Structure)} and populate the returned {@link CppClass}. The skeleton's
- * job is only to provide the data model those slices write into.
+ * ({@code #37-3}), the RTTI feeders ({@code #37-4} / {@code #37-5}), the vtable feeder
+ * ({@code #37-6}), and the vtable reconciler ({@code #37-6c}) — which call
+ * {@link #defineClass(Structure)} and populate the returned {@link CppClass}. The skeleton's job is
+ * only to provide the data model those slices write into.
  *
  * <p>The {@link DataTypeManager} reference is nullable so the model can be exercised in isolation
  * (e.g. headless unit tests) against standalone {@link Structure} fixtures that are not yet bound
