@@ -12,6 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- feat(decompiler): Rec 37 `#37-8` — **the `CppDecompilerHints` up/down-cast renderer**, the second RFC §5 form
+  ([DD-0017](docs/decisions/0017-rec37-cast-renderer.md)). `renderUpcast`/`renderDowncast` match a recognised
+  constant byte offset against the derived class's `CppBaseClass` edges (`getOffset`) and render
+  `static_cast<Base*>(src)` for an upcast (base type name) or `static_cast<Derived*>(src)` for a downcast
+  (derived type name) — `static_cast`, never `dynamic_cast`, since the recovered constant offset *is* the
+  compiler's structural base-subobject adjustment. A `virtual` base (dynamic offset) and an offset matching no
+  edge both **decline** the cast, falling back to the neutral `src + offset` / `src - offset` pointer
+  adjustment rather than fabricating a cast. Access (`isPublic`) does not change the form. Stateless and
+  headless, extending the existing renderer; the `HighFunction` recognition pass is the deferred `#37-8b`
+  wrapper. Validated by extending headless `CppDecompilerHintsTest`.
 - docs(decompiler): [DD-0017](docs/decisions/0017-rec37-cast-renderer.md) grounds Rec 37 `#37-8` — the
   **second `CppDecompilerHints` form**, the up/down-cast renderer (RFC §5 bullet 2). It matches a recognised
   constant pointer offset against the derived class's `CppBaseClass` edges (`getOffset`) and, by cast
