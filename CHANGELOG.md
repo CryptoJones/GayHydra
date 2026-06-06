@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0014 — **grounds Rec 37 `#37-6`, the vtable path, as a pure recovered-slot-fact →
+  `CppVTable` + `CppMethod.isVirtual` mapper** (`CppVTableFeeder`) in `Features/Base`, mirroring DD-0012/
+  DD-0013's pure-mapper / deferred-scan split. Surveys both in-tree vtable recoverers — the script-land
+  `classrecovery.Vftable`/`RecoveredClass` (Itanium, package `classrecovery`, holds `List<Address>`
+  vfunctions into a live program) and the MSVC module's `VfTableModel` (built over `Program` memory) — and
+  pins the constraint: neither is an importable, program-free type, so the headlessly-testable core must
+  consume *already-recovered* slot facts, not read function pointers out of memory. Decides: the feeder
+  resolves the owning `CppClass` (reusing #37-3/#37-4's shared `CppClassResolution` placeholder helper),
+  builds a `CppVTable`, and per slot fact (method name + pure-virtual flag, in layout order) appends a
+  `CppMethod` marked `setVirtual(true)` (a slot *is* virtual dispatch — discharging the `isVirtual`
+  deferral DD-0011/DD-0013 parked here) with `setPureVirtual` set consistently. Slot methods are fresh;
+  reconciling them with demangling-fed methods, and setting the recovered `tableAddress`, are deferred (to
+  #37-7+ and the program-scanning `#37-6b` wrapper respectively — the latter is also where the
+  dedicated-`Features/Cpp`-module question is finally decided). Per
+  [DD-0014](docs/decisions/0014-rec37-vtable-feeder.md); implementation lands in `#37-6`.
 - feat(decompiler): Rec 37 `#37-4` — **the `CppRttiFeeder`**, the ABI-neutral core that turns recovered
   C++ RTTI inheritance into model edges. Given a derived class's name and its already-recovered direct
   base facts (`BaseSpec`: base name, offset, `virtual`, `public`), it resolves the derived and base
