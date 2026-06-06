@@ -24,9 +24,10 @@ import java.util.List;
  *
  * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016), {@code #37-8} (up/down-cast form,
  * DD-0017), {@code #37-9} (heap-construction form, DD-0018), {@code #37-9c} (explicit
- * destructor-call form, DD-0019), {@code #37-9d} (array-construction form, DD-0020), and
- * {@code #37-9e} (placement-construction form, DD-0021). This is the headless half of RFC §5. It
- * holds no
+ * destructor-call form, DD-0019), {@code #37-9d} (array-construction form, DD-0020),
+ * {@code #37-9e} (placement-construction form, DD-0021), and {@code #37-9f} (deallocation form,
+ * DD-0022) — the seventh and final headless renderer form, after which the family is exhausted.
+ * This is the headless half of RFC §5. It holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
@@ -267,6 +268,41 @@ public final class CppDecompilerHints {
 		}
 		return "new (" + placementExpr + ") " + type.getName() + "("
 			+ renderArguments(argumentExprs) + ")";
+	}
+
+	/**
+	 * Renders a heap deallocation — the destructor-then-{@code operator delete} idiom fused into the
+	 * C++ {@code delete} expression — as {@code delete receiver} for a scalar pointer or
+	 * {@code delete[] receiver} for an array pointer, where {@code receiver} is the operand expression
+	 * supplied verbatim. {@code delete} is a unary operator on the pointer: there is no class name, no
+	 * parentheses, and no argument list, and the {@code [}{@code ]} is the only thing {@code isArray}
+	 * adds.
+	 *
+	 * <p>This is the seventh and final headless form, and the only one that reads <em>no</em>
+	 * {@link CppTypeSystem} model fact at all: in C++ {@code delete e} / {@code delete[] e} names no
+	 * type — the operand is a pointer and the type to destroy is inferred from it — so the renderer
+	 * takes <em>no {@link CppClass}</em> and consults no vtable. The destructor {@code delete} invokes
+	 * before freeing is a recognition concern (the pass pairs the dtor call with the
+	 * {@code operator delete}); the explicit-destructor <em>rendering</em> is the separate
+	 * {@link #renderDestructorCall} form.
+	 *
+	 * <p>Having no model fact to read, it has even less to fall back from than the class-name-only
+	 * forms — so, like {@link #renderConstruction} and its siblings, it has <em>no neutral
+	 * fallback</em>: it validates only its single boundary input, the receiver expression, and rejects
+	 * a null or blank one.
+	 *
+	 * @param receiverExpr the already-rendered pointer expression being deleted; must not be null or
+	 *            blank
+	 * @param isArray true to render the array form {@code delete[] receiver}, false for the scalar
+	 *            form {@code delete receiver}
+	 * @return the rendered C++ {@code delete} expression
+	 * @throws IllegalArgumentException if {@code receiverExpr} is null or blank
+	 */
+	public String renderDelete(String receiverExpr, boolean isArray) {
+		if (receiverExpr == null || receiverExpr.isBlank()) {
+			throw new IllegalArgumentException("receiver expression must not be null or blank");
+		}
+		return (isArray ? "delete[] " : "delete ") + receiverExpr;
 	}
 
 	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,

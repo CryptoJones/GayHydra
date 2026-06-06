@@ -31,7 +31,8 @@ import ghidra.program.model.data.StructureDataType;
  * (Rec 37 {@code #37-7}, DD-0016), the up/down-cast form (Rec 37 {@code #37-8}, DD-0017), the
  * heap-construction form (Rec 37 {@code #37-9}, DD-0018), the explicit destructor-call form
  * (Rec 37 {@code #37-9c}, DD-0019), the array-construction form (Rec 37 {@code #37-9d}, DD-0020),
- * and the placement-construction form (Rec 37 {@code #37-9e}, DD-0021). These
+ * the placement-construction form (Rec 37 {@code #37-9e}, DD-0021), and the deallocation form
+ * (Rec 37 {@code #37-9f}, DD-0022). These
  * build the resolved model state directly through the model setters — a {@link CppClass} with a
  * {@link CppVTable} whose slots already reference name-resolved {@link CppMethod}s, and
  * {@link CppBaseClass} inheritance edges as the {@code #37-4} feeder would record them — with no
@@ -528,5 +529,57 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("new Widget[n]", hints.renderArrayConstruction(widget, "n"));
 		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
 		assertEquals("w.~Widget()", hints.renderDestructorCall(widget, "w", false));
+	}
+
+	// ----- deallocation renderer (#37-9f) -----
+
+	@Test
+	public void testScalarDeleteRendersDeleteReceiver() {
+		String rendered = new CppDecompilerHints().renderDelete("p", false);
+		assertEquals("delete p", rendered);
+	}
+
+	@Test
+	public void testArrayDeleteRendersDeleteBracketReceiver() {
+		String rendered = new CppDecompilerHints().renderDelete("p", true);
+		assertEquals("delete[] p", rendered);
+	}
+
+	@Test
+	public void testDeletePreservesReceiverExpressionVerbatim() {
+		// The receiver is an opaque expression the recognition pass recovers; it is emitted verbatim,
+		// and delete reads no class name (C++ delete infers the type from the pointer).
+		assertEquals("delete this->buf", new CppDecompilerHints().renderDelete("this->buf", false));
+		assertEquals("delete[] arr + 1", new CppDecompilerHints().renderDelete("arr + 1", true));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsNullDeleteReceiver() {
+		new CppDecompilerHints().renderDelete(null, false);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testRejectsBlankDeleteReceiver() {
+		new CppDecompilerHints().renderDelete("  ", true);
+	}
+
+	@Test
+	public void testDeleteSharesOneStatelessInstanceWithOtherForms() {
+		CppDecompilerHints hints = new CppDecompilerHints();
+		CppClass shape = classWithVtable("Shape", slot("area"));
+		CppClass derived = withBase(new CppClass(struct("Derived")),
+			new CppClass(struct("Base")), 8, false, true);
+		CppClass widget = new CppClass(struct("Widget"));
+
+		// Interleaving a deallocation render among all six prior forms on one instance must not let the
+		// renders bleed into one another; delete reads no model fact, so it depends only on its operand.
+		assertEquals("s->area()", hints.renderVirtualCall(shape, 0, "s", true, List.of()));
+		assertEquals("new Widget(a)", hints.renderConstruction(widget, List.of("a")));
+		assertEquals("new (buf) Widget()", hints.renderPlacementConstruction(widget, "buf", List.of()));
+		assertEquals("new Widget[n]", hints.renderArrayConstruction(widget, "n"));
+		assertEquals("delete p", hints.renderDelete("p", false));
+		assertEquals("static_cast<Base*>(d)", hints.renderUpcast(derived, 8, "d"));
+		assertEquals("p->~Widget()", hints.renderDestructorCall(widget, "p", true));
+		assertEquals("delete[] arr", hints.renderDelete("arr", true));
 	}
 }
