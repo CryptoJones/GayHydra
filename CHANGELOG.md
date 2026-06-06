@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 4 — ground `#36-3b-2` (shared-datatype
+  invalidation) before implementing, and **revise** addendum 3's plumbing.
+  Verifying the type-resolution path shows a cached `HighFunction`'s symbol types
+  are the live program-`DataTypeManager` instances (decoded via
+  `PcodeDataTypeManager.findBaseType → progDataTypes.getDataType(id)`), so the
+  referenced-type-id set is **recomputable on demand** from
+  `DecompileResults.getHighFunction()` rather than recorded per cache value —
+  removing the only new per-cached-result state Rec 36 had outstanding. Matching
+  must recursively unwrap `Pointer`/`Array`/`TypeDef` so a function using only
+  `MyStruct *` is caught (the auto-change cascade does not cover derived types).
+  Re-sequences into `#36-3b-2a` (`DATA_TYPE_CHANGED`, recompute + unwrap, ships
+  with the debug-assert backstop) and `#36-3b-2b` (instance-swap
+  `DATA_TYPE_REPLACED` / `MOVED` / `RENAMED`, deferred). Docs-only; precedes the
+  `#36-3b-2a` implementation, mirroring the addendum-3 → `#36-3b-1` rhythm.
+  See [DD-0009 addendum 4](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-4-2026-06-06-36-3b-2s-type-ref-set-is-recomputed-from-the-cached-highfunction-not-recorded-split-into-2a-data_type_changed-and-2b-instance-swap-events).
 - feat(decompiler): Rec 36 `#36-3b-1` — selective cache invalidation for
   caller-affecting function changes. Implements **case A** of
   [DD-0009 addendum 3](docs/decisions/0009-rec36-cache-invalidation-grounding.md#addendum-3-2026-06-06-36-3b-cross-function-residual-splits-into-callers-no-bitmap-and-datatype-refs-recorded-set):
