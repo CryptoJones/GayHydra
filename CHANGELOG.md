@@ -12,6 +12,20 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+- docs(decompiler): DD-0009 addendum 2 — ground `#36-3a-2` (local/parameter
+  rename invalidation) before implementing. Grounding the "symbol→owning-function
+  mapping" addendum 1 promised revealed the naive form is unsafe: a local rename
+  fires a *pair* of records — a companion `FunctionChangeRecord` (entry point, in
+  the body) plus a `SYMBOL_RENAMED` (storage address, in stack/register space) —
+  and `FUNCTION_CHANGED/UNSPECIFIED` is overloaded across local renames and
+  caller-affecting changes (`setStackReturnOffset` alters the callee purge that
+  callers track), so trusting it would leave callers stale. The recorded rule
+  keys off the renamed symbol's `SymbolType` (`LOCAL_VAR`/`PARAMETER` name change
+  → resolve owning function via parent namespace), admits the companion
+  `FUNCTION_CHANGED/UNSPECIFIED` only by correlation to a sibling symbol record,
+  and rejects signature/modifier `FunctionChangeRecord`s (so a parameter *retype*
+  → `PARAMETERS_CHANGED` correctly stays full-flush, deferred to `#36-3b`). Docs
+  only; no code change.
 - feat(decompiler): Rec 36 `#36-3a` — selective decompiler-cache invalidation
   for function-local comment edits. Previously *every* program edit flushed
   the entire GUI decompiler cache (`DecompilerController`'s Guava

@@ -234,7 +234,8 @@ this DD is docs-only and carries no C++/manifest/RAII-audit gate.
 
 - #36-1 — design doc — **done** (CACHE_FLUSH_1871.md)
 - This DD (#36 grounding + re-sequencing) — **done**
-- #36-3a — address-intersection selective invalidation — **done** (comment-only; see addendum)
+- #36-3a — address-intersection selective invalidation — **done** (comment-only; see addendum 1)
+- #36-3a-2 — symbol→owning-function invalidation for local/param renames — **design grounded** (see addendum 2); impl pending
 - #36-3b / #36-4 / #36-5 / #36-6 — sequenced above
 
 ## Addendum (2026-06-06): #36-3a ships comment-only; symbol renames are not address-scopable
@@ -286,3 +287,92 @@ the `DecompilerProgramListener` classifier, and the `localProgramChange`
 selective-refresh path — is the reusable foundation all three build on;
 #36-3a-2 and #36-3b add new *sources* of invalidation onto it, not new
 plumbing.
+
+## Addendum 2 (2026-06-06): #36-3a-2 keys off the symbol's `SymbolType`, not `FUNCTION_CHANGED` trust
+
+Addendum 1 deferred local/parameter renames to #36-3a-2 and named the needed
+mechanism a "symbol → owning-function mapping". Grounding that mapping against
+the actual event-firing code revealed the naive form of it is unsafe; this
+addendum records the corrected rule before the #36-3a-2 implementation PR.
+
+### What a local/parameter NAME rename actually fires
+
+Renaming a local variable or parameter runs
+`SymbolDB.setName` → `SymbolManager.symbolRenamed` →
+`ProgramDB.symbolChanged(symbol, SYMBOL_RENAMED, symbol.getAddress(), …)`
+(`ProgramDB.java:1033`). Because the symbol is a `VariableSymbolDB` whose
+parent namespace is a `Function`, that method **also** fires a companion
+`FunctionChangeRecord(function, null)` carrying the function entry point
+(`ProgramDB.java:1041-1048`), and only then the plain
+`ProgramChangeRecord(SYMBOL_RENAMED, …)`. So the delivered
+`DomainObjectChangedEvent` batch for one rename is a **pair**:
+
+| record | eventType | start = end | object |
+|---|---|---|---|
+| `FunctionChangeRecord` | `FUNCTION_CHANGED` (`UNSPECIFIED`) | function entry point — **in the code body** | the owning `Function` |
+| `ProgramChangeRecord` | `SYMBOL_RENAMED` | the symbol storage address — **stack / register space, not the body** | the renamed `Symbol` |
+
+This is why #36-3a's address-intersection alone could not scope a rename
+(addendum 1): the only record whose address is in the body is the companion
+`FunctionChangeRecord`, not the `SYMBOL_RENAMED` itself.
+
+### Why "trust the companion `FUNCTION_CHANGED` entry point" is not safe
+
+Intersecting the companion record's entry-point address against function
+bodies *would* correctly hit the renamed function. But `FUNCTION_CHANGED`
+with the `UNSPECIFIED` change type (`changeType == null`) is **overloaded** —
+it is fired from many sites that are not local-variable renames:
+`setStackLocalSize` (`FunctionDB.java:1028`), `setStackReturnOffset`
+(`FunctionDB.java:1054`), `setSignatureSource` (`FunctionDB.java:1295`),
+non-parameter variable retypes (`FunctionDB.dataTypeChanged`,
+`FunctionVariables`), etc. At least one of these — the stack return offset,
+i.e. the callee's stack purge — influences how **callers** decompile the call.
+Treating every `FUNCTION_CHANGED/UNSPECIFIED` as function-local would
+therefore silently leave callers stale: precisely the missed-dependency
+failure [CACHE_FLUSH_1871.md](../decompiler/CACHE_FLUSH_1871.md) warns about,
+and the reason rule 2's conservative default exists. So `FUNCTION_CHANGED`
+is **not** a safe stand-alone "local" signal.
+
+### The corrected rule for #36-3a-2
+
+Admit a change batch as function-local — and invalidate only the owning
+function(s) — iff **every** record is admissible under one of:
+
+1. `COMMENT_CHANGED` (already shipped in #36-3a): owning function resolved by
+   address intersection of `start`/`end` against cached bodies.
+2. `SYMBOL_RENAMED` whose `getObject()` is a `Symbol` with
+   `getSymbolType()` ∈ { `LOCAL_VAR`, `PARAMETER` }: a local/parameter **name**
+   change. Such a symbol's parent namespace is the owning `Function`
+   (the `VariableSymbolDB` invariant `ProgramDB.java:1041-1043` relies on), so
+   resolve the function from it and add `function.getBody()` to the set. A
+   parameter/local *name* change does not alter the signature callers render
+   (callers show argument expressions, not the callee's local names), so it is
+   genuinely function-local.
+3. A companion `FunctionChangeRecord` with `getSpecificChangeType() ==
+   UNSPECIFIED` is admitted **only by correlation** — iff its `getFunction()`
+   equals a function already resolved from a sibling rule-2 record in the same
+   batch. A `FUNCTION_CHANGED/UNSPECIFIED` that arrives **alone** (e.g. a bare
+   `setStackReturnOffset`) has no such sibling and forces the whole batch to
+   the full flush.
+
+Any record that is none of the above forces a full flush. In particular a
+`FunctionChangeRecord` for which `isFunctionSignatureChange()`
+(`PARAMETERS_CHANGED` / `RETURN_TYPE_CHANGED`) or `isFunctionModifierChange()`
+(`INLINE` / `NO_RETURN` / `CALL_FIXUP` / `THUNK` / `PURGE`) is true is
+caller-affecting and stays on the full-flush path. So a parameter **retype**
+(which fires `PARAMETERS_CHANGED`, `FunctionDB.dataTypeChanged`) is correctly
+*not* treated as local; cross-function retype/signature scoping is the job of
+the #36-3b dependency bitmap, not #36-3a-2.
+
+### Plumbing impact
+
+This is still a *source* added onto the #36-3a foundation, not new plumbing:
+the classifier in `DecompilerProgramListener` grows from "every record is
+`COMMENT_CHANGED`" to "every record is admissible-local", and resolved
+function bodies are unioned into the same `AddressSet` already handed to
+`DecompilerController.invalidate(AddressSetView)`. The #36-3a-2 implementation
+PR will add a headed `DecompilerCachingTest` case that renames a local in
+`fun1` and asserts `fun1` misses while `fun2`/`fun3` stay cached, plus a
+negative case asserting a parameter **retype** still full-flushes — and that
+test will dump the real delivered record batch to lock this empirical taxonomy
+against upstream event-firing changes.
