@@ -23,8 +23,9 @@ import java.util.List;
  * expressions supplied by its caller.
  *
  * <p>Rec 37 {@code #37-7} (virtual-method-call form, DD-0016), {@code #37-8} (up/down-cast form,
- * DD-0017), {@code #37-9} (heap-construction form, DD-0018), and {@code #37-9c} (explicit
- * destructor-call form, DD-0019). This is the headless half of RFC §5. It holds no
+ * DD-0017), {@code #37-9} (heap-construction form, DD-0018), {@code #37-9c} (explicit
+ * destructor-call form, DD-0019), and {@code #37-9d} (array-construction form, DD-0020). This is the
+ * headless half of RFC §5. It holds no
  * {@link ghidra.program.model.listing.Program}, no
  * {@link ghidra.program.model.data.DataTypeManager}, and no decompiler / {@code HighFunction}
  * reference; it never scans, demangles, parses, or mutates the model. Its inputs are model objects
@@ -191,6 +192,38 @@ public final class CppDecompilerHints {
 		}
 		String access = receiverIsPointer ? "->" : ".";
 		return receiverExpr + access + "~" + type.getName() + "()";
+	}
+
+	/**
+	 * Renders an array heap construction — an {@code operator new[]} allocation followed by a
+	 * per-element default-constructor loop, fused into the C++ array-{@code new} expression — as
+	 * {@code new ClassName[count]}, where {@code ClassName} is {@code type.getName()} and
+	 * {@code count} is the element-count expression supplied verbatim inside the brackets.
+	 *
+	 * <p>Unlike {@link #renderConstruction}, this form takes <em>no constructor argument list</em>:
+	 * array {@code new T[n]} value/default-initializes each element, and C++ has no syntax to thread
+	 * per-element constructor arguments through it — so there is no argument list to format (the same
+	 * reason {@link #renderDestructorCall} takes none).
+	 *
+	 * <p>Like {@link #renderConstruction} and {@link #renderDestructorCall}, it has <em>no neutral
+	 * fallback</em>: the only model fact it needs is the class name, which is total ({@code getName()}
+	 * never fails for a defined class), so there is nothing to fall back from. It does no
+	 * constructor-overload resolution (the element constructor is the implicit default) and no vtable
+	 * lookup; it validates only its boundary inputs.
+	 *
+	 * @param type the class whose array is being constructed; must not be null
+	 * @param countExpr the already-rendered element-count expression; must not be null or blank
+	 * @return the rendered C++ array-{@code new} expression
+	 * @throws IllegalArgumentException if {@code type} is null or {@code countExpr} is null or blank
+	 */
+	public String renderArrayConstruction(CppClass type, String countExpr) {
+		if (type == null) {
+			throw new IllegalArgumentException("constructed type must not be null");
+		}
+		if (countExpr == null || countExpr.isBlank()) {
+			throw new IllegalArgumentException("count expression must not be null or blank");
+		}
+		return "new " + type.getName() + "[" + countExpr + "]";
 	}
 
 	private String renderCast(CppClass derivedClass, int baseOffset, String sourceExpr,
