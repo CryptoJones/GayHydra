@@ -29,6 +29,7 @@ import com.google.common.cache.*;
 import docking.ComponentProvider;
 import generic.test.TestUtils;
 import ghidra.app.decompiler.DecompileResults;
+import ghidra.app.decompiler.component.DecompilerController.CacheStatsSnapshot;
 import ghidra.app.plugin.core.codebrowser.CodeBrowserPlugin;
 import ghidra.app.plugin.core.decompile.DecompilePlugin;
 import ghidra.app.plugin.core.decompile.DecompilerProvider;
@@ -382,6 +383,113 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 
 		decompilerProvider.optionsChanged(new ToolOptions("Decompiler"), "Anything", null, null);
 		assertCacheSize(0);
+	}
+
+	@Test
+	public void testCacheStatsCountNavigationHitsAndMisses() {
+		// #36-5a telemetry: getCacheStats() exposes explicit navigation hit/miss counters (DecompilerController-
+		// owned, independent of the Guava recordStats() the sibling tests read). A never-visited function is a
+		// miss; returning to a still-cached one is a hit. Measured as deltas across transitions, so it does not
+		// depend on whatever the tool decompiled during setup. See DD-0009 addendum 9.
+		DecompilerController controller = decompilerProvider.getController();
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		goTo(functionAddrs.get(2)); // never visited -> one miss
+		CacheStatsSnapshot afterMiss = controller.getCacheStats();
+		assertEquals("a never-visited function is a miss", before.misses() + 1, afterMiss.misses());
+		assertEquals("a never-visited function is not a hit", before.hits(), afterMiss.hits());
+
+		goTo(functionAddrs.get(0)); // still cached (size 3, visited 0/1/2) -> one hit
+		CacheStatsSnapshot afterHit = controller.getCacheStats();
+		assertEquals("a revisited cached function is a hit", afterMiss.hits() + 1, afterHit.hits());
+		assertEquals("a revisited cached function is not a miss", afterMiss.misses(),
+			afterHit.misses());
+	}
+
+	@Test
+	public void testCacheStatsCountSelectiveAddressInvalidation() {
+		// #36-5a telemetry: a function-local edit (a comment) takes the address-keyed selective path
+		// (controller.invalidate), so getCacheStats() records one selective-address invalidation that dropped
+		// the commented function, and crucially NOT a full flush. The selective-vs-full split is exactly what
+		// Guava recordStats() cannot see and what gates #36-4. See DD-0009 addendum 9.
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(functionAt(0)));
+
+		DecompilerController controller = decompilerProvider.getController();
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		generateDomainObjectChange(); // comment on fun1 only -> selective address invalidation
+		waitForCondition(() -> !isCached(functionAt(0)));
+
+		CacheStatsSnapshot after = controller.getCacheStats();
+		assertTrue("at least one selective address invalidation",
+			after.selectiveAddressInvalidations() >= before.selectiveAddressInvalidations() + 1);
+		assertTrue("it dropped at least the commented function",
+			after.addressEntriesDropped() >= before.addressEntriesDropped() + 1);
+		assertEquals("a function-local edit is not a full flush", before.fullFlushes(),
+			after.fullFlushes());
+		assertEquals("a comment is not a datatype change",
+			before.selectiveDataTypeInvalidations(), after.selectiveDataTypeInvalidations());
+	}
+
+	@Test
+	public void testCacheStatsCountSelectiveDataTypeInvalidation() throws Exception {
+		// #36-5a telemetry: an in-place shared-datatype edit takes the datatype-keyed selective path
+		// (controller.invalidateByDataTypeIds), so getCacheStats() records at least one selective-datatype
+		// invalidation that dropped at least the referencing function, and NOT a full flush. See DD-0009
+		// addendum 9.
+		Structure sharedStruct = createSharedStruct("MyStruct");
+		setFirstFunctionReturnsPointerTo(sharedStruct);
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(functionAt(0)));
+
+		DecompilerController controller = decompilerProvider.getController();
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		addFieldToStruct(sharedStruct); // in-place DATA_TYPE_CHANGED -> selective datatype invalidation
+		waitForCondition(() -> !isCached(functionAt(0)));
+
+		CacheStatsSnapshot after = controller.getCacheStats();
+		assertTrue("at least one selective datatype invalidation",
+			after.selectiveDataTypeInvalidations() >= before.selectiveDataTypeInvalidations() + 1);
+		assertTrue("it dropped at least the referencing function",
+			after.dataTypeEntriesDropped() >= before.dataTypeEntriesDropped() + 1);
+		assertEquals("a shared-datatype edit is not a full flush", before.fullFlushes(),
+			after.fullFlushes());
+	}
+
+	@Test
+	public void testCacheStatsCountFullFlush() {
+		// #36-5a telemetry: a change that is not provably function-local (here, adding a symbol) falls back to
+		// the conservative full flush, which routes through clearCache (the listener's buffered doRefresh calls
+		// setOptions and refreshDisplay, both of which clearCache), so getCacheStats() records at least one
+		// full flush and no selective address invalidation. The flush is buffered, so wait on cache contents.
+		// See DD-0009 addendum 9.
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(functionAt(0)) && isCached(functionAt(1)));
+
+		DecompilerController controller = decompilerProvider.getController();
+		CacheStatsSnapshot before = controller.getCacheStats();
+
+		builder.createLabel("0x1004000", "extraLabel"); // SYMBOL_ADDED, not on the local allow-list
+		waitForCondition(() -> !isCached(functionAt(0)));
+
+		CacheStatsSnapshot after = controller.getCacheStats();
+		assertTrue("a non-local change triggers at least one full flush",
+			after.fullFlushes() >= before.fullFlushes() + 1);
+		assertEquals("a full flush is not a selective address invalidation",
+			before.selectiveAddressInvalidations(), after.selectiveAddressInvalidations());
+		assertEquals("a full flush is not a selective datatype invalidation",
+			before.selectiveDataTypeInvalidations(), after.selectiveDataTypeInvalidations());
 	}
 
 	private void initializeTool() throws Exception {
