@@ -39,7 +39,11 @@ import ghidra.framework.plugintool.util.PluginException;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.ByteDataType;
+import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DataTypeConflictHandler;
 import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.Structure;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Variable;
 import ghidra.program.model.mem.MemoryAccessException;
@@ -261,6 +265,33 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	}
 
 	@Test
+	public void testSharedDataTypeEditInvalidatesOnlyFunctionsReferencingItThroughAPointer()
+			throws Exception {
+		// An in-place shared-datatype edit (here, adding a field to MyStruct) must invalidate only
+		// the functions that reference that type -- INCLUDING ones that reference it only through a
+		// derived type such as MyStruct* -- while leaving unrelated functions cached. A pointer has a
+		// fixed size, so editing the struct does not change the referencing function's signature; the
+		// batch stays a pure DATA_TYPE_CHANGED that the selective path handles. Pinning the
+		// derived-type unwrap (a struct's id differs from its pointer's id) is the whole point of this
+		// test: without the unwrap the referencing function would wrongly stay cached. See DD-0009
+		// addendum 4.
+		Structure sharedStruct = createSharedStruct("MyStruct");
+		setFirstFunctionReturnsPointerTo(sharedStruct);
+		Function referencing = functionAt(0); // fun1: returns MyStruct*
+		Function unrelated = functionAt(1); // fun2: references nothing shared
+
+		goTo(functionAddrs.get(0));
+		goTo(functionAddrs.get(1));
+		goTo(functionAddrs.get(2));
+		waitForCondition(() -> isCached(referencing) && isCached(unrelated));
+
+		addFieldToStruct(sharedStruct); // in-place DATA_TYPE_CHANGED on MyStruct
+
+		// the function that uses MyStruct only via MyStruct* is dropped; unrelated stays cached
+		waitForCondition(() -> !isCached(referencing) && isCached(unrelated));
+	}
+
+	@Test
 	public void testCacheIsClearedWhenProgramIsClosed() {
 		goTo(functionAddrs.get(0));
 		goTo(functionAddrs.get(1));
@@ -381,6 +412,29 @@ public class DecompilerCachingTest extends AbstractGhidraHeadedIntegrationTest {
 	private void retypeLocalVarOnFirstFunction() throws Exception {
 		Variable local = firstFunction().getLocalVariables()[0];
 		builder.tx(() -> local.setDataType(new ByteDataType(), SourceType.USER_DEFINED));
+	}
+
+	private Structure createSharedStruct(String name) throws Exception {
+		return builder.tx(() -> {
+			StructureDataType proto = new StructureDataType(name, 0);
+			proto.add(new IntegerDataType(), "a", null);
+			return (Structure) program.getDataTypeManager()
+					.resolve(proto, DataTypeConflictHandler.DEFAULT_HANDLER);
+		});
+	}
+
+	private void setFirstFunctionReturnsPointerTo(DataType dt) throws Exception {
+		builder.tx(() -> {
+			DataType ptr = program.getDataTypeManager().getPointer(dt);
+			firstFunction().setReturnType(ptr, SourceType.USER_DEFINED);
+		});
+	}
+
+	private void addFieldToStruct(Structure struct) throws Exception {
+		// Adding a field of a not-yet-present type (byte) is the realistic edit: it fires
+		// DATA_TYPE_CHANGED on the struct alongside the benign DATA_TYPE_ADDED / SOURCE_ARCHIVE_CHANGED
+		// companions the selective path must tolerate. See DD-0009 addendum 5.
+		builder.tx(() -> struct.add(new ByteDataType(), "extra", null));
 	}
 
 	private void makeSecondFunctionCallFirst() {

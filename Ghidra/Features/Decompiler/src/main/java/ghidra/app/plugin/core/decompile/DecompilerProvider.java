@@ -180,8 +180,8 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 		followUpWorkUpdater = new SwingUpdateManager(() -> doFollowUpWork());
 
 		plugin.getTool().addServiceListener(serviceListener);
-		programListener =
-			new DecompilerProgramListener(controller, redecompileUpdater, this::localProgramChange);
+		programListener = new DecompilerProgramListener(controller, redecompileUpdater,
+			this::localProgramChange, this::dataTypeChanged);
 		setDefaultFocusComponent(controller.getDecompilerPanel());
 	}
 
@@ -372,6 +372,30 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 	 */
 	void localProgramChange(AddressSetView changed) {
 		controller.invalidate(changed);
+		if (!isVisible() || currentLocation == null) {
+			return;
+		}
+		if (lockDisplay) {
+			overlayPainter.setMessage(getOverlayRefreshMessage());
+		}
+		else {
+			controller.forceRefresh(program, currentLocation, null);
+			overlayPainter.setMessage("");
+		}
+	}
+
+	/**
+	 * Handles a program-change batch that consists entirely of in-place shared-datatype edits.
+	 * Invalidates only the cache entries whose functions reference one of the changed types and
+	 * re-decompiles the current display, instead of flushing the whole cache the way
+	 * {@link #doRefresh} does. This is the datatype-keyed selective-invalidation path from DD-0009
+	 * addendum 4; the classifier in {@link DecompilerProgramListener} routes only pure
+	 * {@code DATA_TYPE_CHANGED} batches here and everything else stays on the full-flush path.
+	 *
+	 * @param changedTypeIds the data-type ids modified by the change batch
+	 */
+	void dataTypeChanged(Set<Long> changedTypeIds) {
+		controller.invalidateByDataTypeIds(changedTypeIds);
 		if (!isVisible() || currentLocation == null) {
 			return;
 		}

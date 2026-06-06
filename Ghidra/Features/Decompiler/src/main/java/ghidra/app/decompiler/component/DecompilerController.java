@@ -17,6 +17,7 @@ package ghidra.app.decompiler.component;
 
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.*;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -27,8 +28,9 @@ import ghidra.app.plugin.core.decompile.DecompilerClipboardProvider;
 import ghidra.framework.plugintool.ServiceProvider;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.data.*;
 import ghidra.program.model.listing.*;
-import ghidra.program.model.pcode.HighFunction;
+import ghidra.program.model.pcode.*;
 import ghidra.program.util.ProgramLocation;
 import ghidra.program.util.ProgramSelection;
 import ghidra.util.UndefinedFunction;
@@ -404,6 +406,104 @@ public class DecompilerController {
 				decompilerCache.invalidate(function);
 			}
 		}
+	}
+
+	/**
+	 * Invalidates every cached entry whose decompiled function references any of the given changed
+	 * data-type ids, leaving the rest cached. This is the datatype-keyed companion to the
+	 * address-keyed {@link #invalidate(AddressSetView)}: an in-place edit to a shared
+	 * struct/union/enum/typedef should re-decompile only the functions that actually use it, not
+	 * flush the whole cache.
+	 *
+	 * <p>The set of types a cached function references is <em>recomputed on demand</em> from its
+	 * cached {@link HighFunction} — the symbol types it hands back are the live
+	 * program-{@link DataTypeManager} instances carrying the same ids the {@code DATA_TYPE_CHANGED}
+	 * event reports — so no per-entry state is recorded. A cached entry whose {@code HighFunction}
+	 * is {@code null} is conservatively invalidated, since the model needed to prove non-reference
+	 * is absent (liveness can only shrink). See DD-0009 addendum 4.
+	 *
+	 * @param changedIds the data-type ids reported by an in-place {@code DATA_TYPE_CHANGED} batch
+	 */
+	public void invalidateByDataTypeIds(Set<Long> changedIds) {
+		if (changedIds == null || changedIds.isEmpty()) {
+			return;
+		}
+		// The listener filters the NULL/BAD sentinels before building the set; one slipping through
+		// would match the unwrap floor and over-invalidate. Debug-assert the contract. (DD-0009 #4)
+		assert !changedIds.contains(DataTypeManager.NULL_DATATYPE_ID) &&
+			!changedIds.contains(DataTypeManager.BAD_DATATYPE_ID) : "sentinel datatype id in set";
+		for (Map.Entry<Function, DecompileResults> entry : decompilerCache.asMap().entrySet()) {
+			if (referencesAnyDataType(entry.getValue(), changedIds)) {
+				decompilerCache.invalidate(entry.getKey());
+			}
+		}
+	}
+
+	private boolean referencesAnyDataType(DecompileResults results, Set<Long> changedIds) {
+		HighFunction hf = results.getHighFunction();
+		if (hf == null) {
+			return true; // no model to prove non-reference; conservatively invalidate
+		}
+		Set<DataType> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+		FunctionPrototype prototype = hf.getFunctionPrototype();
+		if (prototype != null) {
+			if (typeMatches(prototype.getReturnType(), changedIds, visited)) {
+				return true;
+			}
+			for (int i = 0; i < prototype.getNumParams(); i++) {
+				HighSymbol param = prototype.getParam(i);
+				if (param != null && typeMatches(param.getDataType(), changedIds, visited)) {
+					return true;
+				}
+			}
+		}
+		LocalSymbolMap localMap = hf.getLocalSymbolMap();
+		if (localMap != null && symbolsReference(localMap.getSymbols(), changedIds, visited)) {
+			return true;
+		}
+		GlobalSymbolMap globalMap = hf.getGlobalSymbolMap();
+		return globalMap != null && symbolsReference(globalMap.getSymbols(), changedIds, visited);
+	}
+
+	private boolean symbolsReference(Iterator<HighSymbol> symbols, Set<Long> changedIds,
+			Set<DataType> visited) {
+		if (symbols == null) {
+			return false;
+		}
+		while (symbols.hasNext()) {
+			HighSymbol symbol = symbols.next();
+			if (symbol != null && typeMatches(symbol.getDataType(), changedIds, visited)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Tests whether {@code type}, or any type it derives from, has an id in {@code changedIds}. A
+	 * symbol typed {@code MyStruct *}/{@code MyStruct[10]}/typedef has a <em>different</em> id than
+	 * {@code MyStruct}, so the changed-id set is tested at every level by unwrapping
+	 * {@link Pointer}/{@link Array}/{@link TypeDef}. The identity-based {@code visited} set bounds
+	 * the recursion against a malformed cyclic derived type. See DD-0009 addendum 4.
+	 */
+	private boolean typeMatches(DataType type, Set<Long> changedIds, Set<DataType> visited) {
+		if (type == null || !visited.add(type)) {
+			return false;
+		}
+		DataTypeManager dtm = type.getDataTypeManager();
+		if (dtm != null && changedIds.contains(dtm.getID(type))) {
+			return true;
+		}
+		if (type instanceof Pointer pointer) {
+			return typeMatches(pointer.getDataType(), changedIds, visited);
+		}
+		if (type instanceof Array array) {
+			return typeMatches(array.getDataType(), changedIds, visited);
+		}
+		if (type instanceof TypeDef typeDef) {
+			return typeMatches(typeDef.getDataType(), changedIds, visited);
+		}
+		return false;
 	}
 
 	public void programClosed(Program closedProgram) {
