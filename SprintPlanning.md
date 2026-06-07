@@ -10,6 +10,43 @@ For the *why* behind individual choices, see
 
 ---
 
+## Sprint 14 — Headless integration harness (Rec 30) → unblock the Program-coupled queue
+
+*Next up.* Everything left across Rec 37, Rec 35, and Rec 33 is blocked on the
+same thing: it needs a *live* `Program`/`HighFunction` or a GUI `DISPLAY`, so
+it can't satisfy the test-before-push rule under the current headless-unit
+layer. Build that missing test layer first (Rec 30,
+[`docs/testing/HEADLESS_TEST_LAYER.md`](docs/testing/HEADLESS_TEST_LAYER.md)),
+then land the work it unblocks.
+
+**Step 1 — the enabler:**
+
+- [ ] **Rec 30 headless integration harness** — load a small prebuilt binary,
+  run analysis to a real `HighFunction`, and assert on decompiler output / hint
+  emission from a headless fixture (JUnit or `decomp_test_dbg`-style). This is
+  the gate that makes every item below testable-before-push.
+
+**Step 2 — Rec 37 recognition phase (unblocked by Step 1):**
+
+- [ ] **Recognition wrappers** for the seven shipped `CppDecompilerHints`
+  renderer forms — detect ctor/dtor/cast/`new`/`new[]`/placement/`delete`
+  idioms in a live function and dispatch to the matching (already-shipped) renderer.
+- [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
+- [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
+- [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
+
+**Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
+
+- [ ] **Rec 35 #35-5b-2** — Retry-with-2x-budget action (re-decompile +
+  partial-banner clear; needs a DISPLAY). The budget-doubling + `isPartial`
+  enablement helpers are already headlessly tested and shipped; only the GUI
+  action remains.
+- [ ] **Rec 33 #33-2.6** — flip the v1 IPC command-loop default. The live
+  command loop only links into `ghidra_dbg`; needs an end-to-end IPC test, not
+  just the headless precheck (DD-0005).
+
+---
+
 ## Sprint 10 — OSS-Fuzz submission + Stage 3 finish + give-back PRs
 
 **Done:**
@@ -175,11 +212,13 @@ first implementation tier.
 
 ## Sprint 9 — Strategic: C++ Frontend (Rec 37)
 
-- [ ] **PR #37-2:** `CppTypeSystem` skeleton + tests.
-- [ ] **PR #37-3:** `CppDemanglingFeeder`.
-- [ ] **PR #37-4:** `CppRttiAnalyzer` (Itanium).
-- [ ] **PR #37-5:** `CppRttiAnalyzer` (MSVC).
-- [ ] **PR #37-6:** `CppVTableAnalyzer`.
+**Headless model + feeder layer delivered 2026-06-06 as v26.3.0 — see [SprintHistory.md](SprintHistory.md) (Sprint 13).** The headless deliverables shipped as *feeders* (model-only); the Program-coupled *analyzer*/recognition wrappers the items below named roll to **Sprint 14**.
+
+- [x] ~~**PR #37-2:** `CppTypeSystem` skeleton + tests.~~ Shipped (DD-0011).
+- [x] ~~**PR #37-3:** `CppDemanglingFeeder`.~~ Shipped (DD-0012).
+- [x] ~~**PR #37-4:** `CppRttiAnalyzer` (Itanium).~~ Shipped as `CppRttiFeeder` (DD-0013); Program-coupled analyzer → Sprint 14.
+- [ ] **PR #37-5:** `CppRttiAnalyzer` (MSVC). **→ Sprint 14** (not started).
+- [x] ~~**PR #37-6:** `CppVTableAnalyzer`.~~ Shipped as `CppVTableFeeder` + `CppVtableReconciler` (#37-6c, DD-0014/DD-0015); Program-coupled analyzer → Sprint 14.
 
 ---
 
@@ -201,9 +240,9 @@ first implementation tier.
 
 ## Sprint 12 — Strategic: Decompiler Hints (Rec 37 cont.)
 
-- [ ] **PR #37-7:** `CppDecompilerHints` for upcasts + downcasts.
-- [ ] **PR #37-8:** vmethod calls.
-- [ ] **PR #37-9:** ctor/dtor recognition.
+**Renderers delivered 2026-06-06 as v26.3.0 — see [SprintHistory.md](SprintHistory.md) (Sprint 13).** The stateless *renderer* half of every form shipped — all seven: virtual call, up/down-cast, construction, explicit destructor, array `new[]`, placement-new, `delete` (#37-7 … #37-9f, DD-0016..DD-0022). The Program-coupled *recognition* half (detecting each idiom in a live `HighFunction` and dispatching to the matching renderer) is the "headless ceiling" — it rolls to **Sprint 14**.
+
+- [x] ~~**PR #37-7 / #37-8 / #37-9 + #37-9c/9d/9e/9f:** `CppDecompilerHints` renderers (upcast/downcast, vmethod calls, ctor/dtor, array/placement/delete).~~ All seven renderer forms shipped (headless); recognition → Sprint 14.
 
 ---
 

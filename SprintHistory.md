@@ -9,6 +9,68 @@ For why decisions were made the way they were, see
 
 ---
 
+## Sprint 13 — Strategic: Rec 37 C++ Frontend, headless renderer family (delivered 2026-06-06)
+
+**Goal:** Land the headless half of the Rec 37 C++ frontend — RFC-0001 §5's
+stateless `CppDecompilerHints` renderer family plus the model/feeder layer
+beneath it — i.e. every output form that can be unit-tested without a live
+`Program`. Ship it alongside the Rec 39 Phase-2 idiom folds that move
+decompiler output, and cut the release. (This closes the strategic Rec-37
+sprints queued in [SprintPlanning.md](SprintPlanning.md) as "Sprint 9 — C++
+Frontend" and "Sprint 12 — Decompiler Hints"; numbered 13 here because the
+two files already carry conflicting Sprint-9/12 entries, so this takes the
+next collision-free integer.)
+
+**Released as:** [GayHydra v26.3.0](https://github.com/CryptoJones/GayHydra/releases/tag/v26.3.0)
+— minor, not patch, because Rec 37 adds a new subsystem and Rec 39 moves
+existing decompiler output (project convention: patch when no existing output
+moves, minor when it does).
+
+**Delivered Rec 37 model + feeder layer (headless):**
+
+- `CppTypeSystem` skeleton (#37-2, DD-0011) — model-only class/inheritance graph.
+- `CppDemanglingFeeder` (#37-3, DD-0012) — mangled-name → type facts.
+- `CppRttiFeeder` Itanium (#37-4, DD-0013).
+- `CppVTableFeeder` (#37-6, DD-0014) + `CppVtableReconciler` / `CppVTable.setSlot` (#37-6c, DD-0015).
+
+**Delivered the `CppDecompilerHints` renderer family — all seven forms (headless, 61 JUnit cases):**
+
+- virtual call (#37-7, DD-0016), up/down-cast (#37-8, DD-0017), heap
+  construction (#37-9, DD-0018), explicit destructor call (#37-9c, DD-0019),
+  array construction `new[]` (#37-9d, DD-0020), placement-new (#37-9e,
+  DD-0021), deallocation `delete`/`delete[]` (#37-9f, DD-0022). Each renderer
+  is stateless and pure-string; the family is exhaustive for what a renderer
+  can emit without a live `Program` — the "headless ceiling."
+
+**Delivered Rec 39 Phase-2 idiom folds (output-moving):**
+
+- #39-4a — `RuleMemset` folds constant-fill STORE runs into `builtin_memset`
+  ([PR #254](https://github.com/CryptoJones/GayHydra/pull/254); reuses
+  `HeapSequence` in fill mode, runs after `RuleStringStore`;
+  `datatests/heapmemset.xml`).
+- #39-4b — the SWAR popcount idiom folds into the native `CPUI_POPCOUNT` op
+  ([PR #261](https://github.com/CryptoJones/GayHydra/pull/261); DD-0007
+  corrected to reuse Ghidra's existing `TypeOpPopcount` / `OpBehaviorPopcount`
+  rather than mint a redundant `BUILTIN_POPCOUNT` CALLOTHER;
+  `datatests/popcount.xml`).
+
+**Carried to Sprint 14 (all Program/runtime-coupled — blocked on a headless integration harness, per the test-before-push rule):**
+
+- **Rec 37 recognition phase** — the wrappers that drive a live
+  `HighFunction`/`Program` into the seven renderers (detect the
+  ctor/dtor/cast/`new`/`delete` idiom in a real decompiled function, then
+  call the matching headless renderer). The renderers are done; the
+  recognizers need a loaded `Program`, so they can't be unit-tested headlessly.
+- **Rec 37 #37-5** — MSVC RTTI feeder (only the Itanium #37-4 feeder shipped).
+- **Rec 37 #37-10+ band** — `DataTypeManager`/signature/template/operator
+  rendering; also Program-coupled.
+- **Rec 35 #35-5b-2** — Retry-with-2x-budget action; GUI-runtime blocker
+  (re-decompile + banner-clear need a DISPLAY).
+- **Rec 33 #33-2.6** — v1 command-loop default flip; the live IPC command loop
+  only links into `ghidra_dbg`, untestable by headless precheck (DD-0005).
+
+---
+
 ## Sprint 9 — datatest audit, SBOM hotfix, Stage 3 prep (delivered 2026-05-21)
 
 **Goal:** Land the strict CycloneDX SBOM hotfix (Sprint 8's PR #243 ship-out broke master), clear the inherited-from-upstream 189-datatest audit (issue #215), and prep Rec 25/26 Stage 3 for the next sprint.
