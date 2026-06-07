@@ -12,6 +12,41 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+_Nothing yet._
+
+---
+
+## [v26.3.0] — 2026-06-06
+
+Minor release closing the Rec 37 **C++ frontend** sprint: GayHydra grows
+a whole new headless subsystem — the `ghidra.app.util.cpp`
+`CppTypeSystem` model overlay (RFC-0001) and the seven-form
+`CppDecompilerHints` renderer family (RFC-0001 §5) — built up across
+DD-0011…DD-0022 and `#37-2`…`#37-9f`. The model side maps recovered
+facts onto a pure in-memory overlay: demangled symbols
+(`CppDemanglingFeeder`, `#37-3`), Itanium RTTI inheritance
+(`CppRttiFeeder`, `#37-4`), recovered vtables (`CppVTableFeeder`,
+`#37-6`), and vtable↔declared-method reconciliation
+(`CppVtableReconciler`, `#37-6c`). The renderer side turns those facts
+plus operand strings into C++ surface syntax — virtual call (`#37-7`),
+up/down-cast (`#37-8`), heap / array / placement construction
+(`#37-9` / `#37-9d` / `#37-9e`), explicit destruction (`#37-9c`), and
+deallocation (`#37-9f`) — completing every RFC §5 idiom. The whole
+family is **headless and advisory**: it holds no `Program` /
+`DataTypeManager` / decompiler handle and never rewrites p-code, so it
+moves no existing decompiler output on its own; the recognition passes
+that would drive it from a `HighFunction` are deferred and
+Program-coupled.
+
+Minor (not patch) because the release both adds that new subsystem and
+carries the Rec 39 *idiom-folding* work that **does** move existing
+output: the constant-fill `STORE` sequence folds into `memset`
+(`#39-4a`), and the SWAR popcount idiom folds into the native
+`POPCOUNT(x)` op (`#39-4b`, DD-0007). The headless renderer family is
+now exhausted — all remaining Rec 37 work (the recognition wrappers
+`#37-7b`…`#37-9f` and the `#37-10+` `DataTypeManager`/signature/template/
+operator band) is Program-coupled and a test-before-push blocker.
+
 - feat(decompiler): Rec 37 `#37-9f` — **the `CppDecompilerHints` deallocation renderer**, the seventh and **final**
   headless form and the death-side counterpart of the `#37-9` construction renderer
   ([DD-0022](docs/decisions/0022-rec37-delete-renderer.md)). `renderDelete(String receiverExpr, boolean isArray)`
