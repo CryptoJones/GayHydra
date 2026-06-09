@@ -227,6 +227,18 @@ then land the work it unblocks.
     third user earns extraction. Grounded against `new C(true)` / `new C(false)` (and placement twins);
     placement 11/11, heap 11/11. Next typed-constant slices: `#37-10f` char → `'A'`, `#37-10g` enum →
     member name.
+  - [x] ~~**#37-10f** — render char-constant arguments as C character literals.~~ Shipped (DD-0047):
+    `CharDataType extends AbstractIntegerDataType`, so `#37-10c`/`#37-10d`/`#37-10e` rendered a `char`
+    argument through the integer branch as the decimal byte (`new C('A')` as `new C(65)`). `argumentExpr`
+    (per-form twin in both drivers) now special-cases a `CharDataType` constant ahead of the integer
+    branch via a new `charConstantLiteral` helper: a printable ASCII byte renders directly (`'A'`), the
+    standard C escapes cover the control/special characters (`'\n'`, `'\t'`, `'\''`, `'\\'`, …), and a
+    `\xNN` hex escape covers any other non-printable byte — every byte renders faithfully, so a char
+    constant never declines. `SignedCharDataType`/`UnsignedCharDataType` extend `CharDataType` (all three
+    1-byte char types render); the `BuiltIn`-derived wide-char types decline rather than mis-render as a
+    byte. Helper stays a per-form twin until a third user earns extraction. Grounded against `new C('A')` /
+    `new C('\n')` (and placement twins); placement 13/13, heap 13/13. Next typed-constant slice: `#37-10g`
+    enum → member name.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

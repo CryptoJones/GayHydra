@@ -23,6 +23,7 @@ import ghidra.app.util.cpp.CppPlacementConstructionRecognizer.PlacementConstruct
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.BooleanDataType;
+import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
@@ -218,25 +219,28 @@ public final class CppPlacementConstructionDriver {
 
 	/**
 	 * Renders one constructor-argument varnode as a C++ expression: a named {@link HighVariable}'s name
-	 * (e.g. {@code param_1}), a {@code bool} constant as {@code true}/{@code false} ({@code #37-10e}), or
-	 * an integer-typed constant's decimal value (e.g. {@code 5}, or {@code -1} for a negative argument),
-	 * so a literal argument like {@code new (buf) C(5)} renders rather than declining.
+	 * (e.g. {@code param_1}), a {@code bool} constant as {@code true}/{@code false} ({@code #37-10e}), a
+	 * {@code char} constant as a character literal (e.g. {@code 'A'}, {@code #37-10f}), or an
+	 * integer-typed constant's decimal value (e.g. {@code 5}, or {@code -1} for a negative argument), so a
+	 * literal argument like {@code new (buf) C(5)} renders rather than declining.
 	 *
-	 * <p>A constant is rendered only when its {@link HighVariable} datatype is a {@link BooleanDataType}
-	 * or an {@link AbstractIntegerDataType}: a {@code bool} constant of {@code 0}/{@code 1} renders
-	 * {@code false}/{@code true} (an out-of-range {@code bool} value falls through to its decimal, staying
-	 * never-wrong), and an integer literal's decimal value (the array driver's element count is rendered
-	 * the same way) is a faithful hint, whereas a pointer-typed constant (e.g. a global string address)
-	 * rendered as a bare decimal would mislead, so it is declined. The integer literal is read at the
-	 * varnode's own byte width ({@link #integerConstantLiteral}) &mdash; sign-extended for a signed type,
-	 * full-range for an unsigned one &mdash; so a negative or wide-unsigned argument stays faithful
-	 * ({@code #37-10d}). An argument that is neither named nor a boolean/integer constant (an unnamed
+	 * <p>A constant is rendered only when its {@link HighVariable} datatype is a {@link BooleanDataType},
+	 * a {@link CharDataType}, or an {@link AbstractIntegerDataType}: a {@code bool} constant of
+	 * {@code 0}/{@code 1} renders {@code false}/{@code true} (an out-of-range {@code bool} value falls
+	 * through to its decimal, staying never-wrong); a {@code char} constant renders as an escaped C
+	 * character literal ({@link #charConstantLiteral}); and an integer literal's decimal value (the array
+	 * driver's element count is rendered the same way) is a faithful hint, whereas a pointer-typed constant
+	 * (e.g. a global string address) rendered as a bare decimal would mislead, so it is declined. The
+	 * integer literal is read at the varnode's own byte width ({@link #integerConstantLiteral}) &mdash;
+	 * sign-extended for a signed type, full-range for an unsigned one &mdash; so a negative or wide-unsigned
+	 * argument stays faithful ({@code #37-10d}). The {@code char} branch precedes the integer branch because
+	 * {@code CharDataType} (and {@code bool}) are themselves {@code AbstractIntegerDataType}s; the more
+	 * specific type wins. An argument that is neither named nor a boolean/char/integer constant (an unnamed
 	 * non-constant temporary, or a non-integer constant) declines the whole hint ({@code null}). Rendering
-	 * compound expressions and the remaining typed constants (chars, enum names) is later {@code #37-10}
-	 * work.
+	 * compound expressions and the remaining typed constants (enum names) is later {@code #37-10} work.
 	 *
-	 * @return the rendered argument expression, or null if it is neither a named variable nor an
-	 *         integer-typed constant
+	 * @return the rendered argument expression, or null if it is neither a named variable nor a
+	 *         boolean/char/integer-typed constant
 	 */
 	private static String argumentExpr(Varnode varnode) {
 		String name = operandName(varnode);
@@ -251,6 +255,9 @@ public final class CppPlacementConstructionDriver {
 				if (value == 0 || value == 1) {
 					return value == 0 ? "false" : "true";
 				}
+			}
+			if (type instanceof CharDataType) {
+				return charConstantLiteral(varnode);
 			}
 			if (type instanceof AbstractIntegerDataType integerType) {
 				return integerConstantLiteral(varnode, integerType);
@@ -284,6 +291,40 @@ public final class CppPlacementConstructionDriver {
 			return Long.toString((raw << (Long.SIZE - bits)) >> (Long.SIZE - bits));
 		}
 		return Long.toUnsignedString(raw & ((1L << bits) - 1));
+	}
+
+	/**
+	 * {@return the C character-literal text of a {@link CharDataType} constant varnode (e.g.
+	 * {@code 'A'}), with control and special characters escaped}
+	 *
+	 * <p>A {@code char} constant carries its byte value in the low 8 bits of the varnode offset (so
+	 * {@code 'A'} is {@code 0x41}); rendered through the integer branch it would misleadingly print as
+	 * the decimal {@code 65}. The byte is rendered as a single-quoted C character literal: a printable
+	 * ASCII byte ({@code 0x20}&ndash;{@code 0x7e}) directly, the standard C escapes for the common
+	 * control characters and for the quote and backslash, and a {@code \\xNN} hex escape for any other
+	 * non-printable byte. Every byte therefore renders to a faithful, compilable literal, so a {@code char}
+	 * constant never declines ({@code #37-10f}). {@code SignedCharDataType} and {@code UnsignedCharDataType}
+	 * both extend {@link CharDataType}, so all three 1-byte char types render here; the wide-char types are
+	 * not {@code CharDataType} and fall through to decline. (Duplicated from the heap driver as an honest
+	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 */
+	private static String charConstantLiteral(Varnode varnode) {
+		int value = (int) (varnode.getOffset() & 0xff);
+		String body = switch (value) {
+			case '\0' -> "\\0";
+			case 0x07 -> "\\a";
+			case '\b' -> "\\b";
+			case '\t' -> "\\t";
+			case '\n' -> "\\n";
+			case 0x0b -> "\\v";
+			case '\f' -> "\\f";
+			case '\r' -> "\\r";
+			case '\'' -> "\\'";
+			case '\\' -> "\\\\";
+			default -> (value >= 0x20 && value <= 0x7e) ? String.valueOf((char) value)
+					: String.format("\\x%02x", value);
+		};
+		return "'" + body + "'";
 	}
 
 	/**

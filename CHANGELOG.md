@@ -299,6 +299,21 @@ generated from the GitHub Releases UI at sprint close.
   argument-rendering user earns the extraction; rendering the remaining typed constants (chars, enum
   names) and compound expressions is later `#37-10` work. Grounded against decompiled `new C(true)` /
   `new C(false)` (and their placement twins); placement 11/11, heap 11/11. Design: DD-0046.
+- **Rec 37 `#37-10f` — char-constant constructor arguments rendered as C character literals** (Sprint 14,
+  sixth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now render a
+  `char` constructor argument as a single-quoted C character literal instead of the decimal byte value.
+  `CharDataType extends AbstractIntegerDataType`, so `#37-10c`/`#37-10d`/`#37-10e` rendered a char
+  argument through the integer branch as a number (`new C('A')` as `new C(65)`); `argumentExpr` now
+  special-cases a `CharDataType` constant ahead of the integer branch via a new `charConstantLiteral`
+  helper that emits a printable ASCII byte directly (`'A'`), the standard C escapes for the control and
+  special characters (`'\n'`, `'\t'`, `'\''`, `'\\'`, …), and a `\xNN` hex escape for any other
+  non-printable byte — so every byte renders faithfully and a char constant never declines.
+  `SignedCharDataType` and `UnsignedCharDataType` extend `CharDataType`, so all three 1-byte char types
+  render; the `BuiltIn`-derived wide-char types fall through to decline rather than being mis-rendered as
+  a byte, keeping the advisory, never-wrong contract. The char branch stays a per-form twin (rule of
+  three) until a third argument-rendering user earns the extraction; rendering enum member names and
+  compound expressions is later `#37-10` work. Grounded against decompiled `new C('A')` / `new C('\n')`
+  (and their placement twins); placement 13/13, heap 13/13. Design: DD-0047.
 
 ### Changed
 

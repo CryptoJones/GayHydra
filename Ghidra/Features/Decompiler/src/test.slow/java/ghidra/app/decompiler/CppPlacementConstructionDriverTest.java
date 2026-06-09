@@ -28,6 +28,7 @@ import ghidra.app.util.cpp.CppPlacementConstructionDriver.RenderedPlacement;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.BooleanDataType;
+import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
@@ -136,6 +137,34 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
 		assertEquals("boolean constant 0 must render as false, not a decimal", "new (param_1) C(false)",
 			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithCharArgument() throws Exception {
+		Fixture fixture = placementWithCharArgFixture(0x41);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("printable char constant must render as a 'A' literal, not the decimal 65",
+			"new (param_1) C('A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithEscapedCharArgument() throws Exception {
+		Fixture fixture = placementWithCharArgFixture(0x0a);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a control char must render as its escaped C literal, not the decimal 10",
+			"new (param_1) C('\\n')", hints.get(0).rendering());
 	}
 
 	@Test
@@ -376,6 +405,46 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		// the constructor takes the this receiver and one explicit bool argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
 			new BooleanDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C('A')} (or {@code C('\n')}) where the
+	 * constructor takes a {@code char}, so the constructor {@code CALL} carries the literal as a size-1
+	 * {@link CharDataType} constant whose offset is the character byte. Grounds the {@code #37-10f} char
+	 * rendering: a printable byte ({@code 0x41}) must render {@code 'A'} and a control byte ({@code 0x0a})
+	 * must render the escaped {@code '\n'}, not their decimals {@code 65}/{@code 10}. Same 27-byte body as
+	 * the {@code #37-10c} fixture with the {@code mov edx,imm} loading the character byte.
+	 */
+	private Fixture placementWithCharArgFixture(int charByte) throws Exception {
+		builder = new ProgramBuilder("placementCharArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String immByte = String.format("%02x", charByte & 0xff);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 ba " + immByte +
+				" 00 00 00 e8 e6 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit char argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new CharDataType());
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 27, false);

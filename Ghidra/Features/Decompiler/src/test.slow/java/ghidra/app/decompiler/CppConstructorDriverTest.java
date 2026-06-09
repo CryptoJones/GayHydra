@@ -29,6 +29,7 @@ import ghidra.app.util.cpp.CppDecompilerHints;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.BooleanDataType;
+import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
@@ -175,6 +176,36 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		assertEquals("expected exactly one rendered construction", 1, hints.size());
 		assertEquals("boolean constant 0 must render as false, not 0", "new C(false)",
 			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithCharArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithCharArg(0x41);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("printable char constant must render as a 'A' literal, not the decimal 65",
+			"new C('A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithEscapedCharArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithCharArg(0x0a);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a control char must render as its escaped C literal, not the decimal 10",
+			"new C('\\n')", hints.get(0).rendering());
 	}
 
 	@Test
@@ -463,6 +494,45 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		// the constructor takes the this receiver and one explicit bool argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
 			new BooleanDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
+		builder.disassemble(MAKE, 40, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(value);} where the
+	 * constructor takes a {@code char}, so the constructor {@code CALL} carries the literal as a size-1
+	 * {@link CharDataType} constant whose offset is the character byte. Grounds the {@code #37-10f} char
+	 * rendering: a printable byte ({@code 0x41}) must render {@code 'A'} and a control byte ({@code 0x0a})
+	 * must render the escaped {@code '\n'}, not their decimals {@code 65}/{@code 10}. Same 40-byte body as
+	 * the {@code #37-10e} fixture with the {@code mov edx,imm} loading the character byte.
+	 */
+	private HighFunction decompileMakeWithCharArg(int charByte) throws Exception {
+		builder = new ProgramBuilder("ctorCharArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String immByte = String.format("%02x", charByte & 0xff);
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 ba " + immByte +
+				" 00 00 00 e8 e1 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit char argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new CharDataType());
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
 		builder.disassemble(MAKE, 40, false);
 		builder.disassemble(OP_NEW, 1, false);
