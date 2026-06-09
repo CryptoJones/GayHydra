@@ -593,6 +593,79 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithSignedDivisionExpressionArgument() throws Exception {
+		// new C(v / 7) on a signed operand: a signed division is INT_SDIV, whose left operand is the named
+		// param_1 directly (no cast), so it renders param_1 / 7 (grounded #37-10n).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f0 48 99 49 c7 c0 07 00 00 00 49 f7 f8 48 89 c2", 18); // signed idiv by 7
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed division argument must render as param_1 / 7",
+			"new C(param_1 / 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithSignedRemainderExpressionArgument() throws Exception {
+		// new C(v % 7) on a signed operand: a signed remainder is INT_SREM, whose left operand is the named
+		// param_1 directly (no cast), so it renders param_1 % 7 (grounded #37-10n).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f0 48 99 49 c7 c0 07 00 00 00 49 f7 f8", 15); // signed idiv by 7, take remainder
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed remainder argument must render as param_1 % 7",
+			"new C(param_1 % 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesUnsignedDivisionExpressionArgument() throws Exception {
+		// new C(v / 7) where the decompiler emits an *unsigned* INT_DIV: the signed param_1 is first CAST to
+		// unsigned, so the left operand is a cast temp, not a leaf. Rendering a bare param_1 / 7 over the
+		// signed operand would silently change signedness, so the binary renderer declines the cast-wrapped
+		// operand and the whole hint declines (never-wrong, grounded #37-10n).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f0 48 31 d2 49 c7 c0 07 00 00 00 49 f7 f0 48 89 c2", 19); // unsigned div by 7
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned division whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
+	public void testDeclinesUnsignedRemainderExpressionArgument() throws Exception {
+		// new C(v % 7) where the decompiler emits an *unsigned* INT_REM: the signed param_1 is first CAST to
+		// unsigned, so the left operand is a cast temp, not a leaf, and the whole hint declines
+		// (never-wrong, grounded #37-10n).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f0 48 31 d2 49 c7 c0 07 00 00 00 49 f7 f0", 16); // unsigned div by 7, take remainder
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned remainder whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");

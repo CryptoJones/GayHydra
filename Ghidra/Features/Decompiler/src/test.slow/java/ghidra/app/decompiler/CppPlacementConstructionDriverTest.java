@@ -526,6 +526,74 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithSignedDivisionExpressionArgument() throws Exception {
+		// new (param_1) C(v / 7) on a signed operand: INT_SDIV's left operand is the named param_2 directly
+		// (no cast), so it renders param_2 / 7 (grounded #37-10n).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f0 48 99 49 c7 c0 07 00 00 00 49 f7 f8 48 89 c2", 18); // signed idiv by 7
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed division argument must render as param_2 / 7",
+			"new (param_1) C(param_2 / 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithSignedRemainderExpressionArgument() throws Exception {
+		// new (param_1) C(v % 7) on a signed operand: INT_SREM's left operand is the named param_2 directly
+		// (no cast), so it renders param_2 % 7 (grounded #37-10n).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f0 48 99 49 c7 c0 07 00 00 00 49 f7 f8", 15); // signed idiv by 7, take remainder
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed remainder argument must render as param_2 % 7",
+			"new (param_1) C(param_2 % 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementUnsignedDivisionExpressionArgument() throws Exception {
+		// new (param_1) C(v / 7) where the decompiler emits an *unsigned* INT_DIV: the signed param_2 is
+		// first CAST to unsigned, so the left operand is a cast temp, not a leaf, and the whole hint
+		// declines (never-wrong, grounded #37-10n).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f0 48 31 d2 49 c7 c0 07 00 00 00 49 f7 f0 48 89 c2", 19); // unsigned div by 7
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned division whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
+	public void testDeclinesPlacementUnsignedRemainderExpressionArgument() throws Exception {
+		// new (param_1) C(v % 7) where the decompiler emits an *unsigned* INT_REM: the signed param_2 is
+		// first CAST to unsigned, so the left operand is a cast temp, not a leaf, and the whole hint
+		// declines (never-wrong, grounded #37-10n).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f0 48 31 d2 49 c7 c0 07 00 00 00 49 f7 f0", 16); // unsigned div by 7, take remainder
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned remainder whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);

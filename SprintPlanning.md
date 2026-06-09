@@ -339,6 +339,16 @@ then land the work it unblocks.
     logical-shift decline (and placement twins). Placement 35/35, heap 35/35. Next `#37-10` work:
     division/remainder, comparison and unary operators, nested compounds with parens, plus
     signature/template/operator rendering.
+  - [x] ~~**#37-10n** — render signed division/remainder arguments as C++ binary expressions.~~ Shipped
+    (DD-0055): extends the `#37-10m` `binaryOperator` map with `INT_SDIV`/`INT_DIV`→`/` and
+    `INT_SREM`/`INT_REM`→`%`, so `new C(param_1 / 7)` / `new C(param_1 % 7)` (and placement twins)
+    render. A probe grounded the same signed/unsigned split the shifts have: the signed opcodes carry the
+    named operand directly (render), the unsigned opcodes cast the operand to unsigned, so the existing
+    leaf-only no-peel rule in `binaryExpr` declines them rather than silently change signedness — two map
+    entries, no new control flow. Per-form twin (rule of three). Grounded against signed `idiv` quotient
+    and remainder (render) and unsigned `div` quotient and remainder (decline), and placement twins.
+    Placement 39/39, heap 39/39. Next `#37-10` work: comparison and unary operators, nested compounds
+    with parens, plus signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

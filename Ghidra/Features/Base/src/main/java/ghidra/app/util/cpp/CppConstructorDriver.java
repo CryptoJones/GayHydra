@@ -397,12 +397,17 @@ public final class CppConstructorDriver {
 	 * one of the recognised arithmetic, bitwise, or shift operators}
 	 *
 	 * <p>The mapping is grounded over the opcodes the decompiler emits for the corresponding C operations
-	 * ({@code #37-10m}): {@code INT_ADD}/{@code INT_SUB}/{@code INT_MULT} for {@code + - *},
-	 * {@code INT_AND}/{@code INT_OR}/{@code INT_XOR} for {@code & | ^}, {@code INT_LEFT} for {@code <<}, and
-	 * both the logical {@code INT_RIGHT} and the arithmetic {@code INT_SRIGHT} for {@code >>} (the source
-	 * signedness, not the glyph, distinguishes them). Division, remainder, comparison, and unary operators
-	 * are not yet mapped and decline. (Duplicated from the placement driver as an honest per-form twin, per
-	 * the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 * ({@code #37-10m}, {@code #37-10n}): {@code INT_ADD}/{@code INT_SUB}/{@code INT_MULT} for {@code + - *},
+	 * {@code INT_AND}/{@code INT_OR}/{@code INT_XOR} for {@code & | ^}, {@code INT_LEFT} for {@code <<},
+	 * both the logical {@code INT_RIGHT} and the arithmetic {@code INT_SRIGHT} for {@code >>}, both the
+	 * signed {@code INT_SDIV} and the unsigned {@code INT_DIV} for {@code /}, and both the signed
+	 * {@code INT_SREM} and the unsigned {@code INT_REM} for {@code %} (the source signedness, not the
+	 * glyph, distinguishes the paired forms). For the shift, division, and remainder pairs the unsigned
+	 * variant casts its left operand to an unsigned type, so {@link #binaryExpr}'s leaf-only operand rule
+	 * declines it (a faithful render would silently change signedness); the signed variant carries its
+	 * operand directly and renders. Comparison and unary operators are not yet mapped and decline.
+	 * (Duplicated from the placement driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
 	 */
 	private static String binaryOperator(int opcode) {
 		return switch (opcode) {
@@ -414,6 +419,8 @@ public final class CppConstructorDriver {
 			case PcodeOp.INT_XOR -> "^";
 			case PcodeOp.INT_LEFT -> "<<";
 			case PcodeOp.INT_RIGHT, PcodeOp.INT_SRIGHT -> ">>";
+			case PcodeOp.INT_SDIV, PcodeOp.INT_DIV -> "/";
+			case PcodeOp.INT_SREM, PcodeOp.INT_REM -> "%";
 			default -> null;
 		};
 	}

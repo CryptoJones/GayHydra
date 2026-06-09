@@ -427,6 +427,18 @@ generated from the GitHub Releases UI at sprint close.
   `param << 3` / arithmetic `param >> 3` and a logical-shift decline (and their placement twins);
   placement 35/35, heap 35/35. Design: DD-0054.
 
+- **Rec 37 `#37-10n` — signed division and remainder constructor arguments rendered as C++ binary
+  expressions** (Sprint 14, fourteenth slice of the `#37-10+` rendering band) — the placement and heap
+  `new` drivers now render a signed division or remainder compound argument (`new C(param_1 / 7)` /
+  `new C(param_1 % 7)`), extending the `#37-10m` `binaryOperator` map with `INT_SDIV`/`INT_DIV`→`/` and
+  `INT_SREM`/`INT_REM`→`%`. A probe grounded the same signed/unsigned split the shifts already have: the
+  signed opcodes carry the named operand directly (so they render), while the unsigned opcodes cast the
+  operand to unsigned, so the existing leaf-only no-peel rule in `binaryExpr` declines them rather than
+  silently changing the computation's signedness — no new control flow, only two map entries. The
+  renderer stays a per-form twin (rule of three). Grounded against decompiled signed `idiv` quotient and
+  remainder (render) and unsigned `div` quotient and remainder (decline), and their placement twins;
+  placement 39/39, heap 39/39. Design: DD-0055.
+
 ### Changed
 
 - **Rec 37 `#37-9b` heap matcher tightened to partition against placement** (Sprint 14 Step 2) —
