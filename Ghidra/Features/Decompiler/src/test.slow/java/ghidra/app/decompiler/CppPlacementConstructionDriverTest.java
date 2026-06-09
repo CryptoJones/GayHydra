@@ -357,6 +357,96 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithWideStringPtrArgument() throws Exception {
+		// A const wchar_t* argument (grounded #37-10l): the global address 0x402000 holds UTF-16LE "Hi\0"
+		// (48 00 69 00 00 00), loaded into an unnamed wchar_t* temp (a HighOther). The pointee is
+		// WideCharDataType (2 bytes on this _X64 spec), so the renderer reads 2-byte code units to the
+		// zero terminator and emits the L-prefixed wide string literal new (param_1) C(L"Hi").
+		Fixture fixture =
+			placementWithPtrArgFixture(new PointerDataType(new WideCharDataType()), "48 00 69 00 00 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("wchar_t* argument must render as the wide string literal L\"Hi\"",
+			"new (param_1) C(L\"Hi\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithChar16StringPtrArgument() throws Exception {
+		// A const char16_t* argument: UTF-16LE "Hi\0" at 0x402000, pointee WideChar16DataType (2 bytes),
+		// rendered with the u prefix: new (param_1) C(u"Hi").
+		Fixture fixture = placementWithPtrArgFixture(new PointerDataType(new WideChar16DataType()),
+			"48 00 69 00 00 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("char16_t* argument must render as the wide string literal u\"Hi\"",
+			"new (param_1) C(u\"Hi\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithChar32StringPtrArgument() throws Exception {
+		// A const char32_t* argument: UTF-32LE "Hi\0" at 0x402000 (48 00 00 00 69 00 00 00 00 00 00 00),
+		// pointee WideChar32DataType (4 bytes), so the renderer reads 4-byte code units and emits the
+		// U-prefixed literal new (param_1) C(U"Hi").
+		Fixture fixture = placementWithPtrArgFixture(new PointerDataType(new WideChar32DataType()),
+			"48 00 00 00 69 00 00 00 00 00 00 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("char32_t* argument must render as the wide string literal U\"Hi\"",
+			"new (param_1) C(U\"Hi\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithEscapedWideStringPtrArgument() throws Exception {
+		// A const char16_t* with units 'A' (0x41), tab (0x09 -> named escape \t), 0x01 (no named escape,
+		// a control unit <= 0x7f -> 3-digit octal \001), and 0x20ac (the Euro sign, a high code point ->
+		// a non-greedy 4-hex-digit universal-character-name €), then the terminator. UTF-16LE bytes:
+		// 41 00 09 00 01 00 ac 20 00 00. Must render new (param_1) C(u"A\t\001€").
+		Fixture fixture = placementWithPtrArgFixture(new PointerDataType(new WideChar16DataType()),
+			"41 00 09 00 01 00 ac 20 00 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("wide non-ASCII units must escape (named + 3-digit octal + \\uXXXX)",
+			"new (param_1) C(u\"A\\t\\001\\u20ac\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementWideStringPtrWithLoneSurrogate() throws Exception {
+		// A const char16_t* whose first unit is a lone surrogate 0xd800 (UTF-16LE bytes 00 d8), which has
+		// no well-formed universal-character-name. Rather than emit an ill-formed literal the renderer
+		// declines the unit, so argumentExpr returns null and the whole hint declines — the never-wrong
+		// contract holds for an unrepresentable wide code unit.
+		Fixture fixture =
+			placementWithPtrArgFixture(new PointerDataType(new WideChar16DataType()), "00 d8 00 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a lone-surrogate wide code unit must yield no hints", hints.isEmpty());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);

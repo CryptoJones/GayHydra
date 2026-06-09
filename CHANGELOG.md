@@ -393,6 +393,24 @@ generated from the GitHub Releases UI at sprint close.
   extraction. Grounded against decompiled `new C("Hi")`/escaped-bytes strings and an `int*` decline case
   (and their placement twins); placement 25/25, heap 25/25. Design: DD-0052.
 
+- **Rec 37 `#37-10l` — wide string-pointer constructor arguments rendered as C++ wide string literals**
+  (Sprint 14, twelfth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now
+  also render a `wchar_t*` / `char16_t*` / `char32_t*` argument as a prefixed wide string literal
+  (`new C(L"Hi")` / `new C(u"Hi")` / `new C(U"Hi")`), generalising the `#37-10k` narrow `char*` renderer
+  rather than declining the wide pointer. A wide string pointer reaches the call the same way as a narrow
+  one — an unnamed character-pointer temp (`HighOther`) defined by a `COPY` of the `const`-space global
+  address (grounded with a throwaway probe: pointee `WideCharDataType`, `len=2` on the `_X64` spec) — so
+  `stringConstantLiteral`'s gate now accepts any of the four string-char pointee types via a
+  `stringLiteralPrefix` helper that maps the pointee to its `""`/`L`/`u`/`U` prefix, reads code units at
+  the pointee's own byte width (1/2/4) in the program's endian order, and escapes per unit. Low units use
+  the `#37-10k` policy (printable ASCII direct, named escapes, 3-digit octal `\ooo` for control units),
+  while a high wide code unit (`>= 0x80`) renders as a fixed-width, non-greedy universal-character-name
+  (`\uXXXX` up to `0xffff`, `\UXXXXXXXX` above). A lone surrogate (`0xd800`–`0xdfff`) or out-of-range
+  value has no well-formed literal, so the whole hint declines, preserving the never-wrong contract. The
+  renderer stays a per-form twin (rule of three). Grounded against decompiled `L"Hi"`/`u"Hi"`/`U"Hi"`, an
+  escaped wide case (`u"A\t\001€"`), and a lone-surrogate decline (and their placement twins); placement
+  30/30, heap 30/30. Design: DD-0053.
+
 ### Changed
 
 - **Rec 37 `#37-9b` heap matcher tightened to partition against placement** (Sprint 14 Step 2) —

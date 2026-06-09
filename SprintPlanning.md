@@ -310,6 +310,20 @@ then land the work it unblocks.
     (and placement twins). Placement 25/25, heap 25/25. Next `#37-10` work: wide-char string pointers
     (`wchar_t*`/`char16_t*`/`char32_t*`), compound-expression args, plus signature/template/operator
     rendering.
+  - [x] ~~**#37-10l** — render wide string-pointer arguments as C++ wide string literals.~~ Shipped
+    (DD-0053): generalises the `#37-10k` narrow `char*` renderer to `wchar_t*` / `char16_t*` /
+    `char32_t*`, emitting `new C(L"Hi")` / `new C(u"Hi")` / `new C(U"Hi")`. A wide pointer reaches the
+    call identically to a narrow one — the unnamed character-pointer `HighOther` temp defined by a `COPY`
+    of the `const`-space global address (grounded with a probe: pointee `WideCharDataType`, `len=2` on the
+    `_X64` spec). `stringConstantLiteral`'s gate now accepts the four string-char pointee types via a
+    `stringLiteralPrefix` helper (`""`/`L`/`u`/`U`), reads code units at the pointee's own byte width
+    (1/2/4) in the program's endian order, and escapes per unit: low units keep the `#37-10k` policy
+    (printable direct, named escapes, 3-digit octal `\ooo`), while a high wide unit (`>= 0x80`) renders as
+    a fixed-width, non-greedy universal-character-name (`\uXXXX`/`\UXXXXXXXX`). A lone surrogate or
+    out-of-range value declines the whole hint (never-wrong). Helper stays a per-form twin (rule of three).
+    Grounded against `L"Hi"`/`u"Hi"`/`U"Hi"`, an escaped wide case (`u"A\t\001€"`), and a lone-surrogate
+    decline (and placement twins). Placement 30/30, heap 30/30. Next `#37-10` work: compound-expression
+    args, plus signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

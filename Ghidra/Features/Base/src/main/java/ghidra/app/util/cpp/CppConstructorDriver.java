@@ -264,18 +264,19 @@ public final class CppConstructorDriver {
 	 * the more specific type wins ({@code Enum} is not an {@code AbstractIntegerDataType}, so its order is
 	 * immaterial).
 	 *
-	 * <p>A {@code const char*} string-pointer argument is tried before the {@code isConstant} constant
+	 * <p>A narrow or wide string-pointer argument is tried before the {@code isConstant} constant
 	 * branches ({@link #stringConstantLiteral}): such an argument is <em>not</em> a constant varnode but an
-	 * unnamed {@code char *} temporary whose definition copies a global address, so it is traced to that
-	 * address and read as a {@code "..."} string literal ({@code #37-10k}). An argument that is neither
-	 * named, a {@code const char*} string, nor a boolean/char/enum/integer constant (an unnamed
-	 * non-constant temporary that is not a readable {@code char*} string, or a non-integer constant)
-	 * declines the whole hint ({@code null}). Rendering compound expressions is later {@code #37-10} work.
-	 * (Duplicated from the placement driver as an honest per-form twin, per the DD-0026 rule-of-three
-	 * convention, until a third user earns the extraction.)
+	 * unnamed {@code char *}/{@code wchar_t *}/{@code char16_t *}/{@code char32_t *} temporary whose
+	 * definition copies a global address, so it is traced to that address and read as a narrow
+	 * {@code "..."} or prefixed wide {@code L"..."}/{@code u"..."}/{@code U"..."} string literal
+	 * ({@code #37-10k}, {@code #37-10l}). An argument that is neither named, a string pointer, nor a
+	 * boolean/char/enum/integer constant (an unnamed non-constant temporary that is not a readable string
+	 * pointer, or a non-integer constant) declines the whole hint ({@code null}). Rendering compound
+	 * expressions is later {@code #37-10} work. (Duplicated from the placement driver as an honest
+	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
 	 *
-	 * @return the rendered argument expression, or null if it is neither a named variable, a
-	 *         {@code const char*} string, nor a boolean/char/enum/integer-typed constant
+	 * @return the rendered argument expression, or null if it is neither a named variable, a narrow or
+	 *         wide string pointer, nor a boolean/char/enum/integer-typed constant
 	 */
 	private static String argumentExpr(Varnode varnode, Program program) {
 		String name = operandName(varnode);
@@ -460,27 +461,34 @@ public final class CppConstructorDriver {
 	}
 
 	/**
-	 * {@return the C++ string-literal text of a {@code const char*} string-pointer argument (e.g.
-	 * {@code "Hi"}), traced from its global address and read as NUL-terminated program bytes, or null when
-	 * the argument is not a readable {@code char*} string}
+	 * {@return the C++ string-literal text of a narrow or wide string-pointer argument (e.g.
+	 * {@code "Hi"}, {@code L"Hi"}, {@code u"Hi"}, {@code U"Hi"}), traced from its global address and read
+	 * as a zero-terminated code-unit sequence in program memory, or null when the argument is not a
+	 * readable string pointer}
 	 *
 	 * <p>A string-pointer argument is <em>not</em> a constant varnode: the decompiler loads the global
-	 * string address into an unnamed {@code char *} temporary (grounded: a {@code HighOther} named
+	 * string address into an unnamed character-pointer temporary (grounded: a {@code HighOther} named
 	 * {@code UNNAMED}, declined by {@link #operandName}), so it reaches none of the {@code isConstant}
 	 * constant branches. This helper renders it by tracing the temporary's definition through up to
 	 * {@link #MAX_STRING_DEF_HOPS} {@code COPY}/{@code CAST} single-input pass-throughs to the constant
 	 * global address (grounded: a single {@code COPY} of a {@code const}-space varnode holding the
-	 * address), forming that address in the program's default space, and reading NUL-terminated bytes from
-	 * program memory ({@link #readStringLiteral}).
+	 * address), forming that address in the program's default space, and reading the zero-terminated
+	 * code units from program memory ({@link #readStringLiteral}).
 	 *
-	 * <p>It is gated on the argument's {@link HighVariable} datatype being a {@link Pointer} to a
-	 * {@link CharDataType}, so {@code char*}/{@code signed char*}/{@code unsigned char*} match (both
-	 * narrow-char subclasses extend {@link CharDataType}) but a non-char pointer, or a wide-char pointer,
-	 * does not and is left for a later slice. A null pointer, an unreadable address
-	 * ({@code MemoryAccessException} or out-of-bounds), or a string with no terminator within
-	 * {@link #MAX_STRING_LENGTH} bytes declines ({@code null}), keeping the never-wrong contract
-	 * ({@code #37-10k}). (Duplicated from the placement driver as an honest per-form twin, per the
-	 * DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 * <p>It is gated on the argument's {@link HighVariable} datatype being a {@link Pointer} to a string
+	 * character type ({@link #stringLiteralPrefix}): a {@link CharDataType} pointer renders the unprefixed
+	 * narrow {@code "..."} (so {@code char*}/{@code signed char*}/{@code unsigned char*} all match, since
+	 * both narrow-char subclasses extend {@link CharDataType}), and a {@link WideCharDataType} /
+	 * {@link WideChar16DataType} / {@link WideChar32DataType} pointer renders the prefixed wide
+	 * {@code L"..."} / {@code u"..."} / {@code U"..."} ({@code #37-10l}). The code-unit width is the
+	 * pointee's own {@link DataType#getLength() length} (so {@code wchar_t} reads at its ground-truth
+	 * 2-byte MSVC / 4-byte Itanium width rather than a hard-coded one); a non-string pointer, or a width
+	 * other than 1/2/4, declines. A null pointer, an unreadable address ({@code MemoryAccessException} or
+	 * out-of-bounds), a wide code unit that has no faithful literal form (a lone surrogate or a
+	 * non-code-point value, see {@link #escapeStringUnit}), or a string with no terminator within
+	 * {@link #MAX_STRING_LENGTH} code units declines ({@code null}), keeping the never-wrong contract
+	 * ({@code #37-10k}, {@code #37-10l}). (Duplicated from the placement driver as an honest per-form
+	 * twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
 	 */
 	private static String stringConstantLiteral(Varnode varnode, Program program) {
 		if (program == null) {
@@ -490,14 +498,22 @@ public final class CppConstructorDriver {
 		if (high == null) {
 			return null;
 		}
-		if (!(high.getDataType() instanceof Pointer pointer)
-				|| !(pointer.getDataType() instanceof CharDataType)) {
+		if (!(high.getDataType() instanceof Pointer pointer)) {
+			return null;
+		}
+		DataType pointee = pointer.getDataType();
+		String prefix = stringLiteralPrefix(pointee);
+		if (prefix == null) {
+			return null;
+		}
+		int unitWidth = pointee.getLength();
+		if (unitWidth != 1 && unitWidth != 2 && unitWidth != 4) {
 			return null;
 		}
 		Varnode current = varnode;
 		for (int hop = 0; hop <= MAX_STRING_DEF_HOPS && current != null; hop++) {
 			if (current.isConstant()) {
-				return readStringLiteral(program, current.getOffset());
+				return readStringLiteral(program, current.getOffset(), prefix, unitWidth);
 			}
 			PcodeOp def = current.getDef();
 			if (def == null) {
@@ -513,11 +529,41 @@ public final class CppConstructorDriver {
 	}
 
 	/**
-	 * {@return the double-quoted C++ string literal read from NUL-terminated program memory at the given
-	 * default-space address offset, or null when the address is unreadable or has no terminator within
-	 * {@link #MAX_STRING_LENGTH} bytes}
+	 * {@return the C++ string-literal prefix for a pointee character type &mdash; {@code ""} for
+	 * {@link CharDataType} (narrow), {@code "u"} for {@link WideChar16DataType} ({@code char16_t}),
+	 * {@code "U"} for {@link WideChar32DataType} ({@code char32_t}), and {@code "L"} for
+	 * {@link WideCharDataType} ({@code wchar_t}) &mdash; or null when the pointee is not a string
+	 * character type}
+	 *
+	 * <p>The four string-char types are unrelated by inheritance ({@link CharDataType} extends
+	 * {@code AbstractIntegerDataType}; the three wide types each extend {@code BuiltIn}), so the
+	 * {@code instanceof} order is immaterial. A {@code null} return (not an empty string) is the
+	 * not-a-string signal; the empty-string narrow prefix is a successful match.
 	 */
-	private static String readStringLiteral(Program program, long addressOffset) {
+	private static String stringLiteralPrefix(DataType pointee) {
+		if (pointee instanceof CharDataType) {
+			return "";
+		}
+		if (pointee instanceof WideChar16DataType) {
+			return "u";
+		}
+		if (pointee instanceof WideChar32DataType) {
+			return "U";
+		}
+		if (pointee instanceof WideCharDataType) {
+			return "L";
+		}
+		return null;
+	}
+
+	/**
+	 * {@return the prefix-tagged double-quoted C++ string literal read from zero-terminated program memory
+	 * at the given default-space address offset, reading code units of {@code unitWidth} bytes in the
+	 * program's endian order, or null when the address is unreadable, a code unit has no faithful literal
+	 * form, or there is no terminator within {@link #MAX_STRING_LENGTH} code units}
+	 */
+	private static String readStringLiteral(Program program, long addressOffset, String prefix,
+			int unitWidth) {
 		Memory memory = program.getMemory();
 		Address base;
 		try {
@@ -528,47 +574,87 @@ public final class CppConstructorDriver {
 		}
 		StringBuilder body = new StringBuilder();
 		for (int i = 0; i < MAX_STRING_LENGTH; i++) {
-			byte read;
+			long unit;
 			try {
-				read = memory.getByte(base.add(i));
+				Address at = base.add((long) i * unitWidth);
+				unit = switch (unitWidth) {
+					case 1 -> memory.getByte(at) & 0xffL;
+					case 2 -> memory.getShort(at) & 0xffffL;
+					default -> memory.getInt(at) & 0xffffffffL;
+				};
 			}
 			catch (MemoryAccessException | AddressOutOfBoundsException e) {
 				return null;
 			}
-			if (read == 0) {
-				return "\"" + body + "\"";
+			if (unit == 0) {
+				return prefix + "\"" + body + "\"";
 			}
-			body.append(escapeStringByte(read));
+			String fragment = escapeStringUnit(unit, unitWidth);
+			if (fragment == null) {
+				return null;
+			}
+			body.append(fragment);
 		}
 		return null;
 	}
 
 	/**
-	 * {@return the C++ string-literal escaping of one byte: a printable ASCII byte directly, the standard
-	 * C escapes for the common control characters and for {@code "} and {@code \}, and a 3-digit octal
-	 * {@code \\ooo} escape otherwise}
+	 * {@return the C++ string-literal escaping of one code unit, or null when a wide code unit has no
+	 * faithful literal form}
 	 *
-	 * <p>A 3-digit octal escape is used rather than {@code \\xNN} because a hex escape inside a string
-	 * literal is greedy &mdash; it consumes every following hex digit &mdash; so {@code \\x7} followed by a
-	 * literal {@code 'A'} would be misread as the single code unit {@code \\x7A}; the fixed-width octal
-	 * form ends after exactly three digits, and a byte value (0&ndash;255) always fits in three octal
-	 * digits.
+	 * <p>The standard C escapes are used for the common control characters and for {@code "} and
+	 * {@code \}, and a printable ASCII unit ({@code 0x20}&ndash;{@code 0x7e}) renders directly. Any other
+	 * control unit ({@code 0x00}&ndash;{@code 0x1f}, {@code 0x7f}) renders as a 3-digit octal
+	 * {@code \\ooo} escape &mdash; <em>not</em> {@code \\xNN}, because a hex escape inside a string literal
+	 * is greedy (it consumes every following hex digit, so {@code \\x7} before a literal {@code A} is
+	 * misread as {@code \\x7A}), whereas the fixed-width 3-digit octal form ends after exactly three
+	 * digits and any value {@code <= 0x7f} fits.
+	 *
+	 * <p>For a narrow ({@code unitWidth == 1}) string, the remaining high bytes ({@code 0x80}&ndash;{@code
+	 * 0xff}) are raw bytes and also render as 3-digit octal. For a wide string, a high code unit
+	 * ({@code >= 0x80}) is a Unicode code point and renders as a fixed-width universal-character-name
+	 * &mdash; {@code \\uXXXX} (four hex digits) up to {@code 0xffff}, {@code \\UXXXXXXXX} (eight hex
+	 * digits) above &mdash; which, like octal, is not greedy. A lone surrogate ({@code 0xd800}&ndash;{@code
+	 * 0xdfff}) or a value beyond the Unicode range ({@code > 0x10ffff}) has no well-formed
+	 * universal-character-name, so it declines ({@code null}) and the whole literal is abandoned, keeping
+	 * the never-wrong contract.
 	 */
-	private static String escapeStringByte(byte value) {
-		int unsigned = value & 0xff;
-		return switch (unsigned) {
-			case 0x07 -> "\\a";
-			case '\b' -> "\\b";
-			case '\t' -> "\\t";
-			case '\n' -> "\\n";
-			case 0x0b -> "\\v";
-			case '\f' -> "\\f";
-			case '\r' -> "\\r";
-			case '"' -> "\\\"";
-			case '\\' -> "\\\\";
-			default -> (unsigned >= 0x20 && unsigned <= 0x7e) ? String.valueOf((char) unsigned)
-					: String.format("\\%03o", unsigned);
-		};
+	private static String escapeStringUnit(long unit, int unitWidth) {
+		switch ((int) unit) {
+			case 0x07:
+				return "\\a";
+			case '\b':
+				return "\\b";
+			case '\t':
+				return "\\t";
+			case '\n':
+				return "\\n";
+			case 0x0b:
+				return "\\v";
+			case '\f':
+				return "\\f";
+			case '\r':
+				return "\\r";
+			case '"':
+				return "\\\"";
+			case '\\':
+				return "\\\\";
+			default:
+				break;
+		}
+		if (unit >= 0x20 && unit <= 0x7e) {
+			return String.valueOf((char) unit);
+		}
+		if (unit <= 0x7f || unitWidth == 1) {
+			return String.format("\\%03o", unit);
+		}
+		if ((unit >= 0xd800 && unit <= 0xdfff) || unit > 0x10ffff) {
+			return null;
+		}
+		if (unit <= 0xffff) {
+			return String.format("\\u%04x", unit);
+		}
+		return String.format("\\U%08x", unit);
 	}
 
 	/**
