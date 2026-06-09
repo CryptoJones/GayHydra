@@ -314,6 +314,22 @@ generated from the GitHub Releases UI at sprint close.
   three) until a third argument-rendering user earns the extraction; rendering enum member names and
   compound expressions is later `#37-10` work. Grounded against decompiled `new C('A')` / `new C('\n')`
   (and their placement twins); placement 13/13, heap 13/13. Design: DD-0047.
+- **Rec 37 `#37-10g` — enum-constant constructor arguments rendered as qualified member names** (Sprint 14,
+  seventh slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now render an
+  `enum` constructor argument as its qualified member name (`new C(Color::GREEN)`) instead of declining
+  the whole hint. `EnumDataType`/`EnumDB` implement the `Enum` interface and extend `GenericDataType`, not
+  `AbstractIntegerDataType`, so an enum-typed constant matched none of the `#37-10c`–`f` branches and
+  `argumentExpr` dropped the argument entirely. `argumentExpr` now adds an `instanceof Enum` branch via a
+  new `enumConstantLiteral` helper: it reads the value at the varnode byte width (sign-extended when
+  `Enum.isSigned()`, masked otherwise), looks up the member with `Enum.getName(value)`, and renders it as
+  `TypeName::Member` — valid C++ for both scoped `enum class` and unscoped `enum`. A value naming no
+  member (a flag/bit combination or out-of-range value) declines rather than fabricate a name or a bare
+  number, keeping the advisory, never-wrong contract. The enum branch stays a per-form twin (rule of
+  three) until a third argument-rendering user earns the extraction. **This completes the typed-constant
+  sub-band `#37-10c`–`g`** (integer signed/unsigned, boolean, char, enum); compound argument expressions,
+  wide-char constants, and signature/template/operator rendering remain later `#37-10` work. Grounded
+  against decompiled `new C(Color::GREEN)` (and its placement twin); placement 15/15, heap 15/15. Design:
+  DD-0048.
 
 ### Changed
 

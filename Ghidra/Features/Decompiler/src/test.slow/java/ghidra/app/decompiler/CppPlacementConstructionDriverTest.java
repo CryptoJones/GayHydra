@@ -30,6 +30,7 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.EnumDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.PointerDataType;
@@ -165,6 +166,34 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
 		assertEquals("a control char must render as its escaped C literal, not the decimal 10",
 			"new (param_1) C('\\n')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithEnumArgument() throws Exception {
+		Fixture fixture = placementWithEnumArgFixture(2);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("enum constant must render as its qualified member name, not the decimal 2",
+			"new (param_1) C(Color::GREEN)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementEnumArgumentWithUnnamedValue() throws Exception {
+		// 7 is not RED(0)/GREEN(2)/BLUE(3): Enum.getName returns null, so rather than fabricate a name
+		// or render a bare decimal that would mislead, the whole hint declines.
+		Fixture fixture = placementWithEnumArgFixture(7);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an enum value naming no member must yield no placement hints", hints.isEmpty());
 	}
 
 	@Test
@@ -445,6 +474,50 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		// the constructor takes the this receiver and one explicit char argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
 			new CharDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(Color::GREEN)} where the constructor
+	 * takes a 4-byte {@code enum Color { RED=0, GREEN=2, BLUE=3 }}, so the constructor {@code CALL}
+	 * carries the literal as a size-4 {@link EnumDataType} constant whose offset is the underlying value.
+	 * Grounds the {@code #37-10g} enum rendering: value {@code 2} must render {@code Color::GREEN} (not the
+	 * decimal {@code 2}), and a value naming no member (e.g. {@code 7}) must decline. Same 27-byte body as
+	 * the {@code #37-10c} fixture with the {@code mov edx,imm} loading the enum value.
+	 */
+	private Fixture placementWithEnumArgFixture(int enumValue) throws Exception {
+		builder = new ProgramBuilder("placementEnumArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String immByte = String.format("%02x", enumValue & 0xff);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 ba " + immByte +
+				" 00 00 00 e8 e6 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		EnumDataType color = new EnumDataType("Color", 4);
+		color.add("RED", 0);
+		color.add("GREEN", 2);
+		color.add("BLUE", 3);
+		builder.addDataType(color);
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit enum argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, color);
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 27, false);

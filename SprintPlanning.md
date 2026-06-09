@@ -239,6 +239,19 @@ then land the work it unblocks.
     byte. Helper stays a per-form twin until a third user earns extraction. Grounded against `new C('A')` /
     `new C('\n')` (and placement twins); placement 13/13, heap 13/13. Next typed-constant slice: `#37-10g`
     enum → member name.
+  - [x] ~~**#37-10g** — render enum-constant arguments as qualified member names.~~ Shipped (DD-0048):
+    `EnumDataType`/`EnumDB` implement the `Enum` interface and extend `GenericDataType`, not
+    `AbstractIntegerDataType`, so an enum-typed constant matched none of the `#37-10c`–`f` branches and
+    `argumentExpr` declined the whole hint (`new C(Color::GREEN)` lost its argument). `argumentExpr`
+    (per-form twin in both drivers) now adds an `instanceof Enum` branch via a new `enumConstantLiteral`
+    helper: it reads the value at the varnode byte width (sign-extended when `Enum.isSigned()`, masked
+    otherwise), looks up the member with `Enum.getName(value)`, and renders `TypeName::Member` — valid C++
+    for both scoped `enum class` and unscoped `enum`. A value naming no member declines rather than
+    fabricate a name or a bare number. Helper stays a per-form twin until a third user earns extraction.
+    **Completes the typed-constant sub-band `#37-10c`–`g`** (integer signed/unsigned, boolean, char,
+    enum). Grounded against `new C(Color::GREEN)` (and placement twin); placement 15/15, heap 15/15. Next
+    `#37-10` work: compound argument expressions, wide-char (`wchar_t`) constants, and
+    signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

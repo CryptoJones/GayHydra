@@ -25,6 +25,7 @@ import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.Enum;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Program;
@@ -220,27 +221,30 @@ public final class CppPlacementConstructionDriver {
 	/**
 	 * Renders one constructor-argument varnode as a C++ expression: a named {@link HighVariable}'s name
 	 * (e.g. {@code param_1}), a {@code bool} constant as {@code true}/{@code false} ({@code #37-10e}), a
-	 * {@code char} constant as a character literal (e.g. {@code 'A'}, {@code #37-10f}), or an
+	 * {@code char} constant as a character literal (e.g. {@code 'A'}, {@code #37-10f}), an {@code enum}
+	 * constant as its qualified member name (e.g. {@code Color::GREEN}, {@code #37-10g}), or an
 	 * integer-typed constant's decimal value (e.g. {@code 5}, or {@code -1} for a negative argument), so a
 	 * literal argument like {@code new (buf) C(5)} renders rather than declining.
 	 *
 	 * <p>A constant is rendered only when its {@link HighVariable} datatype is a {@link BooleanDataType},
-	 * a {@link CharDataType}, or an {@link AbstractIntegerDataType}: a {@code bool} constant of
-	 * {@code 0}/{@code 1} renders {@code false}/{@code true} (an out-of-range {@code bool} value falls
-	 * through to its decimal, staying never-wrong); a {@code char} constant renders as an escaped C
-	 * character literal ({@link #charConstantLiteral}); and an integer literal's decimal value (the array
-	 * driver's element count is rendered the same way) is a faithful hint, whereas a pointer-typed constant
-	 * (e.g. a global string address) rendered as a bare decimal would mislead, so it is declined. The
-	 * integer literal is read at the varnode's own byte width ({@link #integerConstantLiteral}) &mdash;
-	 * sign-extended for a signed type, full-range for an unsigned one &mdash; so a negative or wide-unsigned
-	 * argument stays faithful ({@code #37-10d}). The {@code char} branch precedes the integer branch because
-	 * {@code CharDataType} (and {@code bool}) are themselves {@code AbstractIntegerDataType}s; the more
-	 * specific type wins. An argument that is neither named nor a boolean/char/integer constant (an unnamed
-	 * non-constant temporary, or a non-integer constant) declines the whole hint ({@code null}). Rendering
-	 * compound expressions and the remaining typed constants (enum names) is later {@code #37-10} work.
+	 * a {@link CharDataType}, an {@link Enum}, or an {@link AbstractIntegerDataType}: a {@code bool}
+	 * constant of {@code 0}/{@code 1} renders {@code false}/{@code true} (an out-of-range {@code bool}
+	 * value falls through to its decimal, staying never-wrong); a {@code char} constant renders as an
+	 * escaped C character literal ({@link #charConstantLiteral}); an {@code enum} constant renders as its
+	 * qualified member name ({@link #enumConstantLiteral}, declining when the value names no member); and
+	 * an integer literal's decimal value (the array driver's element count is rendered the same way) is a
+	 * faithful hint, whereas a pointer-typed constant (e.g. a global string address) rendered as a bare
+	 * decimal would mislead, so it is declined. The integer literal is read at the varnode's own byte
+	 * width ({@link #integerConstantLiteral}) &mdash; sign-extended for a signed type, full-range for an
+	 * unsigned one &mdash; so a negative or wide-unsigned argument stays faithful ({@code #37-10d}). The
+	 * {@code char} branch precedes the integer branch because {@code CharDataType} (and {@code bool}) are
+	 * themselves {@code AbstractIntegerDataType}s; the more specific type wins ({@code Enum} is not an
+	 * {@code AbstractIntegerDataType}, so its order is immaterial). An argument that is neither named nor a
+	 * boolean/char/enum/integer constant (an unnamed non-constant temporary, or a non-integer constant)
+	 * declines the whole hint ({@code null}). Rendering compound expressions is later {@code #37-10} work.
 	 *
 	 * @return the rendered argument expression, or null if it is neither a named variable nor a
-	 *         boolean/char/integer-typed constant
+	 *         boolean/char/enum/integer-typed constant
 	 */
 	private static String argumentExpr(Varnode varnode) {
 		String name = operandName(varnode);
@@ -258,6 +262,9 @@ public final class CppPlacementConstructionDriver {
 			}
 			if (type instanceof CharDataType) {
 				return charConstantLiteral(varnode);
+			}
+			if (type instanceof Enum enumType) {
+				return enumConstantLiteral(varnode, enumType);
 			}
 			if (type instanceof AbstractIntegerDataType integerType) {
 				return integerConstantLiteral(varnode, integerType);
@@ -325,6 +332,45 @@ public final class CppPlacementConstructionDriver {
 					: String.format("\\x%02x", value);
 		};
 		return "'" + body + "'";
+	}
+
+	/**
+	 * {@return the qualified member-name text of an {@link Enum} constant varnode (e.g.
+	 * {@code Color::GREEN}), or null when the value names no member}
+	 *
+	 * <p>An {@code enum} constant carries its underlying integer value in the low {@code size * 8} bits
+	 * of the varnode offset; rendered as a bare decimal it would lose the symbolic member name and, for a
+	 * scoped {@code enum class}, would not even be valid C++. The value is read at the varnode's byte
+	 * width &mdash; sign-extended when the enum is signed (so a negative member matches), masked otherwise
+	 * &mdash; and looked up via {@link Enum#getName(long)}. A matched member is rendered qualified by the
+	 * enum's type name ({@code Color::GREEN}), which is valid C++ for both scoped and unscoped enums; if
+	 * the type name is blank the bare member name is used. When the value names no member
+	 * ({@code getName} returns null &mdash; e.g. a flag combination or an out-of-range value) the hint
+	 * declines rather than fabricate a name or a bare number that would mislead, keeping the never-wrong
+	 * contract ({@code #37-10g}). {@code EnumDataType}/{@code EnumDB} are not
+	 * {@link AbstractIntegerDataType}s, so an enum constant reaches this branch rather than the integer
+	 * one. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String enumConstantLiteral(Varnode varnode, Enum enumType) {
+		long raw = varnode.getOffset();
+		int bits = varnode.getSize() * 8;
+		long value;
+		if (bits <= 0 || bits >= Long.SIZE) {
+			value = raw;
+		}
+		else if (enumType.isSigned()) {
+			value = (raw << (Long.SIZE - bits)) >> (Long.SIZE - bits);
+		}
+		else {
+			value = raw & ((1L << bits) - 1);
+		}
+		String member = enumType.getName(value);
+		if (member == null || member.isBlank()) {
+			return null;
+		}
+		String typeName = enumType.getName();
+		return (typeName == null || typeName.isBlank()) ? member : typeName + "::" + member;
 	}
 
 	/**
