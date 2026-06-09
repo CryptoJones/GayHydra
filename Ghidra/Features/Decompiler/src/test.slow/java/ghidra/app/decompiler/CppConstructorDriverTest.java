@@ -39,6 +39,9 @@ import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.VoidDataType;
+import ghidra.program.model.data.WideChar16DataType;
+import ghidra.program.model.data.WideChar32DataType;
+import ghidra.program.model.data.WideCharDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.HighFunction;
@@ -237,6 +240,68 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
 
 		assertTrue("an enum value naming no member must yield no hints", hints.isEmpty());
+	}
+
+	@Test
+	public void testRendersConstructionWithWideCharArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithWideCharArg(new WideCharDataType(), 0x41);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("wchar_t constant must render as the L-prefixed literal L'A', not a decimal",
+			"new C(L'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithChar16Argument() throws Exception {
+		HighFunction highFunction = decompileMakeWithWideCharArg(new WideChar16DataType(), 0x41);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("char16_t constant must render as the u-prefixed literal u'A', not a decimal",
+			"new C(u'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithChar32Argument() throws Exception {
+		HighFunction highFunction = decompileMakeWithWideCharArg(new WideChar32DataType(), 0x41);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("char32_t constant must render as the U-prefixed literal U'A', not a decimal",
+			"new C(U'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithNonAsciiWideCharArgument() throws Exception {
+		// U+20AC (euro) is not printable ASCII: a char16_t constant must render as a width-padded hex
+		// escape u'\x20ac', not a bare decimal and not a malformed universal-character-name.
+		HighFunction highFunction = decompileMakeWithWideCharArg(new WideChar16DataType(), 0x20ac);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a non-printable wide-char unit must render as a width-padded hex escape",
+			"new C(u'\\x20ac')", hints.get(0).rendering());
 	}
 
 	@Test
@@ -608,6 +673,47 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 			new LongLongDataType());
 		// the constructor takes the this receiver and one explicit enum argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, color);
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
+		builder.disassemble(MAKE, 40, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(value);} where the
+	 * constructor takes a wide-char type ({@code wchar_t}/{@code char16_t}/{@code char32_t}), so the
+	 * constructor {@code CALL} carries the literal as a wide-char constant whose offset is the code unit.
+	 * Grounds the {@code #37-10h} wide-char rendering: a printable unit renders the prefixed literal
+	 * ({@code L'A'}/{@code u'A'}/{@code U'A'}) and a non-ASCII unit renders a width-padded hex escape, not
+	 * a bare decimal. Same 40-byte body as the {@code #37-10f} fixture, but the full {@code mov edx,imm32}
+	 * 4-byte little-endian immediate carries the (possibly multi-byte) code unit.
+	 */
+	private HighFunction decompileMakeWithWideCharArg(DataType wideCharType, int value) throws Exception {
+		builder = new ProgramBuilder("ctorWideCharArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String imm = String.format("%02x %02x %02x %02x", value & 0xff, (value >> 8) & 0xff,
+			(value >> 16) & 0xff, (value >> 24) & 0xff);
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 ba " + imm +
+				" e8 e1 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit wide-char argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			wideCharType);
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
 		builder.disassemble(MAKE, 40, false);
 		builder.disassemble(OP_NEW, 1, false);

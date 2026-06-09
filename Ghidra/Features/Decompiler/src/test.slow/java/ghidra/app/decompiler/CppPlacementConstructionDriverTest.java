@@ -38,6 +38,9 @@ import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.VoidDataType;
+import ghidra.program.model.data.WideChar16DataType;
+import ghidra.program.model.data.WideChar32DataType;
+import ghidra.program.model.data.WideCharDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.HighFunction;
@@ -194,6 +197,64 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
 
 		assertTrue("an enum value naming no member must yield no placement hints", hints.isEmpty());
+	}
+
+	@Test
+	public void testRendersPlacementWithWideCharArgument() throws Exception {
+		Fixture fixture = placementWithWideCharArgFixture(new WideCharDataType(), 0x41);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("wchar_t constant must render as the L-prefixed literal L'A', not a decimal",
+			"new (param_1) C(L'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithChar16Argument() throws Exception {
+		Fixture fixture = placementWithWideCharArgFixture(new WideChar16DataType(), 0x41);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("char16_t constant must render as the u-prefixed literal u'A', not a decimal",
+			"new (param_1) C(u'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithChar32Argument() throws Exception {
+		Fixture fixture = placementWithWideCharArgFixture(new WideChar32DataType(), 0x41);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("char32_t constant must render as the U-prefixed literal U'A', not a decimal",
+			"new (param_1) C(U'A')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithNonAsciiWideCharArgument() throws Exception {
+		// U+20AC (euro) is not printable ASCII: a char16_t constant must render as a width-padded hex
+		// escape u'\x20ac', not a bare decimal and not a malformed universal-character-name.
+		Fixture fixture = placementWithWideCharArgFixture(new WideChar16DataType(), 0x20ac);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a non-printable wide-char unit must render as a width-padded hex escape",
+			"new (param_1) C(u'\\x20ac')", hints.get(0).rendering());
 	}
 
 	@Test
@@ -518,6 +579,47 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 			new LongLongDataType(), voidPtr);
 		// the constructor takes the this receiver and one explicit enum argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, color);
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(value)} where the constructor takes a
+	 * wide-char type ({@code wchar_t}/{@code char16_t}/{@code char32_t}), so the constructor {@code CALL}
+	 * carries the literal as a wide-char constant whose offset is the code unit. Grounds the
+	 * {@code #37-10h} wide-char rendering: a printable unit renders the prefixed literal
+	 * ({@code L'A'}/{@code u'A'}/{@code U'A'}) and a non-ASCII unit renders a width-padded hex escape. Same
+	 * 27-byte body as the {@code #37-10c} fixture, but the full {@code mov edx,imm32} 4-byte little-endian
+	 * immediate carries the (possibly multi-byte) code unit.
+	 */
+	private Fixture placementWithWideCharArgFixture(DataType wideCharType, int value) throws Exception {
+		builder = new ProgramBuilder("placementWideCharArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String imm = String.format("%02x %02x %02x %02x", value & 0xff, (value >> 8) & 0xff,
+			(value >> 16) & 0xff, (value >> 24) & 0xff);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 ba " + imm + " e8 e6 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit wide-char argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			wideCharType);
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 27, false);

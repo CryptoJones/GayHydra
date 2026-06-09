@@ -26,6 +26,9 @@ import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Enum;
+import ghidra.program.model.data.WideChar16DataType;
+import ghidra.program.model.data.WideChar32DataType;
+import ghidra.program.model.data.WideCharDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Program;
@@ -230,7 +233,9 @@ public final class CppPlacementConstructionDriver {
 	 * a {@link CharDataType}, an {@link Enum}, or an {@link AbstractIntegerDataType}: a {@code bool}
 	 * constant of {@code 0}/{@code 1} renders {@code false}/{@code true} (an out-of-range {@code bool}
 	 * value falls through to its decimal, staying never-wrong); a {@code char} constant renders as an
-	 * escaped C character literal ({@link #charConstantLiteral}); an {@code enum} constant renders as its
+	 * escaped C character literal ({@link #charConstantLiteral}); a wide-char constant renders as a
+	 * prefixed wide-character literal ({@code L'A'}/{@code u'A'}/{@code U'A'} via
+	 * {@link #wideCharConstantLiteral}); an {@code enum} constant renders as its
 	 * qualified member name ({@link #enumConstantLiteral}, declining when the value names no member); and
 	 * an integer literal's decimal value (the array driver's element count is rendered the same way) is a
 	 * faithful hint, whereas a pointer-typed constant (e.g. a global string address) rendered as a bare
@@ -262,6 +267,15 @@ public final class CppPlacementConstructionDriver {
 			}
 			if (type instanceof CharDataType) {
 				return charConstantLiteral(varnode);
+			}
+			if (type instanceof WideChar16DataType) {
+				return wideCharConstantLiteral(varnode, "u");
+			}
+			if (type instanceof WideChar32DataType) {
+				return wideCharConstantLiteral(varnode, "U");
+			}
+			if (type instanceof WideCharDataType) {
+				return wideCharConstantLiteral(varnode, "L");
 			}
 			if (type instanceof Enum enumType) {
 				return enumConstantLiteral(varnode, enumType);
@@ -312,8 +326,9 @@ public final class CppPlacementConstructionDriver {
 	 * non-printable byte. Every byte therefore renders to a faithful, compilable literal, so a {@code char}
 	 * constant never declines ({@code #37-10f}). {@code SignedCharDataType} and {@code UnsignedCharDataType}
 	 * both extend {@link CharDataType}, so all three 1-byte char types render here; the wide-char types are
-	 * not {@code CharDataType} and fall through to decline. (Duplicated from the heap driver as an honest
-	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 * not {@code CharDataType} and are rendered by {@link #wideCharConstantLiteral} ({@code #37-10h}).
+	 * (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
 	 */
 	private static String charConstantLiteral(Varnode varnode) {
 		int value = (int) (varnode.getOffset() & 0xff);
@@ -332,6 +347,50 @@ public final class CppPlacementConstructionDriver {
 					: String.format("\\x%02x", value);
 		};
 		return "'" + body + "'";
+	}
+
+	/**
+	 * {@return the prefixed C++ wide-character-literal text of a wide-char constant varnode (e.g.
+	 * {@code L'A'}, {@code u'A'}, {@code U'A'}), with control and special characters escaped}
+	 *
+	 * <p>{@link WideCharDataType} ({@code wchar_t}), {@link WideChar16DataType} ({@code char16_t}), and
+	 * {@link WideChar32DataType} ({@code char32_t}) extend {@code BuiltIn}, not
+	 * {@link AbstractIntegerDataType}, so a wide-char constant reached none of the integer/char branches
+	 * and declined; rendered through the integer branch it would have printed a bare decimal code point.
+	 * The value is read at the varnode's own byte width (the ground-truth width of the constant &mdash;
+	 * {@code wchar_t} is 2 bytes on MSVC and 4 on the Itanium ABI, so the declared type length is not
+	 * relied on) and emitted as a {@code prefix}-tagged single-quoted literal: a printable ASCII code unit
+	 * directly ({@code L'A'}), the standard C escapes for the common control characters and for the quote
+	 * and backslash, and a width-padded {@code \\x...} hex escape ({@code \\x20ac} for a 2-byte unit,
+	 * {@code \\x0001f600} for a 4-byte one) for any other value &mdash; valid in a wide-character literal
+	 * and free of the {@code \\u}/{@code \\U} universal-character-name restrictions (control and surrogate
+	 * code points). Every value therefore renders to a faithful, compilable literal, so a wide-char
+	 * constant never declines ({@code #37-10h}). The caller passes {@code "L"}, {@code "u"}, or {@code "U"}
+	 * for {@code wchar_t}/{@code char16_t}/{@code char32_t} respectively. (Duplicated from the heap driver
+	 * as an honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
+	 * extraction.)
+	 */
+	private static String wideCharConstantLiteral(Varnode varnode, String prefix) {
+		int size = varnode.getSize();
+		int bits = size * 8;
+		long value = (bits <= 0 || bits >= Long.SIZE) ? varnode.getOffset()
+				: varnode.getOffset() & ((1L << bits) - 1);
+		int hexDigits = (size >= 1 && size <= 8) ? size * 2 : 8;
+		String body = switch ((int) value) {
+			case '\0' -> "\\0";
+			case 0x07 -> "\\a";
+			case '\b' -> "\\b";
+			case '\t' -> "\\t";
+			case '\n' -> "\\n";
+			case 0x0b -> "\\v";
+			case '\f' -> "\\f";
+			case '\r' -> "\\r";
+			case '\'' -> "\\'";
+			case '\\' -> "\\\\";
+			default -> (value >= 0x20 && value <= 0x7e) ? String.valueOf((char) value)
+					: String.format("\\x%0" + hexDigits + "x", value);
+		};
+		return prefix + "'" + body + "'";
 	}
 
 	/**

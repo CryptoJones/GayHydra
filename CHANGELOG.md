@@ -330,6 +330,22 @@ generated from the GitHub Releases UI at sprint close.
   wide-char constants, and signature/template/operator rendering remain later `#37-10` work. Grounded
   against decompiled `new C(Color::GREEN)` (and its placement twin); placement 15/15, heap 15/15. Design:
   DD-0048.
+- **Rec 37 `#37-10h` — wide-char constant constructor arguments rendered as prefixed C++ character
+  literals** (Sprint 14, eighth slice of the `#37-10+` rendering band) — the placement and heap `new`
+  drivers now render a `wchar_t`/`char16_t`/`char32_t` constructor argument as a prefixed character
+  literal (`new C(L'A')` / `u'A'` / `U'A'`) instead of declining. `WideCharDataType`,
+  `WideChar16DataType`, and `WideChar32DataType` extend `BuiltIn`, not `AbstractIntegerDataType`, and are
+  not `CharDataType`, so a wide-char constant matched none of the `#37-10c`–`g` branches and `argumentExpr`
+  dropped the argument entirely. `argumentExpr` now adds three `instanceof` branches via a new
+  `wideCharConstantLiteral` helper: it reads the value at the varnode's own byte width (the ground-truth
+  width — `wchar_t` is 2 bytes on MSVC and 4 on the Itanium ABI, so the declared type length is not relied
+  on) and emits a `prefix`-tagged literal — a printable ASCII unit directly, the standard C escapes for
+  control/quote/backslash, and a width-padded `\xNN…` hex escape (`u'\x20ac'`, `U'\x0001f600'`) for any
+  other unit. `\x` is used rather than the `\u`/`\U` universal-character-names because a UCN is ill-formed
+  for control and surrogate code points; every unit therefore renders faithfully and a wide-char constant
+  never declines. The wide-char branches stay per-form twins (rule of three) until a third
+  argument-rendering user earns the extraction. Grounded against decompiled `new C(L'A')` (and its
+  placement twin); placement 19/19, heap 19/19. Design: DD-0049.
 
 ### Changed
 

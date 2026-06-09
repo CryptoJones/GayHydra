@@ -252,6 +252,21 @@ then land the work it unblocks.
     enum). Grounded against `new C(Color::GREEN)` (and placement twin); placement 15/15, heap 15/15. Next
     `#37-10` work: compound argument expressions, wide-char (`wchar_t`) constants, and
     signature/template/operator rendering.
+  - [x] ~~**#37-10h** — render wide-char-constant arguments as prefixed C++ character literals.~~ Shipped
+    (DD-0049): `WideCharDataType`/`WideChar16DataType`/`WideChar32DataType` extend `BuiltIn`, not
+    `AbstractIntegerDataType`, and are not `CharDataType`, so a wide-char constant matched none of the
+    `#37-10c`–`g` branches and `argumentExpr` declined the whole hint (`new C(L'A')` lost its argument).
+    `argumentExpr` (per-form twin in both drivers) now adds three `instanceof` branches via a new
+    `wideCharConstantLiteral` helper: it reads the value at the varnode's own byte width (the ground-truth
+    width — `wchar_t` is 2 bytes on MSVC and 4 on the Itanium ABI, so the declared length is not relied on)
+    and emits a prefix-tagged literal (`L'A'`/`u'A'`/`U'A'`) — printable ASCII directly, the standard C
+    escapes for control/quote/backslash, and a width-padded `\xNN…` hex escape (`u'\x20ac'`) for any other
+    unit. `\x` is used over `\u`/`\U` because a universal-character-name is ill-formed for control and
+    surrogate code points; every unit renders faithfully, so a wide-char constant never declines. Helper
+    stays a per-form twin until a third user earns extraction. Completes the character-literal story
+    (1-byte `char` + the three wide-char types). Grounded against `new C(L'A')` (and placement twin);
+    placement 19/19, heap 19/19. Next `#37-10` work: compound argument expressions, floating-point
+    constants, and signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
