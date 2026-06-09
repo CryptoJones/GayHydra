@@ -56,6 +56,18 @@ generated from the GitHub Releases UI at sprint close.
   not in the p-code — it lives in the callee's name — so that classification is left
   to the `#37-9f-b-2` driver. Verified end-to-end by a harness integration test
   against a hand-assembled x86-64 `delete p`. Design: DD-0026.
+- **Rec 37 `#37-9f-b-2` — delete driver** (Sprint 14 Step 2) — `CppDeleteDriver`
+  walks a `HighFunction`, runs the `#37-9f-b-1` matcher on each direct `CALL`,
+  resolves the recovered call target to a `Function`, classifies its name as scalar
+  `operator delete` or array `operator delete[]` (the demangled forms Ghidra emits,
+  e.g. `operator.delete` / `operator.delete[]`), and dispatches to
+  `CppDecompilerHints.renderDelete`, returning `(site, rendering)` hints. Closes the
+  deallocation recognition loop: a real x86-64 `operator delete(p)` renders to
+  `delete param_1` and the array form to `delete[] param_1`. Uniquely among the
+  drivers it resolves no `CppClass` and needs no `CppTypeSystem` — `delete` names no
+  type. Advisory and total-failure-safe (non-deallocation callees contribute no
+  hint). The dtor-then-`operator delete` pairing for non-trivial types is not yet
+  fused (a later cross-form refinement). Design: DD-0027.
 
 ---
 

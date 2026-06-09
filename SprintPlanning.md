@@ -55,9 +55,12 @@ then land the work it unblocks.
     the callee entry from the `CALL`'s `input[0]` and strips the `void*` `CAST` off `input[1]`
     to reach the receiver. Establishes the **direct-call** recognition shape (vs `#37-7b`'s
     indirect vtable dispatch). Scalar-vs-array is the callee's name → left to the driver.
-  - [ ] **`#37-9f-b-2`** — delete *driver*: walk the `HighFunction`, resolve the recovered
+  - [x] ~~**`#37-9f-b-2`** — delete *driver*: walk the `HighFunction`, resolve the recovered
     `callTarget` to a function, classify its name as `operator delete` / `operator delete[]`
-    (or neither), and dispatch to `CppDecompilerHints.renderDelete`.
+    (or neither), and dispatch to `CppDecompilerHints.renderDelete`.~~ Shipped (DD-0027):
+    `CppDeleteDriver` renders `delete param_1` / `delete[] param_1` from a real x86-64
+    deallocation call. The one driver that resolves no `CppClass` (delete names no type) →
+    needs no `CppTypeSystem`. Dtor-then-delete pairing for non-trivial types not yet fused.
   - [ ] remaining five forms (cast / ctor / dtor / `new[]` / placement) — each a matcher
     slice + driver slice; the callee-identified forms (ctor / dtor / `new` / placement) reuse
     the `#37-9f-b` direct-call shape, cast follows the structural `#37-7b` shape.
