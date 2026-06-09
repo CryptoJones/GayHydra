@@ -28,6 +28,7 @@ import ghidra.app.util.cpp.CppConstructorDriver.RenderedConstruction;
 import ghidra.app.util.cpp.CppDecompilerHints;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
@@ -144,6 +145,36 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		assertEquals("expected exactly one rendered construction", 1, hints.size());
 		assertEquals("wide unsigned constant must render across the full unsigned range",
 			"new C(18446744073709551615)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithBooleanTrueArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithBoolArg(true);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("boolean constant 1 must render as true, not 1", "new C(true)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithBooleanFalseArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithBoolArg(false);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("boolean constant 0 must render as false, not 0", "new C(false)",
+			hints.get(0).rendering());
 	}
 
 	@Test
@@ -395,6 +426,45 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 			new UnsignedLongLongDataType());
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 42, classCPtr);
 		builder.disassemble(MAKE, 42, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(value);} where the
+	 * constructor takes a {@code bool}, so the constructor {@code CALL} carries the literal as a size-1
+	 * {@link BooleanDataType} constant ({@code 1} for {@code true}, {@code 0} for {@code false}). Grounds
+	 * the {@code #37-10e} boolean rendering: the constant must render {@code true}/{@code false}, not its
+	 * decimal {@code 1}/{@code 0}. Same 40-byte body as the {@code #37-10c} fixture with the {@code mov
+	 * edx,imm} loading the boolean value.
+	 */
+	private HighFunction decompileMakeWithBoolArg(boolean value) throws Exception {
+		builder = new ProgramBuilder("ctorBoolArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String immByte = value ? "01" : "00";
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 ba " + immByte +
+				" 00 00 00 e8 e1 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit bool argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new BooleanDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
+		builder.disassemble(MAKE, 40, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 

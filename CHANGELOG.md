@@ -287,6 +287,18 @@ generated from the GitHub Releases UI at sprint close.
   stays a per-form twin (rule of three) until a third argument-rendering user earns the extraction.
   Grounded against decompiled `new C(-1)` and `new C(~0ull)` (and their placement twins); placement 9/9,
   heap 9/9. Design: DD-0045.
+- **Rec 37 `#37-10e` — boolean-constant constructor arguments rendered as `true`/`false`** (Sprint 14,
+  fifth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now render a
+  `bool` constructor argument as the source literal `true`/`false` instead of the decimal `1`/`0`.
+  `BooleanDataType extends AbstractIntegerDataType`, so `#37-10c`/`#37-10d` rendered a bool argument
+  through the integer branch as a number; `argumentExpr` now special-cases a `BooleanDataType` constant
+  of `1`/`0` ahead of the integer branch, so `new C(true)` / `new (buf) C(true)` (and `false`) render
+  source-faithfully. An out-of-range bool falls through to the byte-width-correct integer rendering, so
+  unexpected bits are still shown as a faithful number rather than coerced — preserving the advisory,
+  never-wrong contract. The bool branch stays a per-form twin (rule of three) until a third
+  argument-rendering user earns the extraction; rendering the remaining typed constants (chars, enum
+  names) and compound expressions is later `#37-10` work. Grounded against decompiled `new C(true)` /
+  `new C(false)` (and their placement twins); placement 11/11, heap 11/11. Design: DD-0046.
 
 ### Changed
 

@@ -27,6 +27,7 @@ import ghidra.app.util.cpp.CppPlacementConstructionDriver;
 import ghidra.app.util.cpp.CppPlacementConstructionDriver.RenderedPlacement;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
@@ -106,6 +107,34 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 
 		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
 		assertEquals("integer constant argument was not rendered", "new (param_1) C(5)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithBooleanTrueArgument() throws Exception {
+		Fixture fixture = placementWithBoolArgFixture(true);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("boolean constant 1 must render as true, not a decimal", "new (param_1) C(true)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithBooleanFalseArgument() throws Exception {
+		Fixture fixture = placementWithBoolArgFixture(false);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("boolean constant 0 must render as false, not a decimal", "new (param_1) C(false)",
 			hints.get(0).rendering());
 	}
 
@@ -307,6 +336,46 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		// the constructor takes the this receiver and one explicit longlong argument
 		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
 			new LongLongDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(true)} or {@code new (buf) C(false)}
+	 * where the constructor takes a {@code bool}, so the constructor {@code CALL} carries the literal as a
+	 * size-1 {@link BooleanDataType} constant whose offset is {@code 1} or {@code 0}. Grounds the
+	 * {@code #37-10e} boolean rendering: the raw offset {@code Long.toString}s as {@code 1}/{@code 0}, but
+	 * the rendered hint must be {@code true}/{@code false}. Same 27-byte body as the {@code #37-10c}
+	 * fixture with the {@code mov edx,5} immediate replaced by {@code 1}/{@code 0}.
+	 */
+	private Fixture placementWithBoolArgFixture(boolean value) throws Exception {
+		builder = new ProgramBuilder("placementBoolArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String immByte = value ? "01" : "00";
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 ba " + immByte +
+				" 00 00 00 e8 e6 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit bool argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new BooleanDataType());
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 27, false);

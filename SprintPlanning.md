@@ -217,6 +217,16 @@ then land the work it unblocks.
     never-wrong contract restored for negative and wide-unsigned literals. Gate unchanged; helper stays a
     per-form twin until a third user earns extraction. Grounded against `new C(-1)` and `new C(~0ull)`
     (and placement twins); placement 9/9, heap 9/9.
+  - [x] ~~**#37-10e** — render boolean-constant arguments as `true`/`false`.~~ Shipped (DD-0046):
+    `BooleanDataType extends AbstractIntegerDataType`, so `#37-10c`/`#37-10d` rendered a `bool` argument
+    through the integer branch as the decimal `1`/`0`. `argumentExpr` (per-form twin in both drivers) now
+    special-cases a `BooleanDataType` constant of `1`/`0` ahead of the integer branch, so `new C(true)` /
+    `new (buf) C(true)` (and `false`) render source-faithfully; an out-of-range bool falls through to the
+    byte-width-correct integer rendering, so unexpected bits stay a faithful number rather than coerced —
+    never-wrong preserved at the edge. Gate otherwise unchanged; bool branch stays a per-form twin until a
+    third user earns extraction. Grounded against `new C(true)` / `new C(false)` (and placement twins);
+    placement 11/11, heap 11/11. Next typed-constant slices: `#37-10f` char → `'A'`, `#37-10g` enum →
+    member name.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
