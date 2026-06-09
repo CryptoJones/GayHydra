@@ -55,11 +55,13 @@ import ghidra.program.model.symbol.Namespace;
  * driver rather than extracted: at this second user they are kept as honest per-form twins, per the
  * DD-0026 rule-of-three convention, until a third user earns the extraction.)
  *
- * <p><b>Explicit constructor arguments are threaded</b> ({@code #37-10a}, {@code #37-10c}): the
- * constructor {@code CALL}'s inputs after the call target (index 0) and the {@code this} receiver
- * (index 1) are its explicit arguments. A named argument renders as its {@link HighVariable} name and an
- * integer-typed constant renders as its decimal value, so {@code new (buf) ClassName(arg)} and
- * {@code new (buf) ClassName(5)} both render; a zero-argument constructor still renders
+ * <p><b>Explicit constructor arguments are threaded</b> ({@code #37-10a}, {@code #37-10c},
+ * {@code #37-10d}): the constructor {@code CALL}'s inputs after the call target (index 0) and the
+ * {@code this} receiver (index 1) are its explicit arguments. A named argument renders as its
+ * {@link HighVariable} name and an integer-typed constant renders as its decimal value &mdash; read at
+ * the varnode's byte width, so a negative argument renders {@code -1}, not a large unsigned number
+ * &mdash; so {@code new (buf) ClassName(arg)} and {@code new (buf) ClassName(5)} both render; a
+ * zero-argument constructor still renders
  * {@code new (buf) ClassName()}. An argument that is neither named nor an integer constant (an unnamed
  * non-constant temporary, or a non-integer constant such as a pointer-typed global address) declines the
  * whole hint rather than rendering a gap or a misleading bare number. Rendering compound argument
@@ -213,16 +215,20 @@ public final class CppPlacementConstructionDriver {
 
 	/**
 	 * Renders one constructor-argument varnode as a C++ expression: a named {@link HighVariable}'s name
-	 * (e.g. {@code param_1}), or an integer-typed constant's decimal value (e.g. {@code 5}), so a literal
-	 * argument like {@code new (buf) C(5)} renders rather than declining.
+	 * (e.g. {@code param_1}), or an integer-typed constant's decimal value (e.g. {@code 5}, or {@code -1}
+	 * for a negative argument), so a literal argument like {@code new (buf) C(5)} renders rather than
+	 * declining.
 	 *
 	 * <p>A constant is rendered only when its {@link HighVariable} datatype is an
 	 * {@link AbstractIntegerDataType}: an integer literal's decimal value (the array driver's element
 	 * count is rendered the same way) is a faithful, never-wrong hint, whereas a pointer-typed constant
-	 * (e.g. a global string address) rendered as a bare decimal would mislead, so it is declined. An
-	 * argument that is neither named nor an integer constant (an unnamed non-constant temporary, or a
-	 * non-integer constant) declines the whole hint ({@code null}). Rendering compound expressions and
-	 * typed constants (chars, bools, enum names) is later {@code #37-10} work.
+	 * (e.g. a global string address) rendered as a bare decimal would mislead, so it is declined. The
+	 * literal is read at the varnode's own byte width ({@link #integerConstantLiteral}) &mdash;
+	 * sign-extended for a signed type, full-range for an unsigned one &mdash; so a negative or
+	 * wide-unsigned argument stays faithful ({@code #37-10d}). An argument that is neither named nor an
+	 * integer constant (an unnamed non-constant temporary, or a non-integer constant) declines the whole
+	 * hint ({@code null}). Rendering compound expressions and typed constants (chars, bools, enum names)
+	 * is later {@code #37-10} work.
 	 *
 	 * @return the rendered argument expression, or null if it is neither a named variable nor an
 	 *         integer-typed constant
@@ -234,11 +240,38 @@ public final class CppPlacementConstructionDriver {
 		}
 		if (varnode.isConstant()) {
 			HighVariable high = varnode.getHigh();
-			if (high != null && high.getDataType() instanceof AbstractIntegerDataType) {
-				return Long.toString(varnode.getOffset());
+			if (high != null && high.getDataType() instanceof AbstractIntegerDataType integerType) {
+				return integerConstantLiteral(varnode, integerType);
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * {@return the faithful decimal text of an integer-typed constant varnode, read at the varnode's
+	 * own byte width}
+	 *
+	 * <p>A constant varnode's {@link Varnode#getOffset()} carries only the low {@code size * 8} value
+	 * bits, zero-filled above; {@code Long.toString} of that raw long is therefore correct only for a
+	 * signed size-8 value or a small unsigned one. A <em>signed</em> type's value is sign-extended from
+	 * the varnode width (so a size-4 signed {@code int} constant {@code 0xffffffff} renders {@code -1},
+	 * not {@code 4294967295}), and an <em>unsigned</em> type's value is rendered across the full unsigned
+	 * range (so a size-8 {@code unsigned long long} with the high bit set renders its large positive
+	 * value, not a negative one). This keeps the {@code #37-10c} integer-constant rendering never-wrong
+	 * for negative and wide-unsigned arguments alike ({@code #37-10d}). (Duplicated from the heap driver
+	 * as an honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
+	 * extraction.)
+	 */
+	private static String integerConstantLiteral(Varnode varnode, AbstractIntegerDataType type) {
+		long raw = varnode.getOffset();
+		int bits = varnode.getSize() * 8;
+		if (bits <= 0 || bits >= Long.SIZE) {
+			return type.isSigned() ? Long.toString(raw) : Long.toUnsignedString(raw);
+		}
+		if (type.isSigned()) {
+			return Long.toString((raw << (Long.SIZE - bits)) >> (Long.SIZE - bits));
+		}
+		return Long.toUnsignedString(raw & ((1L << bits) - 1));
 	}
 
 	/**

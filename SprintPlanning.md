@@ -207,6 +207,16 @@ then land the work it unblocks.
     until a third argument-rendering user earns extraction; compound expressions and typed constants
     (chars, bools, enums) deferred. Grounded against `new C(5)` → `new C(5)` and `new (buf) C(5)` →
     `new (param_1) C(5)`; placement 7/7, heap 7/7.
+  - [x] ~~**#37-10d** — render integer-constant arguments at the varnode's byte width.~~ Shipped
+    (DD-0045): a constant varnode's `getOffset()` carries only the low `size*8` value bits, so
+    `#37-10c`'s `Long.toString(getOffset())` mis-rendered a negative signed argument (`new C(-1)` as
+    `new C(4294967295)`) and a wide unsigned one (`unsigned long long ~0` as `-1`). A new
+    `integerConstantLiteral` helper (per-form twin in both drivers) sign-extends a signed type from the
+    varnode width and renders an unsigned type across the full range via `Long.toUnsignedString`, so
+    `new C(-1)` / `new (buf) C(-1)` and a wide unsigned `18446744073709551615` render faithfully — the
+    never-wrong contract restored for negative and wide-unsigned literals. Gate unchanged; helper stays a
+    per-form twin until a third user earns extraction. Grounded against `new C(-1)` and `new C(~0ull)`
+    (and placement twins); placement 9/9, heap 9/9.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

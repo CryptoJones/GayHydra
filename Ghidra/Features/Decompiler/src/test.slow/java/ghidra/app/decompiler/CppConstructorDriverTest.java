@@ -29,10 +29,12 @@ import ghidra.app.util.cpp.CppDecompilerHints;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
+import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
@@ -112,6 +114,36 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		assertEquals("expected exactly one rendered construction", 1, hints.size());
 		assertEquals("integer constant argument was not rendered", "new C(5)",
 			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithSignedNegativeArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithSignedNegArg();
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("negative signed constant must sign-extend, not render as a large unsigned number",
+			"new C(-1)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithUnsignedWideArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithUnsignedWideArg();
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("wide unsigned constant must render across the full unsigned range",
+			"new C(18446744073709551615)", hints.get(0).rendering());
 	}
 
 	@Test
@@ -285,6 +317,84 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 			new LongLongDataType());
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
 		builder.disassemble(MAKE, 40, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(-1);} where the
+	 * constructor takes a 4-byte signed {@code int}, so the constructor {@code CALL} carries the literal
+	 * as a size-4 signed-integer constant varnode whose {@link ghidra.program.model.pcode.Varnode#getOffset()}
+	 * is {@code 0xffffffff}. Grounds the {@code #37-10d} sign-extension fix: the raw offset
+	 * {@code Long.toString}s as {@code 4294967295}, but the rendered hint must be {@code -1}. Same
+	 * 40-byte body as the {@code #37-10c} fixture with {@code mov edx,5} replaced by {@code mov edx,-1}
+	 * ({@code ba ff ff ff ff}).
+	 */
+	private HighFunction decompileMakeWithSignedNegArg() throws Exception {
+		builder = new ProgramBuilder("ctorSignedNegArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 ba ff ff ff ff " +
+				"e8 e1 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit 4-byte signed int argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new IntegerDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
+		builder.disassemble(MAKE, 40, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(~0ull);} where the
+	 * constructor takes an 8-byte {@code unsigned long long}, so the constructor {@code CALL} carries the
+	 * literal as a size-8 unsigned constant varnode whose offset is {@code 0xffffffffffffffff}. Grounds
+	 * the {@code #37-10d} unsigned full-range rendering: that offset {@code Long.toString}s as
+	 * {@code -1}, but the rendered hint must be {@code 18446744073709551615}. The body sets the argument
+	 * with {@code mov rdx,-1} ({@code 48 c7 c2 ff ff ff ff}), a 7-byte instruction, so the body is 42
+	 * bytes and the constructor call's rel32 is recomputed to {@code df 01 00 00}.
+	 */
+	private HighFunction decompileMakeWithUnsignedWideArg() throws Exception {
+		builder = new ProgramBuilder("ctorUnsignedWideArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 48 c7 c2 ff ff ff ff " +
+				"e8 df 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit 8-byte unsigned long long argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new UnsignedLongLongDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 42, classCPtr);
+		builder.disassemble(MAKE, 42, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 

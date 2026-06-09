@@ -274,6 +274,19 @@ generated from the GitHub Releases UI at sprint close.
   earns the extraction; rendering compound expressions and typed constants (chars, bools, enum names) is
   later `#37-10` work. Grounded against decompiled `new C(5)` → `new C(5)` and `new (buf) C(5)` →
   `new (param_1) C(5)`; placement 7/7, heap 7/7. Design: DD-0044.
+- **Rec 37 `#37-10d` — integer-constant constructor arguments rendered at the varnode's byte width**
+  (Sprint 14, fourth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now
+  render an integer-constant argument via a new `integerConstantLiteral` helper that reads the literal at
+  the varnode's own byte width instead of `Long.toString(getOffset())`. A constant varnode's offset
+  carries only the low `size*8` value bits, so `#37-10c` mis-rendered a negative signed argument
+  (`new C(-1)` as `new C(4294967295)`) and a wide unsigned one (`unsigned long long ~0` as `-1`); the
+  helper sign-extends a signed type from the varnode width and renders an unsigned type across the full
+  range, so `new C(-1)` / `new (buf) C(-1)` and a wide unsigned `18446744073709551615` now render
+  faithfully — keeping the advisory, never-wrong contract for negative and wide-unsigned literals. The
+  `AbstractIntegerDataType` gate is unchanged (a pointer-typed constant still declines), and the helper
+  stays a per-form twin (rule of three) until a third argument-rendering user earns the extraction.
+  Grounded against decompiled `new C(-1)` and `new C(~0ull)` (and their placement twins); placement 9/9,
+  heap 9/9. Design: DD-0045.
 
 ### Changed
 

@@ -28,10 +28,12 @@ import ghidra.app.util.cpp.CppPlacementConstructionDriver.RenderedPlacement;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
+import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
@@ -105,6 +107,34 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
 		assertEquals("integer constant argument was not rendered", "new (param_1) C(5)",
 			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
+		Fixture fixture = placementWithSignedNegArgFixture();
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("negative signed constant must sign-extend, not render as a large unsigned number",
+			"new (param_1) C(-1)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithUnsignedWideArgument() throws Exception {
+		Fixture fixture = placementWithUnsignedWideArgFixture();
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("wide unsigned constant must render across the full unsigned range",
+			"new (param_1) C(18446744073709551615)", hints.get(0).rendering());
 	}
 
 	@Test
@@ -280,6 +310,83 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(-1)} where the constructor takes a
+	 * 4-byte signed {@code int}, so the constructor {@code CALL} carries the literal as a size-4
+	 * signed-integer constant whose offset is {@code 0xffffffff}. Grounds the {@code #37-10d}
+	 * sign-extension fix: the raw offset {@code Long.toString}s as {@code 4294967295}, but the rendered
+	 * hint must be {@code -1}. Same 27-byte body as the {@code #37-10c} fixture with {@code mov edx,5}
+	 * replaced by {@code mov edx,-1} ({@code ba ff ff ff ff}).
+	 */
+	private Fixture placementWithSignedNegArgFixture() throws Exception {
+		builder = new ProgramBuilder("placementSignedNegArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 ba ff ff ff ff e8 e6 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit 4-byte signed int argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new IntegerDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 27, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 27, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(~0ull)} where the constructor takes an
+	 * 8-byte {@code unsigned long long}, so the constructor {@code CALL} carries the literal as a size-8
+	 * unsigned constant whose offset is {@code 0xffffffffffffffff}. Grounds the {@code #37-10d} unsigned
+	 * full-range rendering: that offset {@code Long.toString}s as {@code -1}, but the rendered hint must
+	 * be {@code 18446744073709551615}. The argument is set with {@code mov rdx,-1}
+	 * ({@code 48 c7 c2 ff ff ff ff}), a 7-byte instruction, so the body is 29 bytes and the constructor
+	 * call's rel32 is recomputed to {@code e4 01 00 00}.
+	 */
+	private Fixture placementWithUnsignedWideArgFixture() throws Exception {
+		builder = new ProgramBuilder("placementUnsignedWideArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 48 c7 c2 ff ff ff ff e8 e4 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit 8-byte unsigned long long argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new UnsignedLongLongDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 29, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 29, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 		return new Fixture(program, make);
