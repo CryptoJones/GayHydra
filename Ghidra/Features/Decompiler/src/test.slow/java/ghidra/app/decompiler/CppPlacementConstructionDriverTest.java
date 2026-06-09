@@ -304,20 +304,56 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
-	public void testDeclinesUnnamedComputedArgument() throws Exception {
+	public void testRendersPlacementWithStringPtrArgument() throws Exception {
 		// A const char* string-pointer argument is not a constant varnode: the decompiler resolves the
-		// global address into a typed pointer temp with no backing symbol, whose HighVariable is a
-		// HighOther carrying Ghidra's "UNNAMED" placeholder name. Rendering that placeholder text would
-		// emit new (param_1) C(UNNAMED); the whole hint must decline instead (never-wrong) until a later
-		// slice renders the string literal / compound expression.
-		Fixture fixture = placementWithStringPtrArgFixture();
+		// global address (0x402000, holding "Hi\0") into an unnamed char* temp (a HighOther). #37-10k
+		// traces that temp's COPY def-chain to the constant address and reads the NUL-terminated bytes,
+		// so it renders the string literal new (param_1) C("Hi") rather than declining.
+		Fixture fixture = placementWithStringPtrArgFixture("48 69 00");
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
 
 		CppPlacementConstructionDriver driver =
 			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
 		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
 
-		assertTrue("an UNNAMED-placeholder argument must yield no hints", hints.isEmpty());
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("char* argument must render as the string literal \"Hi\", not UNNAMED",
+			"new (param_1) C(\"Hi\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithEscapedStringPtrArgument() throws Exception {
+		// Bytes 0x41 0x09 0x01 0x00 at 0x402000: 'A', a tab (a named C escape), and 0x01 (no named
+		// escape, so a 3-digit octal escape \001 — never \x01, which is greedy in a string literal),
+		// then the NUL terminator. The string must render new (param_1) C("A\t\001").
+		Fixture fixture = placementWithStringPtrArgFixture("41 09 01 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("non-printable string bytes must escape (named escape + 3-digit octal)",
+			"new (param_1) C(\"A\\t\\001\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesUnnamedNonCharPointerArgument() throws Exception {
+		// An unnamed non-char* pointer argument (here an int*, the same global-address load as the
+		// string fixture but a different pointee type) is still a HighOther named UNNAMED, but the
+		// string renderer is gated on a pointer-to-char, so it does not apply. With no name, no string,
+		// and a non-constant varnode, the whole hint declines — the never-wrong contract still holds for
+		// a genuinely unnameable pointer argument.
+		Fixture fixture =
+			placementWithPtrArgFixture(new PointerDataType(new IntegerDataType()), "48 69 00");
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unnamed non-char* pointer argument must yield no hints", hints.isEmpty());
 	}
 
 	@Test
@@ -857,21 +893,34 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	/**
-	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C("Hi")} where the constructor takes a
-	 * {@code char *}, so the constructor {@code CALL} carries a pointer to a global NUL-terminated string.
-	 * Grounds the {@code #37-10j} never-wrong fix: a string-pointer argument is <em>not</em> a constant
-	 * varnode — the decompiler resolves the global address ({@code 0x402000}, loaded via
-	 * {@code mov rdx,imm64}) into a typed {@code char *} temp with no backing symbol, whose
-	 * {@link ghidra.program.model.pcode.HighVariable} is a {@code HighOther} carrying the {@code "UNNAMED"}
-	 * placeholder name. The body is 32 bytes: the {@code #37-10c} fixture's 5-byte {@code mov edx,imm32}
-	 * becomes a 10-byte {@code mov rdx,imm64}, so the constructor-call displacement is recomputed to
-	 * {@code e1 01 00 00}.
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C("...")} where the constructor takes a
+	 * {@code char *} and the global NUL-terminated string bytes are {@code stringBytesHex}. A convenience
+	 * wrapper over {@link #placementWithPtrArgFixture} fixing the pointee type to {@code char}. Grounds the
+	 * {@code #37-10k} string-literal rendering.
 	 */
-	private Fixture placementWithStringPtrArgFixture() throws Exception {
-		builder = new ProgramBuilder("placementStringPtrArgDrv", ProgramBuilder._X64);
+	private Fixture placementWithStringPtrArgFixture(String stringBytesHex) throws Exception {
+		return placementWithPtrArgFixture(new PointerDataType(new CharDataType()), stringBytesHex);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(p)} where the constructor takes the
+	 * pointer type {@code ptrParamType} and {@code p} is the address {@code 0x402000} of a global memory
+	 * region initialised to {@code dataBytesHex}. A pointer-typed global-address argument is <em>not</em> a
+	 * constant varnode — the decompiler resolves the global address (loaded via {@code mov rdx,imm64}) into
+	 * a typed pointer temp with no backing symbol, whose
+	 * {@link ghidra.program.model.pcode.HighVariable} is a {@code HighOther} carrying the {@code "UNNAMED"}
+	 * placeholder name, defined by a {@code COPY} of the {@code const}-space address. Used both to render a
+	 * {@code char *} as a string literal ({@code #37-10k}) and, with a non-char pointee, to confirm the
+	 * string renderer's pointer-to-char gate declines. The body is 32 bytes: the {@code #37-10c} fixture's
+	 * 5-byte {@code mov edx,imm32} becomes a 10-byte {@code mov rdx,imm64}, so the constructor-call
+	 * displacement is recomputed to {@code e1 01 00 00}.
+	 */
+	private Fixture placementWithPtrArgFixture(DataType ptrParamType, String dataBytesHex)
+			throws Exception {
+		builder = new ProgramBuilder("placementPtrArgDrv", ProgramBuilder._X64);
 		builder.createMemory("text", MAKE, 0x300);
 		builder.createMemory("data", "0x402000", 0x100);
-		builder.setBytes("0x402000", "48 69 00", false); // "Hi\0"
+		builder.setBytes("0x402000", dataBytesHex, false);
 		builder.setBytes(MAKE,
 			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 48 ba " +
 				"00 20 40 00 00 00 00 00 e8 e1 01 00 00 c3",
@@ -883,15 +932,15 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		builder.addDataType(classC);
 		DataType classCPtr = new PointerDataType(classC);
 		DataType voidPtr = new PointerDataType(new Undefined1DataType());
-		DataType charPtr = new PointerDataType(new CharDataType());
 		Program program = builder.getProgram();
 		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
 
 		// the placement allocation takes TWO args: (size_t, void* buffer)
 		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
 			new LongLongDataType(), voidPtr);
-		// the constructor takes the this receiver and one explicit char* argument
-		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, charPtr);
+		// the constructor takes the this receiver and one explicit pointer argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			ptrParamType);
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 32, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 32, false);

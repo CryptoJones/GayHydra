@@ -374,6 +374,24 @@ generated from the GitHub Releases UI at sprint close.
   a real symbol name and must still render by name; only the placeholder denotes "no name." Grounded with a
   throwaway probe; the decline was confirmed first as a failing assertion against the pre-fix
   `new C(UNNAMED)` rendering, then made green. Placement 23/23, heap 23/23. Design: DD-0051.
+- **Rec 37 `#37-10k` — `const char*` string-pointer constructor arguments rendered as C++ string
+  literals** (Sprint 14, eleventh slice of the `#37-10+` rendering band) — the placement and heap `new`
+  drivers now render a `const char*` argument as a `"…"` string literal (`new C("Hi")` /
+  `new (param_1) C("Hi")`) instead of declining it as the `#37-10j` `UNNAMED` placeholder. A string
+  pointer is not a constant varnode: the decompiler loads the global string address into an unnamed
+  `char *` temp (a `HighOther`) defined by a `COPY` of the `const`-space address (grounded with a
+  throwaway def-chain probe). `argumentExpr` now tries a new `stringConstantLiteral` helper after the
+  `operandName` decline and before the `isConstant` constant branches: it gates on a pointer-to-`char`
+  type, traces the temp through up to four `COPY`/`CAST` pass-throughs to the constant address, reads the
+  NUL-terminated bytes from program memory, and escapes them into a double-quoted literal — printable
+  ASCII direct, named C escapes for the common control characters and for `"`/`\`, and a **3-digit octal
+  `\ooo`** escape for any other byte (octal, not `\xNN`, because a hex escape is greedy inside a string
+  literal and would absorb a following hex digit). A non-char pointer, an unreadable/dangling address, or
+  a string with no terminator within 4096 bytes still declines, keeping the never-wrong contract; this
+  required threading the `Program` through `render`/`constructorArguments`/`argumentExpr`. The string
+  renderer stays a per-form twin (rule of three) until a third argument-rendering user earns the
+  extraction. Grounded against decompiled `new C("Hi")`/escaped-bytes strings and an `int*` decline case
+  (and their placement twins); placement 25/25, heap 25/25. Design: DD-0052.
 
 ### Changed
 

@@ -21,18 +21,22 @@ import java.util.List;
 
 import ghidra.app.util.cpp.CppPlacementConstructionRecognizer.PlacementConstruction;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.AbstractFloatDataType;
 import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Enum;
+import ghidra.program.model.data.Pointer;
 import ghidra.program.model.data.WideChar16DataType;
 import ghidra.program.model.data.WideChar32DataType;
 import ghidra.program.model.data.WideCharDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
@@ -99,6 +103,12 @@ public final class CppPlacementConstructionDriver {
 	/** A constructor {@code CALL}'s input 0 is the call target; input 1 is the {@code this} receiver. */
 	private static final int THIS_INPUT_INDEX = 1;
 
+	/** A string-pointer argument's def-chain is traced through at most this many COPY/CAST pass-throughs. */
+	private static final int MAX_STRING_DEF_HOPS = 4;
+
+	/** A traced string is read up to this many bytes before declining a missing NUL terminator. */
+	private static final int MAX_STRING_LENGTH = 4096;
+
 	private final CppDecompilerHints renderer;
 	private final CppTypeSystem typeSystem;
 
@@ -154,7 +164,7 @@ public final class CppPlacementConstructionDriver {
 			if (object == null) {
 				continue;
 			}
-			RenderedPlacement hint = render(op, object, functionManager);
+			RenderedPlacement hint = render(op, object, functionManager, program);
 			if (hint != null) {
 				rendered.add(hint);
 			}
@@ -163,7 +173,7 @@ public final class CppPlacementConstructionDriver {
 	}
 
 	private RenderedPlacement render(PcodeOp callSite, PlacementConstruction object,
-			FunctionManager functionManager) {
+			FunctionManager functionManager, Program program) {
 		Function constructor = functionManager.getFunctionAt(object.constructorTarget());
 		if (constructor == null) {
 			return null;
@@ -184,7 +194,7 @@ public final class CppPlacementConstructionDriver {
 		if (type == null) {
 			return null;
 		}
-		List<String> argumentExprs = constructorArguments(callSite);
+		List<String> argumentExprs = constructorArguments(callSite, program);
 		if (argumentExprs == null) {
 			return null;
 		}
@@ -204,16 +214,17 @@ public final class CppPlacementConstructionDriver {
 	 * buffer/receiver uses. An argument with no printable name (an unnamed temporary, or a bare
 	 * constant, which carries no {@code HighVariable}) declines the whole hint ({@code null}) rather
 	 * than rendering a constructor call with a gap in its argument list &mdash; the same advisory,
-	 * never-wrong contract the receiver rendering holds. Rendering constants and compound expressions
-	 * is later {@code #37-10} work.
+	 * never-wrong contract the receiver rendering holds. The {@code program} is threaded through so a
+	 * {@code const char*} string-pointer argument can be traced to its global address and read as a string
+	 * literal ({@code #37-10k}). Rendering compound expressions is later {@code #37-10} work.
 	 *
 	 * @return the rendered argument expressions in call order (empty for a no-argument constructor), or
 	 *         null if any argument has no printable operand name
 	 */
-	private static List<String> constructorArguments(PcodeOp constructorCall) {
+	private static List<String> constructorArguments(PcodeOp constructorCall, Program program) {
 		List<String> arguments = new ArrayList<>();
 		for (int i = THIS_INPUT_INDEX + 1; i < constructorCall.getNumInputs(); i++) {
-			String argument = argumentExpr(constructorCall.getInput(i));
+			String argument = argumentExpr(constructorCall.getInput(i), program);
 			if (argument == null) {
 				return null;
 			}
@@ -247,17 +258,27 @@ public final class CppPlacementConstructionDriver {
 	 * unsigned one &mdash; so a negative or wide-unsigned argument stays faithful ({@code #37-10d}). The
 	 * {@code char} branch precedes the integer branch because {@code CharDataType} (and {@code bool}) are
 	 * themselves {@code AbstractIntegerDataType}s; the more specific type wins ({@code Enum} is not an
-	 * {@code AbstractIntegerDataType}, so its order is immaterial). An argument that is neither named nor a
-	 * boolean/char/enum/integer constant (an unnamed non-constant temporary, or a non-integer constant)
+	 * {@code AbstractIntegerDataType}, so its order is immaterial).
+	 *
+	 * <p>A {@code const char*} string-pointer argument is tried before the {@code isConstant} constant
+	 * branches ({@link #stringConstantLiteral}): such an argument is <em>not</em> a constant varnode but an
+	 * unnamed {@code char *} temporary whose definition copies a global address, so it is traced to that
+	 * address and read as a {@code "..."} string literal ({@code #37-10k}). An argument that is neither
+	 * named, a {@code const char*} string, nor a boolean/char/enum/integer constant (an unnamed
+	 * non-constant temporary that is not a readable {@code char*} string, or a non-integer constant)
 	 * declines the whole hint ({@code null}). Rendering compound expressions is later {@code #37-10} work.
 	 *
-	 * @return the rendered argument expression, or null if it is neither a named variable nor a
-	 *         boolean/char/enum/integer-typed constant
+	 * @return the rendered argument expression, or null if it is neither a named variable, a
+	 *         {@code const char*} string, nor a boolean/char/enum/integer-typed constant
 	 */
-	private static String argumentExpr(Varnode varnode) {
+	private static String argumentExpr(Varnode varnode, Program program) {
 		String name = operandName(varnode);
 		if (name != null) {
 			return name;
+		}
+		String stringLiteral = stringConstantLiteral(varnode, program);
+		if (stringLiteral != null) {
+			return stringLiteral;
 		}
 		if (varnode.isConstant()) {
 			HighVariable high = varnode.getHigh();
@@ -430,6 +451,122 @@ public final class CppPlacementConstructionDriver {
 			return Double.isFinite(value) ? Double.toString(value) : null;
 		}
 		return null;
+	}
+
+	/**
+	 * {@return the C++ string-literal text of a {@code const char*} string-pointer argument (e.g.
+	 * {@code "Hi"}), traced from its global address and read as NUL-terminated program bytes, or null when
+	 * the argument is not a readable {@code char*} string}
+	 *
+	 * <p>A string-pointer argument is <em>not</em> a constant varnode: the decompiler loads the global
+	 * string address into an unnamed {@code char *} temporary (grounded: a {@code HighOther} named
+	 * {@code UNNAMED}, declined by {@link #operandName}), so it reaches none of the {@code isConstant}
+	 * constant branches. This helper renders it by tracing the temporary's definition through up to
+	 * {@link #MAX_STRING_DEF_HOPS} {@code COPY}/{@code CAST} single-input pass-throughs to the constant
+	 * global address (grounded: a single {@code COPY} of a {@code const}-space varnode holding the
+	 * address), forming that address in the program's default space, and reading NUL-terminated bytes from
+	 * program memory ({@link #readStringLiteral}).
+	 *
+	 * <p>It is gated on the argument's {@link HighVariable} datatype being a {@link Pointer} to a
+	 * {@link CharDataType}, so {@code char*}/{@code signed char*}/{@code unsigned char*} match (both
+	 * narrow-char subclasses extend {@link CharDataType}) but a non-char pointer, or a wide-char pointer,
+	 * does not and is left for a later slice. A null pointer, an unreadable address
+	 * ({@code MemoryAccessException} or out-of-bounds), or a string with no terminator within
+	 * {@link #MAX_STRING_LENGTH} bytes declines ({@code null}), keeping the never-wrong contract
+	 * ({@code #37-10k}). (Duplicated from the heap driver as an honest per-form twin, per the DD-0026
+	 * rule-of-three convention, until a third user earns the extraction.)
+	 */
+	private static String stringConstantLiteral(Varnode varnode, Program program) {
+		if (program == null) {
+			return null;
+		}
+		HighVariable high = varnode.getHigh();
+		if (high == null) {
+			return null;
+		}
+		if (!(high.getDataType() instanceof Pointer pointer)
+				|| !(pointer.getDataType() instanceof CharDataType)) {
+			return null;
+		}
+		Varnode current = varnode;
+		for (int hop = 0; hop <= MAX_STRING_DEF_HOPS && current != null; hop++) {
+			if (current.isConstant()) {
+				return readStringLiteral(program, current.getOffset());
+			}
+			PcodeOp def = current.getDef();
+			if (def == null) {
+				return null;
+			}
+			int opcode = def.getOpcode();
+			if (opcode != PcodeOp.COPY && opcode != PcodeOp.CAST) {
+				return null;
+			}
+			current = def.getInput(0);
+		}
+		return null;
+	}
+
+	/**
+	 * {@return the double-quoted C++ string literal read from NUL-terminated program memory at the given
+	 * default-space address offset, or null when the address is unreadable or has no terminator within
+	 * {@link #MAX_STRING_LENGTH} bytes}
+	 *
+	 * <p>(Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String readStringLiteral(Program program, long addressOffset) {
+		Memory memory = program.getMemory();
+		Address base;
+		try {
+			base = program.getAddressFactory().getDefaultAddressSpace().getAddress(addressOffset);
+		}
+		catch (AddressOutOfBoundsException e) {
+			return null;
+		}
+		StringBuilder body = new StringBuilder();
+		for (int i = 0; i < MAX_STRING_LENGTH; i++) {
+			byte read;
+			try {
+				read = memory.getByte(base.add(i));
+			}
+			catch (MemoryAccessException | AddressOutOfBoundsException e) {
+				return null;
+			}
+			if (read == 0) {
+				return "\"" + body + "\"";
+			}
+			body.append(escapeStringByte(read));
+		}
+		return null;
+	}
+
+	/**
+	 * {@return the C++ string-literal escaping of one byte: a printable ASCII byte directly, the standard
+	 * C escapes for the common control characters and for {@code "} and {@code \}, and a 3-digit octal
+	 * {@code \\ooo} escape otherwise}
+	 *
+	 * <p>A 3-digit octal escape is used rather than {@code \\xNN} because a hex escape inside a string
+	 * literal is greedy &mdash; it consumes every following hex digit &mdash; so {@code \\x7} followed by a
+	 * literal {@code 'A'} would be misread as the single code unit {@code \\x7A}; the fixed-width octal
+	 * form ends after exactly three digits, and a byte value (0&ndash;255) always fits in three octal
+	 * digits. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String escapeStringByte(byte value) {
+		int unsigned = value & 0xff;
+		return switch (unsigned) {
+			case 0x07 -> "\\a";
+			case '\b' -> "\\b";
+			case '\t' -> "\\t";
+			case '\n' -> "\\n";
+			case 0x0b -> "\\v";
+			case '\f' -> "\\f";
+			case '\r' -> "\\r";
+			case '"' -> "\\\"";
+			case '\\' -> "\\\\";
+			default -> (unsigned >= 0x20 && unsigned <= 0x7e) ? String.valueOf((char) unsigned)
+					: String.format("\\%03o", unsigned);
+		};
 	}
 
 	/**

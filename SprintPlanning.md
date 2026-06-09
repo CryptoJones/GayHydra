@@ -295,6 +295,21 @@ then land the work it unblocks.
     `new C(UNNAMED)`, then made green. Placement 23/23, heap 23/23. Next `#37-10` work: faithfully
     *rendering* string-literal args (trace the pointer + read the NUL-terminated bytes) and compound
     expressions, plus signature/template/operator rendering.
+  - [x] ~~**#37-10k** — render `const char*` string-pointer arguments as C++ string literals.~~ Shipped
+    (DD-0052): replaces the `#37-10j` decline for the most common unnamed shape. A `const char*` arg is
+    not a constant varnode — it is the unnamed `char *` `HighOther` temp DD-0051 declines, defined by a
+    `COPY` of the `const`-space global address (grounded with a def-chain probe). A new
+    `stringConstantLiteral` helper (tried in `argumentExpr` after the `operandName` decline and before the
+    `isConstant` branches) gates on a pointer-to-`char` type, traces the temp through up to four
+    `COPY`/`CAST` pass-throughs to the constant address, reads the NUL-terminated bytes from program
+    memory, and escapes them into a `"…"` literal — printable ASCII direct, named C escapes, and **3-digit
+    octal `\ooo`** for other bytes (octal, not `\xNN`, which is greedy in a string). A non-char pointer,
+    an unreadable address, or a missing terminator within 4096 bytes declines (never-wrong). Required
+    threading `Program` through `render`/`constructorArguments`/`argumentExpr`; the helper stays a per-form
+    twin (rule of three). Grounded against `new C("Hi")`, an escaped-bytes string, and an `int*` decline
+    (and placement twins). Placement 25/25, heap 25/25. Next `#37-10` work: wide-char string pointers
+    (`wchar_t*`/`char16_t*`/`char32_t*`), compound-expression args, plus signature/template/operator
+    rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

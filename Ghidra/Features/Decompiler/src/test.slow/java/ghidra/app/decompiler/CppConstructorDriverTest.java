@@ -354,13 +354,12 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
-	public void testDeclinesUnnamedComputedArgument() throws Exception {
+	public void testRendersConstructionWithStringPtrArgument() throws Exception {
 		// A const char* string-pointer argument is not a constant varnode: the decompiler resolves the
-		// global address into a typed pointer temp with no backing symbol, whose HighVariable is a
-		// HighOther carrying Ghidra's "UNNAMED" placeholder name. Rendering that placeholder text would
-		// emit new C(UNNAMED); the whole hint must decline instead (never-wrong) until a later slice
-		// renders the string literal / compound expression.
-		HighFunction highFunction = decompileMakeWithStringPtrArg();
+		// global address (0x402000, holding "Hi\0") into an unnamed char* temp (a HighOther). #37-10k
+		// traces that temp's COPY def-chain to the constant address and reads the NUL-terminated bytes,
+		// so it renders the string literal new C("Hi") rather than declining.
+		HighFunction highFunction = decompileMakeWithStringPtrArg("48 69 00");
 
 		CppTypeSystem typeSystem = new CppTypeSystem();
 		typeSystem.defineClass(classC);
@@ -368,7 +367,46 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
 		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
 
-		assertTrue("an UNNAMED-placeholder argument must yield no hints", hints.isEmpty());
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("char* argument must render as the string literal \"Hi\", not UNNAMED",
+			"new C(\"Hi\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithEscapedStringPtrArgument() throws Exception {
+		// Bytes 0x41 0x09 0x01 0x00 at 0x402000: 'A', a tab (a named C escape), and 0x01 (no named
+		// escape, so a 3-digit octal escape \001 — never \x01, which is greedy in a string literal),
+		// then the NUL terminator. The string must render new C("A\t\001").
+		HighFunction highFunction = decompileMakeWithStringPtrArg("41 09 01 00");
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("non-printable string bytes must escape (named escape + 3-digit octal)",
+			"new C(\"A\\t\\001\")", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesUnnamedNonCharPointerArgument() throws Exception {
+		// An unnamed non-char* pointer argument (here an int*, the same global-address load as the
+		// string fixture but a different pointee type) is still a HighOther named UNNAMED, but the
+		// string renderer is gated on a pointer-to-char, so it does not apply. With no name, no string,
+		// and a non-constant varnode, the whole hint declines — the never-wrong contract still holds for
+		// a genuinely unnameable pointer argument.
+		HighFunction highFunction =
+			decompileMakeWithPtrArg(new PointerDataType(new IntegerDataType()), "48 69 00");
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unnamed non-char* pointer argument must yield no hints", hints.isEmpty());
 	}
 
 	@Test
@@ -879,21 +917,35 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	/**
-	 * Builds a fresh program whose {@code C* make()} does {@code return new C("Hi");} where the
-	 * constructor takes a {@code char *}, so the constructor {@code CALL} carries a pointer to a global
-	 * NUL-terminated string. Grounds the {@code #37-10j} never-wrong fix: a string-pointer argument is
-	 * <em>not</em> a constant varnode — the decompiler resolves the global address ({@code 0x402000}, loaded
-	 * via {@code mov rdx,imm64}) into a typed {@code char *} temp with no backing symbol, whose
-	 * {@link ghidra.program.model.pcode.HighVariable} is a {@code HighOther} carrying the {@code "UNNAMED"}
-	 * placeholder name. The body is 45 bytes: the integer fixtures' 5-byte {@code mov edx,imm32} becomes a
-	 * 10-byte {@code mov rdx,imm64} (the absolute string address), so the constructor-call displacement is
-	 * recomputed to {@code dc 01 00 00}.
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C("...");} where the
+	 * constructor takes a {@code char *}, the global NUL-terminated string bytes are
+	 * {@code stringBytesHex}, and returns the {@code make} decompiled {@link HighFunction}. A convenience
+	 * wrapper over {@link #decompileMakeWithPtrArg} fixing the pointee type to {@code char}. Grounds the
+	 * {@code #37-10k} string-literal rendering.
 	 */
-	private HighFunction decompileMakeWithStringPtrArg() throws Exception {
-		builder = new ProgramBuilder("ctorStringPtrArgDrv", ProgramBuilder._X64);
+	private HighFunction decompileMakeWithStringPtrArg(String stringBytesHex) throws Exception {
+		return decompileMakeWithPtrArg(new PointerDataType(new CharDataType()), stringBytesHex);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(p);} where the constructor
+	 * takes the pointer type {@code ptrParamType} and {@code p} is the address {@code 0x402000} of a
+	 * global memory region initialised to {@code dataBytesHex}. A pointer-typed global-address argument is
+	 * <em>not</em> a constant varnode — the decompiler resolves the global address (loaded via
+	 * {@code mov rdx,imm64}) into a typed pointer temp with no backing symbol, whose
+	 * {@link ghidra.program.model.pcode.HighVariable} is a {@code HighOther} carrying the {@code "UNNAMED"}
+	 * placeholder name, defined by a {@code COPY} of the {@code const}-space address. Used both to render a
+	 * {@code char *} as a string literal ({@code #37-10k}) and, with a non-char pointee, to confirm the
+	 * string renderer's pointer-to-char gate declines. The body is 45 bytes: the integer fixtures' 5-byte
+	 * {@code mov edx,imm32} becomes a 10-byte {@code mov rdx,imm64} (the absolute address), so the
+	 * constructor-call displacement is recomputed to {@code dc 01 00 00}.
+	 */
+	private HighFunction decompileMakeWithPtrArg(DataType ptrParamType, String dataBytesHex)
+			throws Exception {
+		builder = new ProgramBuilder("ctorPtrArgDrv", ProgramBuilder._X64);
 		builder.createMemory("text", MAKE, 0x300);
 		builder.createMemory("data", "0x402000", 0x100);
-		builder.setBytes("0x402000", "48 69 00", false); // "Hi\0"
+		builder.setBytes("0x402000", dataBytesHex, false);
 		builder.setBytes(MAKE,
 			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 48 ba " +
 				"00 20 40 00 00 00 00 00 e8 dc 01 00 00 48 89 f0 48 83 c4 20 5e c3",
@@ -905,14 +957,14 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		builder.addDataType(classC);
 		DataType classCPtr = new PointerDataType(classC);
 		DataType voidPtr = new PointerDataType(new Undefined1DataType());
-		DataType charPtr = new PointerDataType(new CharDataType());
 		Program program = builder.getProgram();
 		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
 
 		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
 			new LongLongDataType());
-		// the constructor takes the this receiver and one explicit char* argument
-		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, charPtr);
+		// the constructor takes the this receiver and one explicit pointer argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			ptrParamType);
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 45, classCPtr);
 		builder.disassemble(MAKE, 45, false);
 		builder.disassemble(OP_NEW, 1, false);
