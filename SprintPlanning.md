@@ -43,10 +43,14 @@ then land the work it unblocks.
     `HighFunction`.~~ Shipped (DD-0024): pure p-code matcher in Base, grounded in the
     real decompiler idiom (observed via the Rec 30 harness), verified by a harness
     integration test against an x86-64 virtual call.
-  - [ ] **`#37-7b-2`** — virtual-call *driver*: walk the `HighFunction`, resolve the
-    recovered receiver to a `CppClass`, render the receiver/argument varnodes, and
-    dispatch to `CppDecompilerHints.renderVirtualCall`.
-  - [ ] remaining six forms (cast / ctor / dtor / `new[]` / placement / `delete`).
+  - [x] ~~**`#37-7b-2`** — virtual-call *driver*: walk the `HighFunction`, resolve the
+    recovered receiver to a `CppClass`, and dispatch to
+    `CppDecompilerHints.renderVirtualCall`.~~ Shipped (DD-0025): `CppVirtualCallDriver`
+    resolves the receiver by its recovered `HighVariable` type via `CppTypeSystem` and
+    renders `param_1->draw()` from a real x86-64 virtual call. Argument threading
+    scoped out (an unresolved indirect `CALLIND` has no recovered prototype) → later slice.
+  - [ ] remaining six forms (cast / ctor / dtor / `new[]` / placement / `delete`) —
+    each a matcher slice + driver slice, same shape as `#37-7b`.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.

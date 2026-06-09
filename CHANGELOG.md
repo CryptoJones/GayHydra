@@ -32,6 +32,17 @@ generated from the GitHub Releases UI at sprint close.
   a harness integration test against a hand-assembled x86-64 virtual call. The
   type-resolution + expression-rendering driver that calls the renderer is the
   next slice (`#37-7b-2`). Design: DD-0024.
+- **Rec 37 `#37-7b-2` — virtual-call driver** (Sprint 14 Step 2) —
+  `CppVirtualCallDriver` walks a `HighFunction`, runs the `#37-7b-1` matcher on each
+  `CALLIND`, resolves the recovered receiver to a `CppClass` by its recovered
+  `HighVariable` type (one pointer level → structure name → `CppTypeSystem`
+  lookup), and dispatches to `CppDecompilerHints.renderVirtualCall`, returning
+  `(site, rendering)` hints. Closes the virtual-call recognition loop: a real
+  x86-64 `this->vtable[1]()` decompiles and renders to `param_1->draw()`. Advisory
+  and total-failure-safe (unmodelled receivers contribute no hint). Argument
+  threading is scoped out — an unresolved indirect `CALLIND` carries no recovered
+  prototype — so the renderer is called with an empty argument list. Design:
+  DD-0025.
 
 ---
 
