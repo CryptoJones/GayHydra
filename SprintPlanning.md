@@ -21,10 +21,17 @@ then land the work it unblocks.
 
 **Step 1 — the enabler:**
 
-- [ ] **Rec 30 headless integration harness** — load a small prebuilt binary,
+- [x] ~~**Rec 30 headless integration harness** — load a small prebuilt binary,
   run analysis to a real `HighFunction`, and assert on decompiler output / hint
   emission from a headless fixture (JUnit or `decomp_test_dbg`-style). This is
-  the gate that makes every item below testable-before-push.
+  the gate that makes every item below testable-before-push.~~ Shipped (DD-0023):
+  `AbstractDecompilerHighFunctionTest` + pilot `HeadlessHighFunctionHarnessTest`
+  in the Decompiler module's `test.slow` — a thin lifecycle wrapper over
+  `DecompInterface` that decompiles a function to a real `HighFunction`
+  headlessly. Adopts the HighFunction-harness reading of Rec 30 (vs the UI
+  view-interface layer in `HEADLESS_TEST_LAYER.md`, which stays as later #30-2…
+  #30-7 work) because that is what unblocks the recognition queue. The
+  recognition wrappers in Step 2 build on it.
 
 **Step 2 — Rec 37 recognition phase (unblocked by Step 1):**
 

@@ -12,7 +12,16 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
-_Nothing yet._
+### Added
+
+- **Rec 30 headless integration harness** (Sprint 14 Step 1, the enabler) —
+  `AbstractDecompilerHighFunctionTest` loads/builds a small `Program` and
+  decompiles a function to a real `HighFunction` headlessly (no `DISPLAY`, no
+  Swing), as a thin lifecycle wrapper over `DecompInterface`; a pilot
+  (`HeadlessHighFunctionHarnessTest`) drives it end-to-end against an in-memory
+  Toy function. This is the gate that makes the Program-coupled Rec 37 C++
+  recognition wrappers testable before commit, unblocking the queue that has been
+  stuck at the "headless ceiling." Design: DD-0023.
 
 ---
 
