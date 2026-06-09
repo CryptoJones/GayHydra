@@ -141,6 +141,22 @@ generated from the GitHub Releases UI at sprint close.
   end-to-end by a harness integration test against a hand-assembled x86-64
   `new C[5]`. Reuses `CppDirectCallRecognizer.callTargetAddress` for the target read.
   Design: DD-0033.
+- **Rec 37 `#37-9d-b-2` — array-construction driver** (Sprint 14 Step 2) —
+  `CppArrayConstructionDriver` walks a `HighFunction`, runs the `#37-9d-b-1` matcher on
+  each `CALL`, resolves the recovered allocation target to a `Function`, and renders
+  from facts forward of the call: it classifies the callee name as array
+  `operator new[]` (the demangled `operator.new[]`, `.`→space normalised — the same
+  disambiguation the delete driver uses for `operator delete[]`), reads the element
+  class off the recovered typed result's pointer type (one pointer level stripped —
+  *not* a ctor callee name, since the trivial-element array `new` has no ctor call),
+  computes `count = byteSize / element.getLength()` (only for a positive constant exact
+  multiple), resolves the `CppClass`, and dispatches to
+  `CppDecompilerHints.renderArrayConstruction`, returning `(site, rendering)` hints.
+  Closes the array-construction loop: a real x86-64 `new C[5]` renders to `new C[5]`
+  (count `0x28 / 8 = 5`). **Fifth of seven forms end-to-end**; advisory and
+  total-failure-safe (scalar `operator new`, unmodelled classes, non-dividing sizes
+  contribute no hint). Trivial-element only; the per-element ctor-loop fusion is a
+  later refinement. Design: DD-0034.
 
 ### Changed
 

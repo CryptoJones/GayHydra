@@ -107,10 +107,14 @@ then land the work it unblocks.
     typed pointer. Recognises the trivial-element shape (no ctor loop); name-blind (operator-new[]
     classification + count = byteSize/elemSize are the driver's). Grounded on real decompiler p-code
     (`(C *)operator_new__(0x28)`); reuses `CppDirectCallRecognizer.callTargetAddress`. Matcher 3/3.
-  - [ ] **`#37-9d-b-2`** — array-construction *driver*: classify `allocationTarget` as `operator
+  - [x] ~~**`#37-9d-b-2`** — array-construction *driver*: classify `allocationTarget` as `operator
     new[]`, read the element `Structure` off `typedResult`'s pointer type, compute `count = byteSize /
     element.getLength()`, resolve the `CppClass`, and dispatch to
-    `CppDecompilerHints.renderArrayConstruction` → `new C[5]`.
+    `CppDecompilerHints.renderArrayConstruction` → `new C[5]`.~~ Shipped (DD-0034):
+    `CppArrayConstructionDriver` renders `new C[5]` from a real x86-64 `new C[5]` (count `0x28/8 = 5`).
+    Class read from the typed result's pointer type (no ctor to name it); array-vs-scalar by the
+    `operator new[]` name; count only for a positive exact-multiple constant. **Fifth** of seven forms
+    end-to-end. Trivial-element only (ctor-loop fusion deferred). Driver 4/4.
   - [ ] remaining two forms (cast / placement) — each a matcher slice + driver slice; placement
     reuses the construction fusion shape (a ctor on caller-owned storage), cast follows the structural
     `#37-7b` shape. (Array `new[]` no longer reuses the fusion shape — its trivial-element form is a
