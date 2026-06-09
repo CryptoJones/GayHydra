@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import ghidra.app.util.cpp.CppDestructorRecognizer.DestructorCall;
+import ghidra.app.util.cpp.CppDirectCallRecognizer.DirectCall;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.Pointer;
 import ghidra.program.model.listing.Function;
@@ -33,8 +33,9 @@ import ghidra.program.model.pcode.Varnode;
 
 /**
  * The driver half of Rec 37 {@code #37-9c-b}: walks a decompiled {@link HighFunction}, uses the
- * {@link CppDestructorRecognizer} matcher ({@code #37-9c-b-1}, DD-0028) to find candidate direct
- * destructor {@code CALL}s, resolves each recovered call target to a {@link Function}, classifies
+ * shared {@link CppDirectCallRecognizer} matcher (DD-0028 established this form's use of it; extracted
+ * in DD-0032) to find candidate direct destructor {@code CALL}s, resolves each recovered call target
+ * to a {@link Function}, classifies
  * its name as a destructor ({@code ~ClassName}), resolves that class in a supplied
  * {@link CppTypeSystem}, and dispatches to the stateless
  * {@link CppDecompilerHints#renderDestructorCall} renderer (DD-0016) to produce the C++ hint string.
@@ -48,7 +49,7 @@ import ghidra.program.model.pcode.Varnode;
  * <li><b>Which class</b> comes from the <em>callee's name</em>, not the receiver's type. A destructor
  * function's Ghidra local name is {@code ~ClassName} (e.g. {@code _ZN6Magick5ImageD1Ev} demangles to
  * {@code Magick::Image::~Image()}, local name {@code ~Image}); the driver resolves the recovered
- * {@link DestructorCall#callTarget()} to a {@link Function}, strips the leading {@code ~}, and looks
+ * {@link DirectCall#callTarget()} to a {@link Function}, strips the leading {@code ~}, and looks
  * the {@link CppClass} up by the remaining name in the type system. The callee names the destructor
  * being invoked &mdash; the authoritative class for the rendered {@code ~ClassName} &mdash; which is
  * why the class is read here and not from the (possibly base-adjusted) receiver type. This is the one
@@ -137,7 +138,7 @@ public final class CppDestructorDriver {
 			if (op.getOpcode() != PcodeOp.CALL) {
 				continue;
 			}
-			DestructorCall dtor = CppDestructorRecognizer.recognize(op);
+			DirectCall dtor = CppDirectCallRecognizer.recognize(op);
 			if (dtor == null) {
 				continue;
 			}
@@ -149,7 +150,7 @@ public final class CppDestructorDriver {
 		return rendered;
 	}
 
-	private RenderedDestructorCall render(PcodeOp callSite, DestructorCall dtor,
+	private RenderedDestructorCall render(PcodeOp callSite, DirectCall dtor,
 			FunctionManager functionManager) {
 		Function callee = functionManager.getFunctionAt(dtor.callTarget());
 		if (callee == null) {

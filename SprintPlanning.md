@@ -91,9 +91,14 @@ then land the work it unblocks.
     allocation by `operator new` (same `.`→space normalisation as the delete driver). Args scoped
     out (`#37-10+`). **Fourth** of seven forms end-to-end → three concrete direct-call copies now
     exist, so the `CppDirectCallRecognizer` extraction is the next commit.
-  - [ ] **refactor** — extract shared `CppDirectCallRecognizer` unifying `CppDeleteRecognizer`,
+  - [x] ~~**refactor** — extract shared `CppDirectCallRecognizer` unifying `CppDeleteRecognizer`,
     `CppDestructorRecognizer`, and the constructor matcher's internal recovery (rule of three, now
-    met at three concrete users) — a dedicated commit, not bundled into a feature slice.
+    met at three concrete users) — a dedicated commit, not bundled into a feature slice.~~ Shipped
+    (DD-0032): one stateless `CppDirectCallRecognizer` (`recognize` → `DirectCall`, plus
+    `callTargetAddress` for the ctor matcher's allocation call). The two pass-through recognizers and
+    their unit tests deleted outright (no shims); drivers consume `DirectCall` directly, ctor matcher
+    delegates recovery + keeps only the fusion walk-back. Recovery coverage consolidated into
+    `CppDirectCallRecognizerTest`. Pure structural refactor — behaviour unchanged; 21/21 green.
   - [ ] remaining three forms (cast / `new[]` / placement) — each a matcher slice + driver slice;
     `new[]` and placement reuse the construction fusion shape, cast follows the structural `#37-7b`
     shape.

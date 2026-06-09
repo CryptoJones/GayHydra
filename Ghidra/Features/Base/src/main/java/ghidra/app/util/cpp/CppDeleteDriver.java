@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import ghidra.app.util.cpp.CppDeleteRecognizer.DeleteCall;
+import ghidra.app.util.cpp.CppDirectCallRecognizer.DirectCall;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
@@ -31,8 +31,9 @@ import ghidra.program.model.pcode.PcodeOpAST;
 
 /**
  * The driver half of Rec 37 {@code #37-9f-b}: walks a decompiled {@link HighFunction}, uses the
- * {@link CppDeleteRecognizer} matcher ({@code #37-9f-b-1}, DD-0026) to find candidate direct
- * deallocation {@code CALL}s, resolves each recovered call target to a {@link Function},
+ * shared {@link CppDirectCallRecognizer} matcher (DD-0026 established this form's use of it; extracted
+ * in DD-0032) to find candidate direct deallocation {@code CALL}s, resolves each recovered call target
+ * to a {@link Function},
  * classifies its name as scalar {@code operator delete} or array {@code operator delete[]}, and
  * dispatches to the stateless {@link CppDecompilerHints#renderDelete} renderer (DD-0022) to produce
  * the C++ hint string. This is the {@code #37-9f-b-2} slice that closes the loop the recognizer
@@ -45,7 +46,7 @@ import ghidra.program.model.pcode.PcodeOpAST;
  * called function is a deallocation function at all, and if so whether it is the scalar or array
  * operator. That fact lives in the callee's <em>name</em>, which is {@link ghidra.program.model.listing.Program}-coupled,
  * so the driver holds the program (via {@code function.getFunction().getProgram()}), resolves the
- * recovered {@link DeleteCall#callTarget()} address to a {@link Function}, and classifies its name.
+ * recovered {@link DirectCall#callTarget()} address to a {@link Function}, and classifies its name.
  * Names are matched in the form a demangler produces (Ghidra's {@code .} namespace separator),
  * i.e. {@code operator.delete} and {@code operator.delete[]}; the array form is checked first
  * because it contains the scalar substring. The pass therefore assumes the demangler analyzer has
@@ -122,7 +123,7 @@ public final class CppDeleteDriver {
 			if (op.getOpcode() != PcodeOp.CALL) {
 				continue;
 			}
-			DeleteCall delete = CppDeleteRecognizer.recognize(op);
+			DirectCall delete = CppDirectCallRecognizer.recognize(op);
 			if (delete == null) {
 				continue;
 			}
@@ -134,7 +135,7 @@ public final class CppDeleteDriver {
 		return rendered;
 	}
 
-	private RenderedDelete render(PcodeOp callSite, DeleteCall delete,
+	private RenderedDelete render(PcodeOp callSite, DirectCall delete,
 			FunctionManager functionManager) {
 		Function callee = functionManager.getFunctionAt(delete.callTarget());
 		if (callee == null) {

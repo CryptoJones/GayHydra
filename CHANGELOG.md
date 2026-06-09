@@ -126,6 +126,23 @@ generated from the GitHub Releases UI at sprint close.
   end-to-end**; with three concrete direct-call copies now extant, the shared
   `CppDirectCallRecognizer` extraction is the next (refactor) commit. Design: DD-0031.
 
+### Changed
+
+- **Rec 37 `#37-9b` refactor — extract the shared `CppDirectCallRecognizer`** (Sprint
+  14 Step 2) — the direct-call recovery (the callee entry in `input[0]` plus the
+  cast-stripped `input[1]` receiver) was duplicated across the delete (`#37-9f-b`),
+  destructor (`#37-9c-b`), and constructor (`#37-9b`) forms. With the third user now
+  extant, the rule-of-three extraction earned across DD-0026/0028/0030 is done: the
+  recovery is unified into one stateless `CppDirectCallRecognizer`
+  (`recognize` → `DirectCall(callTarget, receiver)`, plus `callTargetAddress` for the
+  constructor matcher's allocation call). The two pass-through per-form recognizers
+  `CppDeleteRecognizer` and `CppDestructorRecognizer` (and their unit tests) are
+  **deleted outright** rather than left as shims; the two drivers now consume
+  `DirectCall` directly and the constructor matcher delegates its recovery, keeping
+  only the form-specific fusion walk-back. Pure structural refactor — the three forms'
+  recognition behaviour is unchanged; consolidated recovery coverage moves to one
+  integration test (`CppDirectCallRecognizerTest`). Design: DD-0032.
+
 ---
 
 ## [v26.3.0] — 2026-06-06
