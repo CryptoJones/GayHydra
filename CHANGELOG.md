@@ -220,6 +220,17 @@ generated from the GitHub Releases UI at sprint close.
   the program-scanning analyzer slice. Pure decode (reads only laid-down models, no program scan),
   total-failure-safe. Grounded against the real `Base`/`Shape`/`Circle` MSVC RTTI fixtures; decoder
   5/5. Design: DD-0039.
+- **Rec 37 `#37-5-2` — MSVC RTTI class decoder** (Sprint 14 Step 2, second slice of PR #37-5) —
+  `CppMsvcRttiDecoder.decodeClass(Rtti3Model)` lifts the per-descriptor decoder to a whole class:
+  from one `RTTIClassHierarchyDescriptor` it recovers the class's own demangled name and the list of
+  its **direct** bases (new `DecodedClass(derivedName, directBases)` record). MSVC lays the RTTI2
+  base-class array out as the full hierarchy in preorder (self at index 0, then every transitive
+  ancestor); the decoder walks it skipping self and, at each direct base, skipping that base's
+  `numContainedBases` contained entries, so a transitive base is never emitted as direct. Reuses
+  `decodeBase` for each entry (shared name/offset/access semantics, virtual bases declined). Pure
+  decode, total-failure-safe. Grounded against the complete-flow fixture reshaped for single
+  inheritance (transitive `Base` excluded from `Circle`) and multiple inheritance (two direct bases);
+  decoder 8/8. Design: DD-0040.
 
 ### Changed
 

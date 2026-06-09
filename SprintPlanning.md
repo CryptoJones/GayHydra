@@ -170,9 +170,13 @@ then land the work it unblocks.
     `BCD_PRIVORPROTBASE` (`0x04`) attribute bit; non-virtual bases only (virtual `pdisp != -1`
     declined, offset needs the vbtable). Pure decode, total-failure-safe, grounded against the real
     `Base`/`Shape`/`Circle` MSVC RTTI fixtures. Decoder 5/5.
-  - [ ] **#37-5-2** — class decoder: RTTI3 (`RTTIClassHierarchyDescriptor`) → derived name +
+  - [x] ~~**#37-5-2** — class decoder: RTTI3 (`RTTIClassHierarchyDescriptor`) → derived name +
     direct-base `List<BaseSpec>`, walking the RTTI2 base-class array (skip self at index 0,
-    distinguish direct from transitive bases).
+    distinguish direct from transitive bases).~~ Shipped (DD-0040): `CppMsvcRttiDecoder.decodeClass`
+    → `DecodedClass(derivedName, directBases)`. Preorder walk skipping self and each base's
+    `numContainedBases` subtree, so transitive bases are excluded; reuses `decodeBase` per entry.
+    Pure decode, total-failure-safe, grounded against the complete-flow fixture reshaped for single
+    and multiple inheritance. Decoder 8/8.
   - [ ] **#37-5-3** — program-scanning analyzer/driver: find the MSVC RTTI structures and feed
     `CppRttiFeeder.feedClass`.
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.

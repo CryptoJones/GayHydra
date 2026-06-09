@@ -17,22 +17,34 @@ package ghidra.app.cmd.data.rtti;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+
 import org.junit.Test;
 
+import ghidra.app.cmd.data.rtti.CppMsvcRttiDecoder.DecodedClass;
 import ghidra.app.util.cpp.CppRttiFeeder.BaseSpec;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 
 /**
- * Coverage for the Rec 37 {@code #37-5-1} {@link CppMsvcRttiDecoder#decodeBase(Rtti1Model)} per-descriptor
- * MSVC RTTI base decoder (DD-0039), exercised against the {@link AbstractRttiTest} MSVC RTTI fixtures.
+ * Coverage for the Rec 37 MSVC RTTI decoder, exercised against the {@link AbstractRttiTest} MSVC RTTI
+ * fixtures.
  *
- * <p>The happy path decodes the real {@code Base}/{@code Shape}/{@code Circle} base class descriptors the
- * complete-flow fixture lays down (all non-virtual, public, offset 0). Hand-built variants then ground the
- * three decode dimensions the complete-flow fixture holds constant: a non-zero {@code mdisp} (offset comes
- * from the descriptor, not a constant), a {@code BCD_PRIVORPROTBASE} attribute bit ({@code isPublic} false),
- * and a virtual base ({@code pdisp != -1}, declined because its offset needs the runtime vbtable).
+ * <p>The {@code #37-5-1} {@link CppMsvcRttiDecoder#decodeBase(Rtti1Model)} per-descriptor decoder
+ * (DD-0039): the happy path decodes the real {@code Base}/{@code Shape}/{@code Circle} base class
+ * descriptors the complete-flow fixture lays down (all non-virtual, public, offset 0). Hand-built variants
+ * then ground the three decode dimensions the complete-flow fixture holds constant: a non-zero
+ * {@code mdisp} (offset comes from the descriptor, not a constant), a {@code BCD_PRIVORPROTBASE} attribute
+ * bit ({@code isPublic} false), and a virtual base ({@code pdisp != -1}, declined because its offset needs
+ * the runtime vbtable).
+ *
+ * <p>The {@code #37-5-2} {@link CppMsvcRttiDecoder#decodeClass(Rtti3Model)} class decoder (DD-0040): the
+ * complete-flow RTTI1 descriptors all carry {@code numContainedBases == 0}, so each test writes the real
+ * subtree sizes into the shared descriptors to express a graph. Single inheritance grounds that a
+ * transitive base ({@code Base} under {@code Shape} under {@code Circle}) is excluded from
+ * {@code Circle}'s direct bases; a multiple-inheritance reinterpretation of the same array grounds that two
+ * unrelated direct bases are both emitted in array order.
  */
 public class CppMsvcRttiDecoderTest extends AbstractRttiTest {
 
@@ -91,8 +103,80 @@ public class CppMsvcRttiDecoderTest extends AbstractRttiTest {
 		assertNull("a null descriptor must yield no fact", CppMsvcRttiDecoder.decodeBase(null));
 	}
 
+	// --- #37-5-2 decodeClass(Rtti3Model): derived name + DIRECT bases (transitive bases excluded) ---
+
+	// The complete-flow fixture's RTTI1 descriptors all carry numContainedBases == 0 (they exist to
+	// test struct parsing, not hierarchy shape), so the contained-bases subtree sizes must be written
+	// in to express a real inheritance graph. These are the three shared RTTI1 descriptor addresses.
+	private static final long BASE_RTTI1 = 0x010033a8L;
+	private static final long SHAPE_RTTI1 = 0x010033c4L;
+	private static final long CIRCLE_RTTI1 = 0x010032a8L;
+
+	@Test
+	public void testDecodesSingleInheritanceDirectBasesOnly() throws Exception {
+		ProgramBuilder builder = build32BitX86();
+		setupRtti32CompleteFlow(builder);
+		// Make the fixture a true single-inheritance chain Base <- Shape <- Circle: each class's
+		// descriptor states the size of its own base subtree (Base: none, Shape: Base, Circle: Shape+Base).
+		setNumContainedBases(builder, BASE_RTTI1, 0);
+		setNumContainedBases(builder, SHAPE_RTTI1, 1);
+		setNumContainedBases(builder, CIRCLE_RTTI1, 2);
+		ProgramDB program = builder.getProgram();
+
+		DecodedClass base = decodeClass(program, 0x01003368L);
+		assertEquals("Base", base.derivedName());
+		assertEquals(List.of(), base.directBases());
+
+		DecodedClass shape = decodeClass(program, 0x01003378L);
+		assertEquals("Shape", shape.derivedName());
+		assertEquals(List.of(new BaseSpec("Base", 0, false, true)), shape.directBases());
+
+		DecodedClass circle = decodeClass(program, 0x01003268L);
+		assertEquals("Circle", circle.derivedName());
+		// Shape is the only DIRECT base; Base is transitive (reached through Shape) and excluded.
+		assertEquals(List.of(new BaseSpec("Shape", 0, false, true)), circle.directBases());
+	}
+
+	@Test
+	public void testDecodesMultipleDirectBases() throws Exception {
+		ProgramBuilder builder = build32BitX86();
+		setupRtti32CompleteFlow(builder);
+		// Reinterpret the same RTTI2 array as multiple inheritance Circle : Shape, Base with Shape and
+		// Base unrelated: Circle contains two bases, each of which contains none.
+		setNumContainedBases(builder, BASE_RTTI1, 0);
+		setNumContainedBases(builder, SHAPE_RTTI1, 0);
+		setNumContainedBases(builder, CIRCLE_RTTI1, 2);
+		ProgramDB program = builder.getProgram();
+
+		DecodedClass circle = decodeClass(program, 0x01003268L);
+		assertEquals("Circle", circle.derivedName());
+		assertEquals(
+			List.of(new BaseSpec("Shape", 0, false, true), new BaseSpec("Base", 0, false, true)),
+			circle.directBases());
+	}
+
+	@Test
+	public void testDecodeClassDeclinesNull() {
+		assertNull("a null hierarchy descriptor must yield no class",
+			CppMsvcRttiDecoder.decodeClass(null));
+	}
+
 	private BaseSpec decode(ProgramDB program, long rtti1Address) {
 		Address address = program.getAddressFactory().getDefaultAddressSpace().getAddress(rtti1Address);
 		return CppMsvcRttiDecoder.decodeBase(new Rtti1Model(program, address, defaultValidationOptions));
+	}
+
+	private DecodedClass decodeClass(ProgramDB program, long rtti3Address) {
+		Address address = program.getAddressFactory().getDefaultAddressSpace().getAddress(rtti3Address);
+		return CppMsvcRttiDecoder.decodeClass(new Rtti3Model(program, address, defaultValidationOptions));
+	}
+
+	// Overwrites the numContainedBases dword (RTTI1 + 4) of one shared base class descriptor.
+	private void setNumContainedBases(ProgramBuilder builder, long rtti1Address, int numContainedBases)
+			throws Exception {
+		boolean bigEndian =
+			builder.getProgram().getCompilerSpec().getDataOrganization().isBigEndian();
+		builder.setBytes(builder.addr(rtti1Address + 4).toString(),
+			getIntAsByteString(numContainedBases, bigEndian));
 	}
 }

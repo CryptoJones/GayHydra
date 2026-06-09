@@ -15,6 +15,9 @@
  */
 package ghidra.app.cmd.data.rtti;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ghidra.app.cmd.data.TypeDescriptorModel;
 import ghidra.app.util.cpp.CppRttiFeeder.BaseSpec;
 import ghidra.program.model.data.InvalidDataTypeException;
@@ -26,7 +29,7 @@ import ghidra.program.model.data.InvalidDataTypeException;
  * already-laid-down {@link Rtti1Model RTTIBaseClassDescriptor} models and never scans a program (that is
  * the {@code #37-5} analyzer/driver slice that walks the binary and calls the feeder).
  *
- * <p><b>This slice ({@code #37-5-1}) decodes one descriptor.</b> {@link #decodeBase(Rtti1Model)} turns a
+ * <p><b>Two pure decodes.</b> {@link #decodeBase(Rtti1Model)} ({@code #37-5-1}) turns a
  * single {@code RTTIBaseClassDescriptor} into one direct-base fact:
  * <ul>
  * <li>the base class's name from its {@link TypeDescriptorModel#getDescriptorName() type descriptor}
@@ -36,6 +39,15 @@ import ghidra.program.model.data.InvalidDataTypeException;
  * <li>its access from the descriptor's {@code attributes}: {@code public} unless the
  * {@code BCD_PRIVORPROTBASE} bit is set.</li>
  * </ul>
+ *
+ * <p>{@link #decodeClass(Rtti3Model)} ({@code #37-5-2}) lifts that to a whole class: from a
+ * {@code RTTIClassHierarchyDescriptor} it recovers the class's own name and the list of its
+ * <em>direct</em> bases. MSVC lays the base-class array out as the <em>full</em> hierarchy in preorder
+ * &mdash; index 0 is the class itself, then every transitive ancestor &mdash; with each
+ * {@code RTTIBaseClassDescriptor} carrying a {@code numContainedBases} count of its own subtree. The
+ * decoder walks that array skipping self (index 0) and, at each direct base, skips past the base's
+ * {@code numContainedBases} contained entries, so a base reached only through another base (a
+ * <em>transitive</em> ancestor) is never emitted as a direct base.
  *
  * <p><b>Non-virtual bases only.</b> A descriptor whose {@code pdisp} is not {@code -1} names a
  * <em>virtual</em> base, whose true subobject offset is {@code *(vbtable + vdisp) + pdisp} &mdash; it
@@ -95,6 +107,69 @@ public final class CppMsvcRttiDecoder {
 			long offset = descriptor.getMDisp();
 			boolean isPublic = (descriptor.getAttributes() & BCD_PRIVORPROTBASE) == 0;
 			return new BaseSpec(baseName, offset, false, isPublic);
+		}
+		catch (InvalidDataTypeException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * One MSVC class decoded from its {@code RTTIClassHierarchyDescriptor}: the class's own
+	 * (demangled, unqualified) name and the {@link BaseSpec} facts for its <em>direct</em> bases only.
+	 *
+	 * @param derivedName the class's own name (the form {@link ghidra.app.util.cpp.CppTypeSystem} keys by)
+	 * @param directBases its direct non-virtual bases, in base-class-array order; never null, possibly empty
+	 */
+	public record DecodedClass(String derivedName, List<BaseSpec> directBases) {}
+
+	/**
+	 * Decodes one MSVC {@code RTTIClassHierarchyDescriptor} into its class name and direct-base list.
+	 *
+	 * <p>The descriptor's base-class array holds the full hierarchy in preorder: index 0 is the class
+	 * itself, then every transitive ancestor, each carrying its own {@code numContainedBases} subtree
+	 * size. The walk starts after self (index 1) and, at each entry it accepts as a direct base, jumps
+	 * past that base's contained entries ({@code i += 1 + numContainedBases}); the entries it jumps over
+	 * are exactly that base's own ancestors, i.e. <em>transitive</em> bases of this class, which are not
+	 * emitted. Virtual bases (and any entry that fails to decode) are skipped by {@link
+	 * #decodeBase(Rtti1Model)} but still advance the walk, so the preorder layout stays aligned.
+	 *
+	 * @param classHierarchy the class hierarchy descriptor model to decode; may be null
+	 * @return the recovered {@link DecodedClass}, or null if it is null, does not validate, or yields no
+	 *         printable class name
+	 */
+	public static DecodedClass decodeClass(Rtti3Model classHierarchy) {
+		if (classHierarchy == null) {
+			return null;
+		}
+		try {
+			classHierarchy.validate();
+			TypeDescriptorModel rtti0 = classHierarchy.getRtti0Model();
+			if (rtti0 == null) {
+				return null;
+			}
+			String derivedName = rtti0.getDescriptorName();
+			if (derivedName == null || derivedName.isBlank()) {
+				return null;
+			}
+			List<BaseSpec> directBases = new ArrayList<>();
+			Rtti2Model baseArray = classHierarchy.getRtti2Model();
+			int count = classHierarchy.getRtti1Count();
+			// Preorder walk: skip self (index 0), then at each direct base jump past its contained
+			// (transitive) entries so only direct bases are emitted.
+			int i = 1;
+			while (i < count) {
+				Rtti1Model entry = baseArray.getRtti1Model(i);
+				BaseSpec spec = decodeBase(entry);
+				if (spec != null) {
+					directBases.add(spec);
+				}
+				int contained = entry.getNumBases();
+				if (contained < 0) {
+					break;
+				}
+				i += 1 + contained;
+			}
+			return new DecodedClass(derivedName, directBases);
 		}
 		catch (InvalidDataTypeException e) {
 			return null;
