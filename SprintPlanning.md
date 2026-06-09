@@ -61,9 +61,19 @@ then land the work it unblocks.
     `CppDeleteDriver` renders `delete param_1` / `delete[] param_1` from a real x86-64
     deallocation call. The one driver that resolves no `CppClass` (delete names no type) →
     needs no `CppTypeSystem`. Dtor-then-delete pairing for non-trivial types not yet fused.
-  - [ ] remaining five forms (cast / ctor / dtor / `new[]` / placement) — each a matcher
-    slice + driver slice; the callee-identified forms (ctor / dtor / `new` / placement) reuse
-    the `#37-9f-b` direct-call shape, cast follows the structural `#37-7b` shape.
+  - [x] ~~**`#37-9c-b-1`** — explicit-destructor *matcher*: `CppDestructorRecognizer` recovers
+    `(callTarget, receiver)` from a direct `CALL`.~~ Shipped (DD-0028): the **second** user of
+    the `#37-9f-b` direct-call shape — kept a per-form twin of `CppDeleteRecognizer` per
+    DD-0026's rule-of-three note (the shared `CppDirectCallRecognizer` extraction is earned at
+    the third user, the constructor `#37-9b`). Whether the callee is a `~ClassName` destructor
+    is the callee's name → left to the driver.
+  - [ ] **`#37-9c-b-2`** — explicit-destructor *driver*: walk the `HighFunction`, classify the
+    recovered callee name as `~ClassName`, resolve that `CppClass` in a `CppTypeSystem`, read
+    receiver-is-pointer from the receiver type, and dispatch to
+    `CppDecompilerHints.renderDestructorCall` (`receiver->~ClassName()`).
+  - [ ] remaining four forms (cast / ctor / `new[]` / placement) — each a matcher slice +
+    driver slice; the callee-identified forms (ctor / `new` / placement) reuse the `#37-9f-b`
+    direct-call shape, cast follows the structural `#37-7b` shape.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.

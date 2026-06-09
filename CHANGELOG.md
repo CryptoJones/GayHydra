@@ -68,6 +68,19 @@ generated from the GitHub Releases UI at sprint close.
   type. Advisory and total-failure-safe (non-deallocation callees contribute no
   hint). The dtor-then-`operator delete` pairing for non-trivial types is not yet
   fused (a later cross-form refinement). Design: DD-0027.
+- **Rec 37 `#37-9c-b-1` — explicit-destructor recognition matcher** (Sprint 14
+  Step 2) — `CppDestructorRecognizer`, a stateless p-code matcher that recovers the
+  structural facts of an explicit `p->~C()` destructor call — the direct `CALL`'s
+  target address and the receiver `this` varnode — that the
+  `CppDecompilerHints.renderDestructorCall` renderer (DD-0016) needs. This is the
+  **second** form to use the `#37-9f-b` direct-call shape; per DD-0026's standing
+  note it is kept a per-form twin of `CppDeleteRecognizer` rather than prematurely
+  unified, with the shared-extractor refactor earned at the third user (the
+  constructor `#37-9b`). Whether the callee is actually a `~ClassName` destructor
+  (and of which class) is not in the p-code — it lives in the callee's name — so
+  that classification is left to the `#37-9c-b-2` driver. Verified end-to-end by a
+  harness integration test against a hand-assembled x86-64 destructor call. Design:
+  DD-0028.
 
 ---
 
