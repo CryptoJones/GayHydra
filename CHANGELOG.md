@@ -43,6 +43,19 @@ generated from the GitHub Releases UI at sprint close.
   threading is scoped out — an unresolved indirect `CALLIND` carries no recovered
   prototype — so the renderer is called with an empty argument list. Design:
   DD-0025.
+- **Rec 37 `#37-9f-b-1` — delete-recognition matcher** (Sprint 14 Step 2) —
+  `CppDeleteRecognizer`, a stateless p-code matcher that recovers the structural
+  facts of a candidate deallocation call — the direct `CALL`'s target address and
+  the receiver pointer varnode — that the `CppDecompilerHints.renderDelete` renderer
+  (DD-0022) needs. Establishes the sprint's second recognition shape, the
+  **direct-call** idiom (vs the `#37-7b` indirect vtable dispatch): grounded in the
+  p-code the real decompiler emits (observed through the Rec 30 harness), it reads
+  the callee entry from the `CALL`'s `input[0]` address and strips the interposed
+  `void*` `CAST` off `input[1]` to reach the receiver's printable name. Whether the
+  callee is actually `operator delete` (scalar) or `operator delete[]` (array) is
+  not in the p-code — it lives in the callee's name — so that classification is left
+  to the `#37-9f-b-2` driver. Verified end-to-end by a harness integration test
+  against a hand-assembled x86-64 `delete p`. Design: DD-0026.
 
 ---
 

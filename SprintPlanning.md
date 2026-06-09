@@ -49,8 +49,18 @@ then land the work it unblocks.
     resolves the receiver by its recovered `HighVariable` type via `CppTypeSystem` and
     renders `param_1->draw()` from a real x86-64 virtual call. Argument threading
     scoped out (an unresolved indirect `CALLIND` has no recovered prototype) → later slice.
-  - [ ] remaining six forms (cast / ctor / dtor / `new[]` / placement / `delete`) —
-    each a matcher slice + driver slice, same shape as `#37-7b`.
+  - [x] ~~**`#37-9f-b-1`** — delete-recognition *matcher*: `CppDeleteRecognizer` recovers
+    `(callTarget, receiver)` from a direct `CALL` in a live `HighFunction`.~~ Shipped
+    (DD-0026): pure p-code matcher in Base, grounded in the real decompiler idiom — reads
+    the callee entry from the `CALL`'s `input[0]` and strips the `void*` `CAST` off `input[1]`
+    to reach the receiver. Establishes the **direct-call** recognition shape (vs `#37-7b`'s
+    indirect vtable dispatch). Scalar-vs-array is the callee's name → left to the driver.
+  - [ ] **`#37-9f-b-2`** — delete *driver*: walk the `HighFunction`, resolve the recovered
+    `callTarget` to a function, classify its name as `operator delete` / `operator delete[]`
+    (or neither), and dispatch to `CppDecompilerHints.renderDelete`.
+  - [ ] remaining five forms (cast / ctor / dtor / `new[]` / placement) — each a matcher
+    slice + driver slice; the callee-identified forms (ctor / dtor / `new` / placement) reuse
+    the `#37-9f-b` direct-call shape, cast follows the structural `#37-7b` shape.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
