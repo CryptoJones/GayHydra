@@ -263,6 +263,17 @@ generated from the GitHub Releases UI at sprint close.
   contract `#37-10a` holds; the two argument helpers are duplicated from the placement driver as honest
   per-form twins (rule of three) until a third user earns the extraction. Grounded against a decompiled
   `new C(v)` rendering `new C(param_1)`; driver 6/6. Design: DD-0043.
+- **Rec 37 `#37-10c` — integer-typed constant constructor arguments rendered** (Sprint 14, third slice
+  of the `#37-10+` rendering band) — the placement and heap `new` drivers now render a bare integer
+  literal constructor argument as its decimal value via a new `argumentExpr` helper, so `new C(5)` and
+  `new (buf) C(5)` render instead of declining the whole hint as `#37-10a`/`#37-10b` did. A constant is
+  rendered only when its `HighVariable` datatype is an `AbstractIntegerDataType`: an integer literal's
+  decimal value is faithful, whereas a pointer-typed constant (a global string address) rendered as a
+  bare decimal would mislead, so it still declines — preserving the advisory, never-wrong contract. The
+  two `argumentExpr` helpers stay per-form twins (rule of three) until a third argument-rendering user
+  earns the extraction; rendering compound expressions and typed constants (chars, bools, enum names) is
+  later `#37-10` work. Grounded against decompiled `new C(5)` → `new C(5)` and `new (buf) C(5)` →
+  `new (param_1) C(5)`; placement 7/7, heap 7/7. Design: DD-0044.
 
 ### Changed
 

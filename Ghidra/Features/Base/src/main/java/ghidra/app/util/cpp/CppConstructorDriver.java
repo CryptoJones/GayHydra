@@ -21,6 +21,7 @@ import java.util.List;
 
 import ghidra.app.util.cpp.CppConstructorRecognizer.ConstructedObject;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Program;
@@ -62,17 +63,18 @@ import ghidra.program.model.symbol.Namespace;
  *
  * <p>The renderer emits {@code new ClassName(args)} and takes <em>no receiver</em>: a heap {@code new}
  * is the allocation-plus-construction, with no printed {@code this}. <b>Explicit constructor arguments
- * are threaded</b> ({@code #37-10b}): the constructor {@code CALL}'s inputs after the call target
- * (index 0) and the {@code this} receiver (index 1) are its explicit arguments, each rendered by its
- * {@link HighVariable} name, so {@code new ClassName(arg)} renders with its argument and a zero-argument
- * constructor still renders {@code new ClassName()}. An argument with no printable name (an unnamed
- * temporary, or a bare constant, which carries no {@code HighVariable}) declines the whole hint rather
- * than rendering a gap &mdash; the same advisory, never-wrong contract the {@code #37-10a}
- * {@link CppPlacementConstructionDriver} holds. (The two small argument helpers are duplicated from the
- * placement driver rather than extracted: at this second user they are kept as honest per-form twins,
- * per the DD-0026 rule-of-three convention, until a third user earns the extraction.) Rendering
- * constants and compound argument expressions is later {@code #37-10} work, as is overload resolution
- * against the {@code DataType} signature.
+ * are threaded</b> ({@code #37-10b}, {@code #37-10c}): the constructor {@code CALL}'s inputs after the
+ * call target (index 0) and the {@code this} receiver (index 1) are its explicit arguments. A named
+ * argument renders as its {@link HighVariable} name and an integer-typed constant renders as its decimal
+ * value, so {@code new ClassName(arg)} and {@code new ClassName(5)} both render; a zero-argument
+ * constructor still renders {@code new ClassName()}. An argument that is neither named nor an integer
+ * constant (an unnamed non-constant temporary, or a non-integer constant such as a pointer-typed global
+ * address) declines the whole hint rather than rendering a gap or a misleading bare number &mdash; the
+ * same advisory, never-wrong contract the {@code #37-10a} {@link CppPlacementConstructionDriver} holds.
+ * (The argument helpers are duplicated from the placement driver rather than extracted: they are kept as
+ * honest per-form twins, per the DD-0026 rule-of-three convention, until a third user earns the
+ * extraction.) Rendering compound argument expressions and typed constants (chars, bools, enum names) is
+ * later {@code #37-10} work, as is overload resolution against the {@code DataType} signature.
  *
  * <p>The pass therefore assumes the demangler analyzer has run — which it has by the time a function
  * decompiles to a {@code HighFunction} in a fully-analyzed program. A not-yet-demangled mangled
@@ -205,13 +207,44 @@ public final class CppConstructorDriver {
 	private static List<String> constructorArguments(PcodeOp constructorCall) {
 		List<String> arguments = new ArrayList<>();
 		for (int i = THIS_INPUT_INDEX + 1; i < constructorCall.getNumInputs(); i++) {
-			String argument = operandName(constructorCall.getInput(i));
+			String argument = argumentExpr(constructorCall.getInput(i));
 			if (argument == null) {
 				return null;
 			}
 			arguments.add(argument);
 		}
 		return arguments;
+	}
+
+	/**
+	 * Renders one constructor-argument varnode as a C++ expression: a named {@link HighVariable}'s name
+	 * (e.g. {@code param_1}), or an integer-typed constant's decimal value (e.g. {@code 5}), so a literal
+	 * argument like {@code new C(5)} renders rather than declining.
+	 *
+	 * <p>A constant is rendered only when its {@link HighVariable} datatype is an
+	 * {@link AbstractIntegerDataType}: an integer literal's decimal value is a faithful, never-wrong
+	 * hint, whereas a pointer-typed constant (e.g. a global string address) rendered as a bare decimal
+	 * would mislead, so it is declined. An argument that is neither named nor an integer constant (an
+	 * unnamed non-constant temporary, or a non-integer constant) declines the whole hint ({@code null}).
+	 * Rendering compound expressions and typed constants (chars, bools, enum names) is later
+	 * {@code #37-10} work. (Duplicated from the placement driver as an honest per-form twin, per the
+	 * DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 *
+	 * @return the rendered argument expression, or null if it is neither a named variable nor an
+	 *         integer-typed constant
+	 */
+	private static String argumentExpr(Varnode varnode) {
+		String name = operandName(varnode);
+		if (name != null) {
+			return name;
+		}
+		if (varnode.isConstant()) {
+			HighVariable high = varnode.getHigh();
+			if (high != null && high.getDataType() instanceof AbstractIntegerDataType) {
+				return Long.toString(varnode.getOffset());
+			}
+		}
+		return null;
 	}
 
 	/**

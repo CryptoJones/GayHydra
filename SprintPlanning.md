@@ -199,6 +199,14 @@ then land the work it unblocks.
     decline-on-unnamed contract as `#37-10a`; the two argument helpers are duplicated as per-form twins
     (rule of three) until a third user earns extraction. Grounded against a decompiled `new C(v)` →
     `new C(param_1)`; driver 6/6.
+  - [x] ~~**#37-10c** — render integer-typed constant constructor arguments.~~ Shipped (DD-0044): the
+    placement and heap drivers render a bare integer literal argument as its decimal value via a new
+    `argumentExpr` helper, so `new C(5)` / `new (buf) C(5)` render instead of declining. Gated on
+    `AbstractIntegerDataType` so a pointer-typed constant (a global address) still declines rather than
+    rendering a misleading bare number (never-wrong). The two `argumentExpr` helpers stay per-form twins
+    until a third argument-rendering user earns extraction; compound expressions and typed constants
+    (chars, bools, enums) deferred. Grounded against `new C(5)` → `new C(5)` and `new (buf) C(5)` →
+    `new (param_1) C(5)`; placement 7/7, heap 7/7.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
