@@ -192,6 +192,13 @@ then land the work it unblocks.
     argument. An argument with no printable name (unnamed temporary or bare constant) declines the whole
     hint rather than rendering a gap; constants / compound-expression args are later slices. Grounded
     against a decompiled `new (buf) C(v)` → `new (param_1) C(param_2)`; driver 6/6.
+  - [x] ~~**#37-10b** — thread explicit constructor arguments into the heap-new driver.~~ Shipped
+    (DD-0043): `CppConstructorDriver` recovers the constructor `CALL`'s inputs after the call target (0)
+    and the `this` receiver (1) as the explicit arguments, renders each by its `HighVariable` name, and
+    dispatches them to `renderConstruction`, so `new C(arg)` renders with its argument. Same
+    decline-on-unnamed contract as `#37-10a`; the two argument helpers are duplicated as per-form twins
+    (rule of three) until a third user earns extraction. Grounded against a decompiled `new C(v)` →
+    `new C(param_1)`; driver 6/6.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

@@ -253,6 +253,16 @@ generated from the GitHub Releases UI at sprint close.
   never-wrong contract the receiver rendering holds; rendering constants and compound-expression
   arguments is later `#37-10` work. Grounded against a decompiled `new (buf) C(v)` rendering
   `new (param_1) C(param_2)`; driver 6/6. Design: DD-0042.
+- **Rec 37 `#37-10b` — explicit constructor arguments threaded into the heap-new driver** (Sprint 14,
+  second slice of the `#37-10+` rendering band) — `CppConstructorDriver` now recovers the constructor
+  `CALL`'s inputs after the call target (index 0) and the `this` receiver (index 1) as the explicit
+  arguments, renders each by its `HighVariable` name, and dispatches them to
+  `CppDecompilerHints.renderConstruction`, so `new C(arg)` renders with its argument and a zero-argument
+  constructor still renders `new C()`. An argument with no printable name (an unnamed temporary, or a
+  bare constant) declines the whole hint rather than rendering a gap — the same advisory, never-wrong
+  contract `#37-10a` holds; the two argument helpers are duplicated from the placement driver as honest
+  per-form twins (rule of three) until a third user earns the extraction. Grounded against a decompiled
+  `new C(v)` rendering `new C(param_1)`; driver 6/6. Design: DD-0043.
 
 ### Changed
 

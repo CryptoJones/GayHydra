@@ -85,6 +85,21 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithArgument() throws Exception {
+		HighFunction highFunction = decompileMakeWithArg();
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("constructor argument was not threaded into the rendering", "new C(param_1)",
+			hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");
@@ -175,6 +190,46 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		builder.createEmptyFunction(ctorName, ctorNamespace, conv, CTOR, 1, VoidDataType.dataType,
 			classCPtr);
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 35, classCPtr);
+		builder.disassemble(MAKE, 35, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make(longlong v)} does {@code return new C(v);}
+	 * ({@code p = operator.new(8); C::C(p, v); return p;}), so the constructor {@code CALL} carries the
+	 * explicit argument {@code v} as its third input (after the call target and the {@code this}
+	 * receiver). Grounds the {@code #37-10b} constructor-argument threading.
+	 */
+	private HighFunction decompileMakeWithArg() throws Exception {
+		builder = new ProgramBuilder("ctorArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		// make(longlong v): push rsi; push rdi; mov rsi,rcx (save v); mov ecx,8 (size);
+		//   call op_new; mov rdi,rax (save this); mov rcx,rax (this); mov rdx,rsi (v -> ctor arg1);
+		//   call ctor; mov rax,rdi (return this); pop rdi; pop rsi; ret
+		builder.setBytes(MAKE,
+			"56 57 48 89 ce b9 08 00 00 00 e8 f1 00 00 00 48 89 c7 48 89 c1 48 89 f2 " +
+				"e8 e3 01 00 00 48 89 f8 5f 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit longlong argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new LongLongDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 35, classCPtr,
+			new LongLongDataType());
 		builder.disassemble(MAKE, 35, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);

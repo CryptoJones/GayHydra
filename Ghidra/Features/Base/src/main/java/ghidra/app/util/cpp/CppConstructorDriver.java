@@ -25,8 +25,10 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.HighFunction;
+import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.PcodeOpAST;
+import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.Namespace;
 
 /**
@@ -59,10 +61,18 @@ import ghidra.program.model.symbol.Namespace;
  * </ul>
  *
  * <p>The renderer emits {@code new ClassName(args)} and takes <em>no receiver</em>: a heap {@code new}
- * is the allocation-plus-construction, with no printed {@code this}. <b>Constructor arguments are
- * scoped out of this slice</b> (the renderer is called with an empty list), matching the
- * {@code #37-7b} virtual-call driver: argument recovery and overload resolution are a
- * signature/{@code DataType} concern, the DTM-coupled {@code #37-10+} work, not a recognition one.
+ * is the allocation-plus-construction, with no printed {@code this}. <b>Explicit constructor arguments
+ * are threaded</b> ({@code #37-10b}): the constructor {@code CALL}'s inputs after the call target
+ * (index 0) and the {@code this} receiver (index 1) are its explicit arguments, each rendered by its
+ * {@link HighVariable} name, so {@code new ClassName(arg)} renders with its argument and a zero-argument
+ * constructor still renders {@code new ClassName()}. An argument with no printable name (an unnamed
+ * temporary, or a bare constant, which carries no {@code HighVariable}) declines the whole hint rather
+ * than rendering a gap &mdash; the same advisory, never-wrong contract the {@code #37-10a}
+ * {@link CppPlacementConstructionDriver} holds. (The two small argument helpers are duplicated from the
+ * placement driver rather than extracted: at this second user they are kept as honest per-form twins,
+ * per the DD-0026 rule-of-three convention, until a third user earns the extraction.) Rendering
+ * constants and compound argument expressions is later {@code #37-10} work, as is overload resolution
+ * against the {@code DataType} signature.
  *
  * <p>The pass therefore assumes the demangler analyzer has run — which it has by the time a function
  * decompiles to a {@code HighFunction} in a fully-analyzed program. A not-yet-demangled mangled
@@ -85,6 +95,9 @@ public final class CppConstructorDriver {
 	 * @param rendering the rendered C++ {@code new} expression
 	 */
 	public record RenderedConstruction(Address site, String rendering) {}
+
+	/** A constructor {@code CALL}'s input 0 is the call target; input 1 is the {@code this} receiver. */
+	private static final int THIS_INPUT_INDEX = 1;
 
 	private final CppDecompilerHints renderer;
 	private final CppTypeSystem typeSystem;
@@ -166,8 +179,52 @@ public final class CppConstructorDriver {
 		if (type == null) {
 			return null;
 		}
-		String rendering = renderer.renderConstruction(type, List.of());
+		List<String> argumentExprs = constructorArguments(callSite);
+		if (argumentExprs == null) {
+			return null;
+		}
+		String rendering = renderer.renderConstruction(type, argumentExprs);
 		return new RenderedConstruction(callSite.getSeqnum().getTarget(), rendering);
+	}
+
+	/**
+	 * Recovers the explicit constructor arguments to render between the {@code ClassName(...)}
+	 * parentheses. In the constructor {@code CALL}, input 0 is the call target and input 1 is the
+	 * {@code this} receiver (the allocated storage); the explicit arguments are every input after that,
+	 * in order &mdash; the same layout the {@code #37-10a} placement driver threads.
+	 *
+	 * <p>Each argument is rendered as its {@link HighVariable} name, the same operand rendering the
+	 * receiver forms use. An argument with no printable name (an unnamed temporary, or a bare constant,
+	 * which carries no {@code HighVariable}) declines the whole hint ({@code null}) rather than rendering
+	 * a constructor call with a gap in its argument list. Rendering constants and compound expressions is
+	 * later {@code #37-10} work.
+	 *
+	 * @return the rendered argument expressions in call order (empty for a no-argument constructor), or
+	 *         null if any argument has no printable operand name
+	 */
+	private static List<String> constructorArguments(PcodeOp constructorCall) {
+		List<String> arguments = new ArrayList<>();
+		for (int i = THIS_INPUT_INDEX + 1; i < constructorCall.getNumInputs(); i++) {
+			String argument = operandName(constructorCall.getInput(i));
+			if (argument == null) {
+				return null;
+			}
+			arguments.add(argument);
+		}
+		return arguments;
+	}
+
+	/**
+	 * {@return the printable name of a varnode's {@link HighVariable} (e.g. {@code param_1}), or null if
+	 * it has none or it is blank}
+	 */
+	private static String operandName(Varnode varnode) {
+		HighVariable high = varnode.getHigh();
+		if (high == null) {
+			return null;
+		}
+		String name = high.getName();
+		return (name == null || name.isBlank()) ? null : name;
 	}
 
 	/**
