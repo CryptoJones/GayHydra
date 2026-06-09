@@ -99,9 +99,22 @@ then land the work it unblocks.
     their unit tests deleted outright (no shims); drivers consume `DirectCall` directly, ctor matcher
     delegates recovery + keeps only the fusion walk-back. Recovery coverage consolidated into
     `CppDirectCallRecognizerTest`. Pure structural refactor — behaviour unchanged; 21/21 green.
-  - [ ] remaining three forms (cast / `new[]` / placement) — each a matcher slice + driver slice;
-    `new[]` and placement reuse the construction fusion shape, cast follows the structural `#37-7b`
-    shape.
+  - [x] ~~**`#37-9d-b-1`** — array-construction *matcher*: recover the `new C[n]` allocation shape.~~
+    Shipped (DD-0033): `CppArrayConstructionRecognizer`, the sprint's first **forward** matcher —
+    array `new`'s element type lives forward of the allocation (raw result is `void *`; `C *` appears
+    on the downstream `CAST`), so it anchors on the allocation `CALL`, recovers `(allocationTarget,
+    byteSize, typedResult)`, and walks forward over the single-consumer `CAST`/`COPY` chain to the
+    typed pointer. Recognises the trivial-element shape (no ctor loop); name-blind (operator-new[]
+    classification + count = byteSize/elemSize are the driver's). Grounded on real decompiler p-code
+    (`(C *)operator_new__(0x28)`); reuses `CppDirectCallRecognizer.callTargetAddress`. Matcher 3/3.
+  - [ ] **`#37-9d-b-2`** — array-construction *driver*: classify `allocationTarget` as `operator
+    new[]`, read the element `Structure` off `typedResult`'s pointer type, compute `count = byteSize /
+    element.getLength()`, resolve the `CppClass`, and dispatch to
+    `CppDecompilerHints.renderArrayConstruction` → `new C[5]`.
+  - [ ] remaining two forms (cast / placement) — each a matcher slice + driver slice; placement
+    reuses the construction fusion shape (a ctor on caller-owned storage), cast follows the structural
+    `#37-7b` shape. (Array `new[]` no longer reuses the fusion shape — its trivial-element form is a
+    forward allocation-and-type shape, not a ctor fusion; see DD-0033.)
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.

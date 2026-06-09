@@ -125,6 +125,22 @@ generated from the GitHub Releases UI at sprint close.
   `#37-10+` DTM work), like the virtual-call driver. **Fourth of seven forms
   end-to-end**; with three concrete direct-call copies now extant, the shared
   `CppDirectCallRecognizer` extraction is the next (refactor) commit. Design: DD-0031.
+- **Rec 37 `#37-9d-b-1` — array-construction recognition matcher** (Sprint 14 Step 2) —
+  `CppArrayConstructionRecognizer`, the sprint's first *forward* p-code matcher: where
+  the delete/destructor/constructor forms walk backward from a call's receiver, array
+  `new C[n]`'s element type lives *forward* of the allocation (the raw result is an
+  untyped `void *`; the `C *` type appears on the `CAST` the storage is reinterpreted
+  into). So `recognize(PcodeOp)` anchors on the allocation `CALL`, recovers the target
+  and byte-size argument, and walks forward over the single-consumer `CAST`/`COPY`
+  chain off the result to the typed pointer varnode, returning
+  `(allocationTarget, byteSize, typedResult)`. Recognises the trivial-element shape
+  (allocation + typed use, no ctor loop); the per-element ctor-loop fusion is a later
+  refinement. Name-blind — whether the callee is `operator new[]`, and the element
+  class/count it implies, is the `#37-9d-b-2` driver's job. Grounded in the real
+  decompiler p-code (`(C *)operator_new__(0x28)`) via the Rec 30 harness; verified
+  end-to-end by a harness integration test against a hand-assembled x86-64
+  `new C[5]`. Reuses `CppDirectCallRecognizer.callTargetAddress` for the target read.
+  Design: DD-0033.
 
 ### Changed
 
