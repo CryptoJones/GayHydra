@@ -81,6 +81,19 @@ generated from the GitHub Releases UI at sprint close.
   that classification is left to the `#37-9c-b-2` driver. Verified end-to-end by a
   harness integration test against a hand-assembled x86-64 destructor call. Design:
   DD-0028.
+- **Rec 37 `#37-9c-b-2` — explicit-destructor driver** (Sprint 14 Step 2) —
+  `CppDestructorDriver` walks a `HighFunction`, runs the `#37-9c-b-1` matcher on each
+  direct `CALL`, resolves the recovered call target to a `Function`, reads the
+  destructed class from the callee's `~ClassName` local name (the demangled form
+  Ghidra emits, e.g. `~Image` for `Magick::Image::~Image()`) — not the receiver type,
+  so a base destructor on a derived pointer renders the base's name — resolves that
+  `CppClass` in a `CppTypeSystem`, reads receiver-is-pointer from the receiver
+  `HighVariable`, and dispatches to `CppDecompilerHints.renderDestructorCall`,
+  returning `(site, rendering)` hints. Closes the explicit-destructor recognition
+  loop: a real x86-64 `~C(p)` renders to `param_1->~C()`. Advisory and
+  total-failure-safe (non-destructor callees, unmodelled classes contribute no
+  hint). Third of seven forms end-to-end; the dtor-then-`operator delete` pairing is
+  not yet fused. Design: DD-0029.
 
 ---
 

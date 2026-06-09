@@ -67,10 +67,14 @@ then land the work it unblocks.
     DD-0026's rule-of-three note (the shared `CppDirectCallRecognizer` extraction is earned at
     the third user, the constructor `#37-9b`). Whether the callee is a `~ClassName` destructor
     is the callee's name → left to the driver.
-  - [ ] **`#37-9c-b-2`** — explicit-destructor *driver*: walk the `HighFunction`, classify the
-    recovered callee name as `~ClassName`, resolve that `CppClass` in a `CppTypeSystem`, read
-    receiver-is-pointer from the receiver type, and dispatch to
-    `CppDecompilerHints.renderDestructorCall` (`receiver->~ClassName()`).
+  - [x] ~~**`#37-9c-b-2`** — explicit-destructor *driver*: walk the `HighFunction`, classify
+    the recovered callee name as `~ClassName`, resolve that `CppClass` in a `CppTypeSystem`,
+    read receiver-is-pointer from the receiver type, and dispatch to
+    `CppDecompilerHints.renderDestructorCall`.~~ Shipped (DD-0029): `CppDestructorDriver` renders
+    `param_1->~C()` from a real x86-64 destructor call. Reads the destructed class from the
+    callee's `~ClassName` name (not the receiver type) → authoritative for a base dtor on a
+    derived pointer. Third of seven forms end-to-end; direct-call shape now has two
+    callee-identified users (delete, dtor) → constructor `#37-9b` is the rule-of-three point.
   - [ ] remaining four forms (cast / ctor / `new[]` / placement) — each a matcher slice +
     driver slice; the callee-identified forms (ctor / `new` / placement) reuse the `#37-9f-b`
     direct-call shape, cast follows the structural `#37-7b` shape.
