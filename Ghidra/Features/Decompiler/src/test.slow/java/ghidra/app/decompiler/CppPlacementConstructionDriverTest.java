@@ -447,6 +447,85 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithAddExpressionArgument() throws Exception {
+		// new (param_1) C(v + 7): the ctor's value arg is an unnamed temp defined by INT_ADD of the named
+		// param_2 and the constant 7 (grounded #37-10m), so it renders the binary expression, not UNNAMED.
+		Fixture fixture = placementWithBinaryArgFixture("48 8d 56 07", 4); // lea rdx,[rsi+7]
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a compound add argument must render as the binary expression param_2 + 7",
+			"new (param_1) C(param_2 + 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithBitwiseAndExpressionArgument() throws Exception {
+		// new (param_1) C(v & 7): INT_AND of the named param_2 and the constant 7 renders param_2 & 7.
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 83 e2 07", 7); // mov rdx,rsi; and rdx,7
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a compound bitwise-and argument must render as param_2 & 7",
+			"new (param_1) C(param_2 & 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithShiftLeftExpressionArgument() throws Exception {
+		// new (param_1) C(v << 3): INT_LEFT of the named param_2 and the constant 3 renders param_2 << 3.
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 c1 e2 03", 7); // mov rdx,rsi; shl rdx,3
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a compound shift-left argument must render as param_2 << 3",
+			"new (param_1) C(param_2 << 3)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithArithmeticShiftRightExpressionArgument() throws Exception {
+		// new (param_1) C(v >> 3) on a signed operand: an arithmetic shift right is INT_SRIGHT, whose left
+		// operand is the named param_2 directly (no cast), so it renders param_2 >> 3 (grounded #37-10m).
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 c1 fa 03", 7); // mov rdx,rsi; sar rdx,3
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("an arithmetic shift-right argument must render as param_2 >> 3",
+			"new (param_1) C(param_2 >> 3)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementLogicalShiftRightExpressionArgument() throws Exception {
+		// new (param_1) C(v >> 3) where the decompiler emits a *logical* INT_RIGHT: the signed param_2 is
+		// first CAST to unsigned, so the left operand is a cast temp, not a leaf. Rendering a bare
+		// param_2 >> 3 over the signed operand would silently become an arithmetic shift, so the binary
+		// renderer declines the cast-wrapped operand and the whole hint declines (never-wrong, #37-10m).
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 c1 ea 03", 7); // mov rdx,rsi; shr rdx,3
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a logical shift-right whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
@@ -1034,6 +1113,53 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 32, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 32, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf, longlong v)} doing {@code new (buf) C(v OP k);}, where
+	 * {@code computeHex} is the {@code computeLen}-byte instruction sequence that writes {@code rdx = f(rsi)}
+	 * (the saved argument {@code v}) and so makes the constructor {@code CALL}'s value input an unnamed
+	 * temporary defined by the corresponding arithmetic/bitwise/shift p-code op over the named
+	 * {@code param_2} and a constant. Grounds the {@code #37-10m} compound-expression rendering for the
+	 * placement form. The body is a fixed 24-byte prefix ({@code push rsi; push rdi; mov rsi,rdx;
+	 * mov rdx,rcx; mov ecx,8; call op_new; mov rdi,rax; mov rcx,rax}), the variable {@code computeHex}, the
+	 * 5-byte constructor {@code call} (rel32 recomputed to {@code 483 - computeLen}), and a fixed 6-byte
+	 * suffix ({@code mov rax,rdi; pop rdi; pop rsi; ret}), so the total body length is {@code 35 + computeLen}.
+	 * The placement allocation takes two args ({@code size_t, void* buffer}) exactly as the other placement
+	 * fixtures, so the {@code mov rdx,rcx} forwards {@code buf} into the op_new buffer register.
+	 */
+	private Fixture placementWithBinaryArgFixture(String computeHex, int computeLen) throws Exception {
+		builder = new ProgramBuilder("placementBinArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		int rel = 483 - computeLen;
+		String callHex = String.format("e8 %02x %02x 00 00", rel & 0xff, (rel >> 8) & 0xff);
+		builder.setBytes(MAKE,
+			"56 57 48 89 d6 48 89 ca b9 08 00 00 00 e8 ee 00 00 00 48 89 c7 48 89 c1 " + computeHex +
+				" " + callHex + " 48 89 f8 5f 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit longlong argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new LongLongDataType());
+		int bodyLen = 35 + computeLen;
+		Function make = builder.createEmptyFunction("makeAt", null, conv, MAKE, bodyLen, classCPtr,
+			voidPtr, new LongLongDataType());
+		builder.disassemble(MAKE, bodyLen, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 		return new Fixture(program, make);

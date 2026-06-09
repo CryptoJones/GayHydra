@@ -324,6 +324,21 @@ then land the work it unblocks.
     Grounded against `L"Hi"`/`u"Hi"`/`U"Hi"`, an escaped wide case (`u"A\t\001€"`), and a lone-surrogate
     decline (and placement twins). Placement 30/30, heap 30/30. Next `#37-10` work: compound-expression
     args, plus signature/template/operator rendering.
+  - [x] ~~**#37-10m** — render one-level compound-expression arguments as C++ binary expressions.~~
+    Shipped (DD-0054): a single-operator compound argument (`new C(param_1 + 7)` /
+    `new (buf) C(param_2 << 3)`) now renders instead of declining the unnamed temporary. The arg is an
+    unnamed `HighOther` temp whose `getDef()` is a binary p-code op over a named leaf and a constant
+    (grounded with a multi-op probe). `argumentExpr` is split into `leafExpr` (names, string literals,
+    typed constants) and a new `binaryExpr` rendering `leafExpr(in0) OP leafExpr(in1)` for a grounded
+    opcode→glyph map (`INT_ADD`→`+`, `INT_SUB`→`-`, `INT_MULT`→`*`, `INT_AND`→`&`, `INT_OR`→`|`,
+    `INT_XOR`→`^`, `INT_LEFT`→`<<`, `INT_SRIGHT`→`>>`). Operands are leaves only with no `CAST`/`COPY`
+    peeling, so a logical right shift (`INT_RIGHT`, operand cast to unsigned) and any nested compound
+    cleanly decline rather than risk a wrong arithmetic-vs-logical-shift render; a single operator over
+    two leaves is never precedence-ambiguous (no parens). Helper stays a per-form twin (rule of three).
+    Grounded against `param + 7` / `param & 7` / `param << 3` / arithmetic `param >> 3` and a
+    logical-shift decline (and placement twins). Placement 35/35, heap 35/35. Next `#37-10` work:
+    division/remainder, comparison and unary operators, nested compounds with parens, plus
+    signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

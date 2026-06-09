@@ -411,6 +411,22 @@ generated from the GitHub Releases UI at sprint close.
   escaped wide case (`u"A\t\001€"`), and a lone-surrogate decline (and their placement twins); placement
   30/30, heap 30/30. Design: DD-0053.
 
+- **Rec 37 `#37-10m` — one-level compound-expression constructor arguments rendered as C++ binary
+  expressions** (Sprint 14, thirteenth slice of the `#37-10+` rendering band) — the placement and heap
+  `new` drivers now render a single-operator compound argument (`new C(param_1 + 7)` /
+  `new (buf) C(param_2 << 3)`) instead of declining the unnamed temporary. Such an argument is an unnamed
+  `HighOther` temp whose `getDef()` is a binary p-code op over a named leaf and a constant (grounded with
+  a multi-op probe); `argumentExpr` is split into a `leafExpr` (the former body: names, string literals,
+  typed constants) and a new `binaryExpr` that renders `leafExpr(in0) OP leafExpr(in1)` for a grounded
+  opcode→glyph map (`INT_ADD`→`+`, `INT_SUB`→`-`, `INT_MULT`→`*`, `INT_AND`→`&`, `INT_OR`→`|`,
+  `INT_XOR`→`^`, `INT_LEFT`→`<<`, `INT_SRIGHT`→`>>`). Operands are leaves only with no `CAST`/`COPY`
+  peeling, so a logical right shift (`INT_RIGHT`, whose operand is first cast to unsigned) and any nested
+  compound cleanly decline rather than risk a semantically-wrong arithmetic-vs-logical-shift render — a
+  single operator over two leaves is never precedence-ambiguous, so no parens are emitted. The renderer
+  stays a per-form twin (rule of three). Grounded against decompiled `param + 7` / `param & 7` /
+  `param << 3` / arithmetic `param >> 3` and a logical-shift decline (and their placement twins);
+  placement 35/35, heap 35/35. Design: DD-0054.
+
 ### Changed
 
 - **Rec 37 `#37-9b` heap matcher tightened to partition against placement** (Sprint 14 Step 2) —

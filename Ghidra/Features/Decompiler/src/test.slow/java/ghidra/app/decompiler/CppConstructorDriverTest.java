@@ -505,6 +505,94 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithAddExpressionArgument() throws Exception {
+		// new C(v + 7): the ctor's value arg is an unnamed temp defined by INT_ADD of the named param_1
+		// and the constant 7 (grounded #37-10m), so it renders the binary expression, not UNNAMED.
+		HighFunction highFunction = decompileMakeWithBinaryArg("48 8d 56 07", 4); // lea rdx,[rsi+7]
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound add argument must render as the binary expression param_1 + 7",
+			"new C(param_1 + 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithBitwiseAndExpressionArgument() throws Exception {
+		// new C(v & 7): INT_AND of the named param_1 and the constant 7 renders param_1 & 7.
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 83 e2 07", 7); // mov rdx,rsi; and rdx,7
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound bitwise-and argument must render as param_1 & 7", "new C(param_1 & 7)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithShiftLeftExpressionArgument() throws Exception {
+		// new C(v << 3): INT_LEFT of the named param_1 and the constant 3 renders param_1 << 3.
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 c1 e2 03", 7); // mov rdx,rsi; shl rdx,3
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound shift-left argument must render as param_1 << 3", "new C(param_1 << 3)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithArithmeticShiftRightExpressionArgument() throws Exception {
+		// new C(v >> 3) on a signed operand: an arithmetic shift right is INT_SRIGHT, whose left operand
+		// is the named param_1 directly (no cast), so it renders param_1 >> 3 (grounded #37-10m).
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 c1 fa 03", 7); // mov rdx,rsi; sar rdx,3
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("an arithmetic shift-right argument must render as param_1 >> 3",
+			"new C(param_1 >> 3)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesLogicalShiftRightExpressionArgument() throws Exception {
+		// new C(v >> 3) where the decompiler emits a *logical* INT_RIGHT: the signed param_1 is first
+		// CAST to unsigned, so the left operand is a cast temp, not a leaf. Rendering a bare param_1 >> 3
+		// over the signed operand would silently become an arithmetic shift, so the binary renderer
+		// declines the cast-wrapped operand and the whole hint declines (never-wrong, grounded #37-10m).
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 c1 ea 03", 7); // mov rdx,rsi; shr rdx,3
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a logical shift-right whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");
@@ -1062,6 +1150,51 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 			ptrParamType);
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 45, classCPtr);
 		builder.disassemble(MAKE, 45, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make(longlong v)} does {@code return new C(v OP k);}, where
+	 * {@code computeHex} is the {@code computeLen}-byte instruction sequence that writes {@code rdx = f(rsi)}
+	 * (the saved argument {@code v}) and so makes the constructor {@code CALL}'s value input an unnamed
+	 * temporary defined by the corresponding arithmetic/bitwise/shift p-code op over the named
+	 * {@code param_1} and a constant. Grounds the {@code #37-10m} compound-expression rendering. The body is
+	 * a fixed 21-byte prefix ({@code push rsi; push rdi; mov rsi,rcx; mov ecx,8; call op_new; mov rdi,rax;
+	 * mov rcx,rax}), the variable {@code computeHex}, the 5-byte constructor {@code call} (rel32 recomputed
+	 * to {@code 486 - computeLen}), and a fixed 6-byte suffix ({@code mov rax,rdi; pop rdi; pop rsi; ret}),
+	 * so the total body length is {@code 32 + computeLen}.
+	 */
+	private HighFunction decompileMakeWithBinaryArg(String computeHex, int computeLen) throws Exception {
+		builder = new ProgramBuilder("ctorBinArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		int rel = 486 - computeLen;
+		String callHex = String.format("e8 %02x %02x 00 00", rel & 0xff, (rel >> 8) & 0xff);
+		builder.setBytes(MAKE,
+			"56 57 48 89 ce b9 08 00 00 00 e8 f1 00 00 00 48 89 c7 48 89 c1 " + computeHex + " " +
+				callHex + " 48 89 f8 5f 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit longlong argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new LongLongDataType());
+		int bodyLen = 32 + computeLen;
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, bodyLen, classCPtr,
+			new LongLongDataType());
+		builder.disassemble(MAKE, bodyLen, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 

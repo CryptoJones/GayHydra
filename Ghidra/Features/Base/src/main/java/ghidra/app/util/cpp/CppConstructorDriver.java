@@ -87,8 +87,10 @@ import ghidra.program.model.symbol.Namespace;
  * same advisory, never-wrong contract the {@code #37-10a} {@link CppPlacementConstructionDriver} holds.
  * (The argument helpers are duplicated from the placement driver rather than extracted: they are kept as
  * honest per-form twins, per the DD-0026 rule-of-three convention, until a third user earns the
- * extraction.) Rendering compound argument expressions and the remaining typed constants (chars, enum
- * names) is later {@code #37-10} work, as is overload resolution against the {@code DataType} signature.
+ * extraction.) A one-level compound argument also renders &mdash; a two-operand arithmetic, bitwise, or
+ * shift expression over leaf operands such as {@code new C(param_1 + 7)} ({@code #37-10m},
+ * {@link #binaryExpr}). Nested compounds, division/remainder/comparison/unary operators, and overload
+ * resolution against the {@code DataType} signature are later {@code #37-10} work.
  *
  * <p>The pass therefore assumes the demangler analyzer has run — which it has by the time a function
  * decompiles to a {@code HighFunction} in a fully-analyzed program. A not-yet-demangled mangled
@@ -220,7 +222,8 @@ public final class CppConstructorDriver {
 	 * which carries no {@code HighVariable}) declines the whole hint ({@code null}) rather than rendering
 	 * a constructor call with a gap in its argument list. The {@code program} is threaded through so a
 	 * {@code const char*} string-pointer argument can be traced to its global address and read as a string
-	 * literal ({@code #37-10k}). Rendering compound expressions is later {@code #37-10} work.
+	 * literal ({@code #37-10k}), and a one-level compound argument renders as a binary expression
+	 * ({@code #37-10m}).
 	 *
 	 * @return the rendered argument expressions in call order (empty for a no-argument constructor), or
 	 *         null if any argument has no printable operand name
@@ -238,12 +241,32 @@ public final class CppConstructorDriver {
 	}
 
 	/**
-	 * Renders one constructor-argument varnode as a C++ expression: a named {@link HighVariable}'s name
-	 * (e.g. {@code param_1}), a {@code bool} constant as {@code true}/{@code false} ({@code #37-10e}), a
-	 * {@code char} constant as a character literal (e.g. {@code 'A'}, {@code #37-10f}), an {@code enum}
-	 * constant as its qualified member name (e.g. {@code Color::GREEN}, {@code #37-10g}), or an
-	 * integer-typed constant's decimal value (e.g. {@code 5}, or {@code -1} for a negative argument), so a
-	 * literal argument like {@code new C(5)} renders rather than declining.
+	 * Renders one constructor-argument varnode as a C++ expression. An argument is first tried as a
+	 * <em>leaf</em> ({@link #leafExpr}) &mdash; a named variable, a string literal, or a typed constant
+	 * &mdash; and, failing that, as a two-operand <em>binary expression</em> ({@link #binaryExpr}) such as
+	 * {@code param_1 + 7} ({@code #37-10m}). An argument that is neither declines the whole hint
+	 * ({@code null}), keeping the never-wrong contract.
+	 *
+	 * @return the rendered argument expression, or null if it is neither a renderable leaf nor a
+	 *         renderable binary expression
+	 */
+	private static String argumentExpr(Varnode varnode, Program program) {
+		String leaf = leafExpr(varnode, program);
+		if (leaf != null) {
+			return leaf;
+		}
+		return binaryExpr(varnode, program);
+	}
+
+	/**
+	 * Renders one <em>leaf</em> constructor-argument varnode as a C++ expression: a named
+	 * {@link HighVariable}'s name (e.g. {@code param_1}), a {@code bool} constant as
+	 * {@code true}/{@code false} ({@code #37-10e}), a {@code char} constant as a character literal (e.g.
+	 * {@code 'A'}, {@code #37-10f}), an {@code enum} constant as its qualified member name (e.g.
+	 * {@code Color::GREEN}, {@code #37-10g}), or an integer-typed constant's decimal value (e.g. {@code 5},
+	 * or {@code -1} for a negative argument), so a literal argument like {@code new C(5)} renders rather
+	 * than declining. A leaf is a single named variable, string literal, or constant &mdash; it carries no
+	 * operator; a compound operand is rendered by {@link #binaryExpr}.
 	 *
 	 * <p>A constant is rendered only when its {@link HighVariable} datatype is a {@link BooleanDataType},
 	 * a {@link CharDataType}, an {@link Enum}, or an {@link AbstractIntegerDataType}: a {@code bool}
@@ -269,16 +292,16 @@ public final class CppConstructorDriver {
 	 * unnamed {@code char *}/{@code wchar_t *}/{@code char16_t *}/{@code char32_t *} temporary whose
 	 * definition copies a global address, so it is traced to that address and read as a narrow
 	 * {@code "..."} or prefixed wide {@code L"..."}/{@code u"..."}/{@code U"..."} string literal
-	 * ({@code #37-10k}, {@code #37-10l}). An argument that is neither named, a string pointer, nor a
+	 * ({@code #37-10k}, {@code #37-10l}). A leaf that is neither named, a string pointer, nor a
 	 * boolean/char/enum/integer constant (an unnamed non-constant temporary that is not a readable string
-	 * pointer, or a non-integer constant) declines the whole hint ({@code null}). Rendering compound
-	 * expressions is later {@code #37-10} work. (Duplicated from the placement driver as an honest
-	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 * pointer, or a non-integer constant) returns {@code null}, leaving the caller to try a binary
+	 * expression. (Duplicated from the placement driver as an honest per-form twin, per the DD-0026
+	 * rule-of-three convention, until a third user earns the extraction.)
 	 *
-	 * @return the rendered argument expression, or null if it is neither a named variable, a narrow or
-	 *         wide string pointer, nor a boolean/char/enum/integer-typed constant
+	 * @return the rendered leaf expression, or null if it is neither a named variable, a narrow or wide
+	 *         string pointer, nor a boolean/char/enum/integer-typed constant
 	 */
-	private static String argumentExpr(Varnode varnode, Program program) {
+	private static String leafExpr(Varnode varnode, Program program) {
 		String name = operandName(varnode);
 		if (name != null) {
 			return name;
@@ -319,6 +342,80 @@ public final class CppConstructorDriver {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * {@return the rendered C++ binary expression for a compound constructor argument (e.g.
+	 * {@code param_1 + 7}, {@code param_1 << 3}), or null when the argument is not a recognised two-operand
+	 * binary expression over two renderable leaves}
+	 *
+	 * <p>A compound argument is <em>not</em> named and is not a constant: the decompiler reaches the
+	 * {@code CALL} with an unnamed temporary whose {@link Varnode#getDef() definition} is the arithmetic,
+	 * bitwise, or shift p-code op that computed it (grounded: {@code new C(v + 7)} arrives as an
+	 * {@code UNNAMED} {@code HighOther} defined by {@code INT_ADD} of the named {@code param_1} and the
+	 * constant {@code 7}). This helper renders that op as {@code left OP right} where {@code OP} is the
+	 * C++ glyph for the opcode ({@link #binaryOperator}) and each operand is a <em>leaf</em>
+	 * ({@link #leafExpr}). Both operands are rendered as leaves only &mdash; a leaf carries no operator, so
+	 * the single-operator result needs no parentheses and is never precedence-ambiguous &mdash; and an
+	 * operand that is itself a compound (or any unnameable temporary) makes {@code leafExpr} decline, so
+	 * the whole hint declines rather than guess at nesting or parenthesisation. This keeps the never-wrong
+	 * contract while rendering the common one-level compound shapes ({@code #37-10m}).
+	 *
+	 * <p>Only a two-input op is considered, and only one whose opcode {@link #binaryOperator} maps to a
+	 * glyph; any other definition declines. A deliberately declined case is a <em>logical</em> right shift
+	 * ({@code INT_RIGHT}) whose left operand the decompiler wrapped in a {@code CAST} to an unsigned type:
+	 * peeling that cast and rendering a bare {@code param_1 >> 3} over a signed operand would silently
+	 * become an <em>arithmetic</em> shift, so the cast-wrapped operand is not a leaf, {@code leafExpr}
+	 * declines it, and the hint declines &mdash; faithful over complete. An <em>arithmetic</em> right shift
+	 * ({@code INT_SRIGHT}) carries its operand directly and renders. (Duplicated from the placement driver
+	 * as an honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
+	 * extraction.)
+	 */
+	private static String binaryExpr(Varnode varnode, Program program) {
+		PcodeOp def = varnode.getDef();
+		if (def == null || def.getNumInputs() != 2) {
+			return null;
+		}
+		String operator = binaryOperator(def.getOpcode());
+		if (operator == null) {
+			return null;
+		}
+		String left = leafExpr(def.getInput(0), program);
+		if (left == null) {
+			return null;
+		}
+		String right = leafExpr(def.getInput(1), program);
+		if (right == null) {
+			return null;
+		}
+		return left + " " + operator + " " + right;
+	}
+
+	/**
+	 * {@return the C++ operator glyph for a binary integer p-code opcode (e.g. {@code +} for
+	 * {@code INT_ADD}, {@code >>} for {@code INT_RIGHT}/{@code INT_SRIGHT}), or null when the opcode is not
+	 * one of the recognised arithmetic, bitwise, or shift operators}
+	 *
+	 * <p>The mapping is grounded over the opcodes the decompiler emits for the corresponding C operations
+	 * ({@code #37-10m}): {@code INT_ADD}/{@code INT_SUB}/{@code INT_MULT} for {@code + - *},
+	 * {@code INT_AND}/{@code INT_OR}/{@code INT_XOR} for {@code & | ^}, {@code INT_LEFT} for {@code <<}, and
+	 * both the logical {@code INT_RIGHT} and the arithmetic {@code INT_SRIGHT} for {@code >>} (the source
+	 * signedness, not the glyph, distinguishes them). Division, remainder, comparison, and unary operators
+	 * are not yet mapped and decline. (Duplicated from the placement driver as an honest per-form twin, per
+	 * the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 */
+	private static String binaryOperator(int opcode) {
+		return switch (opcode) {
+			case PcodeOp.INT_ADD -> "+";
+			case PcodeOp.INT_SUB -> "-";
+			case PcodeOp.INT_MULT -> "*";
+			case PcodeOp.INT_AND -> "&";
+			case PcodeOp.INT_OR -> "|";
+			case PcodeOp.INT_XOR -> "^";
+			case PcodeOp.INT_LEFT -> "<<";
+			case PcodeOp.INT_RIGHT, PcodeOp.INT_SRIGHT -> ">>";
+			default -> null;
+		};
 	}
 
 	/**
