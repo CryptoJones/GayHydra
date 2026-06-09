@@ -477,8 +477,17 @@ public final class CppConstructorDriver {
 	}
 
 	/**
-	 * {@return the printable name of a varnode's {@link HighVariable} (e.g. {@code param_1}), or null if
-	 * it has none or it is blank}
+	 * {@return the printable source name of a varnode's {@link HighVariable} (e.g. {@code param_1}), or
+	 * null if it has no real name}
+	 *
+	 * <p>A varnode with no backing symbol is a {@code HighOther}, whose {@link HighVariable#getName()}
+	 * returns the sentinel {@code "UNNAMED"} (set in {@code HighOther} unless a symbol resolves it). That
+	 * sentinel is not a source name: a string-pointer or compound-expression argument that the decompiler
+	 * could not name reaches the call as such an {@code UNNAMED} {@code HighOther}, and rendering its name
+	 * verbatim would emit the misleading {@code new C(UNNAMED)}. Treating {@code "UNNAMED"} (and a
+	 * null/blank name) as no-name makes the whole hint decline instead, keeping the never-wrong contract
+	 * ({@code #37-10j}); rendering the underlying string literal / compound expression is later
+	 * {@code #37-10} work.
 	 */
 	private static String operandName(Varnode varnode) {
 		HighVariable high = varnode.getHigh();
@@ -486,7 +495,10 @@ public final class CppConstructorDriver {
 			return null;
 		}
 		String name = high.getName();
-		return (name == null || name.isBlank()) ? null : name;
+		if (name == null || name.isBlank() || name.equals("UNNAMED")) {
+			return null;
+		}
+		return name;
 	}
 
 	/**

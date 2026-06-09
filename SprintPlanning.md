@@ -281,6 +281,20 @@ then land the work it unblocks.
     extraction. Completes the scalar-literal story (integer/bool/char/enum/wide-char/float). Grounded
     against `new C(2.5f)`/`new C(2.5)` (and placement twins); placement 22/22, heap 22/22. Next `#37-10`
     work: compound argument expressions, and signature/template/operator rendering.
+  - [x] ~~**#37-10j** — decline arguments backed by Ghidra's `UNNAMED` placeholder (never-wrong fix).~~
+    Shipped (DD-0051): grounding the next argument shape (a `const char*` string pointer) with a probe
+    surfaced a leak. A string-pointer arg is **not** a constant varnode — the decompiler resolves the
+    global address into a typed `char *` temp with no backing symbol, whose `HighVariable` is a `HighOther`
+    carrying the sentinel name `"UNNAMED"` (set in `HighOther` unless a symbol resolves it). `operandName`
+    returned that sentinel verbatim, so the driver rendered the misleading `new C(UNNAMED)` instead of
+    declining. `operandName` (per-form twin in both drivers) now treats `"UNNAMED"` — alongside a
+    null/blank name — as no-name, so an argument the decompiler cannot name (string pointer, or a
+    compound-expression result temp) declines the whole hint, restoring never-wrong. Matching the literal
+    sentinel (not `instanceof HighOther`) is deliberate: a `HighOther` can carry a real symbol name and
+    must still render by name. Decline confirmed first as a failing assertion against the pre-fix
+    `new C(UNNAMED)`, then made green. Placement 23/23, heap 23/23. Next `#37-10` work: faithfully
+    *rendering* string-literal args (trace the pointer + read the NUL-terminated bytes) and compound
+    expressions, plus signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

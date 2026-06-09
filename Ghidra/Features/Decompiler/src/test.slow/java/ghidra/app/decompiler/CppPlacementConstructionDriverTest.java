@@ -304,6 +304,23 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testDeclinesUnnamedComputedArgument() throws Exception {
+		// A const char* string-pointer argument is not a constant varnode: the decompiler resolves the
+		// global address into a typed pointer temp with no backing symbol, whose HighVariable is a
+		// HighOther carrying Ghidra's "UNNAMED" placeholder name. Rendering that placeholder text would
+		// emit new (param_1) C(UNNAMED); the whole hint must decline instead (never-wrong) until a later
+		// slice renders the string literal / compound expression.
+		Fixture fixture = placementWithStringPtrArgFixture();
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an UNNAMED-placeholder argument must yield no hints", hints.isEmpty());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
@@ -834,6 +851,50 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 37, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 37, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C("Hi")} where the constructor takes a
+	 * {@code char *}, so the constructor {@code CALL} carries a pointer to a global NUL-terminated string.
+	 * Grounds the {@code #37-10j} never-wrong fix: a string-pointer argument is <em>not</em> a constant
+	 * varnode — the decompiler resolves the global address ({@code 0x402000}, loaded via
+	 * {@code mov rdx,imm64}) into a typed {@code char *} temp with no backing symbol, whose
+	 * {@link ghidra.program.model.pcode.HighVariable} is a {@code HighOther} carrying the {@code "UNNAMED"}
+	 * placeholder name. The body is 32 bytes: the {@code #37-10c} fixture's 5-byte {@code mov edx,imm32}
+	 * becomes a 10-byte {@code mov rdx,imm64}, so the constructor-call displacement is recomputed to
+	 * {@code e1 01 00 00}.
+	 */
+	private Fixture placementWithStringPtrArgFixture() throws Exception {
+		builder = new ProgramBuilder("placementStringPtrArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		builder.createMemory("data", "0x402000", 0x100);
+		builder.setBytes("0x402000", "48 69 00", false); // "Hi\0"
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 48 ba " +
+				"00 20 40 00 00 00 00 00 e8 e1 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		DataType charPtr = new PointerDataType(new CharDataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit char* argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr, charPtr);
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 32, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 32, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 		return new Fixture(program, make);

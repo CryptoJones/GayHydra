@@ -361,6 +361,19 @@ generated from the GitHub Releases UI at sprint close.
   never-wrong contract. The float branch stays a per-form twin (rule of three) until a third
   argument-rendering user earns the extraction. Grounded against decompiled `new C(2.5f)`/`new C(2.5)`
   (and their placement twins); placement 22/22, heap 22/22. Design: DD-0050.
+- **Rec 37 `#37-10j` — decline constructor arguments backed by Ghidra's `UNNAMED` placeholder**
+  (Sprint 14, tenth slice of the `#37-10+` rendering band) — a never-wrong fix in the placement and heap
+  `new` drivers. A string-pointer (`const char*`) argument is not a constant varnode: the decompiler
+  resolves the global string address into a typed `char *` temp with no backing symbol, whose
+  `HighVariable` is a `HighOther` carrying the sentinel name `"UNNAMED"`. `operandName` returned that
+  sentinel verbatim, so the driver rendered the misleading `new C(UNNAMED)` / `new (param_1) C(UNNAMED)`
+  instead of declining. `operandName` (per-form twin in both drivers) now treats `"UNNAMED"` — alongside a
+  null/blank name — as no-name, so an argument the decompiler cannot name (a string pointer, or a
+  compound-expression result temporary) declines the whole hint, restoring the never-wrong contract.
+  Matching the literal sentinel (rather than `instanceof HighOther`) is deliberate: a `HighOther` can carry
+  a real symbol name and must still render by name; only the placeholder denotes "no name." Grounded with a
+  throwaway probe; the decline was confirmed first as a failing assertion against the pre-fix
+  `new C(UNNAMED)` rendering, then made green. Placement 23/23, heap 23/23. Design: DD-0051.
 
 ### Changed
 
