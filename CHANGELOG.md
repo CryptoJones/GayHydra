@@ -211,6 +211,15 @@ generated from the GitHub Releases UI at sprint close.
   recognition is complete (seven of seven).** Advisory and total-failure-safe (unmodelled
   classes, non-`operator new` allocations, heap `new`, and unnamed buffers contribute no
   hint); constructor arguments scoped out to the `#37-10+` DTM work. Design: DD-0038.
+- **Rec 37 `#37-5-1` — MSVC RTTI per-descriptor base decoder** (Sprint 14 Step 2, first slice of
+  PR #37-5 the MSVC `CppRttiAnalyzer`) — `CppMsvcRttiDecoder.decodeBase(Rtti1Model)` turns one MSVC
+  `RTTIBaseClassDescriptor` into one ABI-neutral `CppRttiFeeder.BaseSpec`: base name from the type
+  descriptor's demangled name (e.g. `Base`, the form `CppTypeSystem` keys on), offset from `mdisp`,
+  and public-ness from the `BCD_PRIVORPROTBASE` (`0x04`) attribute bit. Non-virtual bases only — a
+  virtual base (`pdisp != -1`), whose offset needs the runtime vbtable, is declined and deferred to
+  the program-scanning analyzer slice. Pure decode (reads only laid-down models, no program scan),
+  total-failure-safe. Grounded against the real `Base`/`Shape`/`Circle` MSVC RTTI fixtures; decoder
+  5/5. Design: DD-0039.
 
 ### Changed
 

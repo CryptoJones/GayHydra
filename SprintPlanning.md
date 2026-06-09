@@ -163,7 +163,18 @@ then land the work it unblocks.
       driver (duplicated as per-form twins, not yet rule-of-three); buffer rendered from its
       `HighVariable` name; ctor args scoped out to `#37-10+`. Driver 5/5. **Rec 37 recognition is now
       seven-of-seven end-to-end.**
-- [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
+- [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped). Sliced small:
+  - [x] ~~**#37-5-1** — per-descriptor base decoder: one `RTTIBaseClassDescriptor` (`Rtti1Model`) →
+    one `CppRttiFeeder.BaseSpec`.~~ Shipped (DD-0039): `CppMsvcRttiDecoder.decodeBase` — base name
+    from the type descriptor's demangled name, offset from `mdisp`, public-ness from the
+    `BCD_PRIVORPROTBASE` (`0x04`) attribute bit; non-virtual bases only (virtual `pdisp != -1`
+    declined, offset needs the vbtable). Pure decode, total-failure-safe, grounded against the real
+    `Base`/`Shape`/`Circle` MSVC RTTI fixtures. Decoder 5/5.
+  - [ ] **#37-5-2** — class decoder: RTTI3 (`RTTIClassHierarchyDescriptor`) → derived name +
+    direct-base `List<BaseSpec>`, walking the RTTI2 base-class array (skip self at index 0,
+    distinguish direct from transitive bases).
+  - [ ] **#37-5-3** — program-scanning analyzer/driver: find the MSVC RTTI structures and feed
+    `CppRttiFeeder.feedClass`.
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
 
