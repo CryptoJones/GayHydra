@@ -125,15 +125,26 @@ then land the work it unblocks.
     recoverable adjustment). Class-blind; class resolution + direction-vs-edge + source-expr rendering
     left to the driver. Grounded on real decompiler p-code (`(Base *)&d->field_0x10` /
     `(Derived *)(b + -2L)`). Matcher 4/4.
-  - [ ] **`#37-8b-2`** — base-cast *driver*: read source/target classes off the recovered varnodes'
-    pointer types, resolve them in a `CppTypeSystem`, classify direction from the offset sign (derived
-    = source for an upcast, target for a downcast), render the source expression, and dispatch to
+  - [x] ~~**`#37-8b-2`** — base-cast *driver*: read source/target classes off the recovered varnodes'
+    pointer types, classify direction from the offset sign, resolve the derived class, and dispatch to
     `CppDecompilerHints.renderUpcast` / `renderDowncast` → `static_cast<Base*>(d)` /
-    `static_cast<Derived*>(b)`.
+    `static_cast<Derived*>(b)`.~~ Shipped (DD-0036): `CppBaseCastDriver` renders both directions from a
+    real x86-64 cast. Classes read off the recovered varnodes' pointer types (no callee to name them);
+    direction from the offset sign (derived = source for an upcast, target for a downcast); source-expr
+    from the source pointer's `HighVariable` name. Dispatches **only** when the derived class has a
+    non-virtual base edge at the offset, so the renderer's neutral `src + offset` fallback is never
+    emitted as a hint. **Sixth** of seven forms end-to-end. Non-virtual single base offsets only.
+    Driver 5/5.
   - [ ] remaining form (placement `#37-9e-b`) — a matcher slice + driver slice; placement reuses the
     construction fusion shape (a ctor on caller-owned storage). (Array `new[]` and cast no longer reuse
     the fusion shape — array is a forward allocation-and-type shape, cast is a forward
-    pointer-adjustment shape; see DD-0033, DD-0035.)
+    pointer-adjustment shape; see DD-0033, DD-0035.) **Feasibility note:** the standard placement
+    `new (buf) C()` elides `operator new(size_t, void*)` (it just returns its buffer arg) and so
+    compiles to a bare ctor call on caller-owned storage — structurally indistinguishable from an
+    ordinary in-place / stack construction, which the `#37-9b` ctor matcher deliberately declines. The
+    recoverable placement shape is the *non-elided* two-call form (a real placement `operator new`
+    taking size+buffer whose result feeds the ctor receiver); ground this empirically before writing
+    the matcher.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.

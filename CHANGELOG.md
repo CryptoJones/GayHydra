@@ -171,6 +171,22 @@ generated from the GitHub Releases UI at sprint close.
   classification, and source-expression rendering are the `#37-8b-2` driver's job.
   Verified end-to-end against hand-assembled x86-64 up- and down-casts (matcher 4/4).
   Design: DD-0035.
+- **Rec 37 `#37-8b-2` — base-cast driver** (Sprint 14 Step 2) — `CppBaseCastDriver`
+  walks a `HighFunction`, runs the `#37-8b-1` matcher on each `CAST`, reads the
+  source/target classes off the recovered varnodes' pointer types (one pointer level
+  stripped — a cast has no callee to name a class), takes the cast direction from the
+  recovered offset's sign (positive upcast / negative downcast), picks the derived class
+  accordingly (source for an upcast, target for a downcast), resolves it in a
+  `CppTypeSystem`, renders the source pointer's `HighVariable` name as the source
+  expression, and dispatches to `CppDecompilerHints.renderUpcast` / `renderDowncast`,
+  returning `(site, rendering)` hints. Dispatches **only** when the derived class
+  genuinely has a non-virtual base edge at the offset, so the renderer's neutral
+  `src + offset` fallback is never emitted as a hint (the driver's emit policy vs the
+  renderer's defensive fallback). Closes the cast loop: a real x86-64 `+0x10` upcast
+  renders `static_cast<Base*>(param_1)`, the symmetric `-0x10` downcast renders
+  `static_cast<Derived*>(param_1)`. **Sixth of seven forms end-to-end**; advisory and
+  total-failure-safe (unmodelled classes, offsets matching no base edge contribute no
+  hint). Non-virtual single base offsets only. Design: DD-0036.
 
 ### Changed
 
