@@ -54,10 +54,14 @@ import ghidra.program.model.symbol.Namespace;
  * driver rather than extracted: at this second user they are kept as honest per-form twins, per the
  * DD-0026 rule-of-three convention, until a third user earns the extraction.)
  *
- * <p><b>Constructor arguments are scoped out of this slice</b> (the renderer is called with an empty
- * list), matching the heap and virtual-call drivers: argument recovery and overload resolution are a
- * signature/{@code DataType} concern, the DTM-coupled {@code #37-10+} work, not a recognition one. A
- * zero-argument placement construction renders {@code new (buf) ClassName()}.
+ * <p><b>Explicit constructor arguments are threaded</b> ({@code #37-10a}): the constructor {@code CALL}'s
+ * inputs after the call target (index 0) and the {@code this} receiver (index 1) are its explicit
+ * arguments, each rendered by its {@link HighVariable} name, so {@code new (buf) ClassName(arg)} renders
+ * with its argument. A zero-argument constructor still renders {@code new (buf) ClassName()}. An argument
+ * with no printable name (an unnamed temporary, or a bare constant, which carries no {@code HighVariable})
+ * declines the whole hint rather than rendering a gap; rendering constants and compound argument
+ * expressions is later {@code #37-10} work, as is overload resolution against the {@code DataType}
+ * signature.
  *
  * <p><b>Advisory, never wrong.</b> Like the matcher and renderer it sits between, the driver is
  * additive and total-failure-safe: a construction whose constructor target resolves to no function or
@@ -77,6 +81,9 @@ public final class CppPlacementConstructionDriver {
 	 * @param rendering the rendered C++ placement-{@code new} expression
 	 */
 	public record RenderedPlacement(Address site, String rendering) {}
+
+	/** A constructor {@code CALL}'s input 0 is the call target; input 1 is the {@code this} receiver. */
+	private static final int THIS_INPUT_INDEX = 1;
 
 	private final CppDecompilerHints renderer;
 	private final CppTypeSystem typeSystem;
@@ -163,8 +170,42 @@ public final class CppPlacementConstructionDriver {
 		if (type == null) {
 			return null;
 		}
-		String rendering = renderer.renderPlacementConstruction(type, placementExpr, List.of());
+		List<String> argumentExprs = constructorArguments(callSite);
+		if (argumentExprs == null) {
+			return null;
+		}
+		String rendering =
+			renderer.renderPlacementConstruction(type, placementExpr, argumentExprs);
 		return new RenderedPlacement(callSite.getSeqnum().getTarget(), rendering);
+	}
+
+	/**
+	 * Recovers the explicit constructor arguments to render between the {@code ClassName(...)}
+	 * parentheses. In the constructor {@code CALL}, input 0 is the call target and input 1 is the
+	 * {@code this} receiver (the placement buffer); the explicit arguments are every input after that,
+	 * in order &mdash; grounded against a decompiled placement {@code new (buf) C(arg)} whose
+	 * constructor {@code CALL} carries the argument as its third input.
+	 *
+	 * <p>Each argument is rendered as its {@link HighVariable} name, the same operand rendering the
+	 * buffer/receiver uses. An argument with no printable name (an unnamed temporary, or a bare
+	 * constant, which carries no {@code HighVariable}) declines the whole hint ({@code null}) rather
+	 * than rendering a constructor call with a gap in its argument list &mdash; the same advisory,
+	 * never-wrong contract the receiver rendering holds. Rendering constants and compound expressions
+	 * is later {@code #37-10} work.
+	 *
+	 * @return the rendered argument expressions in call order (empty for a no-argument constructor), or
+	 *         null if any argument has no printable operand name
+	 */
+	private static List<String> constructorArguments(PcodeOp constructorCall) {
+		List<String> arguments = new ArrayList<>();
+		for (int i = THIS_INPUT_INDEX + 1; i < constructorCall.getNumInputs(); i++) {
+			String argument = operandName(constructorCall.getInput(i));
+			if (argument == null) {
+				return null;
+			}
+			arguments.add(argument);
+		}
+		return arguments;
 	}
 
 	/**

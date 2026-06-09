@@ -80,6 +80,20 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithArgument() throws Exception {
+		Fixture fixture = placementWithArgFixture();
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("constructor argument was not threaded into the rendering",
+			"new (param_1) C(param_2)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesWhenClassNotModelled() throws Exception {
 		Fixture fixture = placementFixture("operator.new");
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
@@ -174,6 +188,47 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 22, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 22, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf, longlong v)} doing {@code new (buf) C(v)}: the placement
+	 * allocation feeds {@code C::C(this, v)}, so the constructor {@code CALL} carries the explicit
+	 * argument {@code v} as its third input (after the call target and the {@code this} receiver).
+	 * Grounds the {@code #37-10a} constructor-argument threading.
+	 */
+	private Fixture placementWithArgFixture() throws Exception {
+		builder = new ProgramBuilder("placementArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		// makeAt(void* buf, longlong v):
+		//   push rsi; push rdi; mov rdi,rdx (save v); mov rdx,rcx (buf -> alloc arg1);
+		//   mov ecx,8 (size); call op_new; mov rsi,rax (save this); mov rcx,rax (this);
+		//   mov rdx,rdi (v -> ctor arg1); call C::C; mov rax,rsi (return this); pop rdi; pop rsi; ret
+		builder.setBytes(MAKE,
+			"56 57 48 89 d7 48 89 ca b9 08 00 00 00 e8 ee 00 00 00 48 89 c6 48 89 c1 " +
+				"48 89 fa e8 e0 01 00 00 48 89 f0 5f 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit longlong argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new LongLongDataType());
+		Function make = builder.createEmptyFunction("makeAt", null, conv, MAKE, 38, classCPtr,
+			voidPtr, new LongLongDataType());
+		builder.disassemble(MAKE, 38, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 		return new Fixture(program, make);

@@ -242,6 +242,17 @@ generated from the GitHub Releases UI at sprint close.
   deferred program-coupled `CppRttiAnalyzer` wrapper. Grounded end to end against the real
   `Base`/`Shape`/`Circle` MSVC RTTI fixtures (single and multiple inheritance, both entry forms);
   driver 5/5. Design: DD-0041.
+- **Rec 37 `#37-10a` — explicit constructor arguments threaded into the placement driver** (Sprint 14,
+  first slice of the `#37-10+` rendering band) — `CppPlacementConstructionDriver` now recovers the
+  constructor `CALL`'s inputs after the call target (index 0) and the `this` receiver (index 1) as the
+  constructor's explicit arguments, renders each by its `HighVariable` name (the same operand rendering
+  the buffer/receiver use), and dispatches them to `CppDecompilerHints.renderPlacementConstruction`, so
+  `new (buf) C(arg)` renders with its argument and a zero-argument constructor still renders
+  `new (buf) C()`. An argument with no printable name (an unnamed temporary, or a bare constant, which
+  carries no `HighVariable`) declines the whole hint rather than rendering a gap — the same advisory,
+  never-wrong contract the receiver rendering holds; rendering constants and compound-expression
+  arguments is later `#37-10` work. Grounded against a decompiled `new (buf) C(v)` rendering
+  `new (param_1) C(param_2)`; driver 6/6. Design: DD-0042.
 
 ### Changed
 

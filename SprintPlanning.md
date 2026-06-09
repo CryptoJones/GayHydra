@@ -184,7 +184,14 @@ then land the work it unblocks.
     *discovery* scan (find every RTTI structure) is the separate program-coupled `CppRttiAnalyzer`
     wrapper below.
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
-- [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
+- [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
+  - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
+    (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
+    target (0) and `this` receiver (1) as the explicit arguments, renders each by its `HighVariable`
+    name, and dispatches them to `renderPlacementConstruction`, so `new (buf) C(arg)` renders with its
+    argument. An argument with no printable name (unnamed temporary or bare constant) declines the whole
+    hint rather than rendering a gap; constants / compound-expression args are later slices. Grounded
+    against a decompiled `new (buf) C(v)` → `new (param_1) C(param_2)`; driver 6/6.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
