@@ -75,9 +75,23 @@ then land the work it unblocks.
     callee's `~ClassName` name (not the receiver type) → authoritative for a base dtor on a
     derived pointer. Third of seven forms end-to-end; direct-call shape now has two
     callee-identified users (delete, dtor) → constructor `#37-9b` is the rule-of-three point.
-  - [ ] remaining four forms (cast / ctor / `new[]` / placement) — each a matcher slice +
-    driver slice; the callee-identified forms (ctor / `new` / placement) reuse the `#37-9f-b`
-    direct-call shape, cast follows the structural `#37-7b` shape.
+  - [x] ~~**`#37-9b-1`** — heap-construction *matcher*: recover the `new C()` shape.~~ Shipped
+    (DD-0030): `CppConstructorRecognizer`, a **fusion** matcher — a heap `new C()` is two linked
+    calls, so it anchors on the ctor `CALL` and requires its cast-stripped receiver to be the
+    result of *another* `CALL` (the allocation), recovering `(constructorTarget, allocationTarget)`.
+    That fusion link (the `this` is freshly allocated, not a stack/field address) is what separates
+    a heap `new` from in-place construction. Grounded in the real decompiler p-code
+    (`pCVar1 = (C *)operator_new(8L); C::C(pCVar1);`). **Third** user of the direct-call shape →
+    the rule-of-three `CppDirectCallRecognizer` extraction is now earned (the next refactor).
+  - [ ] **`#37-9b-2`** — heap-construction *driver*: classify the ctor target (local name ==
+    class namespace name) and resolve its `CppClass`, classify the allocation target as
+    `operator new`, and dispatch to `CppDecompilerHints.renderConstruction` → `new C()`.
+  - [ ] **refactor** — extract shared `CppDirectCallRecognizer` unifying `CppDeleteRecognizer`,
+    `CppDestructorRecognizer`, and the constructor matcher's internal recovery (rule of three, now
+    met at three concrete users) — a dedicated commit, not bundled into a feature slice.
+  - [ ] remaining three forms (cast / `new[]` / placement) — each a matcher slice + driver slice;
+    `new[]` and placement reuse the construction fusion shape, cast follows the structural `#37-7b`
+    shape.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.

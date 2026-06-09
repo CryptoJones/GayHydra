@@ -94,6 +94,21 @@ generated from the GitHub Releases UI at sprint close.
   total-failure-safe (non-destructor callees, unmodelled classes contribute no
   hint). Third of seven forms end-to-end; the dtor-then-`operator delete` pairing is
   not yet fused. Design: DD-0029.
+- **Rec 37 `#37-9b-1` — heap-construction recognition matcher** (Sprint 14 Step 2) —
+  `CppConstructorRecognizer`, a stateless p-code *fusion* matcher: unlike the
+  single-`CALL` delete and destructor forms, a heap `new C()` is two linked calls, so
+  `recognize(PcodeOp)` anchors on the constructor `CALL`, strips the `CAST`/`COPY` off
+  its receiver, and requires that receiver to be the result of *another* `CALL` — the
+  allocation — recovering `(constructorTarget, allocationTarget)`. That fusion link
+  (the `this` is freshly allocated storage, not a stack/field address) is exactly what
+  distinguishes a heap `new` from in-place construction. Grounded in the real
+  decompiler p-code (`pCVar1 = (C *)operator_new(8L); C::C(pCVar1);`) via the Rec 30
+  harness; verified end-to-end by a harness integration test against a hand-assembled
+  x86-64 `new C()`, including declining the allocation `CALL` itself. Whether the
+  targets really are a constructor and `operator new` is the `#37-9b-2` driver's job.
+  This is the third user of the direct-call shape — the rule-of-three point at which
+  the shared `CppDirectCallRecognizer` extraction is now earned (the next refactor).
+  Design: DD-0030.
 
 ---
 
