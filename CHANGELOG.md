@@ -231,6 +231,17 @@ generated from the GitHub Releases UI at sprint close.
   decode, total-failure-safe. Grounded against the complete-flow fixture reshaped for single
   inheritance (transitive `Base` excluded from `Circle`) and multiple inheritance (two direct bases);
   decoder 8/8. Design: DD-0040.
+- **Rec 37 `#37-5-3` — MSVC RTTI driver** (Sprint 14 Step 2, third slice of PR #37-5) —
+  `CppMsvcRttiDriver.feedClass(model, CppRttiFeeder)` bridges the pure `CppMsvcRttiDecoder` decode to
+  the ABI-neutral `CppRttiFeeder`, completing the MSVC RTTI → `CppTypeSystem` inheritance pipeline end
+  to end for one located class. Accepts either entry form — a `RTTICompleteObjectLocator`
+  (`Rtti4Model`, what a vftable points at) or the `RTTIClassHierarchyDescriptor` (`Rtti3Model`) it
+  references — decodes the class and feeds its name and direct bases. Decode failures are advisory
+  (null model / invalid / no class → feeds nothing); a null feeder is a programming error and is
+  rejected. Feeds one located structure; program-wide discovery of RTTI structures stays in the
+  deferred program-coupled `CppRttiAnalyzer` wrapper. Grounded end to end against the real
+  `Base`/`Shape`/`Circle` MSVC RTTI fixtures (single and multiple inheritance, both entry forms);
+  driver 5/5. Design: DD-0041.
 
 ### Changed
 

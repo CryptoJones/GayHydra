@@ -177,8 +177,12 @@ then land the work it unblocks.
     `numContainedBases` subtree, so transitive bases are excluded; reuses `decodeBase` per entry.
     Pure decode, total-failure-safe, grounded against the complete-flow fixture reshaped for single
     and multiple inheritance. Decoder 8/8.
-  - [ ] **#37-5-3** — program-scanning analyzer/driver: find the MSVC RTTI structures and feed
-    `CppRttiFeeder.feedClass`.
+  - [x] ~~**#37-5-3** — program-scanning analyzer/driver: find the MSVC RTTI structures and feed
+    `CppRttiFeeder.feedClass`.~~ Headless driver shipped (DD-0041): `CppMsvcRttiDriver.feedClass`
+    bridges `decodeClass` → `CppRttiFeeder.feedClass` for one located structure (RTTI4 or RTTI3 entry
+    form), completing the MSVC RTTI → `CppTypeSystem` pipeline end to end; driver 5/5. The program-wide
+    *discovery* scan (find every RTTI structure) is the separate program-coupled `CppRttiAnalyzer`
+    wrapper below.
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
 
