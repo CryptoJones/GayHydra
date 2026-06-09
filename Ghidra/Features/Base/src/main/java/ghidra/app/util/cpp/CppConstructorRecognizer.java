@@ -56,8 +56,16 @@ import ghidra.program.model.pcode.PcodeOp;
  * another {@code CALL}</em> (the allocation). The matcher recovers the constructor call's
  * {@code (target, receiver)} via the shared {@link CppDirectCallRecognizer}, then requires that
  * receiver's defining op to be a {@code CALL} &mdash; whose {@code input[0]} is the allocation target.
- * A constructor call whose receiver is not a call result (stack/member construction, or a placement
- * {@code new} whose storage came from elsewhere) is declined here; those are separate forms.
+ * A constructor call whose receiver is not a call result (stack/member construction) is declined here;
+ * that is a separate form.
+ *
+ * <p><b>Heap, not placement: the allocation carries no buffer.</b> A heap {@code operator new(size_t)}
+ * is handed the size alone ({@code CALL} target + size = two inputs); a <em>placement</em>
+ * {@code operator new(size_t, void*)} is additionally handed a buffer (three inputs). The two share
+ * the demangled name {@code operator new}, so the operand count &mdash; not the name &mdash; is what
+ * separates the forms. This matcher therefore declines an allocation carrying a buffer operand; that
+ * is the separate {@code #37-9e-b} placement form ({@link CppPlacementConstructionRecognizer}, DD-0037),
+ * and the two partition the fusion shape so that no site ever matches both.
  *
  * <p><b>The direct-call recovery is shared.</b> Recovering the constructor call's {@code input[0]}
  * target plus its cast-stripped {@code input[1]} receiver is the same direct-call shape the delete
@@ -110,6 +118,11 @@ public final class CppConstructorRecognizer {
 		// the fusion link: a heap new's this pointer is the result of the allocation call.
 		PcodeOp allocation = constructor.receiver().getDef();
 		if (allocation == null || allocation.getOpcode() != PcodeOp.CALL) {
+			return null;
+		}
+		// a buffer operand (target + size + buffer = three inputs) means a placement operator new,
+		// not a heap one; that is the separate #37-9e-b form, declined here so the two never collide.
+		if (allocation.getNumInputs() >= 3) {
 			return null;
 		}
 		Address allocationTarget = CppDirectCallRecognizer.callTargetAddress(allocation);

@@ -187,8 +187,29 @@ generated from the GitHub Releases UI at sprint close.
   `static_cast<Derived*>(param_1)`. **Sixth of seven forms end-to-end**; advisory and
   total-failure-safe (unmodelled classes, offsets matching no base edge contribute no
   hint). Non-virtual single base offsets only. Design: DD-0036.
+- **Rec 37 `#37-9e-b-1` — placement-construction recognition matcher** (Sprint 14 Step 2) —
+  `CppPlacementConstructionRecognizer`, a stateless p-code matcher that recognises a C++
+  *non-elided* placement `new (buf) C()` in a live `HighFunction` and recovers the
+  `(constructorTarget, allocationTarget, placementBuffer)` the
+  `CppDecompilerHints.renderPlacementConstruction` renderer (DD-0016) needs. Grounded in
+  the real decompiler p-code (observed through the Rec 30 harness): the recoverable shape is
+  the two-call form where a placement `operator new(size, buffer)` result feeds the
+  constructor receiver — the *same* fusion shape as heap-`new`, separated only by the
+  allocation carrying a **buffer operand** (three `CALL` inputs vs heap's two), recovered as
+  `input[2]`. The standard *elided* placement new (a bare ctor on caller-owned storage) is
+  indistinguishable from in-place construction and out of scope. Verified end-to-end against a
+  hand-assembled x86-64 placement new (matcher 4/4, including the heap/placement partition
+  from both sides). Design: DD-0037.
 
 ### Changed
+
+- **Rec 37 `#37-9b` heap matcher tightened to partition against placement** (Sprint 14 Step 2) —
+  `CppConstructorRecognizer` now declines an allocation `CALL` carrying a buffer operand (three
+  inputs), so a placement `operator new(size, void*)` — which demangles to the same `operator new`
+  name as the heap overload — is no longer mis-matched as a heap `new C()` and double-rendered.
+  Heap requires `< 3` allocation inputs, placement requires `>= 3`, so the two forms partition the
+  shared fusion shape and never both match a site. Regression-safe (heap matcher suite 3/3
+  unchanged). Design: DD-0037.
 
 - **Rec 37 `#37-9b` refactor — extract the shared `CppDirectCallRecognizer`** (Sprint
   14 Step 2) — the direct-call recovery (the callee entry in `input[0]` plus the

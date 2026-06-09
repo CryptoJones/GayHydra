@@ -135,16 +135,27 @@ then land the work it unblocks.
     non-virtual base edge at the offset, so the renderer's neutral `src + offset` fallback is never
     emitted as a hint. **Sixth** of seven forms end-to-end. Non-virtual single base offsets only.
     Driver 5/5.
-  - [ ] remaining form (placement `#37-9e-b`) — a matcher slice + driver slice; placement reuses the
+  - last form (placement `#37-9e-b`) — a matcher slice + driver slice; placement reuses the
     construction fusion shape (a ctor on caller-owned storage). (Array `new[]` and cast no longer reuse
     the fusion shape — array is a forward allocation-and-type shape, cast is a forward
-    pointer-adjustment shape; see DD-0033, DD-0035.) **Feasibility note:** the standard placement
-    `new (buf) C()` elides `operator new(size_t, void*)` (it just returns its buffer arg) and so
-    compiles to a bare ctor call on caller-owned storage — structurally indistinguishable from an
-    ordinary in-place / stack construction, which the `#37-9b` ctor matcher deliberately declines. The
-    recoverable placement shape is the *non-elided* two-call form (a real placement `operator new`
-    taking size+buffer whose result feeds the ctor receiver); ground this empirically before writing
-    the matcher.
+    pointer-adjustment shape; see DD-0033, DD-0035.) **Feasibility note (grounded 2026-06-09):** the
+    standard placement `new (buf) C()` elides `operator new(size_t, void*)` (it just returns its buffer
+    arg) and so compiles to a bare ctor call on caller-owned storage — structurally indistinguishable
+    from an ordinary in-place / stack construction, which the `#37-9b` ctor matcher deliberately
+    declines, so it is out of scope. The recoverable placement shape is the *non-elided* two-call form
+    (a real placement `operator new` taking size+buffer whose result feeds the ctor receiver), grounded
+    empirically via the Rec 30 harness before writing the matcher.
+    - [x] ~~**`#37-9e-b-1`** — placement *matcher*: recover `(constructorTarget, allocationTarget,
+      placementBuffer)` from the non-elided two-call shape, gating on the allocation carrying a buffer
+      operand (three `CALL` inputs); recover the buffer as `input[2]`.~~ Shipped (DD-0037):
+      `CppPlacementConstructionRecognizer` reuses the heap fusion logic plus the buffer-operand gate.
+      Heap matcher `#37-9b` tightened in lock-step to decline a buffer-carrying allocation, so the two
+      forms partition the fusion shape and never both match. Matcher 4/4 (partition verified both
+      sides); heap suite 3/3 unchanged.
+    - [ ] **`#37-9e-b-2`** — placement *driver*: resolve the constructor (name == class) and the
+      allocation (`operator new`), render the buffer's `HighVariable` name as the placement expression,
+      and dispatch to `CppDecompilerHints.renderPlacementConstruction` → `new (buf) C()`. Closes the
+      **seventh and last** form.
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
