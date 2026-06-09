@@ -200,6 +200,17 @@ generated from the GitHub Releases UI at sprint close.
   indistinguishable from in-place construction and out of scope. Verified end-to-end against a
   hand-assembled x86-64 placement new (matcher 4/4, including the heap/placement partition
   from both sides). Design: DD-0037.
+- **Rec 37 `#37-9e-b-2` — placement-construction driver** (Sprint 14 Step 2) —
+  `CppPlacementConstructionDriver` walks a `HighFunction`, runs the `#37-9e-b-1` matcher on
+  each `CALL`, resolves the recovered constructor (name == class) and allocation
+  (`operator new`) targets to functions, renders the recovered buffer varnode's
+  `HighVariable` name as the placement expression, resolves the class in a `CppTypeSystem`,
+  and dispatches to `CppDecompilerHints.renderPlacementConstruction`, returning
+  `(site, rendering)` hints. Closes the placement loop: a real x86-64
+  `new (buf) C()` renders `new (param_1) C()`. **Seventh and last form end-to-end — Rec 37
+  recognition is complete (seven of seven).** Advisory and total-failure-safe (unmodelled
+  classes, non-`operator new` allocations, heap `new`, and unnamed buffers contribute no
+  hint); constructor arguments scoped out to the `#37-10+` DTM work. Design: DD-0038.
 
 ### Changed
 

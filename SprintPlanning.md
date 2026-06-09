@@ -35,9 +35,12 @@ then land the work it unblocks.
 
 **Step 2 — Rec 37 recognition phase (unblocked by Step 1):**
 
-- [ ] **Recognition wrappers** for the seven shipped `CppDecompilerHints`
+- [x] ~~**Recognition wrappers** for the seven shipped `CppDecompilerHints`
   renderer forms — detect ctor/dtor/cast/`new`/`new[]`/placement/`delete`
-  idioms in a live function and dispatch to the matching (already-shipped) renderer.
+  idioms in a live function and dispatch to the matching (already-shipped) renderer.~~
+  **Complete (2026-06-09): all seven forms end-to-end** — virtual call (#37-7b), delete (#37-9f-b),
+  destructor (#37-9c-b), heap-new (#37-9b), array-new (#37-9d-b), base cast (#37-8b), placement-new
+  (#37-9e-b). DD-0024..DD-0038. The headless ceiling is cleared for the seven C++ idiom forms.
   - [x] ~~**`#37-7b-1`** — virtual-call recognition *matcher*: `CppVirtualCallRecognizer`
     recovers `(slotIndex, receiver)` from a vtable-dispatch `CALLIND` in a live
     `HighFunction`.~~ Shipped (DD-0024): pure p-code matcher in Base, grounded in the
@@ -152,10 +155,14 @@ then land the work it unblocks.
       Heap matcher `#37-9b` tightened in lock-step to decline a buffer-carrying allocation, so the two
       forms partition the fusion shape and never both match. Matcher 4/4 (partition verified both
       sides); heap suite 3/3 unchanged.
-    - [ ] **`#37-9e-b-2`** — placement *driver*: resolve the constructor (name == class) and the
+    - [x] ~~**`#37-9e-b-2`** — placement *driver*: resolve the constructor (name == class) and the
       allocation (`operator new`), render the buffer's `HighVariable` name as the placement expression,
       and dispatch to `CppDecompilerHints.renderPlacementConstruction` → `new (buf) C()`. Closes the
-      **seventh and last** form.
+      **seventh and last** form.~~ Shipped (DD-0038): `CppPlacementConstructionDriver` renders
+      `new (param_1) C()` from a real x86-64 placement new. Same two name classifiers as the heap
+      driver (duplicated as per-form twins, not yet rule-of-three); buffer rendered from its
+      `HighVariable` name; ctor args scoped out to `#37-10+`. Driver 5/5. **Rec 37 recognition is now
+      seven-of-seven end-to-end.**
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
