@@ -157,6 +157,20 @@ generated from the GitHub Releases UI at sprint close.
   total-failure-safe (scalar `operator new`, unmodelled classes, non-dividing sizes
   contribute no hint). Trivial-element only; the per-element ctor-loop fusion is a
   later refinement. Design: DD-0034.
+- **Rec 37 `#37-8b-1` — base-cast recognition matcher** (Sprint 14 Step 2) —
+  `CppBaseCastRecognizer`, a stateless p-code matcher that recognises a C++
+  base-subobject up/down-cast at a `CAST` in a live `HighFunction` and recovers the
+  `(sourcePointer, byteOffset, castResult)` the `CppDecompilerHints.renderUpcast` /
+  `renderDowncast` renderers (DD-0016) need. Grounded in the real decompiler p-code
+  (observed through the Rec 30 harness): a positive in-layout upcast offset is a
+  `PTRSUB` (offset = `in[1]`), a negative before-the-object downcast offset is a
+  `PTRADD` (offset = `in[1] * in[2]`, signed) — both normalised to one **signed** byte
+  offset whose sign is the cast direction and magnitude is the base-subobject offset.
+  Requires both ends pointer-typed and a non-zero offset (a first-base offset-0 cast is
+  a bare reinterpretation with no recoverable adjustment); class resolution, direction
+  classification, and source-expression rendering are the `#37-8b-2` driver's job.
+  Verified end-to-end against hand-assembled x86-64 up- and down-casts (matcher 4/4).
+  Design: DD-0035.
 
 ### Changed
 

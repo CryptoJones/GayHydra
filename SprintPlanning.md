@@ -115,10 +115,25 @@ then land the work it unblocks.
     Class read from the typed result's pointer type (no ctor to name it); array-vs-scalar by the
     `operator new[]` name; count only for a positive exact-multiple constant. **Fifth** of seven forms
     end-to-end. Trivial-element only (ctor-loop fusion deferred). Driver 4/4.
-  - [ ] remaining two forms (cast / placement) — each a matcher slice + driver slice; placement
-    reuses the construction fusion shape (a ctor on caller-owned storage), cast follows the structural
-    `#37-7b` shape. (Array `new[]` no longer reuses the fusion shape — its trivial-element form is a
-    forward allocation-and-type shape, not a ctor fusion; see DD-0033.)
+  - [x] ~~**`#37-8b-1`** — base-cast *matcher*: recover the up/down-cast pointer-adjustment shape.~~
+    Shipped (DD-0035): `CppBaseCastRecognizer`, the sprint's **second forward** matcher — anchors on
+    the `CAST` and normalises the two grounded pointer-adjustment shapes into one **signed** byte
+    offset: a positive in-layout upcast is a `PTRSUB` (offset = `in[1]`), a negative before-the-object
+    downcast is a `PTRADD` (offset = `in[1] * in[2]`, signed). Sign = direction, magnitude =
+    base-subobject offset. Recovers `(sourcePointer, byteOffset, castResult)`; requires both ends
+    pointer-typed + non-zero offset (offset-0 first-base cast is a bare reinterpretation, no
+    recoverable adjustment). Class-blind; class resolution + direction-vs-edge + source-expr rendering
+    left to the driver. Grounded on real decompiler p-code (`(Base *)&d->field_0x10` /
+    `(Derived *)(b + -2L)`). Matcher 4/4.
+  - [ ] **`#37-8b-2`** — base-cast *driver*: read source/target classes off the recovered varnodes'
+    pointer types, resolve them in a `CppTypeSystem`, classify direction from the offset sign (derived
+    = source for an upcast, target for a downcast), render the source expression, and dispatch to
+    `CppDecompilerHints.renderUpcast` / `renderDowncast` → `static_cast<Base*>(d)` /
+    `static_cast<Derived*>(b)`.
+  - [ ] remaining form (placement `#37-9e-b`) — a matcher slice + driver slice; placement reuses the
+    construction fusion shape (a ctor on caller-owned storage). (Array `new[]` and cast no longer reuse
+    the fusion shape — array is a forward allocation-and-type shape, cast is a forward
+    pointer-adjustment shape; see DD-0033, DD-0035.)
 - [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped; MSVC not started).
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
 - [ ] **PR #37-10+ band** — `DataTypeManager`/signature/template/operator rendering.
