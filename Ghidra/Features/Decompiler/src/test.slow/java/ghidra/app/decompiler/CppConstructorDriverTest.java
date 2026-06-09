@@ -31,7 +31,9 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.EnumDataType;
+import ghidra.program.model.data.FloatDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.PointerDataType;
@@ -302,6 +304,53 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 		assertEquals("expected exactly one rendered construction", 1, hints.size());
 		assertEquals("a non-printable wide-char unit must render as a width-padded hex escape",
 			"new C(u'\\x20ac')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithFloatArgument() throws Exception {
+		// 0x40200000 is the IEEE-754 single-precision bit pattern for 2.5f.
+		HighFunction highFunction = decompileMakeWithFloatArg(0x40200000);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("float constant must render as the f-suffixed literal 2.5f, not a bit pattern",
+			"new C(2.5f)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithDoubleArgument() throws Exception {
+		// 0x4004000000000000 is the IEEE-754 double-precision bit pattern for 2.5.
+		HighFunction highFunction = decompileMakeWithDoubleArg(0x4004000000000000L);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("double constant must render as the unsuffixed literal 2.5, not a bit pattern",
+			"new C(2.5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesNonFiniteFloatArgument() throws Exception {
+		// 0x7fc00000 is a quiet NaN: NaN has no bare C++ literal, so rather than emit the invalid text
+		// "NaN" the whole hint declines, keeping the never-wrong contract.
+		HighFunction highFunction = decompileMakeWithFloatArg(0x7fc00000);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a non-finite float value must yield no hints", hints.isEmpty());
 	}
 
 	@Test
@@ -716,6 +765,95 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 			wideCharType);
 		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 40, classCPtr);
 		builder.disassemble(MAKE, 40, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(value);} where the
+	 * constructor takes a 4-byte {@code float}, so the constructor {@code CALL} carries the literal as a
+	 * size-4 {@link FloatDataType} constant whose offset is the IEEE-754 single-precision bit pattern.
+	 * Grounds the {@code #37-10i} float rendering: bits {@code 0x40200000} must render {@code 2.5f} (not the
+	 * bit pattern) and a non-finite value (e.g. a NaN {@code 0x7fc00000}) must decline. In the Windows x64
+	 * ABI a {@code float} argument is passed in {@code xmm1} (the slot positionally after the {@code this}
+	 * pointer in {@code rcx}); the body loads the bits into {@code eax} and moves them to {@code xmm1} via
+	 * {@code movd}, so the 44-byte body differs from the integer fixtures only in that argument-load
+	 * sequence (and the recomputed constructor-call displacement).
+	 */
+	private HighFunction decompileMakeWithFloatArg(int floatBits) throws Exception {
+		builder = new ProgramBuilder("ctorFloatArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String imm = String.format("%02x %02x %02x %02x", floatBits & 0xff, (floatBits >> 8) & 0xff,
+			(floatBits >> 16) & 0xff, (floatBits >> 24) & 0xff);
+		// ... mov eax,imm32 ; movd xmm1,eax ; call ctor (rel32 0x1dd from the shifted call site) ...
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 b8 " + imm +
+				" 66 0f 6e c8 e8 dd 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit float argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new FloatDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 44, classCPtr);
+		builder.disassemble(MAKE, 44, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+
+		return decompileToHighFunction(program, make);
+	}
+
+	/**
+	 * Builds a fresh program whose {@code C* make()} does {@code return new C(value);} where the
+	 * constructor takes an 8-byte {@code double}, so the constructor {@code CALL} carries the literal as a
+	 * size-8 {@link DoubleDataType} constant whose offset is the IEEE-754 double-precision bit pattern.
+	 * Grounds the {@code #37-10i} double rendering: bits {@code 0x4004000000000000} must render the
+	 * unsuffixed {@code 2.5} (not the bit pattern). In the Windows x64 ABI a {@code double} argument is
+	 * passed in {@code xmm1}; the body loads the 64-bit bits into {@code rax} and moves them to {@code xmm1}
+	 * via {@code movq}, so the 50-byte body differs from the float fixture only in the wider immediate and
+	 * the {@code movq} (and the recomputed constructor-call displacement).
+	 */
+	private HighFunction decompileMakeWithDoubleArg(long doubleBits) throws Exception {
+		builder = new ProgramBuilder("ctorDoubleArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		StringBuilder imm = new StringBuilder();
+		for (int i = 0; i < 8; i++) {
+			imm.append(String.format("%02x ", (doubleBits >> (i * 8)) & 0xff));
+		}
+		// ... mov rax,imm64 ; movq xmm1,rax ; call ctor (rel32 0x1d7 from the shifted call site) ...
+		builder.setBytes(MAKE,
+			"56 48 83 ec 20 b9 08 00 00 00 e8 f1 00 00 00 48 89 c6 48 89 c1 48 b8 " + imm +
+				"66 48 0f 6e c8 e8 d7 01 00 00 48 89 f0 48 83 c4 20 5e c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType());
+		// the constructor takes the this receiver and one explicit double argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new DoubleDataType());
+		Function make = builder.createEmptyFunction("make", null, conv, MAKE, 50, classCPtr);
+		builder.disassemble(MAKE, 50, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 

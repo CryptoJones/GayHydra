@@ -267,6 +267,20 @@ then land the work it unblocks.
     (1-byte `char` + the three wide-char types). Grounded against `new C(L'A')` (and placement twin);
     placement 19/19, heap 19/19. Next `#37-10` work: compound argument expressions, floating-point
     constants, and signature/template/operator rendering.
+  - [x] ~~**#37-10i** — render floating-point-constant arguments as C++ decimal literals.~~ Shipped
+    (DD-0050): `FloatDataType`/`DoubleDataType` extend `AbstractFloatDataType` (in turn `BuiltIn`), not
+    `AbstractIntegerDataType`, so a float constant matched none of the `#37-10c`–`h` branches and
+    `argumentExpr` declined the whole hint (`new C(2.5f)` lost its argument). A throwaway probe grounded
+    the shape first: a `2.5f` arg arrives as a size-4 constant varnode carrying the IEEE-754 bit pattern
+    (`0x40200000`), typed `FloatDataType`. `argumentExpr` (per-form twin in both drivers) now adds one
+    `instanceof AbstractFloatDataType` branch via a new `floatConstantLiteral` helper that decodes the bits
+    at the varnode byte width — size 4 via `Float.intBitsToFloat` (with an `f` suffix), size 8 via
+    `Double.longBitsToDouble` (unsuffixed), rendered with `Float`/`Double.toString` for the shortest
+    round-tripping decimal. A non-finite value (`NaN`/`Infinity`, no bare C++ literal) and exotic widths
+    decline, keeping the never-wrong contract. Helper stays a per-form twin until a third user earns
+    extraction. Completes the scalar-literal story (integer/bool/char/enum/wide-char/float). Grounded
+    against `new C(2.5f)`/`new C(2.5)` (and placement twins); placement 22/22, heap 22/22. Next `#37-10`
+    work: compound argument expressions, and signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

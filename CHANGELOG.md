@@ -346,6 +346,21 @@ generated from the GitHub Releases UI at sprint close.
   never declines. The wide-char branches stay per-form twins (rule of three) until a third
   argument-rendering user earns the extraction. Grounded against decompiled `new C(L'A')` (and its
   placement twin); placement 19/19, heap 19/19. Design: DD-0049.
+- **Rec 37 `#37-10i` — floating-point constant constructor arguments rendered as C++ decimal literals**
+  (Sprint 14, ninth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now
+  render a `float`/`double` constructor argument as a decimal literal (`new C(2.5f)` / `new C(2.5)`)
+  instead of declining. `FloatDataType` and `DoubleDataType` extend `AbstractFloatDataType` (in turn
+  `BuiltIn`), not `AbstractIntegerDataType`, so a float constant matched none of the `#37-10c`–`h` branches
+  and `argumentExpr` dropped the argument entirely. A throwaway probe grounded the shape first: a `2.5f`
+  argument arrives as a size-4 constant varnode whose offset carries the IEEE-754 bit pattern
+  (`0x40200000`), typed `FloatDataType`. `argumentExpr` now adds one `instanceof AbstractFloatDataType`
+  branch via a new `floatConstantLiteral` helper that decodes the bits at the varnode's own byte width —
+  size 4 via `Float.intBitsToFloat` (rendered with an `f` suffix), size 8 via `Double.longBitsToDouble`
+  (unsuffixed) — using `Float`/`Double.toString` for the shortest round-tripping decimal. A non-finite
+  value (`NaN`/`Infinity`, which have no bare C++ literal) and exotic widths decline, keeping the
+  never-wrong contract. The float branch stays a per-form twin (rule of three) until a third
+  argument-rendering user earns the extraction. Grounded against decompiled `new C(2.5f)`/`new C(2.5)`
+  (and their placement twins); placement 22/22, heap 22/22. Design: DD-0050.
 
 ### Changed
 

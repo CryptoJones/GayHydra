@@ -30,7 +30,9 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.EnumDataType;
+import ghidra.program.model.data.FloatDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.PointerDataType;
@@ -255,6 +257,50 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
 		assertEquals("a non-printable wide-char unit must render as a width-padded hex escape",
 			"new (param_1) C(u'\\x20ac')", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithFloatArgument() throws Exception {
+		// 0x40200000 is the IEEE-754 single-precision bit pattern for 2.5f.
+		Fixture fixture = placementWithFloatArgFixture(0x40200000);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("float constant must render as the f-suffixed literal 2.5f, not a bit pattern",
+			"new (param_1) C(2.5f)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithDoubleArgument() throws Exception {
+		// 0x4004000000000000 is the IEEE-754 double-precision bit pattern for 2.5.
+		Fixture fixture = placementWithDoubleArgFixture(0x4004000000000000L);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("double constant must render as the unsuffixed literal 2.5, not a bit pattern",
+			"new (param_1) C(2.5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementNonFiniteFloatArgument() throws Exception {
+		// 0x7fc00000 is a quiet NaN: NaN has no bare C++ literal, so rather than emit the invalid text
+		// "NaN" the whole hint declines, keeping the never-wrong contract.
+		Fixture fixture = placementWithFloatArgFixture(0x7fc00000);
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a non-finite float value must yield no hints", hints.isEmpty());
 	}
 
 	@Test
@@ -700,6 +746,94 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 		Function make =
 			builder.createEmptyFunction("makeAt", null, conv, MAKE, 29, classCPtr, voidPtr);
 		builder.disassemble(MAKE, 29, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(value)} where the constructor takes a
+	 * 4-byte {@code float}, so the constructor {@code CALL} carries the literal as a size-4
+	 * {@link FloatDataType} constant whose offset is the IEEE-754 single-precision bit pattern. Grounds the
+	 * {@code #37-10i} float rendering: bits {@code 0x40200000} must render {@code 2.5f} and a non-finite
+	 * value (e.g. a NaN {@code 0x7fc00000}) must decline. In the Windows x64 ABI a {@code float} argument is
+	 * passed in {@code xmm1}; the body loads the bits into {@code eax} and moves them to {@code xmm1} via
+	 * {@code movd}, so the 31-byte body differs from the {@code #37-10c} fixture only in that argument-load
+	 * sequence (and the recomputed constructor-call displacement {@code e2 01 00 00}).
+	 */
+	private Fixture placementWithFloatArgFixture(int floatBits) throws Exception {
+		builder = new ProgramBuilder("placementFloatArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		String imm = String.format("%02x %02x %02x %02x", floatBits & 0xff, (floatBits >> 8) & 0xff,
+			(floatBits >> 16) & 0xff, (floatBits >> 24) & 0xff);
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 b8 " + imm +
+				" 66 0f 6e c8 e8 e2 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit float argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new FloatDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 31, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 31, false);
+		builder.disassemble(OP_NEW, 1, false);
+		builder.disassemble(CTOR, 1, false);
+		return new Fixture(program, make);
+	}
+
+	/**
+	 * Builds {@code C* makeAt(void* buf)} doing {@code new (buf) C(value)} where the constructor takes an
+	 * 8-byte {@code double}, so the constructor {@code CALL} carries the literal as a size-8
+	 * {@link DoubleDataType} constant whose offset is the IEEE-754 double-precision bit pattern. Grounds the
+	 * {@code #37-10i} double rendering: bits {@code 0x4004000000000000} must render the unsuffixed
+	 * {@code 2.5}. In the Windows x64 ABI a {@code double} argument is passed in {@code xmm1}; the body
+	 * loads the 64-bit bits into {@code rax} and moves them to {@code xmm1} via {@code movq}, so the 37-byte
+	 * body differs from the float fixture only in the wider immediate and the {@code movq} (and the
+	 * recomputed constructor-call displacement {@code dc 01 00 00}).
+	 */
+	private Fixture placementWithDoubleArgFixture(long doubleBits) throws Exception {
+		builder = new ProgramBuilder("placementDoubleArgDrv", ProgramBuilder._X64);
+		builder.createMemory("text", MAKE, 0x300);
+		StringBuilder imm = new StringBuilder();
+		for (int i = 0; i < 8; i++) {
+			imm.append(String.format("%02x ", (doubleBits >> (i * 8)) & 0xff));
+		}
+		builder.setBytes(MAKE,
+			"48 89 ca b9 08 00 00 00 e8 f3 00 00 00 48 89 c1 48 b8 " + imm +
+				"66 48 0f 6e c8 e8 dc 01 00 00 c3",
+			false);
+		builder.setBytes(OP_NEW, "c3", false);
+		builder.setBytes(CTOR, "c3", false);
+
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		DataType voidPtr = new PointerDataType(new Undefined1DataType());
+		Program program = builder.getProgram();
+		String conv = program.getCompilerSpec().getDefaultCallingConvention().getName();
+
+		// the placement allocation takes TWO args: (size_t, void* buffer)
+		builder.createEmptyFunction("operator.new", null, conv, OP_NEW, 1, voidPtr,
+			new LongLongDataType(), voidPtr);
+		// the constructor takes the this receiver and one explicit double argument
+		builder.createEmptyFunction("C", "C", conv, CTOR, 1, VoidDataType.dataType, classCPtr,
+			new DoubleDataType());
+		Function make =
+			builder.createEmptyFunction("makeAt", null, conv, MAKE, 37, classCPtr, voidPtr);
+		builder.disassemble(MAKE, 37, false);
 		builder.disassemble(OP_NEW, 1, false);
 		builder.disassemble(CTOR, 1, false);
 		return new Fixture(program, make);

@@ -21,6 +21,7 @@ import java.util.List;
 
 import ghidra.app.util.cpp.CppConstructorRecognizer.ConstructedObject;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.AbstractFloatDataType;
 import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.CharDataType;
@@ -239,7 +240,9 @@ public final class CppConstructorDriver {
 	 * value falls through to its decimal, staying never-wrong); a {@code char} constant renders as an
 	 * escaped C character literal ({@link #charConstantLiteral}); a wide-char constant renders as a
 	 * prefixed wide-character literal ({@code L'A'}/{@code u'A'}/{@code U'A'} via
-	 * {@link #wideCharConstantLiteral}); an {@code enum} constant renders as its
+	 * {@link #wideCharConstantLiteral}); a floating-point constant renders as a decimal literal
+	 * ({@code 2.5f}/{@code 2.5} via {@link #floatConstantLiteral}, declining a non-finite or exotic-width
+	 * value); an {@code enum} constant renders as its
 	 * qualified member name ({@link #enumConstantLiteral}, declining when the value names no member); and
 	 * an integer literal's decimal value is a faithful hint, whereas a pointer-typed constant (e.g. a
 	 * global string address) rendered as a bare decimal would mislead, so it is declined. The integer
@@ -281,6 +284,9 @@ public final class CppConstructorDriver {
 			}
 			if (type instanceof WideCharDataType) {
 				return wideCharConstantLiteral(varnode, "L");
+			}
+			if (type instanceof AbstractFloatDataType) {
+				return floatConstantLiteral(varnode);
 			}
 			if (type instanceof Enum enumType) {
 				return enumConstantLiteral(varnode, enumType);
@@ -396,6 +402,39 @@ public final class CppConstructorDriver {
 					: String.format("\\x%0" + hexDigits + "x", value);
 		};
 		return prefix + "'" + body + "'";
+	}
+
+	/**
+	 * {@return the C++ floating-point-literal text of a {@link AbstractFloatDataType} constant varnode
+	 * (e.g. {@code 2.5f} for a {@code float}, {@code 2.5} for a {@code double}), or null when the width is
+	 * not 4/8 bytes or the value is not finite}
+	 *
+	 * <p>{@code FloatDataType}/{@code DoubleDataType} extend {@code AbstractFloatDataType} (in turn
+	 * {@code BuiltIn}), not {@link AbstractIntegerDataType}, so a float constant reached none of the
+	 * integer branches and declined. A float constructor argument arrives as a constant varnode whose
+	 * offset carries the IEEE-754 bit pattern (grounded: a {@code 2.5f} argument is a size-4 constant with
+	 * offset {@code 0x40200000}); the bits are decoded at the varnode width &mdash; {@code size 4} via
+	 * {@link Float#intBitsToFloat(int)} and {@code size 8} via {@link Double#longBitsToDouble(long)}
+	 * &mdash; and rendered with {@link Float#toString(float)}/{@link Double#toString(double)}, which emit
+	 * the shortest round-tripping decimal. A {@code float} gets the {@code f} suffix so the literal keeps
+	 * its single-precision type; a {@code double} is the unsuffixed default. A non-finite value
+	 * ({@code NaN}/{@code Infinity}) has no bare C++ literal, so it declines rather than emit the invalid
+	 * {@code NaN}/{@code Infinity} text; exotic widths (half, x87 80-bit extended, quad) also decline in
+	 * this slice ({@code #37-10i}). (Duplicated from the placement driver as an honest per-form twin, per
+	 * the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 */
+	private static String floatConstantLiteral(Varnode varnode) {
+		int size = varnode.getSize();
+		long bits = varnode.getOffset();
+		if (size == 4) {
+			float value = Float.intBitsToFloat((int) bits);
+			return Float.isFinite(value) ? Float.toString(value) + "f" : null;
+		}
+		if (size == 8) {
+			double value = Double.longBitsToDouble(bits);
+			return Double.isFinite(value) ? Double.toString(value) : null;
+		}
+		return null;
 	}
 
 	/**
