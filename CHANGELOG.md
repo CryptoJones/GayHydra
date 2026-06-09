@@ -22,6 +22,16 @@ generated from the GitHub Releases UI at sprint close.
   Toy function. This is the gate that makes the Program-coupled Rec 37 C++
   recognition wrappers testable before commit, unblocking the queue that has been
   stuck at the "headless ceiling." Design: DD-0023.
+- **Rec 37 `#37-7b-1` — virtual-call recognition matcher** (Sprint 14 Step 2) —
+  `CppVirtualCallRecognizer`, a stateless p-code matcher that recognises the C++
+  vtable-dispatch idiom at a `CALLIND` in a live `HighFunction` and recovers the
+  `(slotIndex, receiver)` the `CppDecompilerHints.renderVirtualCall` renderer
+  (DD-0016) needs. The recovery is grounded in the p-code the real decompiler
+  emits (observed through the Rec 30 harness) — strips interposed `CAST`/`COPY`
+  ops and reads the `LOAD` pointer from `input[1]` — and is verified end-to-end by
+  a harness integration test against a hand-assembled x86-64 virtual call. The
+  type-resolution + expression-rendering driver that calls the renderer is the
+  next slice (`#37-7b-2`). Design: DD-0024.
 
 ---
 
