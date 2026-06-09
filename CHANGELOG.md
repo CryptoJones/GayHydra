@@ -109,6 +109,22 @@ generated from the GitHub Releases UI at sprint close.
   This is the third user of the direct-call shape — the rule-of-three point at which
   the shared `CppDirectCallRecognizer` extraction is now earned (the next refactor).
   Design: DD-0030.
+- **Rec 37 `#37-9b-2` — heap-construction driver** (Sprint 14 Step 2) —
+  `CppConstructorDriver` walks a `HighFunction`, runs the `#37-9b-1` fusion matcher on
+  each `CALL`, resolves the recovered constructor and allocation targets to
+  `Function`s, and classifies both from their names: the constructor by its local name
+  equalling its class (parent) namespace name — the demangled form Ghidra emits, e.g.
+  `Fred` in namespace `Fred` for `Bar::Fred::Fred(int)`, the counterpart to the
+  destructor's `~` prefix — and the allocation as `operator new` (the same `.`→space
+  normalisation the delete driver uses for `operator delete`). It resolves the
+  constructed `CppClass` in a `CppTypeSystem` and dispatches to
+  `CppDecompilerHints.renderConstruction`, returning `(site, rendering)` hints. Closes
+  the heap-construction loop: a real x86-64 `new C()` renders to `new C()`. Advisory
+  and total-failure-safe (non-constructor callees, non-`operator new` allocations,
+  unmodelled classes contribute no hint). Constructor arguments are scoped out (the
+  `#37-10+` DTM work), like the virtual-call driver. **Fourth of seven forms
+  end-to-end**; with three concrete direct-call copies now extant, the shared
+  `CppDirectCallRecognizer` extraction is the next (refactor) commit. Design: DD-0031.
 
 ---
 

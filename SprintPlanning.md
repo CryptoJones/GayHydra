@@ -83,9 +83,14 @@ then land the work it unblocks.
     a heap `new` from in-place construction. Grounded in the real decompiler p-code
     (`pCVar1 = (C *)operator_new(8L); C::C(pCVar1);`). **Third** user of the direct-call shape →
     the rule-of-three `CppDirectCallRecognizer` extraction is now earned (the next refactor).
-  - [ ] **`#37-9b-2`** — heap-construction *driver*: classify the ctor target (local name ==
+  - [x] ~~**`#37-9b-2`** — heap-construction *driver*: classify the ctor target (local name ==
     class namespace name) and resolve its `CppClass`, classify the allocation target as
-    `operator new`, and dispatch to `CppDecompilerHints.renderConstruction` → `new C()`.
+    `operator new`, and dispatch to `CppDecompilerHints.renderConstruction` → `new C()`.~~ Shipped
+    (DD-0031): `CppConstructorDriver` renders `new C()` from a real x86-64 `new C()`. Constructor
+    identified by `name == class namespace` (the demangler form, counterpart to the dtor's `~`),
+    allocation by `operator new` (same `.`→space normalisation as the delete driver). Args scoped
+    out (`#37-10+`). **Fourth** of seven forms end-to-end → three concrete direct-call copies now
+    exist, so the `CppDirectCallRecognizer` extraction is the next commit.
   - [ ] **refactor** — extract shared `CppDirectCallRecognizer` unifying `CppDeleteRecognizer`,
     `CppDestructorRecognizer`, and the constructor matcher's internal recovery (rule of three, now
     met at three concrete users) — a dedicated commit, not bundled into a feature slice.
