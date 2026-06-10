@@ -504,6 +504,14 @@ then land the work it unblocks.
     its recovered args as `inputs[2..]` like the ctor `CALL`, but typed `undefined8` (no prototype
     on an unresolved indirect call) — the typed-literal gates would decline, so `#37-10t` needs an
     explicit undefined-constant policy.
+  - [x] ~~**#37-10t** — thread recovered arguments into the virtual-call driver.~~ Shipped
+    (DD-0069): `CALLIND` `inputs[2..]` rendered through the shared `CppOperandRenderer`, so
+    `param_1->draw(5)` renders. New `undefinedConstantLiteral` policy: a prototype-less constant
+    renders as decimal iff its sign bit at the varnode width is clear (identical under either
+    signedness — faithful by construction); ambiguous patterns decline. An unrenderable argument
+    declines the *whole* hint (the old no-argument rendering misrepresented arity); zero-argument
+    calls unchanged. Vcall 5/5; collector + construction suites unchanged. Remaining `#37-10`:
+    the signature/template/operator different-in-kind tail.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

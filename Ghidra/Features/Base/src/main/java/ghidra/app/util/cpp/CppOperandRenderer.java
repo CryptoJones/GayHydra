@@ -27,6 +27,7 @@ import ghidra.program.model.data.CharDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Enum;
 import ghidra.program.model.data.Pointer;
+import ghidra.program.model.data.Undefined;
 import ghidra.program.model.data.WideChar16DataType;
 import ghidra.program.model.data.WideChar32DataType;
 import ghidra.program.model.data.WideCharDataType;
@@ -214,8 +215,40 @@ final class CppOperandRenderer {
 			if (type instanceof AbstractIntegerDataType integerType) {
 				return integerConstantLiteral(varnode, integerType);
 			}
+			if (type instanceof Undefined) {
+				return undefinedConstantLiteral(varnode);
+			}
 		}
 		return null;
+	}
+
+	/**
+	 * {@return the decimal literal for a prototype-less constant whose raw bits read the same under
+	 * signed and unsigned interpretation at the varnode width &mdash; the width's sign bit is clear
+	 * &mdash; or null otherwise}
+	 *
+	 * <p>An argument recovered from a call with no prototype (an unresolved indirect {@code CALLIND},
+	 * {@code #37-10t}) arrives typed {@code undefinedN}: the bits are known but the signedness is not.
+	 * A constant whose sign bit is clear renders to the same decimal under either reading, so its
+	 * value is faithful; a sign-bit-set pattern ({@code -1} vs {@code 18446744073709551615}) is
+	 * ambiguous and declines (never-wrong).
+	 */
+	private static String undefinedConstantLiteral(Varnode varnode) {
+		long value = varnode.getOffset();
+		int bits = varnode.getSize() * 8;
+		if (bits <= 0 || bits > 64) {
+			return null;
+		}
+		if (bits < 64) {
+			value &= (1L << bits) - 1;
+			if ((value & (1L << (bits - 1))) != 0) {
+				return null;
+			}
+		}
+		else if (value < 0) {
+			return null;
+		}
+		return Long.toString(value);
 	}
 
 	/**

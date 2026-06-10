@@ -24,6 +24,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Pointer;
 import ghidra.program.model.data.Structure;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighVariable;
 import ghidra.program.model.pcode.PcodeOp;
@@ -106,6 +107,7 @@ public final class CppVirtualCallDriver {
 		if (function == null) {
 			throw new IllegalArgumentException("high function must not be null");
 		}
+		Program program = function.getFunction().getProgram();
 		List<RenderedVirtualCall> rendered = new ArrayList<>();
 		Iterator<PcodeOpAST> ops = function.getPcodeOps();
 		while (ops.hasNext()) {
@@ -117,7 +119,7 @@ public final class CppVirtualCallDriver {
 			if (dispatch == null) {
 				continue;
 			}
-			RenderedVirtualCall hint = render(op, dispatch);
+			RenderedVirtualCall hint = render(op, dispatch, program);
 			if (hint != null) {
 				rendered.add(hint);
 			}
@@ -125,7 +127,8 @@ public final class CppVirtualCallDriver {
 		return rendered;
 	}
 
-	private RenderedVirtualCall render(PcodeOp callSite, VirtualDispatch dispatch) {
+	private RenderedVirtualCall render(PcodeOp callSite, VirtualDispatch dispatch,
+			Program program) {
 		HighVariable high = dispatch.receiver().getHigh();
 		if (high == null) {
 			return null;
@@ -138,8 +141,16 @@ public final class CppVirtualCallDriver {
 		if (receiverExpr == null || receiverExpr.isBlank()) {
 			return null;
 		}
+		// The CALLIND's inputs after the target (0) and receiver (1) are its explicit arguments
+		// (#37-10t, probe-grounded) -- the same recovery the construction drivers use. An argument
+		// that cannot be faithfully rendered declines the whole hint: rendering the call without it
+		// would silently misrepresent the call's arity (never-wrong).
+		List<String> argumentExprs = CppOperandRenderer.callArguments(callSite, program);
+		if (argumentExprs == null) {
+			return null;
+		}
 		String rendering = renderer.renderVirtualCall(receiverClass.owningClass(),
-			dispatch.slotIndex(), receiverExpr, receiverClass.receiverIsPointer(), List.of());
+			dispatch.slotIndex(), receiverExpr, receiverClass.receiverIsPointer(), argumentExprs);
 		return new RenderedVirtualCall(callSite.getSeqnum().getTarget(), rendering);
 	}
 
