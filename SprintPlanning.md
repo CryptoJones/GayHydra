@@ -184,6 +184,18 @@ then land the work it unblocks.
     *discovery* scan (find every RTTI structure) is the separate program-coupled `CppRttiAnalyzer`
     wrapper below.
 - [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
+  - [x] ~~**#37-5-4** — program-wide MSVC RTTI harvest scan.~~ Shipped (DD-0061):
+    `CppMsvcRttiScan.feedProgram` walks defined data for the `RTTICompleteObjectLocator` entries
+    upstream's `RttiAnalyzer` already laid down, re-validates each as an `Rtti4Model`, and feeds it
+    through `CppMsvcRttiDriver` — one call feeds a whole binary's MSVC class graph. **Harvest, not
+    re-discovery**: upstream's byte-search runs by default for VS/Clang PEs and publishes defined data
+    with a stable datatype name; reading that output beats duplicating the fragile byte walk. Feed order
+    irrelevant (defined-data order can be derived-before-base; `resolveOrPlaceholder` fills in). Grounded
+    against the complete-flow fixture with RTTI4s laid down via `CreateRtti4BackgroundCmd`; empty harvest
+    on an unanalyzed program. Scan 5/5. Remaining tail: the `Analyzer`-lifecycle wrapper (priority after
+    `RttiAnalyzer`, options, where the fed `CppTypeSystem` lives) and the `CppVTableAnalyzer` twin.
+    Note: upstream `RttiCreateCmdTest` `*FollowFlow` cases flake locally (order-sensitive, reproduce on
+    pure master; CI green) — pre-existing, out of scope.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
