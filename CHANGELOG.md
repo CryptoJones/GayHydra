@@ -638,6 +638,16 @@ generated from the GitHub Releases UI at sprint close.
   family) keep the explicit call form `p->operator-()` — itself valid C++, so the fallback is
   never-wrong by construction and the infix step only upgrades the unambiguous subset. Renderer
   suite +5, 68/68. The `#37-10` tail narrows to signature/`DataType` resolution. Design: DD-0071.
+- **Rec 37 `#37-12a` — demangled method signatures** (Sprint 14, opens the `#37-12` signature band)
+  — `CppDemanglingFeeder` now populates the `CppMethod.signature` `FunctionDefinition` the DD-0011
+  skeleton reserved (never before fed by anything), converting the `DemangledFunction`'s return and
+  parameter types through `DemangledDataType.getDataType` against the type system's bound
+  `DataTypeManager` — the same canonical conversion the upstream demangler analyzer applies, so the
+  model's view matches the listing's. The bare model-only type system (no DTM) and any
+  failed-to-convert type leave the signature null while the method still feeds (never-wrong over
+  complete); a missing demangled return (the constructor form) keeps the definition's default
+  return. Feeder suite +3, 16/16. Band slicing ahead: `#37-12b` vftable-driver signatures from the
+  slot `Function`, `#37-12c+` hint consumers. Design: DD-0072.
 
 ### Changed
 

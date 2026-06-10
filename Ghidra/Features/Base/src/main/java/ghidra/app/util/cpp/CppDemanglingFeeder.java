@@ -15,9 +15,19 @@
  */
 package ghidra.app.util.cpp;
 
+import java.util.List;
+
 import ghidra.app.util.demangler.Demangled;
+import ghidra.app.util.demangler.DemangledDataType;
 import ghidra.app.util.demangler.DemangledFunction;
 import ghidra.app.util.demangler.DemangledObject;
+import ghidra.app.util.demangler.DemangledParameter;
+import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DataTypeManager;
+import ghidra.program.model.data.FunctionDefinition;
+import ghidra.program.model.data.FunctionDefinitionDataType;
+import ghidra.program.model.data.ParameterDefinition;
+import ghidra.program.model.data.ParameterDefinitionImpl;
 
 /**
  * Populates a {@link CppTypeSystem} from already-demangled symbols. Given a {@link DemangledObject}
@@ -82,8 +92,56 @@ public final class CppDemanglingFeeder {
 		method.setConst(function.isTrailingConst());
 		method.setStatic(function.isStatic());
 		method.setCallingConvention(toCallingConvention(function));
+		method.setSignature(buildSignature(function));
 		cppClass.addMethod(method);
 		return method;
+	}
+
+	/**
+	 * {@return the resolved {@link FunctionDefinition} for the demangled signature ({@code #37-12a}),
+	 * or null when the type system has no bound {@link DataTypeManager} or any type fails to convert
+	 * &mdash; the method still feeds, carrying no signature (never-wrong)}
+	 *
+	 * <p>Types convert through {@link DemangledDataType#getDataType}, the same canonical conversion
+	 * the upstream demangler analyzer applies when it lays signatures onto {@code Function}s, so the
+	 * model's view matches what the listing shows. A demangled function with no recorded return type
+	 * (a constructor form) keeps the definition's default return.
+	 */
+	private FunctionDefinition buildSignature(DemangledFunction function) {
+		DataTypeManager dataTypeManager = typeSystem.getDataTypeManager();
+		if (dataTypeManager == null) {
+			return null;
+		}
+		try {
+			FunctionDefinitionDataType definition =
+				new FunctionDefinitionDataType(function.getName());
+			DemangledDataType returnType = function.getReturnType();
+			if (returnType != null) {
+				DataType converted = returnType.getDataType(dataTypeManager);
+				if (converted == null) {
+					return null;
+				}
+				definition.setReturnType(converted);
+			}
+			List<DemangledParameter> parameters = function.getParameters();
+			ParameterDefinition[] arguments = new ParameterDefinition[parameters.size()];
+			for (int i = 0; i < parameters.size(); i++) {
+				DemangledParameter parameter = parameters.get(i);
+				DemangledDataType parameterType = parameter.getType();
+				DataType converted =
+					parameterType == null ? null : parameterType.getDataType(dataTypeManager);
+				if (converted == null) {
+					return null;
+				}
+				arguments[i] = new ParameterDefinitionImpl(parameter.getLabel(), converted, null);
+			}
+			definition.setArguments(arguments);
+			return definition;
+		}
+		catch (Exception e) {
+			// An unconvertible signature feeds no signature -- total-failure-safe.
+			return null;
+		}
 	}
 
 	/**
