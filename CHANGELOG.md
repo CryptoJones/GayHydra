@@ -685,6 +685,17 @@ generated from the GitHub Releases UI at sprint close.
   needs reference-level grounding and is deferred to its own slice rather than minted speculatively
   from type definitions. Recomputable and idempotent (deduplicating adds; re-run adds 0);
   cancellation per function/data unit. Suite 5/5. Design: DD-0074 (band).
+- **Rec 38 `#38-3b` — struct-field identities from references** — the static populator now mints
+  the RFC's third deterministic kind: a memory reference whose destination falls inside a defined
+  `Structure` unit resolves to the component *containing* it (so interior references still find
+  their field) and mints one `StructField(structure, fieldOffset)` — **type-level identity, shared
+  across every instance** of the structure, exactly the RFC's "same struct field across loads".
+  Fields are evidenced by references, never minted speculatively from type definitions; a
+  base-address reference conflates with field 0, acceptable for identity minting (no rename is
+  wrongly propagated by an identity's existence). Populator suite 7/7 (+2: type-level sharing
+  across two instances with an interior reference, unreferenced-struct no-op). **Completes the
+  deterministic `#38-3` static source**; the dataflow source (heuristic, confidence-thresholded)
+  is the band's remaining populator. Design: DD-0074 (band).
 
 ### Changed
 

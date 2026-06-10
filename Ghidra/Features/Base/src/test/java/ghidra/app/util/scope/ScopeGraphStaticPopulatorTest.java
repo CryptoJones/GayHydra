@@ -24,12 +24,16 @@ import org.junit.Test;
 import generic.test.AbstractGenericTest;
 import ghidra.app.util.scope.ScopeNode.GlobalAddress;
 import ghidra.app.util.scope.ScopeNode.Parameter;
+import ghidra.app.util.scope.ScopeNode.StructField;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
+import ghidra.program.model.symbol.RefType;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
@@ -86,6 +90,55 @@ public class ScopeGraphStaticPopulatorTest extends AbstractGenericTest {
 		assertEquals("added must count exactly the minted nodes", graph.getNodes().size(), added);
 		assertTrue("the static source mints identity only — no edges",
 			graph.getEdges().isEmpty());
+	}
+
+	@Test
+	public void testReferencedStructFieldsMintTypeLevelIdentities() throws Exception {
+		// struct Packet { int a; int b; } at 0x500000, with references into both fields (one to
+		// b's interior) and a second Packet instance referencing b — field identity is type-level,
+		// so both instances share one StructField("Packet", 4).
+		StructureDataType packet = new StructureDataType("Packet", 0);
+		packet.add(IntegerDataType.dataType, 4, "a", null);
+		packet.add(IntegerDataType.dataType, 4, "b", null);
+		builder.applyDataType("0x500000", packet);
+		builder.applyDataType("0x500100", packet);
+		builder.createMemoryReference("0x401000", "0x500000", RefType.READ,
+			SourceType.USER_DEFINED);
+		builder.createMemoryReference("0x401004", "0x500006", RefType.READ,
+			SourceType.USER_DEFINED);  // interior of b -> resolves to the containing field
+		builder.createMemoryReference("0x401008", "0x500104", RefType.WRITE,
+			SourceType.USER_DEFINED);  // second instance's b -> same type-level identity
+		program = builder.getProgram();
+		ScopeGraph graph = new ScopeGraph();
+
+		ScopeGraphStaticPopulator.populate(program, graph);
+
+		assertTrue("a base reference mints field 0",
+			graph.getNodes().contains(new StructField("Packet", 0)));
+		assertTrue("an interior reference resolves to its containing field",
+			graph.getNodes().contains(new StructField("Packet", 4)));
+		long packetFieldNodes = graph.getNodes().stream()
+				.filter(n -> n instanceof StructField f && f.structureName().equals("Packet"))
+				.count();
+		assertEquals("both instances' b references share ONE type-level identity", 2,
+			packetFieldNodes);
+	}
+
+	@Test
+	public void testUnreferencedStructMintsNoFieldIdentities() throws Exception {
+		// Fields are evidenced by references, not minted speculatively from the type definition.
+		StructureDataType packet = new StructureDataType("Packet", 0);
+		packet.add(IntegerDataType.dataType, 4, "a", null);
+		builder.applyDataType("0x500000", packet);
+		program = builder.getProgram();
+		ScopeGraph graph = new ScopeGraph();
+
+		ScopeGraphStaticPopulator.populate(program, graph);
+
+		assertTrue("no references, no field identities", graph.getNodes().stream()
+				.noneMatch(n -> n instanceof StructField));
+		assertTrue("the unit itself still mints its global identity",
+			graph.getNodes().contains(new GlobalAddress(addr(0x500000))));
 	}
 
 	@Test
