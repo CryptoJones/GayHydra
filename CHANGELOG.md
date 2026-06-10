@@ -656,6 +656,16 @@ generated from the GitHub Releases UI at sprint close.
   per-slot rather than per-table (a missing signature misleads nobody, unlike a missing name). The
   two `#37-12` feed paths now populate the same `CppMethod.signature` field from their respective
   canonical sources. Feeder +1, driver +1; analyzer suite unchanged. Design: DD-0073.
+- **Rec 38 `#38-2a` — the scope graph ships model-first** (opens the Rec 38 variable-naming band,
+  RFC-0002) — `ScopeNode` (sealed; the RFC's four kinds as value-semantic records),
+  `ScopeEdge` (`SAME_VALUE`/`ALIAS_OF`/`DERIVED_FROM` × `STATIC`/`DATAFLOW`/`USER_ASSERTED`,
+  confidence-validated), and `ScopeGraph` (deduplicating idempotent adds; the undirected
+  `sameValueComponent` walk over `SAME_VALUE` edges only — exactly the set rename propagation
+  offers, never crossing alias/derived edges). Grounded decision: RFC-0002's literal table schema
+  has no public extension point (`ProgramUserData` exposes address-keyed property maps, not
+  tables), and only user-asserted edges need durability (analysis edges are recomputable by the
+  RFC's own design), so the graph lives as a headless model with `userAssertedEdges()` as the
+  future persistence feed (`#38-2b`). Suite 10/10. Design: DD-0074.
 
 ### Changed
 
