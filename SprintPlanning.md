@@ -746,8 +746,13 @@ first implementation tier.
   - [x] ~~**#38-3a** — deterministic identity minting.~~ Shipped: `ScopeGraphStaticPopulator` —
     one `Parameter` node per function parameter slot, one `GlobalAddress` per defined data unit;
     identity only (edges are the dataflow source's and the user's per the RFC split); idempotent,
-    cancellable. Suite 5/5. Remaining `#38-3` work: struct-field identities (needs reference-level
-    grounding), then the dataflow source (its own heuristic band).
+    cancellable. Suite 5/5.
+  - [x] ~~**#38-3b** — struct-field identities from references.~~ Shipped: references into defined
+    `Structure` units resolve to their containing component and mint type-level
+    `StructField(structure, offset)` identities shared across instances — the RFC's "same struct
+    field across loads", evidenced not speculative. Populator 7/7. **The deterministic static
+    source is complete.** Remaining `#38-3`: the dataflow source (heuristic, the RFC's "hardest
+    case", behind a confidence threshold — its own grounded band).
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
 
