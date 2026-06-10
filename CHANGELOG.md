@@ -572,6 +572,17 @@ generated from the GitHub Releases UI at sprint close.
   cancellation per symbol via the monitor-aware overload. Scan suite 8/8 (harvest-all with slots in
   order, per-table decline, unanalyzed-program no-op, cancellation, four null contracts). Design:
   DD-0065.
+- **Rec 37 `#37-11c-3` — `CppVTableAnalyzer` lifecycle wrapper** (Sprint 14; **closes the
+  Program-coupled wrapper sprint item**) — the `CppRttiAnalyzer` twin: a default-enabled
+  `BYTE_ANALYZER` at `REFERENCE_ANALYSIS.after()` that runs the DD-0065 vftable harvest through the
+  DD-0062 provider during auto-analysis. Opening a VS/Clang PE now feeds the shared `CppTypeSystem`
+  with *both* halves automatically — class hierarchy from RTTI and named vtables from vftables.
+  Order relative to the sibling analyzer at the same priority is deliberately irrelevant (both feed
+  through placeholder-resolving feeders; the composition test asserts the end state, not an
+  ordering). Analyzer suite 7/7 (ordering vs upstream's actual priority, `canAnalyze` both ways,
+  end-to-end feed, composition with `CppRttiAnalyzer`, repeated-trigger idempotence,
+  unanalyzed-program no-op, cancelled-monitor abort). Remaining `#37-11` work: the hints-consumer
+  wiring. Design: DD-0066.
 
 ### Changed
 
