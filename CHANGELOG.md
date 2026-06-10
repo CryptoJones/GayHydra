@@ -676,6 +676,15 @@ generated from the GitHub Releases UI at sprint close.
   space names percent-escape the format's reserved characters, so template names like `MyVec<int>`
   round-trip. Saving an empty set removes the property outright. Codec suite 7/7; model suite
   unchanged. Completes `#38-2` (schema + storage). Design: DD-0074.
+- **Rec 38 `#38-3` (first slice) — static-analysis populator** —
+  `ScopeGraphStaticPopulator.populate(Program, ScopeGraph[, TaskMonitor])` mints the RFC's
+  deterministic value-identities: one `Parameter` node per function parameter slot, one
+  `GlobalAddress` node per defined data unit. **Identity only, no edges** — RFC-0002's population
+  split gives cross-function `SAME_VALUE` edges to the dataflow source and the user; the static
+  source establishes what exists. The third deterministic kind ("same struct field across loads")
+  needs reference-level grounding and is deferred to its own slice rather than minted speculatively
+  from type definitions. Recomputable and idempotent (deduplicating adds; re-run adds 0);
+  cancellation per function/data unit. Suite 5/5. Design: DD-0074 (band).
 
 ### Changed
 

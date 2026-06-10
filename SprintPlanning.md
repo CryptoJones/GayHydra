@@ -743,6 +743,11 @@ first implementation tier.
     names percent-escaped; empty save removes the property. Codec 7/7. **Completes #38-2.** Next:
     **#38-3** static-analysis populator.
 - [ ] **PR #38-3:** static-analysis populator.
+  - [x] ~~**#38-3a** — deterministic identity minting.~~ Shipped: `ScopeGraphStaticPopulator` —
+    one `Parameter` node per function parameter slot, one `GlobalAddress` per defined data unit;
+    identity only (edges are the dataflow source's and the user's per the RFC split); idempotent,
+    cancellable. Suite 5/5. Remaining `#38-3` work: struct-field identities (needs reference-level
+    grounding), then the dataflow source (its own heuristic band).
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
 
