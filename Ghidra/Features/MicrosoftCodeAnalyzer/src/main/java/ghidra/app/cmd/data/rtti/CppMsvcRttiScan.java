@@ -25,6 +25,8 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.DataIterator;
 import ghidra.program.model.listing.Program;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitor;
 
 /**
  * The program-wide harvest half of Rec 37 {@code #37-5}: walks a program for every MSVC
@@ -60,7 +62,7 @@ public final class CppMsvcRttiScan {
 
 	/**
 	 * Walks the program's defined data for laid-down {@code RTTICompleteObjectLocator} entries and
-	 * feeds each one's class hierarchy.
+	 * feeds each one's class hierarchy, without cancellation support.
 	 *
 	 * @param program the program to harvest; must not be null
 	 * @param feeder the type-system feeder to attach the classes into; must not be null
@@ -69,6 +71,28 @@ public final class CppMsvcRttiScan {
 	 */
 	public static List<CppClass> feedProgram(Program program, CppRttiFeeder feeder,
 			DataValidationOptions validationOptions) {
+		try {
+			return feedProgram(program, feeder, validationOptions, TaskMonitor.DUMMY);
+		}
+		catch (CancelledException e) {
+			throw new AssertionError("the DUMMY monitor cannot be cancelled", e);
+		}
+	}
+
+	/**
+	 * Walks the program's defined data for laid-down {@code RTTICompleteObjectLocator} entries and
+	 * feeds each one's class hierarchy, checking the monitor for cancellation per entry.
+	 *
+	 * @param program the program to harvest; must not be null
+	 * @param feeder the type-system feeder to attach the classes into; must not be null
+	 * @param validationOptions options governing {@link Rtti4Model} re-validation; must not be null
+	 * @param monitor the task monitor to poll for cancellation; must not be null
+	 * @return the fed derived {@link CppClass}es in defined-data order (possibly empty, never null)
+	 * @throws CancelledException if the monitor is cancelled mid-walk
+	 */
+	public static List<CppClass> feedProgram(Program program, CppRttiFeeder feeder,
+			DataValidationOptions validationOptions, TaskMonitor monitor)
+			throws CancelledException {
 		if (program == null) {
 			throw new IllegalArgumentException("program must not be null");
 		}
@@ -78,9 +102,13 @@ public final class CppMsvcRttiScan {
 		if (validationOptions == null) {
 			throw new IllegalArgumentException("validationOptions must not be null");
 		}
+		if (monitor == null) {
+			throw new IllegalArgumentException("monitor must not be null");
+		}
 		List<CppClass> fed = new ArrayList<>();
 		DataIterator definedData = program.getListing().getDefinedData(true);
 		while (definedData.hasNext()) {
+			monitor.checkCancelled();
 			Data data = definedData.next();
 			DataType type = data.getDataType();
 			if (type == null || !Rtti4Model.DATA_TYPE_NAME.equals(type.getName())) {
