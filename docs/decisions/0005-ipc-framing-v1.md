@@ -238,6 +238,17 @@ Upstream Ghidra Java still speaks v0; if a user invokes the
 GayHydra decompile binary from upstream Ghidra, the v0 fallback
 keeps it working.
 
+## Addendum (2026-06-10): #33-2.6 has since shipped
+
+The section below is preserved as written but is no longer current: path (a)
+was executed — the end-to-end IPC test landed in CI
+([PR #201](https://github.com/CryptoJones/GayHydra/pull/201)) and the validated
+command-loop flip shipped as the 26.2.0 sprint close
+([PR #189](https://github.com/CryptoJones/GayHydra/pull/189)): on a successful
+v1 greeting both ends tunnel the legacy command-loop bytes through v1 frames
+(`ghidra_process.cc` streambuf swap; `DecompileProcess` frame codec). A v0 peer
+still gets the untouched legacy path. Rec 33 is closed.
+
 ## Post-#33-2.5 status: the command loop is still v0 (#33-2.6 deferred)
 
 As shipped in **v26.1.16**, #33-2.1 … #33-2.5 are all merged, but
