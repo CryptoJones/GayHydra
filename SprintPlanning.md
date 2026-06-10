@@ -730,15 +730,18 @@ first implementation tier.
 
 ## Sprint 10 — Strategic: Variable Naming (Rec 38)
 
-- [ ] **PR #38-2:** `ScopeNode` and `ScopeEdge` schema + storage layer.
+- [x] ~~**PR #38-2:** `ScopeNode` and `ScopeEdge` schema + storage layer.~~ **Complete** (both slices below).
   - [x] ~~**#38-2a** — the model half.~~ Shipped (DD-0074): `ScopeNode`/`ScopeEdge`/`ScopeGraph`
     in `ghidra.app.util.scope` — value-semantic, idempotent, with the undirected `SAME_VALUE`
     component walk rename propagation needs. Grounded: the RFC's table schema has no public
     extension point (`ProgramUserData` = address-keyed maps, not tables); only user-asserted edges
     need durability. Suite 10/10.
-  - [ ] **#38-2b** — persistence codec: encode `userAssertedEdges()` through `ProgramUserData`
+  - [x] ~~**#38-2b** — persistence codec: encode `userAssertedEdges()` through `ProgramUserData`
     string properties (fork-owned owner key); per-user durability acceptable (everything else
-    recomputable).
+    recomputable).~~ Shipped: `ScopeGraphUserAssertions` — one versioned program-level string
+    property; fresh-program/unknown-version/corrupt-line loads are never-wrong (skip, not fail);
+    names percent-escaped; empty save removes the property. Codec 7/7. **Completes #38-2.** Next:
+    **#38-3** static-analysis populator.
 - [ ] **PR #38-3:** static-analysis populator.
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
