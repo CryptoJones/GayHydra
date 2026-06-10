@@ -196,6 +196,17 @@ then land the work it unblocks.
     `RttiAnalyzer`, options, where the fed `CppTypeSystem` lives) and the `CppVTableAnalyzer` twin.
     Note: upstream `RttiCreateCmdTest` `*FollowFlow` cases flake locally (order-sensitive, reproduce on
     pure master; CI green) — pre-existing, out of scope.
+  - [x] ~~**#37-11a** — per-program `CppTypeSystem` provider.~~ Shipped (DD-0062):
+    `CppTypeSystemProvider.get(Program)` — get-or-create over `TransientProgramProperties`
+    (`SCOPE.PROGRAM`), one shared type system per open program, bound to the program's
+    `DataTypeManager`, released on close. Fills the grounded gap that *no production code constructed a
+    `CppTypeSystem`* (tests only) — the whole Rec 37 stack had no assembly point. Provider answers
+    location only; contributors feed, consumers read (module direction: provider in Base, contributors
+    downstream). PROGRAM scope is rollback-safe — the model holds standalone placeholder structures,
+    not program-DB datatypes. Provider 6/6. Next `#37-11` slices: **#37-11b** `CppRttiAnalyzer`
+    lifecycle wrapper in MicrosoftCodeAnalyzer (priority after upstream `RttiAnalyzer`, calls the
+    DD-0061 harvest through the provider), **#37-11c** `CppVTableAnalyzer` twin, then the
+    hints-consumer wiring that hands the shared type system to the recognition drivers.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call

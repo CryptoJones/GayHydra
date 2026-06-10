@@ -521,6 +521,19 @@ generated from the GitHub Releases UI at sprint close.
   harvested, `Base ← Shape ← Circle` edges correct, empty harvest on an unanalyzed program. The
   `Analyzer`-lifecycle wrapper and `CppVTableAnalyzer` twin remain the item's tail. Scan suite 5/5.
   Design: DD-0061.
+- **Rec 37 `#37-11a` — per-program `CppTypeSystem` provider** (Sprint 14, first slice of the `#37-11`
+  integration band) — `CppTypeSystemProvider.get(Program)` is a get-or-create over upstream's
+  `TransientProgramProperties` (`SCOPE.PROGRAM`): one shared `CppTypeSystem` per open program, created
+  bound to the program's `DataTypeManager` on first request, released automatically on program close.
+  This fills the grounded gap that no production code constructed a type system — the whole Rec 37
+  stack was plumbing with no assembly point. The provider answers *location only* and does not feed:
+  contributors (feeders, the DD-0061 MSVC harvest, future analyzer wrappers) feed the shared instance
+  and consumers (the recognition drivers) read it, which keeps the module dependency direction clean —
+  provider in Base, contributors downstream. `SCOPE.PROGRAM` (not `ANALYSIS_SESSION`) because hints are
+  consumed interactively after analysis ends; the rollback caveat does not bite because the model holds
+  standalone projection structures, not program-DB data types. Provider suite 6/6 (identity, DTM
+  binding, per-program isolation, contributor-to-consumer visibility, release-on-close, null contract).
+  Design: DD-0062.
 
 ### Changed
 
