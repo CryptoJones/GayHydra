@@ -506,6 +506,21 @@ generated from the GitHub Releases UI at sprint close.
   this, binary, unary, and comparison operands all compose through `operandExpr`; logical `!` needs no
   slice on current grounding (canonicalised away). The renderer stays a per-form twin (rule of three).
   Placement 56/56, heap 56/56. Design: DD-0060.
+- **Rec 37 `#37-5-4` — program-wide MSVC RTTI harvest scan** (Sprint 14, the program-wide step of the
+  `#37-5` MSVC RTTI band) — `CppMsvcRttiScan.feedProgram` walks a program's defined data for every
+  `RTTICompleteObjectLocator` that Ghidra's upstream `RttiAnalyzer` has already laid down, re-validates
+  each as an `Rtti4Model`, and feeds it through the shipped `CppMsvcRttiDriver` into a `CppTypeSystem` —
+  one call feeds a whole binary's MSVC class graph. Deliberately a **harvest, not a re-discovery**:
+  upstream's byte-search (type_info vftable → TypeDescriptor refs → validated RTTI4s) already runs by
+  default for VS/Clang PEs and publishes its result as defined data with a stable datatype name, so the
+  scan reads that output instead of duplicating the fragile byte-level walk. Feed order is irrelevant —
+  defined-data order can put a derived class before its base (grounded: Circle's RTTI4 sits below
+  Base's in the complete-flow fixture) and the feeder's `resolveOrPlaceholder` fills placeholders when
+  the base arrives. Grounded headlessly against the complete-flow fixture with the three RTTI4s laid
+  down via `CreateRtti4BackgroundCmd` (simulating the upstream analyzer having run): all three
+  harvested, `Base ← Shape ← Circle` edges correct, empty harvest on an unanalyzed program. The
+  `Analyzer`-lifecycle wrapper and `CppVTableAnalyzer` twin remain the item's tail. Scan suite 5/5.
+  Design: DD-0061.
 
 ### Changed
 
