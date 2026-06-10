@@ -494,6 +494,16 @@ then land the work it unblocks.
     Per-form twin (rule of three). Placement 56/56, heap 56/56. **Closes the `#37-10` expression
     sub-band** (`#37-10m`–`s`). Remaining `#37-10` work is the different-in-kind tail:
     signature/template/operator-overload rendering.
+  - [x] ~~**refactor** — extract the shared `CppOperandRenderer` (rule of three, met when the
+    `#37-10t` virtual-call argument threading became the third user).~~ Shipped: the
+    `#37-10a`–`s` argument-expression machinery (`callArguments` né `constructorArguments`,
+    typed-literal renderers, compound grammar) consolidated from the heap/placement per-form twins
+    (verified diff-identical modulo javadoc) into one package-private class; the two name
+    classifiers stay twins at two users. Net −823 lines; behaviour unchanged — placement 56/56,
+    heap 56/56. Grounding for `#37-10t` (probe 2026-06-10): a decompiled vtable `CALLIND` carries
+    its recovered args as `inputs[2..]` like the ctor `CALL`, but typed `undefined8` (no prototype
+    on an unresolved indirect call) — the typed-literal gates would decline, so `#37-10t` needs an
+    explicit undefined-constant policy.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
