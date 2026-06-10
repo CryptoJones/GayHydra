@@ -463,6 +463,20 @@ generated from the GitHub Releases UI at sprint close.
   rendered as leaves only, so a compound or cast-wrapped operand declines the whole hint (never-wrong).
   The renderer stays a per-form twin (rule of three). Grounded against decompiled `sete`/`setne` over a
   named param (render); placement 43/43, heap 43/43. Design: DD-0057.
+- **Rec 37 `#37-10q` — relational-comparison constructor arguments rendered as C++ comparisons** (Sprint
+  14, seventeenth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now
+  render a signed relational comparison argument, extending the `#37-10p` `comparisonOperator` map with
+  `INT_SLESS`/`INT_LESS` → `<`. A probe grounded a simpler reality than expected: the decompiler
+  canonicalises *every* signed relational source form to a strict `INT_SLESS` by adjusting the constant or
+  swapping the operands, so `new C(v < 7)` renders `param_1 < 7`, `v <= 7` renders `param_1 < 8`,
+  `v > 7` renders `7 < param_1`, and `v >= 7` renders `6 < param_1` — each the exact boolean the p-code
+  computes. `INT_SLESSEQUAL`/`INT_LESSEQUAL` are never emitted for these forms and so stay unmapped. The
+  unsigned `INT_LESS` casts its operand to unsigned, so the existing leaf-only operand rule in
+  `comparisonExpr` declines it rather than silently change signedness — the identical signed/unsigned
+  split division and the shifts already have, no new control flow, only one map entry. The renderer stays
+  a per-form twin (rule of three). Grounded against decompiled `setl`/`setle`/`setg`/`setge` (render the
+  four canonical forms) and `setb` (decline), and their placement twins; placement 48/48, heap 48/48.
+  Design: DD-0058.
 
 ### Changed
 

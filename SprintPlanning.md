@@ -373,6 +373,18 @@ then land the work it unblocks.
     Next `#37-10` work: relational comparison operators (`<`/`<=`/`>`/`>=`, need operand-order +
     signed/unsigned reasoning), logical `!`, nested compounds with parens, plus
     signature/template/operator rendering.
+  - [x] ~~**#37-10q** — render relational-comparison arguments (`<`/`<=`/`>`/`>=`) as C++ comparisons.~~
+    Shipped (DD-0058): extends the `#37-10p` `comparisonOperator` map with `INT_SLESS`/`INT_LESS` → `<`,
+    no other change. A probe grounded a simpler reality than expected: the decompiler canonicalises every
+    signed relational source form to a strict `INT_SLESS` by adjusting the constant or swapping the
+    operands, so `new C(v < 7)` → `param_1 < 7`, `v <= 7` → `param_1 < 8`, `v > 7` → `7 < param_1`,
+    `v >= 7` → `6 < param_1` (each the exact boolean computed); `INT_SLESSEQUAL`/`INT_LESSEQUAL` are never
+    emitted and stay unmapped. The unsigned `INT_LESS` casts its operand, so `comparisonExpr`'s leaf-only
+    rule declines it — the same signed/unsigned split division and the shifts have. Per-form twin (rule of
+    three). Grounded against `setl`/`setle`/`setg`/`setge` (render) + `setb` (decline), and placement
+    twins. Placement 48/48, heap 48/48. Completes the comparison sub-band `#37-10p`–`q`. Next `#37-10`
+    work: logical `!` (`BOOL_NEGATE` under the same `INT_ZEXT`), nested compounds with parens, plus
+    signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
