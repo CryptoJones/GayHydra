@@ -20,10 +20,14 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import generic.test.AbstractGenericTest;
+import ghidra.app.util.demangler.DemangledDataType;
 import ghidra.app.util.demangler.DemangledFunction;
 import ghidra.app.util.demangler.DemangledNamespaceNode;
+import ghidra.app.util.demangler.DemangledParameter;
 import ghidra.app.util.demangler.DemangledVariable;
+import ghidra.program.model.data.FunctionDefinition;
 import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.StandAloneDataTypeManager;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
 
@@ -52,6 +56,55 @@ public class CppDemanglingFeederTest extends AbstractGenericTest {
 			node = next;
 		}
 		return node;
+	}
+
+	// ----- demangled signatures (#37-12a) -----
+
+	@Test
+	public void testSignaturePopulatesFromDemangledTypes() {
+		CppTypeSystem ts = new CppTypeSystem(new StandAloneDataTypeManager("test"));
+		CppDemanglingFeeder feeder = new CppDemanglingFeeder(ts);
+		DemangledFunction f = function("area", "Shape");
+		f.setReturnType(new DemangledDataType("int", "int", "int"));
+		f.addParameter(new DemangledParameter(new DemangledDataType("int", "int", "int")));
+
+		CppMethod method = feeder.feed(f);
+
+		FunctionDefinition signature = method.getSignature();
+		assertNotNull("the demangled signature must populate the method", signature);
+		assertEquals("int", signature.getReturnType().getName());
+		assertEquals(1, signature.getArguments().length);
+		assertEquals("int", signature.getArguments()[0].getDataType().getName());
+	}
+
+	@Test
+	public void testNoReturnTypeKeepsDefinitionDefaultReturn() {
+		// A constructor form records no return type; the signature still populates with the
+		// definition's default return rather than declining.
+		CppTypeSystem ts = new CppTypeSystem(new StandAloneDataTypeManager("test"));
+		CppDemanglingFeeder feeder = new CppDemanglingFeeder(ts);
+		DemangledFunction f = function("Shape", "Shape");
+		f.addParameter(new DemangledParameter(new DemangledDataType("int", "int", "int")));
+
+		CppMethod method = feeder.feed(f);
+
+		assertNotNull(method.getSignature());
+		assertEquals(1, method.getSignature().getArguments().length);
+	}
+
+	@Test
+	public void testSignatureStaysNullWithoutDataTypeManager() {
+		// The bare model-only type system has no DataTypeManager to resolve types against; the
+		// method still feeds (name, qualifiers, convention), carrying no signature -- never-wrong.
+		CppTypeSystem ts = new CppTypeSystem();
+		CppDemanglingFeeder feeder = new CppDemanglingFeeder(ts);
+		DemangledFunction f = function("area", "Shape");
+		f.setReturnType(new DemangledDataType("int", "int", "int"));
+
+		CppMethod method = feeder.feed(f);
+
+		assertNotNull("the method must still feed", method);
+		assertNull("no DTM means no signature", method.getSignature());
 	}
 
 	/**

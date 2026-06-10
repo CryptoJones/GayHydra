@@ -523,6 +523,12 @@ then land the work it unblocks.
     `[]`/`()`/assignment keep the explicit `p->operatorX(args)` form, itself valid C++ — the
     fallback is never-wrong by construction. Renderer +5, 68/68. **Remaining `#37-10` (and the
     last open Rec 37 band): signature/`DataType` resolution.**
+  - [x] ~~**#37-12a** — demangled method signatures (opens the `#37-12` signature band).~~ Shipped
+    (DD-0072): the demangling feeder populates `CppMethod.signature` (the DD-0011 field nothing had
+    ever fed) via `DemangledDataType.getDataType` against the type system's bound DTM — the
+    demangler's own canonical conversion. No DTM / unconvertible type → null signature, method
+    still feeds (never-wrong); ctor form keeps default return. Feeder 16/16. Next: **#37-12b**
+    vftable-driver signatures from the slot `Function`, **#37-12c+** hint consumers.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
