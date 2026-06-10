@@ -648,6 +648,14 @@ generated from the GitHub Releases UI at sprint close.
   complete); a missing demangled return (the constructor form) keeps the definition's default
   return. Feeder suite +3, 16/16. Band slicing ahead: `#37-12b` vftable-driver signatures from the
   slot `Function`, `#37-12c+` hint consumers. Design: DD-0072.
+- **Rec 37 `#37-12b` — vftable slot signatures** (Sprint 14) — `CppVTableFeeder.SlotSpec` gains an
+  optional `FunctionDefinition` (two-argument form unchanged for every existing caller) and the
+  MSVC vftable driver fills it from the `Function` defined at the slot's address — the signature
+  the demangler analyzer already applied, so the model's view matches the listing's. A label-only
+  slot (no `Function`) feeds a null signature and still feeds by name — never-wrong over complete,
+  per-slot rather than per-table (a missing signature misleads nobody, unlike a missing name). The
+  two `#37-12` feed paths now populate the same `CppMethod.signature` field from their respective
+  canonical sources. Feeder +1, driver +1; analyzer suite unchanged. Design: DD-0073.
 
 ### Changed
 

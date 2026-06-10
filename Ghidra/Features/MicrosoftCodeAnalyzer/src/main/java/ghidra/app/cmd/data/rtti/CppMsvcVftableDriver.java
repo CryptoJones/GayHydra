@@ -23,7 +23,10 @@ import ghidra.app.util.cpp.CppVTable;
 import ghidra.app.util.cpp.CppVTableFeeder;
 import ghidra.app.util.cpp.CppVTableFeeder.SlotSpec;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.FunctionDefinition;
+import ghidra.program.model.data.FunctionDefinitionDataType;
 import ghidra.program.model.data.InvalidDataTypeException;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.Symbol;
@@ -124,8 +127,25 @@ public final class CppMsvcVftableDriver {
 			if (methodName == null || methodName.isBlank() || PURECALL_NAME.equals(methodName)) {
 				return null;
 			}
-			slots.add(new SlotSpec(methodName, false));
+			slots.add(new SlotSpec(methodName, false, slotSignature(program, functionAddress)));
 		}
 		return slots;
+	}
+
+	// The slot function's resolved signature ({@code #37-12b}): when a Function is defined at the
+	// slot's address the demangler analyzer has already applied its signature, so a definition built
+	// from it matches what the listing shows. No Function (or any failure) feeds no signature -- the
+	// slot still feeds by name (never-wrong over complete).
+	private static FunctionDefinition slotSignature(Program program, Address functionAddress) {
+		try {
+			Function slotFunction = program.getFunctionManager().getFunctionAt(functionAddress);
+			if (slotFunction == null) {
+				return null;
+			}
+			return new FunctionDefinitionDataType(slotFunction.getSignature());
+		}
+		catch (Exception e) {
+			return null;
+		}
 	}
 }

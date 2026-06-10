@@ -98,6 +98,30 @@ public class CppMsvcVftableDriverTest extends AbstractRttiTest {
 	}
 
 	@Test
+	public void testSlotWithDefinedFunctionCarriesItsSignature() throws Exception {
+		// #37-12b: when a Function is defined at a slot's address (the demangler analyzer has
+		// applied its signature), the fed slot method carries a definition built from it; a
+		// label-only slot stays signatureless.
+		ProgramBuilder builder = build32BitX86();
+		setupRtti32CompleteFlow(builder);
+		builder.createEmptyFunction("draw", "0x" + Long.toHexString(CIRCLE_SLOT_0_FUNCTION), 1,
+			new ghidra.program.model.data.IntegerDataType());
+		builder.createLabel("0x" + Long.toHexString(CIRCLE_SLOT_1_FUNCTION), "area");
+		ProgramDB program = builder.getProgram();
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		CppVTable fed = CppMsvcVftableDriver.feedVtable(
+			new VfTableModel(program, addr(program, CIRCLE_VFTABLE), defaultValidationOptions),
+			new CppVTableFeeder(typeSystem));
+
+		assertNotNull(fed);
+		assertNotNull("the defined function's signature must carry onto the slot",
+			fed.getSlot(0).getSignature());
+		assertEquals("int", fed.getSlot(0).getSignature().getReturnType().getName());
+		assertNull("a label-only slot stays signatureless", fed.getSlot(1).getSignature());
+	}
+
+	@Test
 	public void testDeclinesWhenASlotHasNoSymbol() throws Exception {
 		// No slot function is named — there is no faithful method name, so the whole table declines.
 		ProgramBuilder builder = build32BitX86();
