@@ -398,6 +398,18 @@ then land the work it unblocks.
     three). Placement 52/52, heap 52/52. Next `#37-10` work: comparison-operand compounds, logical `!`
     (decompiler typically canonicalises `!v` to `v == 0`, already rendered by `#37-10p`), plus
     signature/template/operator rendering.
+  - [x] ~~**#37-10s** — render compound operands inside comparison arguments.~~ Shipped (DD-0060):
+    `comparisonExpr`'s two operands route through the `#37-10r` `operandExpr` instead of `leafExpr` (the
+    whole change per driver), so `new C((param_1 & 7) == 5)` / `!= 5` / `< 5` render (and placement
+    twins). Probe findings: compound operands arrive directly under the comparison (signed relational
+    kept its `INT_AND` operand bare — a masked value needs no unsigned cast), and a unary compound under
+    a comparison is typically never seen — the decompiler folds `~v == 5` into `INT_EQUAL(param_1, -6)`,
+    rendering `param_1 == -6` at leaf level (exact boolean). Leaves render bare (all `#37-10p`/`q`
+    renderings unchanged), cast-wrapped unsigned forms still decline. Binary, unary, and comparison
+    operands now all compose through `operandExpr`; logical `!` needs no slice on current grounding.
+    Per-form twin (rule of three). Placement 56/56, heap 56/56. **Closes the `#37-10` expression
+    sub-band** (`#37-10m`–`s`). Remaining `#37-10` work is the different-in-kind tail:
+    signature/template/operator-overload rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

@@ -492,6 +492,20 @@ generated from the GitHub Releases UI at sprint close.
   grounded unsigned-form decline holds. Comparison operands stay leaf-only this slice. The renderer stays
   a per-form twin (rule of three). Grounded against four decompiled nested shapes per driver; placement
   52/52, heap 52/52. Design: DD-0059.
+- **Rec 37 `#37-10s` — compound operands inside comparison constructor arguments** (Sprint 14,
+  nineteenth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now route
+  `comparisonExpr`'s two operands through the `#37-10r` `operandExpr` helper instead of `leafExpr` (the
+  whole change per driver), so a comparison over a compound renders: `new C((param_1 & 7) == 5)`,
+  `new C((param_1 & 7) != 5)`, `new C((param_1 & 7) < 5)`, plus placement twins. A probe grounded two
+  findings: the compound operands arrive directly under the comparison (the signed relational kept its
+  `INT_AND` operand bare — a masked value needs no unsigned cast), and a unary compound under a
+  comparison is typically never seen because the decompiler folds it into the constant (`~v == 5`
+  arrives as `INT_EQUAL(param_1, -6)` and renders `param_1 == -6` at leaf level — the exact boolean
+  computed). Everything else is inherited: leaves render bare so all `#37-10p`/`q` renderings are
+  unchanged, nested compounds parenthesise per DD-0059, cast-wrapped unsigned forms still decline. With
+  this, binary, unary, and comparison operands all compose through `operandExpr`; logical `!` needs no
+  slice on current grounding (canonicalised away). The renderer stays a per-form twin (rule of three).
+  Placement 56/56, heap 56/56. Design: DD-0060.
 
 ### Changed
 
