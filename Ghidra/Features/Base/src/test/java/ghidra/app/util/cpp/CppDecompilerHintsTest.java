@@ -297,6 +297,15 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 	}
 
 	@Test
+	public void testTemplateClassConstructionRendersAngleBrackets() {
+		// Guard (#37-10u): the renderer uses the class name verbatim, so a template class fed under
+		// its demangled name (MyVec<int>) renders source-faithfully with no template-specific code.
+		CppClass vec = new CppClass(struct("MyVec<int>"));
+		assertEquals("new MyVec<int>(n)",
+			new CppDecompilerHints().renderConstruction(vec, List.of("n")));
+	}
+
+	@Test
 	public void testConstructionUsesClassNameNotVtableOrBases() {
 		// The form needs only the class name; a vtable / base edges on the type do not change it.
 		CppClass shape = classWithVtable("Shape", slot("area"));

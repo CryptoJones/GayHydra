@@ -166,6 +166,24 @@ public class CppMsvcRttiDecoderTest extends AbstractCppRttiTest {
 		return CppMsvcRttiDecoder.decodeBase(new Rtti1Model(program, address, defaultValidationOptions));
 	}
 
+	@Test
+	public void testDecodesTemplateClassName() throws Exception {
+		// Guard (#37-10u): an MSVC template class's descriptor name demangles with its arguments
+		// (.?AV?$MyVec@H@@ -> MyVec<int>) and flows through the decode unchanged -- the form
+		// CppTypeSystem keys by, so template classes need no separate handling anywhere downstream.
+		ProgramBuilder builder = build32BitX86();
+		setupRtti32CompleteFlow(builder);
+		setNumContainedBases(builder, BASE_RTTI1, 0);
+		// Overwrite Base's descriptor name (RTTI0 + 8) with the template mangling.
+		builder.setBytes("0x01005208", ".?AV?$MyVec@H@@\0".getBytes());
+		ProgramDB program = builder.getProgram();
+
+		DecodedClass templated = decodeClass(program, 0x01003368L);
+		assertEquals("the demangled template name must flow through the decode", "MyVec<int>",
+			templated.derivedName());
+		assertEquals(List.of(), templated.directBases());
+	}
+
 	private DecodedClass decodeClass(ProgramDB program, long rtti3Address) {
 		Address address = program.getAddressFactory().getDefaultAddressSpace().getAddress(rtti3Address);
 		return CppMsvcRttiDecoder.decodeClass(new Rtti3Model(program, address, defaultValidationOptions));

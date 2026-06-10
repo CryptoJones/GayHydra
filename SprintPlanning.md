@@ -512,6 +512,11 @@ then land the work it unblocks.
     declines the *whole* hint (the old no-argument rendering misrepresented arity); zero-argument
     calls unchanged. Vcall 5/5; collector + construction suites unchanged. Remaining `#37-10`:
     the signature/template/operator different-in-kind tail.
+  - [x] ~~**#37-10u** — template class names.~~ Dissolved with guards (DD-0070): probe-grounded,
+    the demangler hands the pipeline `MyVec<int>` and every layer keys/renders by name verbatim —
+    no feature code needed (the Rec 39 `for`-loop pattern). Two guard tests pin it (decoder
+    `derivedName == "MyVec<int>"`, renderer `new MyVec<int>(n)`). Remaining `#37-10`:
+    signature/`DataType` resolution and operator-overload rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
