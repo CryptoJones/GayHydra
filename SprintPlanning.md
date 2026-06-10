@@ -183,7 +183,10 @@ then land the work it unblocks.
     form), completing the MSVC RTTI → `CppTypeSystem` pipeline end to end; driver 5/5. The program-wide
     *discovery* scan (find every RTTI structure) is the separate program-coupled `CppRttiAnalyzer`
     wrapper below.
-- [ ] **Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless feeders.
+- [x] ~~**Program-coupled `CppRttiAnalyzer` / `CppVTableAnalyzer`** wrappers around the shipped headless
+  feeders.~~ **Complete (2026-06-10)**: both analyzers ship end-to-end (DD-0061..DD-0066) — opening a
+  VS/Clang PE feeds the shared per-program `CppTypeSystem` automatically with class hierarchy (RTTI)
+  and named vtables (vftables). Remaining `#37-11` work is the hints-consumer wiring.
   - [x] ~~**#37-5-4** — program-wide MSVC RTTI harvest scan.~~ Shipped (DD-0061):
     `CppMsvcRttiScan.feedProgram` walks defined data for the `RTTICompleteObjectLocator` entries
     upstream's `RttiAnalyzer` already laid down, re-validates each as an `Rtti4Model`, and feeds it
@@ -235,6 +238,15 @@ then land the work it unblocks.
     `pointer[n]`, nothing distinctive to select by datatype name). Declines per-table, not
     per-program; cancellation per symbol; same null contracts. Scan 8/8. Remaining: **#37-11c-3**
     `CppVTableAnalyzer` lifecycle wrapper, then the hints-consumer wiring.
+  - [x] ~~**#37-11c-3** — `CppVTableAnalyzer` lifecycle wrapper.~~ Shipped (DD-0066): the
+    `CppRttiAnalyzer` twin — default-enabled `BYTE_ANALYZER` at `REFERENCE_ANALYSIS.after()` running
+    the DD-0065 harvest through the DD-0062 provider. Opening a VS/Clang PE now feeds the shared
+    type system with *both* halves automatically (hierarchy from RTTI, named vtables from vftables);
+    sibling order deliberately irrelevant (placeholder-resolving feeders; composition test asserts
+    the end state). Analyzer 7/7. **Closes this sprint item.** Remaining `#37-11` work: the
+    hints-consumer wiring (hand `CppTypeSystemProvider.get(program)` to the recognition drivers).
+    Test-fixture note: the per-suite fixture twins now have three users — the `AbstractRttiTest`
+    extraction is earned (a natural standalone refactor commit).
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
