@@ -619,6 +619,15 @@ generated from the GitHub Releases UI at sprint close.
   calls render exactly as before. Vcall suite 5/5 (render-with-constant-arg, ambiguous-signedness
   decline + the three originals unchanged); collector and construction suites unchanged. Design:
   DD-0069.
+- **Rec 37 `#37-10u` — template class names: guard tests, no feature** (Sprint 14) — probe-grounded:
+  an MSVC template descriptor (`.?AV?$MyVec@H@@`) demangles to `MyVec<int>` and flows through the
+  decode, the feeder, the type system, and the renderers **verbatim** — the "template rendering"
+  item dissolves the way Rec 39's `for`-loop item did (existing machinery already provides it). Two
+  guard tests pin the property: the decoder yields `derivedName == "MyVec<int>"` and the
+  construction renderer emits `new MyVec<int>(n)`. Deliberately not addressed (and not
+  template-specific): qualified scoping (`std::vector<int>` arrives unqualified, the model-wide
+  namespace flattening) and template method signatures (the open signature-resolution tail).
+  Decoder 9/9, renderer 63/63. Design: DD-0070.
 
 ### Changed
 
