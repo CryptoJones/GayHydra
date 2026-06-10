@@ -610,6 +610,15 @@ generated from the GitHub Releases UI at sprint close.
 
 ### Changed
 
+- **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
+  argument-expression machinery the `#37-10a`–`s` band grew as per-form twins in the heap and
+  placement construction drivers (`callArguments` né `constructorArguments`, the leaf/typed-literal
+  renderers `#37-10c`–`l`, and the compound-expression grammar `#37-10m`–`s`) consolidated into one
+  package-private `CppOperandRenderer`, extracted at the third user (the `#37-10t` virtual-call
+  argument threading) per the DD-0026 rule-of-three convention. The twin blocks were verified
+  diff-identical modulo javadoc before extraction; the two name classifiers
+  (`constructorClassName`/`isOperatorNew`) stay per-form twins at two users. Net −823 lines; pure
+  structural refactor, behaviour unchanged — heap 56/56 and placement 56/56 green.
 - **Rec 37 `#37-11` refactor — extract the shared `Cpp*` RTTI test fixture helpers** (Sprint 14) —
   `layDownRtti4Data` (four per-suite twins), `setNumContainedBases` (four), and
   `assertSingleBaseEdge` (three) consolidated into a new fork-owned `AbstractCppRttiTest` between
