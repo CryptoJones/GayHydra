@@ -666,6 +666,43 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithArithmeticNegationExpressionArgument() throws Exception {
+		// new C(-v): an arithmetic unary minus is INT_2COMP of the named param_1, a single-operand op
+		// whose result is the same width as the operand (no widening cast), so it renders -param_1
+		// (grounded #37-10o).
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 f7 da", 6); // mov rdx,rsi; neg rdx
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("an arithmetic negation argument must render as -param_1", "new C(-param_1)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithBitwiseComplementExpressionArgument() throws Exception {
+		// new C(~v): a bitwise complement is INT_NEGATE of the named param_1, a single-operand op whose
+		// result is the same width as the operand, so it renders ~param_1 (grounded #37-10o).
+		HighFunction highFunction =
+			decompileMakeWithBinaryArg("48 89 f2 48 f7 d2", 6); // mov rdx,rsi; not rdx
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a bitwise complement argument must render as ~param_1", "new C(~param_1)",
+			hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");

@@ -438,6 +438,18 @@ generated from the GitHub Releases UI at sprint close.
   renderer stays a per-form twin (rule of three). Grounded against decompiled signed `idiv` quotient and
   remainder (render) and unsigned `div` quotient and remainder (decline), and their placement twins;
   placement 39/39, heap 39/39. Design: DD-0055.
+- **Rec 37 `#37-10o` — unary constructor arguments rendered as C++ unary expressions** (Sprint 14,
+  fifteenth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now render a
+  one-level unary compound argument: arithmetic negation (`new C(-param_1)`, `INT_2COMP`) and bitwise
+  complement (`new C(~param_1)`, `INT_NEGATE`) over a leaf operand, via a new `unaryExpr` /
+  `unaryOperator` pair wired into `argumentExpr` after the leaf and binary tries. A probe grounded the
+  shape: both opcodes preserve the operand's width, so the unary op is the value varnode's direct
+  definition with no intervening cast/extension — unlike a comparison or logical `!`, whose 1-byte
+  boolean result the decompiler widens with an `INT_ZEXT` (those stay deliberately declined, awaiting an
+  extension-peeling slice). The operand is a leaf only, so a unary prefix needs no parentheses and a
+  compound or cast-wrapped operand declines the whole hint (never-wrong). The renderer stays a per-form
+  twin (rule of three). Grounded against decompiled `neg`/`not` over a named param (render); placement
+  41/41, heap 41/41. Design: DD-0056.
 
 ### Changed
 
