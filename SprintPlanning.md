@@ -598,7 +598,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 **Quick wins:**
 
 - [x] ~~Flip `.github/workflows/sync-labels.yml`'s `dry-run` to `false` after Aaron reviews the first workflow run.~~ Shipped: Aaron confirmed 2026-05-26 that the dry-run output looked correct; flipped to live mode.
-- [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
+- [x] ~~**Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.~~ Resolved 2026-06-10: upstream closed the PR without comments or reviews — nothing to respond to; tracking ends.
 
 **External submissions:**
 
@@ -634,7 +634,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **Implementation surface — pick the cleanest next batch:**
 
-- [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
+- [x] ~~**Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.~~ Resolved 2026-06-10: upstream closed the PR without comments or reviews — nothing to respond to; tracking ends.
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork.
 - [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
 - [x] ~~**Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).~~ Deferred indefinitely — same policy rejection.
@@ -656,7 +656,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 The Rec 11–21 design surfaces shipped in v26.1; this sprint lands the
 first implementation tier.
 
-- [ ] **Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.
+- [x] ~~**Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.~~ Resolved 2026-06-10: upstream closed the PR without comments or reviews — nothing to respond to; tracking ends.
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`); fill in CVSS + affected ranges.
 - [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`; verify first trial-run on their infrastructure.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
 - [x] ~~**Rec 14:** add `projects/ghidra-loader/` JVM project to OSS-Fuzz once Rec 13 is green.~~ Deferred indefinitely — same policy rejection.
