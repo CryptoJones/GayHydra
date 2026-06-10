@@ -228,6 +228,13 @@ then land the work it unblocks.
     recovery deferred. Driver 8/8. Remaining: **#37-11c-2** program-wide vftable harvest scan
     (`CppMsvcRttiScan` twin), **#37-11c-3** `CppVTableAnalyzer` lifecycle wrapper, then the
     hints-consumer wiring.
+  - [x] ~~**#37-11c-2** — program-wide MSVC vftable harvest scan.~~ Shipped (DD-0065):
+    `CppMsvcVftableScan.feedProgram` walks the symbol table for the `vftable`-named symbols
+    upstream's associated-vftable pass publishes and drives each through the DD-0064 driver — the
+    `CppMsvcRttiScan` twin, anchored on a published *symbol* (a vftable's laid-down data is a plain
+    `pointer[n]`, nothing distinctive to select by datatype name). Declines per-table, not
+    per-program; cancellation per symbol; same null contracts. Scan 8/8. Remaining: **#37-11c-3**
+    `CppVTableAnalyzer` lifecycle wrapper, then the hints-consumer wiring.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
