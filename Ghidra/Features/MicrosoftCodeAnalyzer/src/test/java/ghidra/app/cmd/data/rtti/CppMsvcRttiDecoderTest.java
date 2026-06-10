@@ -46,7 +46,7 @@ import ghidra.program.model.address.Address;
  * {@code Circle}'s direct bases; a multiple-inheritance reinterpretation of the same array grounds that two
  * unrelated direct bases are both emitted in array order.
  */
-public class CppMsvcRttiDecoderTest extends AbstractRttiTest {
+public class CppMsvcRttiDecoderTest extends AbstractCppRttiTest {
 
 	// Base's real RTTI0 (".?AVBase@@" -> "Base") and RTTI3, laid down by setupRtti32Base, that the
 	// hand-built variant descriptors point at so they validate.
@@ -171,12 +171,4 @@ public class CppMsvcRttiDecoderTest extends AbstractRttiTest {
 		return CppMsvcRttiDecoder.decodeClass(new Rtti3Model(program, address, defaultValidationOptions));
 	}
 
-	// Overwrites the numContainedBases dword (RTTI1 + 4) of one shared base class descriptor.
-	private void setNumContainedBases(ProgramBuilder builder, long rtti1Address, int numContainedBases)
-			throws Exception {
-		boolean bigEndian =
-			builder.getProgram().getCompilerSpec().getDataOrganization().isBigEndian();
-		builder.setBytes(builder.addr(rtti1Address + 4).toString(),
-			getIntAsByteString(numContainedBases, bigEndian));
-	}
 }

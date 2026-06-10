@@ -26,10 +26,7 @@ import ghidra.app.util.cpp.CppVTable;
 import ghidra.app.util.cpp.CppVTableFeeder;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.database.ProgramDB;
-import ghidra.program.model.mem.MemoryBlock;
-import ghidra.program.util.ProgramMemoryUtil;
 import ghidra.util.exception.CancelledException;
-import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 
 /**
@@ -38,11 +35,9 @@ import ghidra.util.task.TaskMonitorAdapter;
  * {@link CppMsvcVftableDriver}. The fixture simulates "upstream's RTTI machinery has run" by applying
  * {@link CreateRtti4BackgroundCmd}, whose associated-vftable pass lays down the vftable data and
  * publishes the {@code vftable} symbols this scan anchors on; the slot functions are then named the
- * way the demangler would.
- *
- * <p>The fixture helpers are per-suite twins of {@link CppMsvcRttiScanTest}'s (rule of three).
+ * way the demangler would (the shared {@link AbstractCppRttiTest} helpers).
  */
-public class CppMsvcVftableScanTest extends AbstractRttiTest {
+public class CppMsvcVftableScanTest extends AbstractCppRttiTest {
 
 	// Complete-flow fixture RTTI4 addresses (Base <- Shape <- Circle).
 	private static final long BASE_RTTI4 = 0x01003340L;
@@ -168,27 +163,5 @@ public class CppMsvcVftableScanTest extends AbstractRttiTest {
 	private void nameSlots(ProgramBuilder builder, long[] slotFunctions) throws Exception {
 		builder.createLabel("0x" + Long.toHexString(slotFunctions[0]), "draw");
 		builder.createLabel("0x" + Long.toHexString(slotFunctions[1]), "area");
-	}
-
-	// Applies CreateRtti4BackgroundCmd at each RTTI4 address, simulating the upstream RttiAnalyzer's
-	// data creation — including its associated-vftable pass, which publishes the vftable symbols.
-	private void layDownRtti4Data(ProgramDB program, long... rtti4Addresses) throws Exception {
-		List<MemoryBlock> rtti4Blocks = ProgramMemoryUtil.getMemoryBlocksStartingWithName(program,
-			program.getMemory(), ".rdata", TaskMonitor.DUMMY);
-		int txID = program.startTransaction("Creating RTTI");
-		boolean commit = false;
-		try {
-			for (long rtti4Address : rtti4Addresses) {
-				CreateRtti4BackgroundCmd cmd =
-					new CreateRtti4BackgroundCmd(addr(program, rtti4Address), rtti4Blocks,
-						defaultValidationOptions, defaultApplyOptions);
-				assertTrue("RTTI4 data must apply at 0x" + Long.toHexString(rtti4Address),
-					cmd.applyTo(program));
-			}
-			commit = true;
-		}
-		finally {
-			program.endTransaction(txID, commit);
-		}
 	}
 }

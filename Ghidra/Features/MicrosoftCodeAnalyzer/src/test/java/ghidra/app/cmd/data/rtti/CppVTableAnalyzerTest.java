@@ -17,8 +17,6 @@ package ghidra.app.cmd.data.rtti;
 
 import static org.junit.Assert.*;
 
-import java.util.List;
-
 import org.junit.Test;
 
 import ghidra.app.plugin.prototype.MicrosoftCodeAnalyzerPlugin.CppRttiAnalyzer;
@@ -33,8 +31,6 @@ import ghidra.app.util.opinion.PeLoader;
 import ghidra.app.util.opinion.PeLoader.CompilerOpinion.CompilerEnum;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.database.ProgramDB;
-import ghidra.program.model.mem.MemoryBlock;
-import ghidra.program.util.ProgramMemoryUtil;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
@@ -43,10 +39,9 @@ import ghidra.util.task.TaskMonitorAdapter;
  * Coverage for the Rec 37 {@code #37-11c-3} {@link CppVTableAnalyzer} (DD-0066): the
  * {@code Analyzer}-lifecycle wrapper that runs the DD-0065 {@link CppMsvcVftableScan} harvest
  * through the shared per-program {@link CppTypeSystemProvider} type system — the
- * {@link CppRttiAnalyzer} twin. The fixture and helpers are per-suite twins of
- * {@link CppRttiAnalyzerTest}'s and {@link CppMsvcVftableScanTest}'s (rule of three).
+ * {@link CppRttiAnalyzer} twin (fixture via the shared {@link AbstractCppRttiTest} helpers).
  */
-public class CppVTableAnalyzerTest extends AbstractRttiTest {
+public class CppVTableAnalyzerTest extends AbstractCppRttiTest {
 
 	// Complete-flow fixture RTTI4 addresses (Base <- Shape <- Circle).
 	private static final long BASE_RTTI4 = 0x01003340L;
@@ -193,26 +188,6 @@ public class CppVTableAnalyzerTest extends AbstractRttiTest {
 		}
 		finally {
 			program.endTransaction(txID, true);
-		}
-	}
-
-	private void layDownRtti4Data(ProgramDB program, long... rtti4Addresses) throws Exception {
-		List<MemoryBlock> rtti4Blocks = ProgramMemoryUtil.getMemoryBlocksStartingWithName(program,
-			program.getMemory(), ".rdata", TaskMonitor.DUMMY);
-		int txID = program.startTransaction("Creating RTTI");
-		boolean commit = false;
-		try {
-			for (long rtti4Address : rtti4Addresses) {
-				CreateRtti4BackgroundCmd cmd =
-					new CreateRtti4BackgroundCmd(addr(program, rtti4Address), rtti4Blocks,
-						defaultValidationOptions, defaultApplyOptions);
-				assertTrue("RTTI4 data must apply at 0x" + Long.toHexString(rtti4Address),
-					cmd.applyTo(program));
-			}
-			commit = true;
-		}
-		finally {
-			program.endTransaction(txID, commit);
 		}
 	}
 }
