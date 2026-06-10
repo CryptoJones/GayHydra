@@ -596,6 +596,17 @@ generated from the GitHub Releases UI at sprint close.
   Rec 30 harness with the class fed into the provider's instance (the production wiring); suite
   3/3. Remaining: the surfacing (GUI margin once the `DISPLAY` ceiling lifts; headless consumers
   sooner). Design: DD-0067.
+- **Rec 37 `#37-11d-2` — headless hints surfacing** (Sprint 14) — collected hints become
+  user-visible today, without the `DISPLAY`-blocked margin surface: `CppHintsCommenter.annotate`
+  writes each `CppHint` as a `C++: <rendering>` **`PRE`** comment at its site (`PRE`, not `EOL`,
+  because the decompiler view displays `PRE` comments by default — the hint shows where the idiom
+  renders in *both* views), idempotent (the prefixed line is the dedup key) and additive (an
+  analyst's existing comment is preserved, the hint appended). `RecoverCppHintsScript`
+  (`@category C++`) is the thin decompile-collect-annotate driver for every function, runnable from
+  the Script Manager or `analyzeHeadless -postScript`. Auto-annotating from the analyzers was
+  deliberately rejected (un-opt-out-able side effect + function-order coupling with the mid-analysis
+  feed). Commenter suite 7/7 (write, idempotent re-run, append-below-existing, distinct-renderings
+  append, empty no-op, null contracts). Design: DD-0068.
 
 ### Changed
 

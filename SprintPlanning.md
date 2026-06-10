@@ -260,6 +260,14 @@ then land the work it unblocks.
     Verified through the Rec 30 harness with the class fed into the provider's instance; 3/3.
     Remaining `#37-11` work: surfacing (GUI margin blocked on `DISPLAY`; headless consumers
     sooner).
+  - [x] ~~**#37-11d-2** — headless hints surfacing.~~ Shipped (DD-0068): `CppHintsCommenter`
+    writes hints as idempotent, additive `C++: <rendering>` `PRE` comments (visible in listing
+    *and* decompiler view by default); `RecoverCppHintsScript` (`@category C++`) is the thin
+    per-function decompile→collect→annotate driver (Script Manager or
+    `analyzeHeadless -postScript`). Analyzer-side auto-annotation deliberately rejected
+    (un-opt-out-able + mid-analysis feed-order coupling). Commenter 7/7. Remaining Rec 37 surface
+    work: the GUI margin (same collector) when the `DISPLAY` ceiling lifts; the `#37-10`
+    signature/template/operator tail.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
