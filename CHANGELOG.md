@@ -628,6 +628,16 @@ generated from the GitHub Releases UI at sprint close.
   template-specific): qualified scoping (`std::vector<int>` arrives unqualified, the model-wide
   namespace flattening) and template method signatures (the open signature-resolution tail).
   Decoder 9/9, renderer 63/63. Design: DD-0070.
+- **Rec 37 `#37-10v` — infix operator-call rendering** (Sprint 14) — a virtual call through a slot
+  named `operator+` (and the rest of the binary set `- * / % == != < <= > >= & | ^ << >>`) renders
+  source-faithfully as binary infix — `(*p) + x` for a pointer receiver (dereference parenthesised
+  unconditionally, the `#37-10r` exact-by-construction stance), `s == other` for a value receiver —
+  **when and only when the call carries exactly one explicit argument**: a member binary operator's
+  arity. Zero arguments makes `operator-` negation / `operator*` dereference, whose infix-binary
+  form would be wrong, so they (and the deliberately excluded `++`/`--`/`[]`/`()`/assignment
+  family) keep the explicit call form `p->operator-()` — itself valid C++, so the fallback is
+  never-wrong by construction and the infix step only upgrades the unambiguous subset. Renderer
+  suite +5, 68/68. The `#37-10` tail narrows to signature/`DataType` resolution. Design: DD-0071.
 
 ### Changed
 

@@ -96,6 +96,53 @@ public class CppDecompilerHintsTest extends AbstractGenericTest {
 		assertEquals("this->area()", rendered);
 	}
 
+	// ----- overloaded-operator slots (#37-10v) -----
+
+	@Test
+	public void testBinaryOperatorSlotRendersInfixWithDereferencedPointerReceiver() {
+		CppClass num = classWithVtable("Num", slot("operator+"));
+		String rendered = new CppDecompilerHints().renderVirtualCall(
+			num, 0, "p", true, List.of("x"));
+		assertEquals("(*p) + x", rendered);
+	}
+
+	@Test
+	public void testComparisonOperatorSlotRendersInfixWithValueReceiver() {
+		CppClass num = classWithVtable("Num", slot("operator=="));
+		String rendered = new CppDecompilerHints().renderVirtualCall(
+			num, 0, "s", false, List.of("other"));
+		assertEquals("s == other", rendered);
+	}
+
+	@Test
+	public void testZeroArgOperatorSlotKeepsExplicitCallForm() {
+		// A member operator- with no explicit argument is unary negation, not subtraction; the
+		// infix binary form would be wrong, so the (valid C++) explicit call form renders instead.
+		CppClass num = classWithVtable("Num", slot("operator-"));
+		String rendered = new CppDecompilerHints().renderVirtualCall(
+			num, 0, "p", true, List.of());
+		assertEquals("p->operator-()", rendered);
+	}
+
+	@Test
+	public void testNonInfixOperatorSlotKeepsExplicitCallForm() {
+		// operator[] has a faithful form ((*p)[x]) that is not plain binary infix — deliberately
+		// excluded, so the explicit call renders.
+		CppClass num = classWithVtable("Num", slot("operator[]"));
+		String rendered = new CppDecompilerHints().renderVirtualCall(
+			num, 0, "p", true, List.of("i"));
+		assertEquals("p->operator[](i)", rendered);
+	}
+
+	@Test
+	public void testTwoArgOperatorNameKeepsExplicitCallForm() {
+		// Arity gates the infix form: exactly one explicit argument or the explicit call renders.
+		CppClass num = classWithVtable("Num", slot("operator+"));
+		String rendered = new CppDecompilerHints().renderVirtualCall(
+			num, 0, "p", true, List.of("x", "y"));
+		assertEquals("p->operator+(x, y)", rendered);
+	}
+
 	@Test
 	public void testOutOfRangeSlotIndexFallsBackToNeutralVtableForm() {
 		CppClass shape = classWithVtable("Shape", slot("area"));

@@ -517,6 +517,12 @@ then land the work it unblocks.
     no feature code needed (the Rec 39 `for`-loop pattern). Two guard tests pin it (decoder
     `derivedName == "MyVec<int>"`, renderer `new MyVec<int>(n)`). Remaining `#37-10`:
     signature/`DataType` resolution and operator-overload rendering.
+  - [x] ~~**#37-10v** — infix operator-call rendering.~~ Shipped (DD-0071): an operator slot with
+    exactly one explicit argument (a member binary operator's arity) renders infix — `(*p) + x` /
+    `s == other`; zero-arg (negation/dereference), `++`/`--` (postfix dummy-int ambiguity),
+    `[]`/`()`/assignment keep the explicit `p->operatorX(args)` form, itself valid C++ — the
+    fallback is never-wrong by construction. Renderer +5, 68/68. **Remaining `#37-10` (and the
+    last open Rec 37 band): signature/`DataType` resolution.**
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

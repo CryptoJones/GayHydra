@@ -16,6 +16,7 @@
 package ghidra.app.util.cpp;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * The C++ decompiler-hint renderer (RFC-0001 §5): a stateless producer of C++-style rendering
@@ -82,7 +83,45 @@ public final class CppDecompilerHints {
 		if (slotName == null) {
 			return receiverExpr + access + "vtable[" + slotIndex + "](" + args + ")";
 		}
+		String infix = infixOperatorRendering(slotName, receiverExpr, receiverIsPointer,
+			argumentExprs);
+		if (infix != null) {
+			return infix;
+		}
 		return receiverExpr + access + slotName + "(" + args + ")";
+	}
+
+	/**
+	 * The overloaded member operators whose call renders source-faithfully as a binary infix
+	 * expression when (and only when) the call carries exactly one explicit argument &mdash; the
+	 * arity that makes a member {@code operator-} subtraction rather than negation and a member
+	 * {@code operator*} multiplication rather than dereference. {@code ++}/{@code --} (whose postfix
+	 * forms carry a dummy {@code int} argument), {@code []}, {@code ()}, {@code ->}, and the
+	 * assignment family are deliberately absent: their faithful forms are not plain binary infix, so
+	 * they keep the explicit {@code receiver->operatorX(args)} rendering, which is itself valid C++.
+	 */
+	private static final Set<String> INFIX_OPERATOR_NAMES = Set.of("operator+", "operator-",
+		"operator*", "operator/", "operator%", "operator==", "operator!=", "operator<",
+		"operator<=", "operator>", "operator>=", "operator&", "operator|", "operator^",
+		"operator<<", "operator>>");
+
+	/**
+	 * {@return the infix rendering of an overloaded-operator call (e.g. {@code (*p) + x},
+	 * {@code s == x}), or null when the slot is not an infix-renderable operator with exactly one
+	 * explicit argument &mdash; the caller falls back to the explicit call form}
+	 *
+	 * <p>A pointer receiver is dereferenced and parenthesised unconditionally ({@code (*p) + x})
+	 * &mdash; exact by construction, no precedence table to get wrong (the {@code #37-10r}
+	 * philosophy); a value receiver renders bare ({@code s + x}).
+	 */
+	private static String infixOperatorRendering(String slotName, String receiverExpr,
+			boolean receiverIsPointer, List<String> argumentExprs) {
+		if (argumentExprs.size() != 1 || !INFIX_OPERATOR_NAMES.contains(slotName)) {
+			return null;
+		}
+		String glyph = slotName.substring("operator".length());
+		String receiver = receiverIsPointer ? "(*" + receiverExpr + ")" : receiverExpr;
+		return receiver + " " + glyph + " " + argumentExprs.get(0);
 	}
 
 	/**
