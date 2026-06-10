@@ -692,7 +692,7 @@ first implementation tier.
 
 ## Sprint 7 — IPC Modernization (Recs 33, 34)
 
-- [ ] **Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active. **Design landed at [DD-0005](docs/decisions/0005-ipc-framing-v1.md)** — sequence is `#33-2.1` (`frame_v1.hh`/`.cc` + unit tests), `#33-2.2` (server-side reader with v0 fallback), `#33-2.3` (server-side writer), `#33-2.4` (greeting handshake), `#33-2.5` (Java-side wiring + default flip to v1). Each PR ships independently; v0 fallback keeps the channel working at every step.
+- [x] ~~**Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active. **Design landed at [DD-0005](docs/decisions/0005-ipc-framing-v1.md)** — sequence is `#33-2.1` (`frame_v1.hh`/`.cc` + unit tests), `#33-2.2` (server-side reader with v0 fallback), `#33-2.3` (server-side writer), `#33-2.4` (greeting handshake), `#33-2.5` (Java-side wiring + default flip to v1).~~ **`#33-2.1`–`#33-2.5` all shipped in v26.1.16** (see DD-0005's post-#33-2.5 status section — this entry was stale). Both ends negotiate a v1 *greeting*; the command loop deliberately stays v0 on both sides. The remaining `#33-2.6` (flip the live command loop to v1) is the Sprint 14 Step 3 deferred item — blocked on a runnable end-to-end IPC test (DD-0005 path (a): a golden-transcript replay driving the built native binary with v1-framed commands).
 - [ ] **Rec 34 PR #34-2:** vendor FlatBuffers C++ headers + Java jar.
 - [ ] **Rec 34 PR #34-3:** land `decompile.fbs` schema + generated bindings.
 - [ ] **Rec 34 PR #34-4:** dual-encode the decompile-function request path.
