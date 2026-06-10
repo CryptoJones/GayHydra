@@ -550,6 +550,18 @@ generated from the GitHub Releases UI at sprint close.
   suite 6/6 (ordering vs the upstream analyzer's actual priority, `canAnalyze` gate both ways,
   end-to-end feed into the provider's instance, repeated-trigger idempotence, unanalyzed-program no-op,
   cancelled-monitor abort); feeder suite +1 re-feed case. Design: DD-0063.
+- **Rec 37 `#37-11c-1` — MSVC vftable driver** (Sprint 14, first slice of the vtable half of the
+  `#37-11` band) — `CppMsvcVftableDriver.feedVtable` bridges one located MSVC `vftable`
+  (`VfTableModel`) to the ABI-neutral `CppVTableFeeder`, the program-coupled core DD-0014 deferred.
+  The owning class comes from the vftable's own RTTI (`getRtti0Model().getDescriptorName()` — the
+  same name the RTTI decoder keys by, so the vtable attaches to the very `CppClass` the RTTI harvest
+  resolves, asserted by identity); slot names come from each slot function's primary symbol (the name
+  the demangler applied). A slot with no symbol, a default `FUN_...` symbol, or `_purecall` (abstract
+  class's pure slot — names the runtime trap, not the method) declines the *whole* table rather than
+  feed a misleading slot — a partial vtable would mis-number every later slot, and slot index is what
+  the virtual-call renderer dispatches on. `CppVTable.getTableAddress()` is finally set (the field
+  DD-0014 left for this scanner). Pure-virtual name recovery explicitly deferred. Driver suite 8/8.
+  Design: DD-0064.
 
 ### Changed
 

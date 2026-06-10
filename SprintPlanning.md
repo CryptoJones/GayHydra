@@ -218,6 +218,16 @@ then land the work it unblocks.
     `CppRttiFeeder.feedClass` duplicated base edges on re-feed (DD-0062's idempotence claim was wrong);
     it now skips identical edges. Analyzer 6/6, feeder +1. Remaining `#37-11` tail: **#37-11c**
     `CppVTableAnalyzer` twin, then the hints-consumer wiring.
+  - [x] ~~**#37-11c-1** — MSVC vftable driver.~~ Shipped (DD-0064): `CppMsvcVftableDriver.feedVtable`
+    bridges one located `VfTableModel` to `CppVTableFeeder` — the program-coupled core DD-0014
+    deferred. Owning class from the vftable's own RTTI (same `getDescriptorName()` the RTTI decoder
+    keys by → attaches to the very `CppClass` the RTTI feed resolves, asserted by identity); slot
+    names from each slot function's primary symbol. No-symbol / default-`FUN_...` / `_purecall` slots
+    decline the *whole* table (slot index is the virtual-call renderer's dispatch contract; a partial
+    table would mis-number every later slot). Sets `CppVTable.getTableAddress()`; pure-virtual name
+    recovery deferred. Driver 8/8. Remaining: **#37-11c-2** program-wide vftable harvest scan
+    (`CppMsvcRttiScan` twin), **#37-11c-3** `CppVTableAnalyzer` lifecycle wrapper, then the
+    hints-consumer wiring.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
