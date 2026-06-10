@@ -207,6 +207,17 @@ then land the work it unblocks.
     lifecycle wrapper in MicrosoftCodeAnalyzer (priority after upstream `RttiAnalyzer`, calls the
     DD-0061 harvest through the provider), **#37-11c** `CppVTableAnalyzer` twin, then the
     hints-consumer wiring that hands the shared type system to the recognition drivers.
+  - [x] ~~**#37-11b** — `CppRttiAnalyzer` lifecycle wrapper.~~ Shipped (DD-0063): a default-enabled
+    `BYTE_ANALYZER` beside upstream's `RttiAnalyzer` that runs the DD-0061 harvest through the DD-0062
+    provider during auto-analysis — opening a VS/Clang PE now feeds the shared `CppTypeSystem`
+    automatically, the first end-to-end production path from binary to fed type system. Priority
+    `REFERENCE_ANALYSIS.after()` (strictly after the upstream analyzer whose laid-down RTTI4 data it
+    consumes, asserted against its actual priority); same `canAnalyze` gate; `added()` re-walks the
+    whole program (re-feeding is a no-op — no `hasRun` gating). Cancellation threaded through a
+    monitor-aware `feedProgram` overload. The repeated-trigger test caught a real bug:
+    `CppRttiFeeder.feedClass` duplicated base edges on re-feed (DD-0062's idempotence claim was wrong);
+    it now skips identical edges. Analyzer 6/6, feeder +1. Remaining `#37-11` tail: **#37-11c**
+    `CppVTableAnalyzer` twin, then the hints-consumer wiring.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call

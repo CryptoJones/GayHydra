@@ -74,6 +74,11 @@ public final class CppRttiFeeder {
 	 * {@code __class_type_info}, i.e. a class with no bases) simply ensures the derived class exists
 	 * and adds no edges.
 	 *
+	 * <p><b>Idempotent:</b> a base identical to an already-attached edge (same resolved base class,
+	 * offset, virtuality, and access) is skipped, so a contributor that runs repeatedly — an analyzer
+	 * re-triggered as analysis progresses — re-feeds without duplicating the graph. A genuinely
+	 * different edge to the same base (a repeated non-virtual base at another offset) still attaches.
+	 *
 	 * <p>The base subobject offset is narrowed {@code long}→{@code int}: an offset within a single
 	 * class layout fits {@code int}, and {@link CppBaseClass} models it as {@code int}.
 	 *
@@ -91,9 +96,21 @@ public final class CppRttiFeeder {
 		CppClass derived = CppClassResolution.resolveOrPlaceholder(typeSystem, derivedName);
 		for (BaseSpec base : bases) {
 			CppClass baseClass = CppClassResolution.resolveOrPlaceholder(typeSystem, base.baseName());
-			derived.addBaseClass(
-				new CppBaseClass(baseClass, (int) base.offset(), base.isVirtual(), base.isPublic()));
+			if (!hasIdenticalEdge(derived, baseClass, base)) {
+				derived.addBaseClass(new CppBaseClass(baseClass, (int) base.offset(),
+					base.isVirtual(), base.isPublic()));
+			}
 		}
 		return derived;
+	}
+
+	private static boolean hasIdenticalEdge(CppClass derived, CppClass baseClass, BaseSpec base) {
+		for (CppBaseClass existing : derived.getBaseClasses()) {
+			if (existing.getBaseClass() == baseClass && existing.getOffset() == (int) base.offset() &&
+				existing.isVirtual() == base.isVirtual() && existing.isPublic() == base.isPublic()) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

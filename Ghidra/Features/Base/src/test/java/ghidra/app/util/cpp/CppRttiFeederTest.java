@@ -71,6 +71,27 @@ public class CppRttiFeederTest extends AbstractGenericTest {
 	}
 
 	@Test
+	public void testRefeedingTheSameClassAddsNoDuplicateEdges() {
+		CppTypeSystem ts = new CppTypeSystem();
+		CppRttiFeeder feeder = new CppRttiFeeder(ts);
+		List<BaseSpec> bases = List.of(new BaseSpec("Base", 0, false, true));
+
+		// A contributor can run repeatedly (an analyzer re-triggered as analysis progresses);
+		// re-feeding the same recovered facts must be a no-op, not an edge duplication.
+		CppClass derived = feeder.feedClass("Derived", bases);
+		feeder.feedClass("Derived", bases);
+
+		assertEquals("re-feeding identical facts must not duplicate the edge", 1,
+			derived.getBaseClasses().size());
+
+		// A genuinely different edge to the same base (repeated non-virtual base at another
+		// offset) is not a duplicate and must still attach.
+		feeder.feedClass("Derived", List.of(new BaseSpec("Base", 8, false, true)));
+		assertEquals("a distinct edge to the same base must still attach", 2,
+			derived.getBaseClasses().size());
+	}
+
+	@Test
 	public void testMultipleAndVirtualInheritancePreservesOrderOffsetsAndFlags() {
 		CppTypeSystem ts = new CppTypeSystem();
 		CppRttiFeeder feeder = new CppRttiFeeder(ts);

@@ -534,6 +534,22 @@ generated from the GitHub Releases UI at sprint close.
   standalone projection structures, not program-DB data types. Provider suite 6/6 (identity, DTM
   binding, per-program isolation, contributor-to-consumer visibility, release-on-close, null contract).
   Design: DD-0062.
+- **Rec 37 `#37-11b` — `CppRttiAnalyzer` lifecycle wrapper** (Sprint 14, the `Analyzer` tail of the
+  `#37-5` MSVC band) — a default-enabled `BYTE_ANALYZER` in MicrosoftCodeAnalyzer that runs the DD-0061
+  harvest scan through the DD-0062 per-program provider during auto-analysis, so opening a Visual
+  Studio / Clang PE feeds the shared `CppTypeSystem` automatically — the first end-to-end production
+  path from binary to fed type system. Priority `REFERENCE_ANALYSIS.after()`, strictly after upstream's
+  `RttiAnalyzer` (`REFERENCE_ANALYSIS.before()`) whose laid-down `RTTICompleteObjectLocator` data it
+  consumes; same `canAnalyze` gate (VS/Clang PE). `added()` ignores the notified set and re-walks the
+  whole program — re-feeding is a no-op by the feeder's contracts, so no `hasRun` gating is needed.
+  Cancellation threaded through a new monitor-aware `CppMsvcRttiScan.feedProgram` overload
+  (per-entry `checkCancelled`; the three-argument form delegates with `TaskMonitor.DUMMY`). The
+  repeated-trigger test caught a real feeder bug: `CppRttiFeeder.feedClass` appended duplicate base
+  edges on re-feed, contradicting the idempotence DD-0062 documented — it now skips an edge identical
+  to one already attached while still attaching a genuinely different edge to the same base. Analyzer
+  suite 6/6 (ordering vs the upstream analyzer's actual priority, `canAnalyze` gate both ways,
+  end-to-end feed into the provider's instance, repeated-trigger idempotence, unanalyzed-program no-op,
+  cancelled-monitor abort); feeder suite +1 re-feed case. Design: DD-0063.
 
 ### Changed
 
