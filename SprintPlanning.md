@@ -163,7 +163,7 @@ then land the work it unblocks.
       driver (duplicated as per-form twins, not yet rule-of-three); buffer rendered from its
       `HighVariable` name; ctor args scoped out to `#37-10+`. Driver 5/5. **Rec 37 recognition is now
       seven-of-seven end-to-end.**
-- [ ] **PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped). Sliced small:
+- [x] ~~**PR #37-5** — MSVC `CppRttiAnalyzer` (Itanium feeder #37-4 shipped).~~ **Complete** — all slices below plus the DD-0061 harvest scan and the DD-0063 `CppRttiAnalyzer` lifecycle wrapper. Sliced small:
   - [x] ~~**#37-5-1** — per-descriptor base decoder: one `RTTIBaseClassDescriptor` (`Rtti1Model`) →
     one `CppRttiFeeder.BaseSpec`.~~ Shipped (DD-0039): `CppMsvcRttiDecoder.decodeBase` — base name
     from the type descriptor's demangled name, offset from `mdisp`, public-ness from the
@@ -268,7 +268,7 @@ then land the work it unblocks.
     (un-opt-out-able + mid-analysis feed-order coupling). Commenter 7/7. Remaining Rec 37 surface
     work: the GUI margin (same collector) when the `DISPLAY` ceiling lifts; the `#37-10`
     signature/template/operator tail.
-- [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
+- [x] ~~**PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.~~ **Complete 2026-06-10**: argument/expression sub-band `#37-10a`–`s`, vcall args `#37-10t`, templates `#37-10u` (dissolved with guards), infix operators `#37-10v`, signature feeds `#37-12a`/`b`. Only `#37-12c+` consumers remain, deferred until a real consumer exists (DD-0073).
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call
     target (0) and `this` receiver (1) as the explicit arguments, renders each by its `HighVariable`
@@ -568,7 +568,7 @@ then land the work it unblocks.
 
 - [x] ~~**Rec 13/14 OSS-Fuzz submission**~~ — **rejected** 2026-05-26 by Google collaborator DavidKorczynski in [google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545): *"I don't think a fork of Ghidra is a great match with OSS-Fuzz. We prefer projects with large user bases, so I suspect Ghidra itself would be an interesting match."* Soft policy reject — the reviewer's suggested path of submitting upstream NSA/ghidra is out-of-scope for this fork. Re-scoped: the underlying `fuzz_xml` / `fuzz_marshal` harnesses (in `Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/`) stay as our own continuous-fuzzing infrastructure (runnable locally via `Makefile.fuzz` and, future-work, via our own CI); the OSS-Fuzz-specific `.github/oss-fuzz/` wrapper directory was deleted in [PR #84](https://github.com/CryptoJones/GayHydra/pull/84). Rec 14 (`projects/ghidra-loader/` Jazzer harnesses) deferred indefinitely for the same policy reason.
 - [ ] **Stage 3 step 6 — `-Werror` + ErrorProne ratchet** — deferred per [PR #271](https://github.com/CryptoJones/GayHydra/pull/271). The local Mac Mini test surfaced an ErrorProne/-Werror Catch-22 (`allErrorsAsWarnings = true` degrades ErrorProne errors to javac warnings, which `-Werror` then promotes back to errors). Needs a global ErrorProne reconfiguration OR a per-file suppression sweep across the tree. Bigger than originally scoped — its own sprint.
-- [ ] **`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
+- [x] ~~**`Automatic Dependency Submission (Gradle)`** pre-existing workflow failure~~ **Resolved** — the workflow runs green on master pushes as of 2026-06-10 (verified in the Actions run list); the linked issue number now resolves to an unrelated PR after the repo renumbering. Original text: — [issue #273](https://github.com/CryptoJones/GayHydra/issues/273): disable in repo Settings → Code security. In-tree fix attempted but only moves failure deeper (dbgeng TLB assert, then MarkdownSupport repos) — needs Aaron to click through Settings (no REST API).
 
 **Release pipeline hardening (from gayhydra-dropper dogfood):**
 
@@ -628,7 +628,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **Give-back PRs to NSA/ghidra:**
 
-- [ ] Identify ports where our resolution is cleaner than the original and open follow-up PRs upstream.
+- [x] ~~Identify ports where our resolution is cleaner than the original and open follow-up PRs upstream.~~ **Done** — evaluated and documented in [`docs/upstream-tracking/give-back-candidates.md`](docs/upstream-tracking/give-back-candidates.md) (#377); actually opening upstream PRs is an Aaron-attended decision.
 
 ---
 
@@ -641,19 +641,19 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 **Implementation surface — pick the cleanest next batch:**
 
 - [x] ~~**Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.~~ Resolved 2026-06-10: upstream closed the PR without comments or reviews — nothing to respond to; tracking ends.
-- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork.
+- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`). Requires CVSS + affected-version range — needs git blame work to identify the affected commits in our fork. *(Status note 2026-06-10: drafts were created once and lost in the repo deletion — see Apologies.md / PR #15; the redo is the open work.)*
 - [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
 - [x] ~~**Rec 14:** same submission for `projects/ghidra-loader/` (JVM project, Jazzer harnesses).~~ Deferred indefinitely — same policy rejection.
 - [x] ~~**Rec 17 #17-3:** add Cosign verification commands to release-notes template.~~ Shipped. The `gh release create` step in `.github/workflows/release.yml`'s upload block now emits a templated body containing the `cosign verify-blob` commands for both the zip and the bundled SBOM, plus a pointer to [`BINARY_SIGNING.md`](docs/security/BINARY_SIGNING.md). Identity-regex matches both push and `workflow_dispatch` invocations of `release.yml`.
-- [ ] **Rec 19 #19-2:** first SafeObjectInput migration — `ItemDeserializer` + `CodeUnitInfo` (Class A sites — attacker-reachable).
-- [ ] **Rec 21:** SBOM build-sanity gate (≥10 components or fail).
-- [ ] **Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean any subproject ≥50 warnings.
-- [ ] **Rec 26 Stage 2:** `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.
-- [ ] **Rec 28 #28-5+:** broader `@Ignore` sweep across the ~25 other in-tree sites.
+- [x] ~~**Rec 19 #19-2:** first SafeObjectInput migration — `ItemDeserializer` + `CodeUnitInfo` (Class A sites — attacker-reachable).~~ Shipped — see Sprint 6 canonical row ([PR #293](https://github.com/CryptoJones/GayHydra/pull/293)).
+- [x] ~~**Rec 21:** SBOM build-sanity gate (≥10 components or fail).~~ Shipped — the gate runs in `release.yml` ("SBOM sanity gate (≥10 components)").
+- [x] ~~**Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`.~~ Shipped — see Sprint 6 canonical row (`gradle/javaProject.gradle`).
+- [x] ~~**Rec 26 Stage 2:** `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.~~ Shipped — see Sprint 6 canonical row (`gradle/errorprone.gradle`).
+- [x] ~~**Rec 28 #28-5+:** broader `@Ignore` sweep across the ~25 other in-tree sites.~~ Done — see Sprint 6 `#28-6+` canonical row (sweep + `ignoreAudit` Stage 2).
 
 **Give-back PRs to NSA/ghidra:**
 
-- [ ] Identify ports where our resolution is cleaner than the original (e.g. PRs that hand-resolved a conflict by deleting commented-out lines) and open follow-up PRs back to upstream NSA/ghidra.
+- [x] ~~Identify ports where our resolution is cleaner than the original (e.g. PRs that hand-resolved a conflict by deleting commented-out lines) and open follow-up PRs back to upstream NSA/ghidra.~~ **Done** — evaluated and documented in [`docs/upstream-tracking/give-back-candidates.md`](docs/upstream-tracking/give-back-candidates.md) (#377); actually opening upstream PRs is an Aaron-attended decision.
 
 ---
 
@@ -663,23 +663,23 @@ The Rec 11–21 design surfaces shipped in v26.1; this sprint lands the
 first implementation tier.
 
 - [x] ~~**Rec 11 follow-up:** track [NSA/ghidra#9202](https://github.com/NationalSecurityAgency/ghidra/pull/9202) and respond to reviewer comments.~~ Resolved 2026-06-10: upstream closed the PR without comments or reviews — nothing to respond to; tracking ends.
-- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`); fill in CVSS + affected ranges.
+- [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`); fill in CVSS + affected ranges. *(Status note 2026-06-10: drafts were created once and lost in the repo deletion — see Apologies.md / PR #15; the redo is the open work.)*
 - [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`; verify first trial-run on their infrastructure.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
 - [x] ~~**Rec 14:** add `projects/ghidra-loader/` JVM project to OSS-Fuzz once Rec 13 is green.~~ Deferred indefinitely — same policy rejection.
 - [ ] **Rec 18 PR #18-2:** `ItemDeserializer` hardening — declared-size precheck + running-counter cap + clean-up on failure (closes [upstream #1481](https://github.com/NationalSecurityAgency/ghidra/issues/1481)). Coordinate-disclose with NSA before publishing.
-- [ ] **Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + depth/byte caps + unit tests.
+- [x] ~~**Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + depth/byte caps + unit tests.~~ Shipped — `SafeObjectInput` exists with `headerStream()`/`openStream()` helpers and the `objectInputStreamAudit` gate (Sprint 6 rows, PRs #293/#299/#301).
 
 ---
 
 ## Sprint 5 — CI / Static-Analysis Foundations
 
-- [ ] **Rec 17 PR #17-2:** Cosign keyless release-signing workflow wired into the release flow.
-- [ ] **Rec 17 PR #17-3:** update release-notes template with verification commands.
-- [ ] **Rec 21:** SBOM build-sanity gate (≥10 components or fail).
-- [ ] **Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean the floor in any subproject ≥50 warnings.
-- [ ] **Rec 26 Stage 2:** turn on `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.
-- [ ] **Rec 28 PR #28-2:** inventory the six audit-named `@Ignore` tests; file tracking issues per rule.
-- [ ] **Rec 28 PR #28-3:** `gradle ignoreAudit` task + CI wiring.
+- [x] ~~**Rec 17 PR #17-2:** Cosign keyless release-signing workflow wired into the release flow.~~ Shipped — `release.yml` signs zip + SBOM with cosign on all three runner OSes (Sprint 10 release rows).
+- [x] ~~**Rec 17 PR #17-3:** update release-notes template with verification commands.~~ Shipped — see the Sprint 5 canonical row above.
+- [x] ~~**Rec 21:** SBOM build-sanity gate (≥10 components or fail).~~ Shipped — gate in `release.yml`.
+- [x] ~~**Rec 25 Stage 2:** widen `-Xlint` to `deprecation,unchecked,rawtypes,cast`. Pre-clean the floor in any subproject ≥50 warnings.~~ Shipped — Sprint 6 canonical row.
+- [x] ~~**Rec 26 Stage 2:** turn on `JavaUtilDate` and `JdkObsolete` ErrorProne checks at WARNING.~~ Shipped — Sprint 6 canonical row.
+- [x] ~~**Rec 28 PR #28-2:** inventory the six audit-named `@Ignore` tests; file tracking issues per rule.~~ Done — the `ignore:1y` issue cluster (#55–#69) is that inventory.
+- [x] ~~**Rec 28 PR #28-3:** `gradle ignoreAudit` task + CI wiring.~~ Shipped — graduated to strict-by-default ([PR #43](https://github.com/CryptoJones/GayHydra/pull/43), Sprint 6 row).
 
 ---
 
@@ -699,20 +699,20 @@ first implementation tier.
 ## Sprint 7 — IPC Modernization (Recs 33, 34)
 
 - [x] ~~**Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active. **Design landed at [DD-0005](docs/decisions/0005-ipc-framing-v1.md)** — sequence is `#33-2.1` (`frame_v1.hh`/`.cc` + unit tests), `#33-2.2` (server-side reader with v0 fallback), `#33-2.3` (server-side writer), `#33-2.4` (greeting handshake), `#33-2.5` (Java-side wiring + default flip to v1).~~ **`#33-2.1`–`#33-2.5` all shipped in v26.1.16** (see DD-0005's post-#33-2.5 status section — this entry was stale). Both ends negotiate a v1 *greeting*; the command loop deliberately stays v0 on both sides. `#33-2.6` (the command-loop flip) also shipped later — 26.2.0 sprint close ([PR #189](https://github.com/CryptoJones/GayHydra/pull/189)) with the e2e IPC test in CI ([PR #201](https://github.com/CryptoJones/GayHydra/pull/201)). **Rec 33 is closed.**
-- [ ] **Rec 34 PR #34-2:** vendor FlatBuffers C++ headers + Java jar.
-- [ ] **Rec 34 PR #34-3:** land `decompile.fbs` schema + generated bindings.
-- [ ] **Rec 34 PR #34-4:** dual-encode the decompile-function request path.
+- [x] ~~**Rec 34 PR #34-2:** vendor FlatBuffers C++ headers + Java jar.~~ Shipped (prerequisite of the landed schema/codecs below).
+- [x] ~~**Rec 34 PR #34-3:** land `decompile.fbs` schema + generated bindings.~~ Shipped — `src/decompile/cpp/schema/decompile.fbs` in tree.
+- [x] ~~**Rec 34 PR #34-4:** dual-encode the decompile-function request path.~~ Shipped — host-side encoder ([PR #213](https://github.com/CryptoJones/GayHydra/pull/213)), worker-side codec ([PR #211](https://github.com/CryptoJones/GayHydra/pull/211)); band advanced through `#34-5a` (#215) and the `fuzz_ipc_schema` harness `#34-9` (#227).
 
 ---
 
 ## Sprint 8 — Decompiler UX Wins (Recs 35, 36, 39)
 
-- [ ] **Rec 35 PR #35-2:** add `DecompileBudget` to request schema; yield-point checks in `flow_analysis` and `data_flow`.
-- [ ] **Rec 35 PR #35-3:** UI partial-result banner + Retry-with-2x path.
-- [ ] **Rec 36 PR #36-2 + PR #36-3:** per-function dependency bitmaps replace global-flush invalidation.
-- [ ] **Rec 36 PR #36-4:** in-place rewrite paths for local rename / type / comment.
+- [x] ~~**Rec 35 PR #35-2:** add `DecompileBudget` to request schema; yield-point checks in `flow_analysis` and `data_flow`.~~ Shipped in re-scoped form — per-pass budget + bypass façade (`#35-4`/`#35-4b`, PRs #243/#251), GUI budget + partial detection (`#35-5a-1`/`-2`, PRs #306/#308).
+- [ ] **Rec 35 PR #35-3:** UI partial-result banner + Retry-with-2x path. *(Half shipped: the banner is `#35-5b-1` [PR #310]; the Retry action is `#35-5b-2`, the one genuinely open Sprint 14 item — DISPLAY-gated.)*
+- [x] ~~**Rec 36 PR #36-2 + PR #36-3:** per-function dependency bitmaps replace global-flush invalidation.~~ Shipped in re-scoped form per [DD-0009](docs/decisions/0009-rec36-incremental-invalidation.md): `#36-2` demoted into `#36-3b`; address-set invalidation `#36-3a` + recompute backstop `#36-3b-2` (PR #293) landed, plus the `#36-5a`/`b` telemetry (PRs #299/#301).
+- [ ] **Rec 36 PR #36-4:** in-place rewrite paths for local rename / type / comment. *(Deferred behind the `#36-5` telemetry per DD-0009 addendum 8 — telemetry has since shipped, so this is implementable again when prioritized.)*
 - [x] ~~**Rec 39 PR #39-2 + #39-3:** `for`-loop detection + datatest corpus.~~ **Already provided by upstream** — `BlockWhileDo::finalTransform`/`PrintC::emitForLoop` (gated by `analyze_for_loops`, default on) already render canonical `for` loops, and upstream's `forloop*.xml` / `noforloop*.xml` datatests cover + guard it (verified passing 2026-06-03). No fork reimplementation; see the "Phase 1 status" section in [`FOR_LOOP_INLINE_DETECTION.md`](docs/decompiler/FOR_LOOP_INLINE_DETECTION.md). Remaining Rec 39 value is Phase 2 below.
-- [ ] **Rec 39 PR #39-4 + #39-5:** inlined-library-call detection — the genuinely novel fork work. **Design landed at [DD-0007](docs/decisions/0007-rec39-phase2-inline-detection.md):** upstream *already* renders inlined string copies as `builtin_memcpy`/`builtin_strncpy` (CALLOTHER + builtin user-ops in `constseq.cc`/`userop.cc`), so the real gap is `memset`/`popcount` (sequence-shaped, tractable) and `strlen`/`strcmp`/`memcmp`/copy-loops (loop-shaped, harder). Decision: **extend that mechanism** with per-pattern C++ rules + new builtins, **not** the originally-proposed XML pattern-library engine. Implementation starts with #39-4a (`BUILTIN_MEMSET`/`RuleMemset`), then #39-4b (`popcount`); loop-shaped patterns get their own sub-DD. **#39-4a shipped:** `RuleMemset` folds a run of equal-constant STOREs into `builtin_memset`, reusing `HeapSequence` in a fill mode and running after `RuleStringStore` so it claims only the zero-fills / non-char fills that rule declines (zero regression; `datatests/heapmemset.xml`).
+- [x] ~~**Rec 39 PR #39-4 + #39-5:** inlined-library-call detection — the genuinely novel fork work.~~ Sequence-shaped phase **complete**: `#39-4a` memset (Sprint 8 row) and `#39-4b` SWAR popcount → native `CPUI_POPCOUNT` ([PR #261](https://github.com/CryptoJones/GayHydra/pull/261), `datatests/popcount.xml`). Loop-shaped phase (`#39-6a` strlen…) deferred — needs new loop-collapse infrastructure (DD-0008 addendum, PR #267). Original text: **Design landed at [DD-0007](docs/decisions/0007-rec39-phase2-inline-detection.md):** upstream *already* renders inlined string copies as `builtin_memcpy`/`builtin_strncpy` (CALLOTHER + builtin user-ops in `constseq.cc`/`userop.cc`), so the real gap is `memset`/`popcount` (sequence-shaped, tractable) and `strlen`/`strcmp`/`memcmp`/copy-loops (loop-shaped, harder). Decision: **extend that mechanism** with per-pattern C++ rules + new builtins, **not** the originally-proposed XML pattern-library engine. Implementation starts with #39-4a (`BUILTIN_MEMSET`/`RuleMemset`), then #39-4b (`popcount`); loop-shaped patterns get their own sub-DD. **#39-4a shipped:** `RuleMemset` folds a run of equal-constant STOREs into `builtin_memset`, reusing `HeapSequence` in a fill mode and running after `RuleStringStore` so it claims only the zero-fills / non-char fills that rule declines (zero regression; `datatests/heapmemset.xml`).
 
 ---
 
@@ -723,7 +723,7 @@ first implementation tier.
 - [x] ~~**PR #37-2:** `CppTypeSystem` skeleton + tests.~~ Shipped (DD-0011).
 - [x] ~~**PR #37-3:** `CppDemanglingFeeder`.~~ Shipped (DD-0012).
 - [x] ~~**PR #37-4:** `CppRttiAnalyzer` (Itanium).~~ Shipped as `CppRttiFeeder` (DD-0013); Program-coupled analyzer → Sprint 14.
-- [ ] **PR #37-5:** `CppRttiAnalyzer` (MSVC). **→ Sprint 14** (not started).
+- [x] ~~**PR #37-5:** `CppRttiAnalyzer` (MSVC). **→ Sprint 14** (not started).~~ **Complete in Sprint 14** (DD-0039..41, DD-0061, DD-0063).
 - [x] ~~**PR #37-6:** `CppVTableAnalyzer`.~~ Shipped as `CppVTableFeeder` + `CppVtableReconciler` (#37-6c, DD-0014/DD-0015); Program-coupled analyzer → Sprint 14.
 
 ---
