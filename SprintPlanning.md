@@ -245,8 +245,12 @@ then land the work it unblocks.
     sibling order deliberately irrelevant (placeholder-resolving feeders; composition test asserts
     the end state). Analyzer 7/7. **Closes this sprint item.** Remaining `#37-11` work: the
     hints-consumer wiring (hand `CppTypeSystemProvider.get(program)` to the recognition drivers).
-    Test-fixture note: the per-suite fixture twins now have three users — the `AbstractRttiTest`
-    extraction is earned (a natural standalone refactor commit).
+  - [x] ~~**refactor** — extract the shared `Cpp*` RTTI test fixture helpers (rule of three, met at
+    three-to-four users).~~ Shipped: `layDownRtti4Data` / `setNumContainedBases` /
+    `assertSingleBaseEdge` consolidated into a fork-owned `AbstractCppRttiTest` between upstream's
+    `AbstractRttiTest` and the six `Cpp*` suites (an intermediate class, not edits to the upstream
+    file, so upstream merges stay clean); two-user helpers (`nameSlots`,
+    `setExecutableFormatAndCompiler`) stay twins. Pure structural refactor; all six suites green.
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call

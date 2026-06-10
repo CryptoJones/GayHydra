@@ -586,6 +586,13 @@ generated from the GitHub Releases UI at sprint close.
 
 ### Changed
 
+- **Rec 37 `#37-11` refactor — extract the shared `Cpp*` RTTI test fixture helpers** (Sprint 14) —
+  `layDownRtti4Data` (four per-suite twins), `setNumContainedBases` (four), and
+  `assertSingleBaseEdge` (three) consolidated into a new fork-owned `AbstractCppRttiTest` between
+  upstream's `AbstractRttiTest` and the six `Cpp*` suites — an intermediate class rather than
+  additions to the upstream file, so upstream merges stay clean. Two-user helpers (`nameSlots`,
+  `setExecutableFormatAndCompiler`) stay per-suite twins (rule of three not yet met). Pure
+  structural refactor, behaviour unchanged; all six suites green.
 - **Rec 37 `#37-9b` heap matcher tightened to partition against placement** (Sprint 14 Step 2) —
   `CppConstructorRecognizer` now declines an allocation `CALL` carrying a buffer operand (three
   inputs), so a placement `operator new(size, void*)` — which demangles to the same `operator new`

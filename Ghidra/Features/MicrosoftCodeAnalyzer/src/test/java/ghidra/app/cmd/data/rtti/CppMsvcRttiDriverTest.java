@@ -40,7 +40,7 @@ import ghidra.program.model.address.Address;
  * driver is exercised from both entry forms: the {@code RTTICompleteObjectLocator} (RTTI4, what a vftable
  * points at) and the {@code RTTIClassHierarchyDescriptor} (RTTI3) it references.
  */
-public class CppMsvcRttiDriverTest extends AbstractRttiTest {
+public class CppMsvcRttiDriverTest extends AbstractCppRttiTest {
 
 	// Complete-flow fixture structure addresses (Base <- Shape <- Circle).
 	private static final long BASE_RTTI4 = 0x01003340L;
@@ -140,27 +140,7 @@ public class CppMsvcRttiDriverTest extends AbstractRttiTest {
 			new Rtti4Model(program, addr(program, rtti4Address), defaultValidationOptions), feeder);
 	}
 
-	private static void assertSingleBaseEdge(CppTypeSystem typeSystem, String derived, String base) {
-		List<CppBaseClass> bases = typeSystem.getCppClass(derived).getBaseClasses();
-		assertEquals(derived + " must have exactly one direct base", 1, bases.size());
-		CppBaseClass edge = bases.get(0);
-		assertSame("the edge must point at the resolved base CppClass",
-			typeSystem.getCppClass(base), edge.getBaseClass());
-		assertEquals(0, edge.getOffset());
-		assertFalse(edge.isVirtual());
-		assertTrue(edge.isPublic());
-	}
-
 	private static Address addr(ProgramDB program, long offset) {
 		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
-	}
-
-	// Overwrites the numContainedBases dword (RTTI1 + 4) of one shared base class descriptor.
-	private void setNumContainedBases(ProgramBuilder builder, long rtti1Address, int numContainedBases)
-			throws Exception {
-		boolean bigEndian =
-			builder.getProgram().getCompilerSpec().getDataOrganization().isBigEndian();
-		builder.setBytes(builder.addr(rtti1Address + 4).toString(),
-			getIntAsByteString(numContainedBases, bigEndian));
 	}
 }

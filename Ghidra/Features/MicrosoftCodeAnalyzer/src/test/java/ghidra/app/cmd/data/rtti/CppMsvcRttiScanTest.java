@@ -21,15 +21,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import ghidra.app.util.cpp.CppBaseClass;
 import ghidra.app.util.cpp.CppClass;
 import ghidra.app.util.cpp.CppRttiFeeder;
 import ghidra.app.util.cpp.CppTypeSystem;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.database.ProgramDB;
-import ghidra.program.model.mem.MemoryBlock;
-import ghidra.program.util.ProgramMemoryUtil;
-import ghidra.util.task.TaskMonitor;
 
 /**
  * End-to-end coverage for the Rec 37 {@code #37-5-4} {@link CppMsvcRttiScan} (DD-0061): the program-wide
@@ -42,7 +38,7 @@ import ghidra.util.task.TaskMonitor;
  * {@code numContainedBases == 0}, so the harvest test writes the real subtree sizes in to express the
  * true single-inheritance chain {@code Base <- Shape <- Circle}.
  */
-public class CppMsvcRttiScanTest extends AbstractRttiTest {
+public class CppMsvcRttiScanTest extends AbstractCppRttiTest {
 
 	// Complete-flow fixture structure addresses (Base <- Shape <- Circle).
 	private static final long BASE_RTTI4 = 0x01003340L;
@@ -117,45 +113,4 @@ public class CppMsvcRttiScanTest extends AbstractRttiTest {
 			new CppRttiFeeder(new CppTypeSystem()), null);
 	}
 
-	// Applies CreateRtti4BackgroundCmd at each RTTI4 address, simulating the upstream RttiAnalyzer's
-	// data creation (the same application pattern as the upstream RttiCreateCmdTest).
-	private void layDownRtti4Data(ProgramDB program, long... rtti4Addresses) throws Exception {
-		List<MemoryBlock> rtti4Blocks = ProgramMemoryUtil.getMemoryBlocksStartingWithName(program,
-			program.getMemory(), ".rdata", TaskMonitor.DUMMY);
-		int txID = program.startTransaction("Creating RTTI");
-		boolean commit = false;
-		try {
-			for (long rtti4Address : rtti4Addresses) {
-				CreateRtti4BackgroundCmd cmd =
-					new CreateRtti4BackgroundCmd(addr(program, rtti4Address), rtti4Blocks,
-						defaultValidationOptions, defaultApplyOptions);
-				assertTrue("RTTI4 data must apply at 0x" + Long.toHexString(rtti4Address),
-					cmd.applyTo(program));
-			}
-			commit = true;
-		}
-		finally {
-			program.endTransaction(txID, commit);
-		}
-	}
-
-	private static void assertSingleBaseEdge(CppTypeSystem typeSystem, String derived, String base) {
-		List<CppBaseClass> bases = typeSystem.getCppClass(derived).getBaseClasses();
-		assertEquals(derived + " must have exactly one direct base", 1, bases.size());
-		CppBaseClass edge = bases.get(0);
-		assertSame("the edge must point at the resolved base CppClass",
-			typeSystem.getCppClass(base), edge.getBaseClass());
-		assertEquals(0, edge.getOffset());
-		assertFalse(edge.isVirtual());
-		assertTrue(edge.isPublic());
-	}
-
-	// Overwrites the numContainedBases dword (RTTI1 + 4) of one shared base class descriptor.
-	private void setNumContainedBases(ProgramBuilder builder, long rtti1Address, int numContainedBases)
-			throws Exception {
-		boolean bigEndian =
-			builder.getProgram().getCompilerSpec().getDataOrganization().isBigEndian();
-		builder.setBytes(builder.addr(rtti1Address + 4).toString(),
-			getIntAsByteString(numContainedBases, bigEndian));
-	}
 }
