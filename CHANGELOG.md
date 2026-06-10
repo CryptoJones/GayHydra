@@ -562,6 +562,16 @@ generated from the GitHub Releases UI at sprint close.
   the virtual-call renderer dispatches on. `CppVTable.getTableAddress()` is finally set (the field
   DD-0014 left for this scanner). Pure-virtual name recovery explicitly deferred. Driver suite 8/8.
   Design: DD-0064.
+- **Rec 37 `#37-11c-2` — program-wide MSVC vftable harvest scan** (Sprint 14) —
+  `CppMsvcVftableScan.feedProgram` walks the symbol table for the `vftable`-named symbols upstream's
+  associated-vftable pass publishes (`RttiUtil.createSymbolFromDemangledType`) and drives each
+  address through the DD-0064 driver — the `CppMsvcRttiScan` twin, anchored on a published *symbol*
+  name because a vftable's laid-down data is a plain `pointer[n]` array with nothing distinctive in
+  its datatype name. Harvest-not-re-discovery posture unchanged; declines are per-table, not
+  per-program (one unnameable table contributes nothing while the rest of the harvest proceeds);
+  cancellation per symbol via the monitor-aware overload. Scan suite 8/8 (harvest-all with slots in
+  order, per-table decline, unanalyzed-program no-op, cancellation, four null contracts). Design:
+  DD-0065.
 
 ### Changed
 
