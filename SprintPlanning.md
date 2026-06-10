@@ -251,6 +251,15 @@ then land the work it unblocks.
     `AbstractRttiTest` and the six `Cpp*` suites (an intermediate class, not edits to the upstream
     file, so upstream merges stay clean); two-user helpers (`nameSlots`,
     `setExecutableFormatAndCompiler`) stay twins. Pure structural refactor; all six suites green.
+  - [x] ~~**#37-11d-1** — `CppHintsCollector` hints-consumer facade.~~ Shipped (DD-0067):
+    `collect(HighFunction)` runs all seven recognition drivers against
+    `CppTypeSystemProvider.get(program)` (the provider's first production *read*) and returns one
+    uniform, site-ordered `List<CppHint(site, kind, rendering)>`. **The full Rec 37 pipeline is now
+    end-to-end in production form**: upstream analysis → fork analyzers feed → `collect` renders.
+    Advisory posture inherited (never invents a hint; empty list is the normal unfed result).
+    Verified through the Rec 30 harness with the class fed into the provider's instance; 3/3.
+    Remaining `#37-11` work: surfacing (GUI margin blocked on `DISPLAY`; headless consumers
+    sooner).
 - [ ] **PR #37-10+ band** — argument / `DataTypeManager` / signature / template / operator rendering.
   - [x] ~~**#37-10a** — thread explicit constructor arguments into the placement driver.~~ Shipped
     (DD-0042): `CppPlacementConstructionDriver` recovers the constructor `CALL`'s inputs after the call

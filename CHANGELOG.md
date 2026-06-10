@@ -583,6 +583,19 @@ generated from the GitHub Releases UI at sprint close.
   end-to-end feed, composition with `CppRttiAnalyzer`, repeated-trigger idempotence,
   unanalyzed-program no-op, cancelled-monitor abort). Remaining `#37-11` work: the hints-consumer
   wiring. Design: DD-0066.
+- **Rec 37 `#37-11d-1` — `CppHintsCollector` hints-consumer facade** (Sprint 14) —
+  `CppHintsCollector.collect(HighFunction)` runs all seven recognition drivers against the
+  provider's shared per-program type system and returns one uniform, site-ordered
+  `List<CppHint(site, kind, rendering)>` (`Kind` enum per renderer form). The production assembly
+  point the drivers were built for: derives the `Program` from the function itself and the type
+  system from `CppTypeSystemProvider.get` — the provider's first production *read* — so a consumer
+  needs nothing beyond the `HighFunction` it already has. Advisory posture inherited, not
+  re-implemented: the collector never invents a hint; an empty list is the normal unfed/no-idiom
+  result. **The full Rec 37 pipeline is now end-to-end in production form**: upstream analysis →
+  fork analyzers feed the type system → `collect` returns rendered C++ hints. Verified through the
+  Rec 30 harness with the class fed into the provider's instance (the production wiring); suite
+  3/3. Remaining: the surfacing (GUI margin once the `DISPLAY` ceiling lifts; headless consumers
+  sooner). Design: DD-0067.
 
 ### Changed
 
