@@ -607,6 +607,18 @@ generated from the GitHub Releases UI at sprint close.
   deliberately rejected (un-opt-out-able side effect + function-order coupling with the mid-analysis
   feed). Commenter suite 7/7 (write, idempotent re-run, append-below-existing, distinct-renderings
   append, empty no-op, null contracts). Design: DD-0068.
+- **Rec 37 `#37-10t` — virtual-call arguments** (Sprint 14) — the virtual-call driver now threads
+  the `CALLIND`'s recovered arguments through the shared `CppOperandRenderer`, so
+  `param_1->draw(5)` renders instead of the DD-0025 no-argument form. Probe-grounded: a decompiled
+  `CALLIND` carries its explicit arguments as `inputs[2..]` exactly like the ctor `CALL`, but typed
+  `undefinedN` (an unresolved indirect call has no prototype) — a new `undefinedConstantLiteral`
+  branch renders such a constant as decimal **iff the sign bit at the varnode width is clear**
+  (reads identically under either signedness; faithful by construction), declining ambiguous
+  patterns like all-ones. An unrenderable argument declines the *whole* hint: the old
+  `param_1->draw()` for a call that has arguments silently misrepresented its arity. Zero-argument
+  calls render exactly as before. Vcall suite 5/5 (render-with-constant-arg, ambiguous-signedness
+  decline + the three originals unchanged); collector and construction suites unchanged. Design:
+  DD-0069.
 
 ### Changed
 

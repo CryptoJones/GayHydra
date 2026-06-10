@@ -84,16 +84,38 @@ public class CppVirtualCallDriverTest extends AbstractDecompilerHighFunctionTest
 		}
 	}
 
-	@Test
-	public void testRendersVirtualCallThroughNamedSlot() throws Exception {
-		HighFunction highFunction = decompileToHighFunction(program, function);
+	// Rebuilds the fixture program with a different method body (same C* this, win-x64 fastcall).
+	private void rebuildWithBody(String bytes, int length) throws Exception {
+		builder.dispose();
+		builder = new ProgramBuilder("vcallDriver", ProgramBuilder._X64);
+		builder.createMemory("text", ENTRY, 0x100);
+		builder.setBytes(ENTRY, bytes, true);
+		classC = new StructureDataType("C", 8);
+		builder.addDataType(classC);
+		DataType classCPtr = new PointerDataType(classC);
+		program = builder.getProgram();
+		String defaultConvention =
+			program.getCompilerSpec().getDefaultCallingConvention().getName();
+		function = builder.createEmptyFunction("f", null, defaultConvention, ENTRY, length,
+			VoidDataType.dataType, classCPtr);
+	}
 
+	// The modelled class C whose vtable slot 1 is the named method draw.
+	private CppTypeSystem modelledTypeSystem() {
 		CppTypeSystem typeSystem = new CppTypeSystem();
 		CppClass cppClass = typeSystem.defineClass(classC);
 		CppVTable vtable = new CppVTable();
 		vtable.addSlot(new CppMethod("vfn0"));  // slot 0
 		vtable.addSlot(new CppMethod("draw"));  // slot 1 — the dispatched method
 		cppClass.setVtable(vtable);
+		return typeSystem;
+	}
+
+	@Test
+	public void testRendersVirtualCallThroughNamedSlot() throws Exception {
+		HighFunction highFunction = decompileToHighFunction(program, function);
+
+		CppTypeSystem typeSystem = modelledTypeSystem();
 
 		CppVirtualCallDriver driver = new CppVirtualCallDriver(new CppDecompilerHints(), typeSystem);
 		List<RenderedVirtualCall> hints = driver.recognizeAndRender(highFunction);
@@ -113,6 +135,38 @@ public class CppVirtualCallDriverTest extends AbstractDecompilerHighFunctionTest
 		List<RenderedVirtualCall> hints = driver.recognizeAndRender(highFunction);
 
 		assertTrue("unmodelled receiver class must yield no hints", hints.isEmpty());
+	}
+
+	@Test
+	public void testRendersVirtualCallWithRecoveredConstantArgument() throws Exception {
+		// void C::f(C* this): mov rax,[rcx] ; mov edx,5 ; call qword [rax+8] ; ret  (#37-10t).
+		// The CALLIND has no prototype, so the argument arrives as an undefined-typed constant;
+		// its sign bit is clear, so the decimal rendering is faithful under either signedness.
+		rebuildWithBody("48 8b 01 ba 05 00 00 00 ff 50 08 c3", 12);
+		HighFunction highFunction = decompileToHighFunction(program, function);
+
+		CppVirtualCallDriver driver =
+			new CppVirtualCallDriver(new CppDecompilerHints(), modelledTypeSystem());
+		List<RenderedVirtualCall> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered virtual call", 1, hints.size());
+		assertEquals("the recovered constant argument must render",
+			"param_1->draw(5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesWhenArgumentSignednessIsAmbiguous() throws Exception {
+		// void C::f(C* this): mov rax,[rcx] ; mov rdx,-1 ; call qword [rax+8] ; ret. With no
+		// prototype on the CALLIND, the all-ones pattern is -1 or 18446744073709551615 -- ambiguous,
+		// so the whole hint declines rather than render a guess (never-wrong).
+		rebuildWithBody("48 8b 01 48 c7 c2 ff ff ff ff ff 50 08 c3", 14);
+		HighFunction highFunction = decompileToHighFunction(program, function);
+
+		CppVirtualCallDriver driver =
+			new CppVirtualCallDriver(new CppDecompilerHints(), modelledTypeSystem());
+		List<RenderedVirtualCall> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("a signedness-ambiguous argument must decline the whole hint", hints.isEmpty());
 	}
 
 	@Test
