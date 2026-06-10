@@ -529,6 +529,11 @@ then land the work it unblocks.
     demangler's own canonical conversion. No DTM / unconvertible type → null signature, method
     still feeds (never-wrong); ctor form keeps default return. Feeder 16/16. Next: **#37-12b**
     vftable-driver signatures from the slot `Function`, **#37-12c+** hint consumers.
+  - [x] ~~**#37-12b** — vftable slot signatures.~~ Shipped (DD-0073): `SlotSpec` gains an optional
+    `FunctionDefinition` (two-arg form unchanged); the MSVC vftable driver fills it from the
+    `Function` at the slot's address (the signature the demangler analyzer applied). Label-only
+    slot → null signature, still feeds by name — per-slot never-wrong. Both `#37-12` feed paths
+    now fill the same model field. Feeder +1, driver +1. Remaining: **#37-12c+** hint consumers.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

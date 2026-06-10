@@ -17,6 +17,8 @@ package ghidra.app.util.cpp;
 
 import java.util.List;
 
+import ghidra.program.model.data.FunctionDefinition;
+
 /**
  * Populates a {@link CppTypeSystem} with the virtual-function table recovered for a class. Given a
  * class's name and its already-recovered {@link SlotSpec slot facts} (one per vtable entry, in
@@ -44,18 +46,31 @@ public final class CppVTableFeeder {
 	private final CppTypeSystem typeSystem;
 
 	/**
-	 * One recovered vtable-slot fact: the slot method's name and whether it is pure-virtual, already
-	 * decoded from the recovered vftable by the caller. Slots are supplied to {@link #feedVtable} in
-	 * vtable layout order.
+	 * One recovered vtable-slot fact: the slot method's name, whether it is pure-virtual, and the
+	 * slot function's resolved signature when the caller has one ({@code #37-12b}; null when the
+	 * recoverer could not resolve a faithful signature &mdash; the slot still feeds without one).
+	 * Slots are supplied to {@link #feedVtable} in vtable layout order.
 	 *
 	 * @param methodName the slot method's name; must not be null or blank
 	 * @param isPureVirtual whether the slot is a pure-virtual ({@code = 0}) entry
+	 * @param signature the slot function's resolved signature, or null when unrecovered
 	 */
-	public record SlotSpec(String methodName, boolean isPureVirtual) {
+	public record SlotSpec(String methodName, boolean isPureVirtual,
+			FunctionDefinition signature) {
 		public SlotSpec {
 			if (methodName == null || methodName.isBlank()) {
 				throw new IllegalArgumentException("vtable slot method name must not be null or blank");
 			}
+		}
+
+		/**
+		 * Creates a slot fact with no resolved signature (the pre-{@code #37-12b} form).
+		 *
+		 * @param methodName the slot method's name; must not be null or blank
+		 * @param isPureVirtual whether the slot is a pure-virtual ({@code = 0}) entry
+		 */
+		public SlotSpec(String methodName, boolean isPureVirtual) {
+			this(methodName, isPureVirtual, null);
 		}
 	}
 
@@ -99,6 +114,7 @@ public final class CppVTableFeeder {
 			CppMethod method = new CppMethod(slot.methodName());
 			method.setVirtual(true);
 			method.setPureVirtual(slot.isPureVirtual());
+			method.setSignature(slot.signature());
 			vtable.addSlot(method);
 		}
 		owner.setVtable(vtable);

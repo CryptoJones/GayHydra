@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import generic.test.AbstractGenericTest;
 import ghidra.app.util.cpp.CppVTableFeeder.SlotSpec;
+import ghidra.program.model.data.FunctionDefinition;
+import ghidra.program.model.data.FunctionDefinitionDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.StructureDataType;
@@ -34,6 +36,24 @@ import ghidra.program.model.data.StructureDataType;
  * shape of a recovered vftable as an ordered list of slot methods.
  */
 public class CppVTableFeederTest extends AbstractGenericTest {
+
+	@Test
+	public void testSlotSignatureCarriesOntoTheMethod() {
+		// #37-12b: a recoverer that resolved the slot function's signature passes it through the
+		// SlotSpec; the two-argument form keeps feeding signatureless slots unchanged.
+		CppTypeSystem ts = new CppTypeSystem();
+		CppVTableFeeder feeder = new CppVTableFeeder(ts);
+		FunctionDefinition signature = new FunctionDefinitionDataType("draw");
+
+		CppVTable vtable = feeder.feedVtable("Shape", List.of(
+			new SlotSpec("draw", false, signature),
+			new SlotSpec("area", false)));
+
+		assertSame("the resolved signature must carry onto the slot method", signature,
+			vtable.getSlot(0).getSignature());
+		assertNull("a signatureless slot must stay signatureless",
+			vtable.getSlot(1).getSignature());
+	}
 
 	public CppVTableFeederTest() {
 		super();
