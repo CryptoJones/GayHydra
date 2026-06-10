@@ -666,6 +666,16 @@ generated from the GitHub Releases UI at sprint close.
   tables), and only user-asserted edges need durability (analysis edges are recomputable by the
   RFC's own design), so the graph lives as a headless model with `userAssertedEdges()` as the
   future persistence feed (`#38-2b`). Suite 10/10. Design: DD-0074.
+- **Rec 38 `#38-2b` — user-assertion persistence codec** — `ScopeGraphUserAssertions.save/load`
+  round-trips the graph's user-asserted edges (the only non-recomputable part) through one
+  versioned, fork-namespaced **program-level string property** in `ProgramUserData` — the design
+  DD-0074 specified. Forward-only and never-wrong on load: a fresh program yields nothing (the
+  RFC's empty-on-first-open migration), an unknown format version loads nothing and leaves the blob
+  untouched, and a corrupt line (bad kind/confidence, renamed address space, garbage) is skipped
+  while the rest load — every decoded edge feeds through the deduplicating `addEdge`. Structure and
+  space names percent-escape the format's reserved characters, so template names like `MyVec<int>`
+  round-trip. Saving an empty set removes the property outright. Codec suite 7/7; model suite
+  unchanged. Completes `#38-2` (schema + storage). Design: DD-0074.
 
 ### Changed
 
