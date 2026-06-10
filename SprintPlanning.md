@@ -385,6 +385,19 @@ then land the work it unblocks.
     twins. Placement 48/48, heap 48/48. Completes the comparison sub-band `#37-10p`–`q`. Next `#37-10`
     work: logical `!` (`BOOL_NEGATE` under the same `INT_ZEXT`), nested compounds with parens, plus
     signature/template/operator rendering.
+  - [x] ~~**#37-10r** — render nested compound arguments with unconditional parentheses.~~ Shipped
+    (DD-0059): a new `operandExpr` helper routes `binaryExpr`/`unaryExpr` operands; a leaf renders bare,
+    a nested compound renders recursively wrapped in parentheses — `new C((param_1 & 7) + 1)`,
+    `new C((~param_1) & 7)`, `new C(-(param_1 & 7))`, `new C(((param_1 & 7) | 9) ^ 5)` (and placement
+    twins). Design choice: fully-parenthesised rendering over a C precedence table — exact by
+    construction, no table to get wrong, occasional redundant pair accepted (faithful over pretty); top
+    level stays bare so every one-level rendering is unchanged. Terminates structurally (only mapped
+    opcodes recurse; `MULTIEQUAL`/`INDIRECT` unmapped) + `MAX_OPERAND_NESTING` 8 as defense-in-depth;
+    `CAST` still declines, so all grounded unsigned declines hold. The arithmetic/bitwise/shift/unary
+    grammar is now closed under composition. Comparison operands stay leaf-only. Per-form twin (rule of
+    three). Placement 52/52, heap 52/52. Next `#37-10` work: comparison-operand compounds, logical `!`
+    (decompiler typically canonicalises `!v` to `v == 0`, already rendered by `#37-10p`), plus
+    signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
