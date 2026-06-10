@@ -360,6 +360,19 @@ then land the work it unblocks.
     Per-form twin (rule of three). Grounded against decompiled `neg`/`not` over a named param (render).
     Placement 41/41, heap 41/41. Next `#37-10` work: comparison operators (need `INT_ZEXT` peeling),
     nested compounds with parens, plus signature/template/operator rendering.
+  - [x] ~~**#37-10p** — render equality-comparison arguments (`==`, `!=`) as C++ comparisons.~~ Shipped
+    (DD-0057): a new `comparisonExpr` / `comparisonOperator` pair, wired into `argumentExpr` after the
+    leaf, binary, and unary tries, renders `new C(param_1 == 7)` (`INT_EQUAL`) and `new C(param_1 != 7)`
+    (`INT_NOTEQUAL`). A probe grounded the shape: a comparison computes a one-byte boolean the decompiler
+    widens to the argument slot with an `INT_ZEXT`, so the comparison sits one hop below the value
+    varnode's def; `comparisonExpr` peels exactly one `INT_ZEXT` to reach it. Only the symmetric equality
+    operators are mapped — no signed/unsigned split, no operand order to recover; relational comparisons
+    (which the decompiler canonicalises to swapped `<`/`<=`) are deferred. Operands rendered as leaves
+    only, so a compound/cast-wrapped operand declines (never-wrong). Per-form twin (rule of three).
+    Grounded against decompiled `sete`/`setne` over a named param (render). Placement 43/43, heap 43/43.
+    Next `#37-10` work: relational comparison operators (`<`/`<=`/`>`/`>=`, need operand-order +
+    signed/unsigned reasoning), logical `!`, nested compounds with parens, plus
+    signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

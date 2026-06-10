@@ -703,6 +703,45 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithEqualityExpressionArgument() throws Exception {
+		// new C(v == 7): the one-byte boolean of INT_EQUAL(param_1, 7) is widened to the longlong arg slot
+		// by an INT_ZEXT, so the value varnode's def is the INT_ZEXT and the comparison sits one hop below;
+		// peeling exactly that one extension renders param_1 == 7 (grounded #37-10p).
+		HighFunction highFunction =
+			// cmp rsi,7; sete dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 94 c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("an equality argument must render as param_1 == 7", "new C(param_1 == 7)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithInequalityExpressionArgument() throws Exception {
+		// new C(v != 7): INT_NOTEQUAL(param_1, 7) widened by INT_ZEXT; peeling the extension renders
+		// param_1 != 7 (grounded #37-10p).
+		HighFunction highFunction =
+			// cmp rsi,7; setne dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 95 c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("an inequality argument must render as param_1 != 7", "new C(param_1 != 7)",
+			hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");

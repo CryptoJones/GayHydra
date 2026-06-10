@@ -627,6 +627,41 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithEqualityExpressionArgument() throws Exception {
+		// new (param_1) C(v == 7): the one-byte boolean of INT_EQUAL(param_2, 7) is widened to the longlong
+		// arg slot by an INT_ZEXT, so the comparison sits one hop below the value varnode's def; peeling
+		// exactly that one extension renders param_2 == 7 (grounded #37-10p).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 94 c2 48 0f b6 d2", 11); // cmp rsi,7; sete dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("an equality argument must render as param_2 == 7",
+			"new (param_1) C(param_2 == 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithInequalityExpressionArgument() throws Exception {
+		// new (param_1) C(v != 7): INT_NOTEQUAL(param_2, 7) widened by INT_ZEXT; peeling the extension
+		// renders param_2 != 7 (grounded #37-10p).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 95 c2 48 0f b6 d2", 11); // cmp rsi,7; setne dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("an inequality argument must render as param_2 != 7",
+			"new (param_1) C(param_2 != 7)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);

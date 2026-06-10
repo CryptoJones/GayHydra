@@ -450,6 +450,19 @@ generated from the GitHub Releases UI at sprint close.
   compound or cast-wrapped operand declines the whole hint (never-wrong). The renderer stays a per-form
   twin (rule of three). Grounded against decompiled `neg`/`not` over a named param (render); placement
   41/41, heap 41/41. Design: DD-0056.
+- **Rec 37 `#37-10p` — equality-comparison constructor arguments rendered as C++ comparisons** (Sprint
+  14, sixteenth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers now render
+  a one-level equality comparison argument: `new C(param_1 == 7)` (`INT_EQUAL`) and
+  `new C(param_1 != 7)` (`INT_NOTEQUAL`), via a new `comparisonExpr` / `comparisonOperator` pair wired
+  into `argumentExpr` after the leaf, binary, and unary tries. Unlike the earlier compound forms, a
+  comparison computes a one-byte boolean that the decompiler widens to the wider argument slot with an
+  `INT_ZEXT`, so the comparison op sits one hop below the value varnode's definition; `comparisonExpr`
+  peels exactly one `INT_ZEXT` to reach it. Only the symmetric equality operators are mapped — they carry
+  no signed/unsigned split and no operand order to recover, so the render is unambiguous; the relational
+  operators (which the decompiler canonicalises to swapped `<`/`<=`) are a later slice. The operands are
+  rendered as leaves only, so a compound or cast-wrapped operand declines the whole hint (never-wrong).
+  The renderer stays a per-form twin (rule of three). Grounded against decompiled `sete`/`setne` over a
+  named param (render); placement 43/43, heap 43/43. Design: DD-0057.
 
 ### Changed
 

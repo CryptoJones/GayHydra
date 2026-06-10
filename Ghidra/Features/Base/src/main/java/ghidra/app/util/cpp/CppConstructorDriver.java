@@ -90,9 +90,10 @@ import ghidra.program.model.symbol.Namespace;
  * extraction.) A one-level compound argument also renders &mdash; a two-operand arithmetic, bitwise, or
  * shift expression over leaf operands such as {@code new C(param_1 + 7)} ({@code #37-10m},
  * {@link #binaryExpr}), as does a single-operand unary expression &mdash; arithmetic negation or bitwise
- * complement over a leaf such as {@code new C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}). Nested
- * compounds, comparison operators, and overload resolution against the {@code DataType} signature are
- * later {@code #37-10} work.
+ * complement over a leaf such as {@code new C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}), as does a
+ * zero-extended equality comparison over leaf operands such as {@code new C(param_1 == 7)}
+ * ({@code #37-10p}, {@link #comparisonExpr}). Relational comparisons, nested compounds, and overload
+ * resolution against the {@code DataType} signature are later {@code #37-10} work.
  *
  * <p>The pass therefore assumes the demangler analyzer has run — which it has by the time a function
  * decompiles to a {@code HighFunction} in a fully-analyzed program. A not-yet-demangled mangled
@@ -247,11 +248,13 @@ public final class CppConstructorDriver {
 	 * <em>leaf</em> ({@link #leafExpr}) &mdash; a named variable, a string literal, or a typed constant
 	 * &mdash; and, failing that, as a two-operand <em>binary expression</em> ({@link #binaryExpr}) such as
 	 * {@code param_1 + 7} ({@code #37-10m}) or a single-operand <em>unary expression</em>
-	 * ({@link #unaryExpr}) such as {@code -param_1} ({@code #37-10o}). An argument that is none of these
-	 * declines the whole hint ({@code null}), keeping the never-wrong contract.
+	 * ({@link #unaryExpr}) such as {@code -param_1} ({@code #37-10o}), or a zero-extended equality
+	 * <em>comparison</em> ({@link #comparisonExpr}) such as {@code param_1 == 7} ({@code #37-10p}). An
+	 * argument that is none of these declines the whole hint ({@code null}), keeping the never-wrong
+	 * contract.
 	 *
 	 * @return the rendered argument expression, or null if it is neither a renderable leaf, binary
-	 *         expression, nor unary expression
+	 *         expression, unary expression, nor equality comparison
 	 */
 	private static String argumentExpr(Varnode varnode, Program program) {
 		String leaf = leafExpr(varnode, program);
@@ -262,7 +265,11 @@ public final class CppConstructorDriver {
 		if (binary != null) {
 			return binary;
 		}
-		return unaryExpr(varnode, program);
+		String unary = unaryExpr(varnode, program);
+		if (unary != null) {
+			return unary;
+		}
+		return comparisonExpr(varnode, program);
 	}
 
 	/**
@@ -488,6 +495,73 @@ public final class CppConstructorDriver {
 		return switch (opcode) {
 			case PcodeOp.INT_2COMP -> "-";
 			case PcodeOp.INT_NEGATE -> "~";
+			default -> null;
+		};
+	}
+
+	/**
+	 * {@return the constructor-argument varnode rendered as a one-level C++ <em>equality comparison</em>
+	 * such as {@code param_1 == 7} or {@code param_1 != 7}, or null when its definition is not a
+	 * zero-extended two-operand equality p-code op over leaf operands}
+	 *
+	 * <p>A comparison produces a one-byte boolean, but a constructor argument slot is wider (e.g. an
+	 * eight-byte {@code longlong}), so the decompiler widens the boolean to the slot with an
+	 * {@code INT_ZEXT}: the value varnode's direct definition is the {@code INT_ZEXT}, and the comparison
+	 * op sits one hop below it (grounded: {@code new C(v == 7)} arrives as an {@code INT_ZEXT} of an
+	 * {@code INT_EQUAL} of the named {@code param_1} and the constant {@code 7}). This helper peels
+	 * <em>exactly one</em> {@code INT_ZEXT} to reach the comparison, then renders it as
+	 * {@code leafExpr(in0) OP leafExpr(in1)} over a grounded equality-opcode→glyph map
+	 * ({@link #comparisonOperator}), using leaf operands only &mdash; the same faithful no-peel operand
+	 * rule {@link #binaryExpr} keeps, so a compound or cast-wrapped operand declines the whole hint
+	 * ({@code #37-10p}).
+	 *
+	 * <p>Only the symmetric equality operators ({@code ==}, {@code !=}) are mapped here: they carry no
+	 * signed/unsigned distinction and no operand order to recover, so the render is unambiguous. The
+	 * relational operators ({@code <}, {@code <=}, and the {@code >}/{@code >=} the decompiler canonicalises
+	 * to a swapped {@code <}/{@code <=}) are a later slice. The extension is matched as {@code INT_ZEXT}
+	 * specifically &mdash; a one-byte boolean is zero-, never sign-, extended &mdash; and exactly one hop is
+	 * peeled, so an arbitrary cast chain is not silently flattened. (Duplicated from the placement driver
+	 * as an honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
+	 * extraction.)
+	 */
+	private static String comparisonExpr(Varnode varnode, Program program) {
+		PcodeOp widen = varnode.getDef();
+		if (widen == null || widen.getOpcode() != PcodeOp.INT_ZEXT || widen.getNumInputs() != 1) {
+			return null;
+		}
+		PcodeOp def = widen.getInput(0).getDef();
+		if (def == null || def.getNumInputs() != 2) {
+			return null;
+		}
+		String operator = comparisonOperator(def.getOpcode());
+		if (operator == null) {
+			return null;
+		}
+		String left = leafExpr(def.getInput(0), program);
+		if (left == null) {
+			return null;
+		}
+		String right = leafExpr(def.getInput(1), program);
+		if (right == null) {
+			return null;
+		}
+		return left + " " + operator + " " + right;
+	}
+
+	/**
+	 * {@return the C++ operator glyph for a two-operand equality p-code opcode ({@code ==} for
+	 * {@code INT_EQUAL}, {@code !=} for {@code INT_NOTEQUAL}), or null when the opcode is neither}
+	 *
+	 * <p>The mapping is grounded over the opcodes the decompiler emits for the corresponding C operations
+	 * ({@code #37-10p}). Only the symmetric equality operators are mapped: unlike a relational comparison
+	 * they carry no signed/unsigned split and no operand order to recover, so the render is never
+	 * ambiguous. (Duplicated from the placement driver as an honest per-form twin, per the DD-0026
+	 * rule-of-three convention, until a third user earns the extraction.)
+	 */
+	private static String comparisonOperator(int opcode) {
+		return switch (opcode) {
+			case PcodeOp.INT_EQUAL -> "==";
+			case PcodeOp.INT_NOTEQUAL -> "!=";
 			default -> null;
 		};
 	}
