@@ -80,10 +80,10 @@ import ghidra.program.model.symbol.Namespace;
  * argument also renders &mdash; a two-operand arithmetic, bitwise, or shift expression over leaf operands
  * such as {@code new (buf) C(param_1 + 7)} ({@code #37-10m}, {@link #binaryExpr}), as does a
  * single-operand unary expression &mdash; arithmetic negation or bitwise complement over a leaf such as
- * {@code new (buf) C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}), as does a zero-extended equality
- * comparison over leaf operands such as {@code new (buf) C(param_1 == 7)} ({@code #37-10p},
- * {@link #comparisonExpr}). Relational comparisons, nested compounds, and overload resolution against the
- * {@code DataType} signature are later {@code #37-10} work.
+ * {@code new (buf) C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}), as does a zero-extended comparison
+ * over leaf operands such as {@code new (buf) C(param_1 == 7)} / {@code new (buf) C(param_1 < 7)}
+ * ({@code #37-10p}, {@code #37-10q}, {@link #comparisonExpr}). Nested compounds, logical negation, and
+ * overload resolution against the {@code DataType} signature are later {@code #37-10} work.
  *
  * <p><b>Advisory, never wrong.</b> Like the matcher and renderer it sits between, the driver is
  * additive and total-failure-safe: a construction whose constructor target resolves to no function or
@@ -243,13 +243,13 @@ public final class CppPlacementConstructionDriver {
 	 * <em>leaf</em> ({@link #leafExpr}) &mdash; a named variable, a string literal, or a typed constant
 	 * &mdash; and, failing that, as a two-operand <em>binary expression</em> ({@link #binaryExpr}) such as
 	 * {@code param_1 + 7} ({@code #37-10m}) or a single-operand <em>unary expression</em>
-	 * ({@link #unaryExpr}) such as {@code -param_1} ({@code #37-10o}), or a zero-extended equality
-	 * <em>comparison</em> ({@link #comparisonExpr}) such as {@code param_2 == 7} ({@code #37-10p}). An
-	 * argument that is none of these declines the whole hint ({@code null}), keeping the never-wrong
-	 * contract.
+	 * ({@link #unaryExpr}) such as {@code -param_1} ({@code #37-10o}), or a zero-extended
+	 * <em>comparison</em> ({@link #comparisonExpr}) such as {@code param_2 == 7} or {@code param_2 < 7}
+	 * ({@code #37-10p}, {@code #37-10q}). An argument that is none of these declines the whole hint
+	 * ({@code null}), keeping the never-wrong contract.
 	 *
 	 * @return the rendered argument expression, or null if it is neither a renderable leaf, binary
-	 *         expression, unary expression, nor equality comparison
+	 *         expression, unary expression, nor comparison
 	 */
 	private static String argumentExpr(Varnode varnode, Program program) {
 		String leaf = leafExpr(varnode, program);
@@ -495,9 +495,9 @@ public final class CppPlacementConstructionDriver {
 	}
 
 	/**
-	 * {@return the constructor-argument varnode rendered as a one-level C++ <em>equality comparison</em>
-	 * such as {@code param_2 == 7} or {@code param_2 != 7}, or null when its definition is not a
-	 * zero-extended two-operand equality p-code op over leaf operands}
+	 * {@return the constructor-argument varnode rendered as a one-level C++ <em>comparison</em> such as
+	 * {@code param_2 == 7} or {@code param_2 < 7}, or null when its definition is not a zero-extended
+	 * two-operand equality-or-relational p-code op over leaf operands}
 	 *
 	 * <p>A comparison produces a one-byte boolean, but a constructor argument slot is wider (e.g. an
 	 * eight-byte {@code longlong}), so the decompiler widens the boolean to the slot with an
@@ -505,19 +505,25 @@ public final class CppPlacementConstructionDriver {
 	 * op sits one hop below it (grounded: {@code new (buf) C(v == 7)} arrives as an {@code INT_ZEXT} of an
 	 * {@code INT_EQUAL} of the named {@code param_2} and the constant {@code 7}). This helper peels
 	 * <em>exactly one</em> {@code INT_ZEXT} to reach the comparison, then renders it as
-	 * {@code leafExpr(in0) OP leafExpr(in1)} over a grounded equality-opcode→glyph map
+	 * {@code leafExpr(in0) OP leafExpr(in1)} over a grounded comparison-opcode→glyph map
 	 * ({@link #comparisonOperator}), using leaf operands only &mdash; the same faithful no-peel operand
 	 * rule {@link #binaryExpr} keeps, so a compound or cast-wrapped operand declines the whole hint
-	 * ({@code #37-10p}).
+	 * ({@code #37-10p}, {@code #37-10q}).
 	 *
-	 * <p>Only the symmetric equality operators ({@code ==}, {@code !=}) are mapped here: they carry no
-	 * signed/unsigned distinction and no operand order to recover, so the render is unambiguous. The
-	 * relational operators ({@code <}, {@code <=}, and the {@code >}/{@code >=} the decompiler canonicalises
-	 * to a swapped {@code <}/{@code <=}) are a later slice. The extension is matched as {@code INT_ZEXT}
-	 * specifically &mdash; a one-byte boolean is zero-, never sign-, extended &mdash; and exactly one hop is
-	 * peeled, so an arbitrary cast chain is not silently flattened. (Duplicated from the heap driver as an
-	 * honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
-	 * extraction.)
+	 * <p>The symmetric equality operators ({@code ==}, {@code !=}) carry no signed/unsigned distinction
+	 * and no operand order to recover, so they render unambiguously ({@code #37-10p}). The relational
+	 * operators render the decompiler's <em>canonical</em> strict-less-than form faithfully ({@code
+	 * #37-10q}): the decompiler normalises every signed relational source form to {@code INT_SLESS} by
+	 * adjusting the constant or swapping the operands, so {@code v < 7} renders {@code param_2 < 7},
+	 * {@code v <= 7} renders {@code param_2 < 8}, {@code v > 7} renders {@code 7 < param_2}, and
+	 * {@code v >= 7} renders {@code 6 < param_2} &mdash; each the exact boolean the p-code computes, which
+	 * is all this band ever claims to render. An <em>unsigned</em> relational form casts its operand to an
+	 * unsigned type (as unsigned division does), so {@code leafExpr} declines the cast-wrapped operand and
+	 * the whole hint declines rather than silently change signedness, exactly the signed/unsigned split
+	 * {@link #binaryOperator} keeps. The extension is matched as {@code INT_ZEXT} specifically &mdash; a
+	 * one-byte boolean is zero-, never sign-, extended &mdash; and exactly one hop is peeled, so an
+	 * arbitrary cast chain is not silently flattened. (Duplicated from the heap driver as an honest
+	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
 	 */
 	private static String comparisonExpr(Varnode varnode, Program program) {
 		PcodeOp widen = varnode.getDef();
@@ -544,19 +550,28 @@ public final class CppPlacementConstructionDriver {
 	}
 
 	/**
-	 * {@return the C++ operator glyph for a two-operand equality p-code opcode ({@code ==} for
-	 * {@code INT_EQUAL}, {@code !=} for {@code INT_NOTEQUAL}), or null when the opcode is neither}
+	 * {@return the C++ operator glyph for a two-operand comparison p-code opcode ({@code ==} for
+	 * {@code INT_EQUAL}, {@code !=} for {@code INT_NOTEQUAL}, {@code <} for the signed {@code INT_SLESS}
+	 * and unsigned {@code INT_LESS}), or null when the opcode is none of these}
 	 *
 	 * <p>The mapping is grounded over the opcodes the decompiler emits for the corresponding C operations
-	 * ({@code #37-10p}). Only the symmetric equality operators are mapped: unlike a relational comparison
-	 * they carry no signed/unsigned split and no operand order to recover, so the render is never
-	 * ambiguous. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026
+	 * ({@code #37-10p}, {@code #37-10q}). The equality operators are symmetric and carry no signedness, so
+	 * they render directly. For the relational operators the decompiler canonicalises <em>every</em> source
+	 * form &mdash; {@code <}, {@code <=}, {@code >}, {@code >=} &mdash; to a strict less-than by adjusting
+	 * the constant or swapping the operands, so only {@code INT_SLESS}/{@code INT_LESS} (mapped to
+	 * {@code <}) ever appear; {@code INT_SLESSEQUAL}/{@code INT_LESSEQUAL} are not emitted for these forms
+	 * and so are intentionally unmapped. The signed {@code INT_SLESS} carries its operands directly and
+	 * renders; the unsigned {@code INT_LESS} casts its operand to an unsigned type, so
+	 * {@link #comparisonExpr}'s leaf-only operand rule declines it (a faithful render would silently change
+	 * signedness) &mdash; the identical signed/unsigned split {@link #binaryOperator} keeps for division
+	 * and the shifts. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026
 	 * rule-of-three convention, until a third user earns the extraction.)
 	 */
 	private static String comparisonOperator(int opcode) {
 		return switch (opcode) {
 			case PcodeOp.INT_EQUAL -> "==";
 			case PcodeOp.INT_NOTEQUAL -> "!=";
+			case PcodeOp.INT_SLESS, PcodeOp.INT_LESS -> "<";
 			default -> null;
 		};
 	}

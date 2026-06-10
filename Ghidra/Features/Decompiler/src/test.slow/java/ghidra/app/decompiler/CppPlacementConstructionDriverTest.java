@@ -662,6 +662,91 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithSignedLessThanExpressionArgument() throws Exception {
+		// new (param_1) C(v < 7) signed: INT_SLESS(param_2, 7) widened by INT_ZEXT; renders param_2 < 7
+		// (grounded #37-10q).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 9c c2 48 0f b6 d2", 11); // cmp rsi,7; setl dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed less-than argument must render as param_2 < 7",
+			"new (param_1) C(param_2 < 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithSignedLessEqualExpressionArgument() throws Exception {
+		// new (param_1) C(v <= 7) signed: the decompiler canonicalises <= 7 to the strict < 8, so the
+		// comparison is INT_SLESS(param_2, 8) and renders param_2 < 8 (grounded #37-10q).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 9e c2 48 0f b6 d2", 11); // cmp rsi,7; setle dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed less-or-equal argument canonicalises to param_2 < 8",
+			"new (param_1) C(param_2 < 8)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithSignedGreaterThanExpressionArgument() throws Exception {
+		// new (param_1) C(v > 7) signed: the decompiler canonicalises > to a swapped strict <, so the
+		// comparison is INT_SLESS(7, param_2) and renders 7 < param_2 (grounded #37-10q).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 9f c2 48 0f b6 d2", 11); // cmp rsi,7; setg dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed greater-than argument canonicalises to 7 < param_2",
+			"new (param_1) C(7 < param_2)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithSignedGreaterEqualExpressionArgument() throws Exception {
+		// new (param_1) C(v >= 7) signed: the decompiler canonicalises >= 7 to the swapped strict 6 < v,
+		// so the comparison is INT_SLESS(6, param_2) and renders 6 < param_2 (grounded #37-10q).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 9d c2 48 0f b6 d2", 11); // cmp rsi,7; setge dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a signed greater-or-equal argument canonicalises to 6 < param_2",
+			"new (param_1) C(6 < param_2)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesPlacementUnsignedLessThanExpressionArgument() throws Exception {
+		// new (param_1) C(v < 7) unsigned: an unsigned comparison is INT_LESS, whose left operand the
+		// decompiler casts to an unsigned type, so the operand is a cast temp, not a leaf, and the whole
+		// hint declines (never-wrong, grounded #37-10q).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 83 fe 07 0f 92 c2 48 0f b6 d2", 11); // cmp rsi,7; setb dl; movzx rdx,dl
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned comparison whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);

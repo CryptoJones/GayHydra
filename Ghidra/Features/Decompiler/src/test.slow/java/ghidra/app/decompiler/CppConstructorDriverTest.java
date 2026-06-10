@@ -742,6 +742,105 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithSignedLessThanExpressionArgument() throws Exception {
+		// new C(v < 7) signed: INT_SLESS(param_1, 7) widened by INT_ZEXT; renders param_1 < 7
+		// (grounded #37-10q).
+		HighFunction highFunction =
+			// cmp rsi,7; setl dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 9c c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed less-than argument must render as param_1 < 7", "new C(param_1 < 7)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithSignedLessEqualExpressionArgument() throws Exception {
+		// new C(v <= 7) signed: the decompiler canonicalises <= 7 to the strict < 8, so the comparison is
+		// INT_SLESS(param_1, 8) and renders param_1 < 8 — the exact boolean v <= 7 computes (grounded
+		// #37-10q).
+		HighFunction highFunction =
+			// cmp rsi,7; setle dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 9e c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed less-or-equal argument canonicalises to param_1 < 8", "new C(param_1 < 8)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithSignedGreaterThanExpressionArgument() throws Exception {
+		// new C(v > 7) signed: the decompiler canonicalises > to a swapped strict <, so the comparison is
+		// INT_SLESS(7, param_1) and renders 7 < param_1 — the exact boolean v > 7 computes (grounded
+		// #37-10q).
+		HighFunction highFunction =
+			// cmp rsi,7; setg dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 9f c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed greater-than argument canonicalises to 7 < param_1", "new C(7 < param_1)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithSignedGreaterEqualExpressionArgument() throws Exception {
+		// new C(v >= 7) signed: the decompiler canonicalises >= 7 to the swapped strict 6 < v, so the
+		// comparison is INT_SLESS(6, param_1) and renders 6 < param_1 — the exact boolean v >= 7 computes
+		// (grounded #37-10q).
+		HighFunction highFunction =
+			// cmp rsi,7; setge dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 9d c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a signed greater-or-equal argument canonicalises to 6 < param_1", "new C(6 < param_1)",
+			hints.get(0).rendering());
+	}
+
+	@Test
+	public void testDeclinesUnsignedLessThanExpressionArgument() throws Exception {
+		// new C(v < 7) unsigned: an unsigned comparison is INT_LESS, whose left operand the decompiler
+		// casts to an unsigned type, so the operand is a cast temp, not a leaf. Rendering a bare
+		// param_1 < 7 over the signed operand would silently change signedness, so the comparison renderer
+		// declines the cast-wrapped operand and the whole hint declines (never-wrong, grounded #37-10q).
+		HighFunction highFunction =
+			// cmp rsi,7; setb dl; movzx rdx,dl
+			decompileMakeWithBinaryArg("48 83 fe 07 0f 92 c2 48 0f b6 d2", 11);
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertTrue("an unsigned comparison whose operand is cast to unsigned must yield no hints",
+			hints.isEmpty());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");
