@@ -82,8 +82,10 @@ import ghidra.program.model.symbol.Namespace;
  * single-operand unary expression &mdash; arithmetic negation or bitwise complement over a leaf such as
  * {@code new (buf) C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}), as does a zero-extended comparison
  * over leaf operands such as {@code new (buf) C(param_1 == 7)} / {@code new (buf) C(param_1 < 7)}
- * ({@code #37-10p}, {@code #37-10q}, {@link #comparisonExpr}). Nested compounds, logical negation, and
- * overload resolution against the {@code DataType} signature are later {@code #37-10} work.
+ * ({@code #37-10p}, {@code #37-10q}, {@link #comparisonExpr}). A nested compound argument renders
+ * recursively with each nested level parenthesised ({@code new (buf) C((param_2 & 7) + 1)},
+ * {@code #37-10r}, {@link #operandExpr}). Comparison-operand compounds, logical negation, and overload
+ * resolution against the {@code DataType} signature are later {@code #37-10} work.
  *
  * <p><b>Advisory, never wrong.</b> Like the matcher and renderer it sits between, the driver is
  * additive and total-failure-safe: a construction whose constructor target resolves to no function or
@@ -109,6 +111,15 @@ public final class CppPlacementConstructionDriver {
 
 	/** A string-pointer argument's def-chain is traced through at most this many COPY/CAST pass-throughs. */
 	private static final int MAX_STRING_DEF_HOPS = 4;
+
+	/**
+	 * Defense-in-depth bound on {@link #operandExpr}'s recursion into nested compound operands
+	 * ({@code #37-10r}). Recursion already terminates structurally (only mapped binary/unary opcodes
+	 * recurse; the SSA cycle-closers {@code MULTIEQUAL}/{@code INDIRECT} are unmapped), so the bound
+	 * exists to cap rendering depth, not to fix a known divergence; eight levels is far past any
+	 * readable constructor argument.
+	 */
+	private static final int MAX_OPERAND_NESTING = 8;
 
 	/** A traced string is read up to this many bytes before declining a missing NUL terminator. */
 	private static final int MAX_STRING_LENGTH = 4096;
@@ -363,24 +374,26 @@ public final class CppPlacementConstructionDriver {
 	 * bitwise, or shift p-code op that computed it (grounded: {@code new (buf) C(v + 7)} arrives as an
 	 * {@code UNNAMED} {@code HighOther} defined by {@code INT_ADD} of the named {@code param_1} and the
 	 * constant {@code 7}). This helper renders that op as {@code left OP right} where {@code OP} is the
-	 * C++ glyph for the opcode ({@link #binaryOperator}) and each operand is a <em>leaf</em>
-	 * ({@link #leafExpr}). Both operands are rendered as leaves only &mdash; a leaf carries no operator, so
-	 * the single-operator result needs no parentheses and is never precedence-ambiguous &mdash; and an
-	 * operand that is itself a compound (or any unnameable temporary) makes {@code leafExpr} decline, so
-	 * the whole hint declines rather than guess at nesting or parenthesisation. This keeps the never-wrong
-	 * contract while rendering the common one-level compound shapes ({@code #37-10m}).
+	 * C++ glyph for the opcode ({@link #binaryOperator}) and each operand is rendered by
+	 * {@link #operandExpr}: a <em>leaf</em> ({@link #leafExpr}) renders bare, and a <em>nested
+	 * compound</em> &mdash; an operand that is itself a recognised binary or unary op &mdash; renders
+	 * recursively, always wrapped in parentheses ({@code #37-10m}, {@code #37-10r}).
 	 *
 	 * <p>Only a two-input op is considered, and only one whose opcode {@link #binaryOperator} maps to a
 	 * glyph; any other definition declines. A deliberately declined case is a <em>logical</em> right shift
 	 * ({@code INT_RIGHT}) whose left operand the decompiler wrapped in a {@code CAST} to an unsigned type:
 	 * peeling that cast and rendering a bare {@code param_1 >> 3} over a signed operand would silently
-	 * become an <em>arithmetic</em> shift, so the cast-wrapped operand is not a leaf, {@code leafExpr}
-	 * declines it, and the hint declines &mdash; faithful over complete. An <em>arithmetic</em> right shift
-	 * ({@code INT_SRIGHT}) carries its operand directly and renders. (Duplicated from the heap driver as an
-	 * honest per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the
-	 * extraction.)
+	 * become an <em>arithmetic</em> shift. A {@code CAST} is neither a leaf nor a mapped binary/unary
+	 * opcode, so {@link #operandExpr} declines it, and the hint declines &mdash; faithful over complete. An
+	 * <em>arithmetic</em> right shift ({@code INT_SRIGHT}) carries its operand directly and renders.
+	 * (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
 	 */
 	private static String binaryExpr(Varnode varnode, Program program) {
+		return binaryExpr(varnode, program, 0);
+	}
+
+	private static String binaryExpr(Varnode varnode, Program program, int depth) {
 		PcodeOp def = varnode.getDef();
 		if (def == null || def.getNumInputs() != 2) {
 			return null;
@@ -389,15 +402,56 @@ public final class CppPlacementConstructionDriver {
 		if (operator == null) {
 			return null;
 		}
-		String left = leafExpr(def.getInput(0), program);
+		String left = operandExpr(def.getInput(0), program, depth);
 		if (left == null) {
 			return null;
 		}
-		String right = leafExpr(def.getInput(1), program);
+		String right = operandExpr(def.getInput(1), program, depth);
 		if (right == null) {
 			return null;
 		}
 		return left + " " + operator + " " + right;
+	}
+
+	/**
+	 * {@return one operand of a compound constructor-argument expression, rendered either as a bare
+	 * <em>leaf</em> or as a parenthesised <em>nested compound</em>, or null when it is neither}
+	 *
+	 * <p>A leaf ({@link #leafExpr}) renders bare, exactly as the one-level {@code #37-10m} forms always
+	 * have. An operand that is not a leaf but is itself a recognised binary or unary op renders
+	 * recursively and is <em>always wrapped in parentheses</em> ({@code #37-10r}):
+	 * {@code new (buf) C((param_2 & 7) + 1)}, {@code new (buf) C(-(param_2 & 7))}. Unconditional
+	 * parentheses on every nested sub-expression make the rendering exact by construction &mdash; no C
+	 * precedence or associativity table is consulted, so there is no table to get wrong &mdash; at the
+	 * cost of an occasional redundant pair (e.g. {@code (~param_2) & 7}, where {@code ~} already binds
+	 * tighter). Faithful over pretty, the band's standing trade.
+	 *
+	 * <p>Recursion is bounded by {@link #MAX_OPERAND_NESTING} as defense-in-depth. Structurally it
+	 * already terminates: only opcodes mapped in {@link #binaryOperator}/{@link #unaryOperator} recurse,
+	 * and the ops that could close an SSA def-chain cycle through a loop ({@code MULTIEQUAL},
+	 * {@code INDIRECT}) are unmapped and decline. An operand that is neither a leaf nor a recognised
+	 * nested compound (a {@code CAST}-wrapped temporary, an unrecognised opcode, anything past the bound)
+	 * returns null and the whole hint declines &mdash; the never-wrong contract is unchanged.
+	 * (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String operandExpr(Varnode varnode, Program program, int depth) {
+		String leaf = leafExpr(varnode, program);
+		if (leaf != null) {
+			return leaf;
+		}
+		if (depth >= MAX_OPERAND_NESTING) {
+			return null;
+		}
+		String binary = binaryExpr(varnode, program, depth + 1);
+		if (binary != null) {
+			return "(" + binary + ")";
+		}
+		String unary = unaryExpr(varnode, program, depth + 1);
+		if (unary != null) {
+			return "(" + unary + ")";
+		}
+		return null;
 	}
 
 	/**
@@ -443,12 +497,13 @@ public final class CppPlacementConstructionDriver {
 	 * unary p-code op that computed it (grounded: {@code new (buf) C(-v)} arrives as an {@code UNNAMED}
 	 * {@code HighOther} defined by {@code INT_2COMP} of the named {@code param_1}; {@code new (buf) C(~v)}
 	 * by {@code INT_NEGATE}). This helper renders that op as {@code OP operand} where {@code OP} is the
-	 * C++ glyph for the opcode ({@link #unaryOperator}) and the single operand is a <em>leaf</em>
-	 * ({@link #leafExpr}); a unary prefix binds tighter than any binary operator and a leaf carries no
-	 * operator, so the result needs no parentheses and is never precedence-ambiguous. An operand that is
-	 * itself a compound (or any unnameable temporary) makes {@code leafExpr} decline, so the whole hint
-	 * declines rather than guess at nesting &mdash; faithful over complete, the same contract
-	 * {@link #binaryExpr} keeps for the two-operand forms ({@code #37-10o}).
+	 * C++ glyph for the opcode ({@link #unaryOperator}) and the operand is rendered by
+	 * {@link #operandExpr}: a <em>leaf</em> ({@link #leafExpr}) renders bare ({@code -param_1}), and a
+	 * nested compound renders recursively in parentheses ({@code -(param_2 & 7)}, {@code #37-10r}); a
+	 * unary prefix binds tighter than any binary operator, so the parenthesised-operand result is never
+	 * precedence-ambiguous. An operand that is neither makes {@code operandExpr} decline, so the whole
+	 * hint declines &mdash; faithful over complete, the same contract {@link #binaryExpr} keeps for the
+	 * two-operand forms ({@code #37-10o}).
 	 *
 	 * <p>Both mapped opcodes preserve the operand's width (an {@code n}-byte {@code INT_2COMP} /
 	 * {@code INT_NEGATE} produces an {@code n}-byte result), so &mdash; unlike a comparison, whose 1-byte
@@ -458,6 +513,10 @@ public final class CppPlacementConstructionDriver {
 	 * convention, until a third user earns the extraction.)
 	 */
 	private static String unaryExpr(Varnode varnode, Program program) {
+		return unaryExpr(varnode, program, 0);
+	}
+
+	private static String unaryExpr(Varnode varnode, Program program, int depth) {
 		PcodeOp def = varnode.getDef();
 		if (def == null || def.getNumInputs() != 1) {
 			return null;
@@ -466,7 +525,7 @@ public final class CppPlacementConstructionDriver {
 		if (operator == null) {
 			return null;
 		}
-		String operand = leafExpr(def.getInput(0), program);
+		String operand = operandExpr(def.getInput(0), program, depth);
 		if (operand == null) {
 			return null;
 		}

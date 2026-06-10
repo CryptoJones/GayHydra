@@ -841,6 +841,80 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithNestedBinaryInBinaryArgument() throws Exception {
+		// new C((v & 7) + 1): the left operand of INT_ADD is itself an INT_AND compound, so it renders
+		// recursively, parenthesised: (param_1 & 7) + 1 (grounded #37-10r).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 83 c2 01", 11); // mov rdx,rsi; and rdx,7; add rdx,1
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a nested binary operand must render parenthesised",
+			"new C((param_1 & 7) + 1)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithNestedUnaryInBinaryArgument() throws Exception {
+		// new C(~v & 7): the left operand of INT_AND is an INT_NEGATE compound; it renders parenthesised
+		// even though ~ already binds tighter than & — a redundant pair is exact, a precedence table
+		// would be a new thing to get wrong (grounded #37-10r).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 f7 d2 48 83 e2 07", 10); // mov rdx,rsi; not rdx; and rdx,7
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a nested unary operand must render parenthesised",
+			"new C((~param_1) & 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithNestedBinaryInUnaryArgument() throws Exception {
+		// new C(-(v & 7)): the INT_2COMP operand is an INT_AND compound, so the unary renders its operand
+		// recursively, parenthesised: -(param_1 & 7) (grounded #37-10r).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 f7 da", 10); // mov rdx,rsi; and rdx,7; neg rdx
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a nested binary operand of a unary must render parenthesised",
+			"new C(-(param_1 & 7))", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithThreeLevelNestedArgument() throws Exception {
+		// new C(((v & 7) | 9) ^ 5): three mapped binary ops chained; each nested level parenthesises,
+		// the top level stays bare (grounded #37-10r).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 83 ca 09 48 83 f2 05",
+			15); // mov rdx,rsi; and rdx,7; or rdx,9; xor rdx,5
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a three-level nest must parenthesise each nested level",
+			"new C(((param_1 & 7) | 9) ^ 5)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");

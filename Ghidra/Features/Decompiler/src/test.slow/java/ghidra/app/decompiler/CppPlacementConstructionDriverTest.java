@@ -747,6 +747,75 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithNestedBinaryInBinaryArgument() throws Exception {
+		// new (param_1) C((v & 7) + 1): the left operand of INT_ADD is itself an INT_AND compound, so it
+		// renders recursively, parenthesised: (param_2 & 7) + 1 (grounded #37-10r).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f2 48 83 e2 07 48 83 c2 01", 11); // mov rdx,rsi; and rdx,7; add rdx,1
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a nested binary operand must render parenthesised",
+			"new (param_1) C((param_2 & 7) + 1)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithNestedUnaryInBinaryArgument() throws Exception {
+		// new (param_1) C(~v & 7): the left operand of INT_AND is an INT_NEGATE compound; it renders
+		// parenthesised even though ~ already binds tighter than & (grounded #37-10r).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f2 48 f7 d2 48 83 e2 07", 10); // mov rdx,rsi; not rdx; and rdx,7
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a nested unary operand must render parenthesised",
+			"new (param_1) C((~param_2) & 7)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithNestedBinaryInUnaryArgument() throws Exception {
+		// new (param_1) C(-(v & 7)): the INT_2COMP operand is an INT_AND compound, so the unary renders
+		// its operand recursively, parenthesised: -(param_2 & 7) (grounded #37-10r).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f2 48 83 e2 07 48 f7 da", 10); // mov rdx,rsi; and rdx,7; neg rdx
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a nested binary operand of a unary must render parenthesised",
+			"new (param_1) C(-(param_2 & 7))", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithThreeLevelNestedArgument() throws Exception {
+		// new (param_1) C(((v & 7) | 9) ^ 5): three mapped binary ops chained; each nested level
+		// parenthesises, the top level stays bare (grounded #37-10r).
+		Fixture fixture = placementWithBinaryArgFixture(
+			"48 89 f2 48 83 e2 07 48 83 ca 09 48 83 f2 05",
+			15); // mov rdx,rsi; and rdx,7; or rdx,9; xor rdx,5
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a three-level nest must parenthesise each nested level",
+			"new (param_1) C(((param_2 & 7) | 9) ^ 5)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);

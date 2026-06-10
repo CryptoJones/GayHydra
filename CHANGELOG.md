@@ -477,6 +477,21 @@ generated from the GitHub Releases UI at sprint close.
   a per-form twin (rule of three). Grounded against decompiled `setl`/`setle`/`setg`/`setge` (render the
   four canonical forms) and `setb` (decline), and their placement twins; placement 48/48, heap 48/48.
   Design: DD-0058.
+- **Rec 37 `#37-10r` — nested compound constructor arguments rendered with unconditional parentheses**
+  (Sprint 14, eighteenth slice of the `#37-10+` rendering band) — the placement and heap `new` drivers
+  now render a nested compound argument by recursing through a new `operandExpr` helper that wraps every
+  nested sub-expression in parentheses: `new C((param_1 & 7) + 1)` (binary-in-binary),
+  `new C((~param_1) & 7)` (unary-in-binary), `new C(-(param_1 & 7))` (binary-in-unary),
+  `new C(((param_1 & 7) | 9) ^ 5)` (three levels), plus placement twins. The deliberate design choice is
+  fully-parenthesised rendering over a C precedence/associativity table: parenthesised composition is
+  exact by construction, so there is no table to get wrong, at the cost of an occasional redundant pair —
+  faithful over pretty. The top level stays bare, preserving every one-level rendering unchanged. The
+  recursion terminates structurally (only mapped binary/unary opcodes recurse; the SSA cycle-closers
+  `MULTIEQUAL`/`INDIRECT` are unmapped) with a `MAX_OPERAND_NESTING` (8) bound as defense-in-depth, and
+  the no-peel rule is unchanged — a `CAST`-wrapped operand still declines the whole hint, so every
+  grounded unsigned-form decline holds. Comparison operands stay leaf-only this slice. The renderer stays
+  a per-form twin (rule of three). Grounded against four decompiled nested shapes per driver; placement
+  52/52, heap 52/52. Design: DD-0059.
 
 ### Changed
 
