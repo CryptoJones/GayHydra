@@ -349,6 +349,17 @@ then land the work it unblocks.
     and remainder (render) and unsigned `div` quotient and remainder (decline), and placement twins.
     Placement 39/39, heap 39/39. Next `#37-10` work: comparison and unary operators, nested compounds
     with parens, plus signature/template/operator rendering.
+  - [x] ~~**#37-10o** — render unary arguments (arithmetic negation, bitwise complement) as C++ unary
+    expressions.~~ Shipped (DD-0056): a new `unaryExpr` / `unaryOperator` pair, wired into `argumentExpr`
+    after the leaf and binary tries, renders `new C(-param_1)` (`INT_2COMP`) and `new C(~param_1)`
+    (`INT_NEGATE`) over a leaf operand. A probe grounded the shape: both opcodes preserve the operand's
+    width, so the unary op is the value varnode's direct definition with no intervening cast/extension —
+    unlike a comparison or logical `!`, whose 1-byte boolean result the decompiler widens with an
+    `INT_ZEXT` (deliberately declined, awaiting an extension-peeling slice). A unary prefix over a leaf
+    needs no parentheses; a compound or cast-wrapped operand declines the whole hint (never-wrong).
+    Per-form twin (rule of three). Grounded against decompiled `neg`/`not` over a named param (render).
+    Placement 41/41, heap 41/41. Next `#37-10` work: comparison operators (need `INT_ZEXT` peeling),
+    nested compounds with parens, plus signature/template/operator rendering.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 

@@ -78,9 +78,10 @@ import ghidra.program.model.symbol.Namespace;
  * unnamed non-constant temporary, or a non-integer constant such as a pointer-typed global address)
  * declines the whole hint rather than rendering a gap or a misleading bare number. A one-level compound
  * argument also renders &mdash; a two-operand arithmetic, bitwise, or shift expression over leaf operands
- * such as {@code new (buf) C(param_1 + 7)} ({@code #37-10m}, {@link #binaryExpr}). Nested compounds,
- * division/remainder/comparison/unary operators, and overload resolution against the {@code DataType}
- * signature are later {@code #37-10} work.
+ * such as {@code new (buf) C(param_1 + 7)} ({@code #37-10m}, {@link #binaryExpr}), as does a
+ * single-operand unary expression &mdash; arithmetic negation or bitwise complement over a leaf such as
+ * {@code new (buf) C(-param_1)} ({@code #37-10o}, {@link #unaryExpr}). Nested compounds, comparison
+ * operators, and overload resolution against the {@code DataType} signature are later {@code #37-10} work.
  *
  * <p><b>Advisory, never wrong.</b> Like the matcher and renderer it sits between, the driver is
  * additive and total-failure-safe: a construction whose constructor target resolves to no function or
@@ -239,18 +240,23 @@ public final class CppPlacementConstructionDriver {
 	 * Renders one constructor-argument varnode as a C++ expression. An argument is first tried as a
 	 * <em>leaf</em> ({@link #leafExpr}) &mdash; a named variable, a string literal, or a typed constant
 	 * &mdash; and, failing that, as a two-operand <em>binary expression</em> ({@link #binaryExpr}) such as
-	 * {@code param_1 + 7} ({@code #37-10m}). An argument that is neither declines the whole hint
-	 * ({@code null}), keeping the never-wrong contract.
+	 * {@code param_1 + 7} ({@code #37-10m}) or a single-operand <em>unary expression</em>
+	 * ({@link #unaryExpr}) such as {@code -param_1} ({@code #37-10o}). An argument that is none of these
+	 * declines the whole hint ({@code null}), keeping the never-wrong contract.
 	 *
-	 * @return the rendered argument expression, or null if it is neither a renderable leaf nor a
-	 *         renderable binary expression
+	 * @return the rendered argument expression, or null if it is neither a renderable leaf, binary
+	 *         expression, nor unary expression
 	 */
 	private static String argumentExpr(Varnode varnode, Program program) {
 		String leaf = leafExpr(varnode, program);
 		if (leaf != null) {
 			return leaf;
 		}
-		return binaryExpr(varnode, program);
+		String binary = binaryExpr(varnode, program);
+		if (binary != null) {
+			return binary;
+		}
+		return unaryExpr(varnode, program);
 	}
 
 	/**
@@ -416,6 +422,66 @@ public final class CppPlacementConstructionDriver {
 			case PcodeOp.INT_RIGHT, PcodeOp.INT_SRIGHT -> ">>";
 			case PcodeOp.INT_SDIV, PcodeOp.INT_DIV -> "/";
 			case PcodeOp.INT_SREM, PcodeOp.INT_REM -> "%";
+			default -> null;
+		};
+	}
+
+	/**
+	 * {@return the constructor-argument varnode rendered as a one-level C++ <em>unary expression</em>
+	 * such as {@code -param_1} or {@code ~param_1}, or null when its definition is not a recognised
+	 * single-operand arithmetic-negation or bitwise-complement p-code op over a leaf operand}
+	 *
+	 * <p>The argument arrives as an unnamed temporary whose {@link Varnode#getDef() definition} is the
+	 * unary p-code op that computed it (grounded: {@code new (buf) C(-v)} arrives as an {@code UNNAMED}
+	 * {@code HighOther} defined by {@code INT_2COMP} of the named {@code param_1}; {@code new (buf) C(~v)}
+	 * by {@code INT_NEGATE}). This helper renders that op as {@code OP operand} where {@code OP} is the
+	 * C++ glyph for the opcode ({@link #unaryOperator}) and the single operand is a <em>leaf</em>
+	 * ({@link #leafExpr}); a unary prefix binds tighter than any binary operator and a leaf carries no
+	 * operator, so the result needs no parentheses and is never precedence-ambiguous. An operand that is
+	 * itself a compound (or any unnameable temporary) makes {@code leafExpr} decline, so the whole hint
+	 * declines rather than guess at nesting &mdash; faithful over complete, the same contract
+	 * {@link #binaryExpr} keeps for the two-operand forms ({@code #37-10o}).
+	 *
+	 * <p>Both mapped opcodes preserve the operand's width (an {@code n}-byte {@code INT_2COMP} /
+	 * {@code INT_NEGATE} produces an {@code n}-byte result), so &mdash; unlike a comparison, whose 1-byte
+	 * boolean result the decompiler widens to the argument slot with an intervening {@code INT_ZEXT}
+	 * &mdash; the unary op is the value varnode's direct definition and no cast/extension peeling is
+	 * needed. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String unaryExpr(Varnode varnode, Program program) {
+		PcodeOp def = varnode.getDef();
+		if (def == null || def.getNumInputs() != 1) {
+			return null;
+		}
+		String operator = unaryOperator(def.getOpcode());
+		if (operator == null) {
+			return null;
+		}
+		String operand = leafExpr(def.getInput(0), program);
+		if (operand == null) {
+			return null;
+		}
+		return operator + operand;
+	}
+
+	/**
+	 * {@return the C++ operator glyph for a single-operand integer p-code opcode ({@code -} for
+	 * {@code INT_2COMP} arithmetic negation, {@code ~} for {@code INT_NEGATE} bitwise complement), or
+	 * null when the opcode is neither}
+	 *
+	 * <p>The mapping is grounded over the opcodes the decompiler emits for the corresponding C operations
+	 * ({@code #37-10o}): an arithmetic unary minus is {@code INT_2COMP} and a bitwise {@code ~} is
+	 * {@code INT_NEGATE}. The logical {@code !} ({@code BOOL_NEGATE}) is deliberately not mapped: like a
+	 * comparison its 1-byte result is widened to the argument slot by an intervening {@code INT_ZEXT}, so
+	 * it is not the value varnode's direct definition and would need extension peeling this band does not
+	 * yet do. (Duplicated from the heap driver as an honest per-form twin, per the DD-0026 rule-of-three
+	 * convention, until a third user earns the extraction.)
+	 */
+	private static String unaryOperator(int opcode) {
+		return switch (opcode) {
+			case PcodeOp.INT_2COMP -> "-";
+			case PcodeOp.INT_NEGATE -> "~";
 			default -> null;
 		};
 	}

@@ -594,6 +594,39 @@ public class CppPlacementConstructionDriverTest extends AbstractDecompilerHighFu
 	}
 
 	@Test
+	public void testRendersPlacementWithArithmeticNegationExpressionArgument() throws Exception {
+		// new (param_1) C(-v): an arithmetic unary minus is INT_2COMP of the named param_2, a
+		// single-operand op whose result is the same width as the operand (no widening cast), so it
+		// renders -param_2 (grounded #37-10o).
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 f7 da", 6); // mov rdx,rsi; neg rdx
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("an arithmetic negation argument must render as -param_2",
+			"new (param_1) C(-param_2)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersPlacementWithBitwiseComplementExpressionArgument() throws Exception {
+		// new (param_1) C(~v): a bitwise complement is INT_NEGATE of the named param_2, a single-operand
+		// op whose result is the same width as the operand, so it renders ~param_2 (grounded #37-10o).
+		Fixture fixture = placementWithBinaryArgFixture("48 89 f2 48 f7 d2", 6); // mov rdx,rsi; not rdx
+		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
+
+		CppPlacementConstructionDriver driver =
+			new CppPlacementConstructionDriver(new CppDecompilerHints(), typeSystemWithC());
+		List<RenderedPlacement> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered placement construction", 1, hints.size());
+		assertEquals("a bitwise complement argument must render as ~param_2",
+			"new (param_1) C(~param_2)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testRendersPlacementWithSignedNegativeArgument() throws Exception {
 		Fixture fixture = placementWithSignedNegArgFixture();
 		HighFunction highFunction = decompileToHighFunction(fixture.program, fixture.make);
