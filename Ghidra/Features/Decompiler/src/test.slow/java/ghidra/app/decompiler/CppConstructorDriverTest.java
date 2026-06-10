@@ -915,6 +915,82 @@ public class CppConstructorDriverTest extends AbstractDecompilerHighFunctionTest
 	}
 
 	@Test
+	public void testRendersConstructionWithCompoundEqualityOperand() throws Exception {
+		// new C((v & 7) == 5): the INT_EQUAL left operand under the widening INT_ZEXT is itself an
+		// INT_AND compound, so it renders recursively, parenthesised (grounded #37-10s).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 83 fa 05 0f 94 c2 48 0f b6 d2",
+			18); // mov rdx,rsi; and rdx,7; cmp rdx,5; sete dl; movzx rdx,dl
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound equality operand must render parenthesised",
+			"new C((param_1 & 7) == 5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithCompoundInequalityOperand() throws Exception {
+		// new C((v & 7) != 5): same shape as the equality twin over INT_NOTEQUAL (grounded #37-10s).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 83 fa 05 0f 95 c2 48 0f b6 d2",
+			18); // mov rdx,rsi; and rdx,7; cmp rdx,5; setne dl; movzx rdx,dl
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound inequality operand must render parenthesised",
+			"new C((param_1 & 7) != 5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersConstructionWithCompoundRelationalOperand() throws Exception {
+		// new C((v & 7) < 5): the INT_SLESS left operand is an INT_AND compound carried directly (the
+		// masked value needs no unsigned cast), so it renders parenthesised (grounded #37-10s).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 83 e2 07 48 83 fa 05 0f 9c c2 48 0f b6 d2",
+			18); // mov rdx,rsi; and rdx,7; cmp rdx,5; setl dl; movzx rdx,dl
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("a compound relational operand must render parenthesised",
+			"new C((param_1 & 7) < 5)", hints.get(0).rendering());
+	}
+
+	@Test
+	public void testRendersFoldedUnaryComparisonAtLeafLevel() throws Exception {
+		// new C(~v == 5): the decompiler folds the complement into the constant (~v == 5 iff v == ~5 ==
+		// -6), so the comparison arrives as INT_EQUAL(param_1, -6) over leaves and renders without any
+		// compound machinery — the exact boolean computed (grounded #37-10s).
+		HighFunction highFunction = decompileMakeWithBinaryArg(
+			"48 89 f2 48 f7 d2 48 83 fa 05 0f 94 c2 48 0f b6 d2",
+			17); // mov rdx,rsi; not rdx; cmp rdx,5; sete dl; movzx rdx,dl
+
+		CppTypeSystem typeSystem = new CppTypeSystem();
+		typeSystem.defineClass(classC);
+
+		CppConstructorDriver driver = new CppConstructorDriver(new CppDecompilerHints(), typeSystem);
+		List<RenderedConstruction> hints = driver.recognizeAndRender(highFunction);
+
+		assertEquals("expected exactly one rendered construction", 1, hints.size());
+		assertEquals("the folded complement comparison must render the canonical constant",
+			"new C(param_1 == -6)", hints.get(0).rendering());
+	}
+
+	@Test
 	public void testDeclinesNonConstructorCallee() throws Exception {
 		// The "constructor" callee is named build, not C, so its name != its class namespace.
 		HighFunction highFunction = decompileMake("operator.new", "build", "C");

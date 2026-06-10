@@ -84,8 +84,10 @@ import ghidra.program.model.symbol.Namespace;
  * over leaf operands such as {@code new (buf) C(param_1 == 7)} / {@code new (buf) C(param_1 < 7)}
  * ({@code #37-10p}, {@code #37-10q}, {@link #comparisonExpr}). A nested compound argument renders
  * recursively with each nested level parenthesised ({@code new (buf) C((param_2 & 7) + 1)},
- * {@code #37-10r}, {@link #operandExpr}). Comparison-operand compounds, logical negation, and overload
- * resolution against the {@code DataType} signature are later {@code #37-10} work.
+ * {@code #37-10r}, {@link #operandExpr}); comparison operands compose the same way
+ * ({@code new (buf) C((param_2 & 7) == 5)}, {@code #37-10s}). Logical negation (typically canonicalised
+ * away by the decompiler) and overload resolution against the {@code DataType} signature are later
+ * {@code #37-10} work.
  *
  * <p><b>Advisory, never wrong.</b> Like the matcher and renderer it sits between, the driver is
  * additive and total-failure-safe: a construction whose constructor target resolves to no function or
@@ -554,9 +556,9 @@ public final class CppPlacementConstructionDriver {
 	}
 
 	/**
-	 * {@return the constructor-argument varnode rendered as a one-level C++ <em>comparison</em> such as
-	 * {@code param_2 == 7} or {@code param_2 < 7}, or null when its definition is not a zero-extended
-	 * two-operand equality-or-relational p-code op over leaf operands}
+	 * {@return the constructor-argument varnode rendered as a C++ <em>comparison</em> such as
+	 * {@code param_2 == 7} or {@code (param_2 & 7) < 5}, or null when its definition is not a
+	 * zero-extended two-operand equality-or-relational p-code op over renderable operands}
 	 *
 	 * <p>A comparison produces a one-byte boolean, but a constructor argument slot is wider (e.g. an
 	 * eight-byte {@code longlong}), so the decompiler widens the boolean to the slot with an
@@ -564,10 +566,14 @@ public final class CppPlacementConstructionDriver {
 	 * op sits one hop below it (grounded: {@code new (buf) C(v == 7)} arrives as an {@code INT_ZEXT} of an
 	 * {@code INT_EQUAL} of the named {@code param_2} and the constant {@code 7}). This helper peels
 	 * <em>exactly one</em> {@code INT_ZEXT} to reach the comparison, then renders it as
-	 * {@code leafExpr(in0) OP leafExpr(in1)} over a grounded comparison-opcode→glyph map
-	 * ({@link #comparisonOperator}), using leaf operands only &mdash; the same faithful no-peel operand
-	 * rule {@link #binaryExpr} keeps, so a compound or cast-wrapped operand declines the whole hint
-	 * ({@code #37-10p}, {@code #37-10q}).
+	 * {@code operandExpr(in0) OP operandExpr(in1)} over a grounded comparison-opcode→glyph map
+	 * ({@link #comparisonOperator}). Each operand is rendered by {@link #operandExpr}: a leaf renders
+	 * bare ({@code #37-10p}, {@code #37-10q}), and a nested compound renders recursively in parentheses
+	 * ({@code new (buf) C((param_2 & 7) == 5)}, {@code #37-10s}); a cast-wrapped or unrecognised operand
+	 * declines the whole hint, the same faithful no-peel rule {@link #binaryExpr} keeps. (A unary
+	 * compound under a comparison is typically never seen: the decompiler folds it into the constant
+	 * &mdash; grounded, {@code ~v == 5} arrives as {@code INT_EQUAL(param_2, -6)} and renders at leaf
+	 * level.)
 	 *
 	 * <p>The symmetric equality operators ({@code ==}, {@code !=}) carry no signed/unsigned distinction
 	 * and no operand order to recover, so they render unambiguously ({@code #37-10p}). The relational
@@ -577,12 +583,13 @@ public final class CppPlacementConstructionDriver {
 	 * {@code v <= 7} renders {@code param_2 < 8}, {@code v > 7} renders {@code 7 < param_2}, and
 	 * {@code v >= 7} renders {@code 6 < param_2} &mdash; each the exact boolean the p-code computes, which
 	 * is all this band ever claims to render. An <em>unsigned</em> relational form casts its operand to an
-	 * unsigned type (as unsigned division does), so {@code leafExpr} declines the cast-wrapped operand and
-	 * the whole hint declines rather than silently change signedness, exactly the signed/unsigned split
-	 * {@link #binaryOperator} keeps. The extension is matched as {@code INT_ZEXT} specifically &mdash; a
-	 * one-byte boolean is zero-, never sign-, extended &mdash; and exactly one hop is peeled, so an
-	 * arbitrary cast chain is not silently flattened. (Duplicated from the heap driver as an honest
-	 * per-form twin, per the DD-0026 rule-of-three convention, until a third user earns the extraction.)
+	 * unsigned type (as unsigned division does); a {@code CAST} is neither a leaf nor a mapped opcode, so
+	 * {@code operandExpr} declines it and the whole hint declines rather than silently change signedness,
+	 * exactly the signed/unsigned split {@link #binaryOperator} keeps. The extension is matched as
+	 * {@code INT_ZEXT} specifically &mdash; a one-byte boolean is zero-, never sign-, extended &mdash; and
+	 * exactly one hop is peeled, so an arbitrary cast chain is not silently flattened. (Duplicated from
+	 * the heap driver as an honest per-form twin, per the DD-0026 rule-of-three convention, until a third
+	 * user earns the extraction.)
 	 */
 	private static String comparisonExpr(Varnode varnode, Program program) {
 		PcodeOp widen = varnode.getDef();
@@ -597,11 +604,11 @@ public final class CppPlacementConstructionDriver {
 		if (operator == null) {
 			return null;
 		}
-		String left = leafExpr(def.getInput(0), program);
+		String left = operandExpr(def.getInput(0), program, 0);
 		if (left == null) {
 			return null;
 		}
-		String right = leafExpr(def.getInput(1), program);
+		String right = operandExpr(def.getInput(1), program, 0);
 		if (right == null) {
 			return null;
 		}
