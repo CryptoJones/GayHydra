@@ -45,9 +45,13 @@ the only document that decides whether a PR sits or moves.
 Each PR is auto-labelled with one (and only one) of these lanes by a
 GitHub Action. Default if rules don't match is `Framework`.
 
-> **Status (2026-06-11):** the lane auto-labelling Action is not yet
-> implemented — no workflow under `.github/workflows/` applies lane
-> labels. Lanes are applied manually until it ships.
+> **Status (2026-06-11, later same day):** implemented —
+> [`lane-labeler.yml`](../../.github/workflows/lane-labeler.yml) applies
+> exactly one `lane:*` label by path rule on PR open/sync/reopen, and
+> defers to a maintainer's re-lane (an existing single differing lane
+> label is left alone). The decomp-correctness lane is a routing default
+> — the policy scopes it to wrong-output fixes, which a path rule cannot
+> read; re-lane as needed.
 
 ## SLA
 

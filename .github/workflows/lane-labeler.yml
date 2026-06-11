@@ -1,0 +1,68 @@
+# PR_QUEUE_POLICY.md promises: "Each PR is auto-labelled with one (and only
+# one) of these lanes by a GitHub Action." The 2026-06-11 meta-review found
+# the Action never existed; this is it.
+#
+# Path rules (the policy's lane table):
+#   lane:processor          — touches Ghidra/Processors/
+#   lane:decomp-correctness — touches Ghidra/Features/Decompiler/src/decompile/cpp/
+#                             (the policy scopes this lane to wrong-output
+#                             fixes; a path rule cannot read intent, so the
+#                             label is a routing default a maintainer may
+#                             re-lane)
+#   lane:framework          — everything else
+# Exactly-one is enforced by removing any other lane:* label this job did
+# not pick. Maintainer re-lanes stick: a PR that already carries exactly one
+# lane label that differs from the computed one is left alone (the
+# automation routes, humans decide).
+#
+# pull_request_target (not pull_request) so fork PRs can be labelled — safe
+# because nothing from the PR is checked out or executed; the job only calls
+# the GitHub API about the PR.
+
+name: Lane labeler
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Compute and apply lane label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          FILES=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
+
+          LANE=lane:framework
+          if echo "$FILES" | grep -q '^Ghidra/Features/Decompiler/src/decompile/cpp/'; then
+            LANE=lane:decomp-correctness
+          fi
+          if echo "$FILES" | grep -q '^Ghidra/Processors/'; then
+            LANE=lane:processor
+          fi
+
+          CURRENT=$(gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep '^lane:' || true)
+          COUNT=$(echo "$CURRENT" | grep -c . || true)
+
+          if [ "$COUNT" -eq 1 ] && [ "$CURRENT" != "$LANE" ]; then
+            echo "PR already carries a (possibly human-chosen) lane '$CURRENT'; leaving it."
+            exit 0
+          fi
+
+          for l in $CURRENT; do
+            if [ "$l" != "$LANE" ]; then
+              gh api -X DELETE "repos/$REPO/issues/$PR/labels/$(printf %s "$l" | sed 's/:/%3A/')" || true
+            fi
+          done
+          gh api -X POST "repos/$REPO/issues/$PR/labels" -f "labels[]=$LANE"
+          echo "Labelled PR #$PR with $LANE"
