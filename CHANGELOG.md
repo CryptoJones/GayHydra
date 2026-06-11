@@ -776,6 +776,19 @@ generated from the GitHub Releases UI at sprint close.
   surface language). **Rec 40 Workstream 1 is complete in its final form**; the band's remainder
   is the months-scale `#40-5+` differential fuzzer (its own sprint). Design: DD-0078.
 
+- **Rec 34 `#34-10` — payload-v1 go-live architecture** — DD-0080. Grounding `#34-7` ("remove v0
+  encode, one release after #34-4" — nominally unlocked since v26.2.2 shipped the codecs and two
+  releases followed) surfaced that its precondition was never met: every `#34-4`..`#34-6` codec
+  shipped deliberately inert (test/fuzz-only; the production Makefile rules can't compile them),
+  the live loop is v0 in both directions, no payload-version signal exists on the wire, and no
+  Java v1 response decoder exists at all — executing `#34-7` as written would have deleted the
+  only production encode path. DD-0080 voids the clock and defines the `#34-10` go-live band:
+  two greeting capability bits (requests/responses, per direction), a `SCHEMA_PAYLOAD` frame flag
+  with `[u8 command-id][FlatBuffers bytes]` payloads, smallest-command-first slices reusing the
+  `ipc_e2e` harness, the signature/callback sub-protocol carved out (no schema tables), and the
+  `#34-7`/`#34-8` removals re-keyed to go-live (`#34-8` additionally subordinated to DD-0005's
+  upstream-client commitment). Design: DD-0080.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against
