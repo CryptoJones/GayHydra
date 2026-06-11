@@ -699,9 +699,17 @@ them. They are ordered by strategic weight, not effort.
   (default-off) and [#441](https://github.com/CryptoJones/GayHydra/issues/441)
   (removal, gated on checking upstream's Jython/PyGhidra posture first so deleting
   `Ghidra/Features/Jython/` doesn't create a permanent merge-conflict surface).
-- [ ] **Rec 12 GHSA redo** — the oldest open security commitment (drafts lost in the
-  repo deletion, carried across three sprint sections since). Smallest item here;
-  schedule it out of carry-over limbo.
+- [x] ~~**Rec 12 GHSA redo** — the oldest open security commitment (drafts lost in the
+  repo deletion, carried across three sprint sections since).~~ Done 2026-06-11: the
+  upstream remote made the archaeology possible — all three `GP-*` fixes **predate the
+  fork's merge-base** (GP-6832/GP-6719 landed upstream 2026-05; GP-258 is from 2020), so
+  no fork release was ever affected; the audit's GP-258 description was wrong (PE
+  certificate parsing, not a `writeUserList` race). Three draft GHSAs created
+  (GHSA-v5vp-434r-62c6, GHSA-q3fq-pjqf-c3m5, GHSA-58gj-m52h-89xx) with diff-reviewed
+  descriptions and CVSS deliberately TBD per policy;
+  [`retroactive-cve-tracking.md`](docs/security/retroactive-cve-tracking.md) table
+  filled. **Publish-or-discard is Aaron's call** (fork-unaffected advisories may not
+  merit a CVE mint).
 - [x] ~~**Hygiene pass** — DD-0005 body correction (stale "clients use v1 by default"
   claim), duplicate-sprint-number note at the top of this file, governance docs
   reconciled to implementation status (sla-dashboard + lane-labeler Action are
