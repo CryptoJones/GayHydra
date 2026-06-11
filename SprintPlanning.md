@@ -737,7 +737,15 @@ first implementation tier.
     registration regardless of request encoding) while the simple commands null them. Every
     e2e leg now exercises schema register/deregister implicitly via openProgram/dispose.
     Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
-  - [ ] **#34-10d** — config trio (`structureGraph`, `setAction`, `setOptions`).
+  - [x] ~~**#34-10d-1** — `setAction` goes schema-v1.~~ Shipped — mechanical branch + override,
+    plus the rule-of-three `parseSchemaProgramId` extraction (third user: FlushNative,
+    DeregisterProgram, SetAction). Every e2e leg exercises it via openProgram's mandatory
+    setAction. Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
+  - [ ] **#34-10d-2** — `setOptions` + `structureGraph` go schema-v1 **as XML text** (DD-0080
+    addendum): their packed-binary documents cannot ride FlatBuffers UTF-8/NUL-unsafe `string`
+    fields, so the host encodes the same document with `XmlEncode` and the worker's
+    `loadParametersV1` constructs an `XmlDecode` — no schema change, format-agnostic `Decoder`
+    consumers unchanged.
   - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
     direction; starts the re-keyed `#34-7` clock (one release after this ships).
   - [ ] **#34-10f+** — response direction: host-side `DecompileResponseCodec` (new), worker emit

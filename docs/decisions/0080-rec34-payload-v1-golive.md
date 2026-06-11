@@ -120,6 +120,28 @@ commands only**.
   two-cycle window and DD-0005's upstream-client commitment in DD-0005's favour —
   the never-break-a-working-peer posture wins.
 
+## Addendum (#34-10d, 2026-06-11): document-carrying fields hold XML text, not packed bytes
+
+Wiring the config trio surfaced a constraint the inert codecs never hit: the schema's
+document-carrying fields (`SetOptionsRequest.options`, `StructureGraphRequest.control_flow`)
+are FlatBuffers `string`s, but the v0 wire carries those documents as *packed* binary
+(`PatchPackedEncode`). FlatBuffers strings are UTF-8 by contract and the C++ codec rides
+`c_str()` (NUL-truncating); arbitrary packed bytes cannot survive that channel.
+
+**Decision:** the schema-v1 encoding of these fields is the **XML text** form of the same
+document — exactly what the field comments ("encoded `<optionslist>` document") describe.
+The host encodes with `XmlEncode` instead of `PatchPackedEncode` when sending schema-v1; the
+worker's `loadParametersV1` constructs an `XmlDecode` instead of a `PackedDecode` (the
+`Decoder` consumer is format-agnostic). No schema change, no binding regeneration; the
+performance difference is irrelevant for rare config commands. Changing the field types to
+`[ubyte]` was rejected: it would churn generated bindings and codecs for fields that have
+never carried production traffic, to preserve a wire format (packed) whose only virtue on
+these messages was that v0 already used it.
+
+`setAction` (pure selector strings) ships first as `#34-10d-1` alongside the
+rule-of-three `parseSchemaProgramId` extraction; `setOptions` + `structureGraph` follow as
+`#34-10d-2` implementing this addendum.
+
 ## Consequences
 
 - `#34-7` executed on the written clock would have deleted the only production encode

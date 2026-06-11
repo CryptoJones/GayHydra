@@ -840,6 +840,20 @@ generated from the GitHub Releases UI at sprint close.
   now exercises schema register/deregister implicitly (openProgram/dispose). Ronin28: C++
   336/336, `ghidra_dbg` builds clean, e2e 5/5 on a forced rerun. Design: DD-0080.
 
+- **Rec 34 `#34-10d-1` — `setAction` goes schema-v1; document-field design pinned** —
+  `setAction` (pure selector strings) joins the live schema-v1 commands with the established
+  branch + `loadParametersV1` shape; an unset selector reads back empty, the legacy
+  leave-unchanged value. The schema program_id parse hit its third user, so
+  `parseSchemaProgramId` is extracted (rule of three: FlushNative, DeregisterProgram,
+  SetAction). Wiring the rest of the config trio surfaced a constraint the inert codecs never
+  hit — `setOptions`/`structureGraph` carry *packed binary* documents, which cannot ride
+  FlatBuffers UTF-8/NUL-unsafe `string` fields — so a DD-0080 addendum pins the design:
+  schema-v1 carries those documents as **XML text** (host encodes with `XmlEncode`, worker
+  decodes with `XmlDecode`; the `Decoder` consumers are format-agnostic), no schema change,
+  landing as `#34-10d-2`. Every e2e leg exercises schema setAction via openProgram's mandatory
+  action selection. Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
+  Design: DD-0080 + addendum.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against
