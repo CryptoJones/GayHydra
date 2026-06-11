@@ -7,10 +7,35 @@
 ; DERIVED-FROM: Ghidra/Features/Decompiler/src/decompile/cpp/slghscan.l
 ;   sha256=6a9bc4125528d8c4d551c2d3e57e1064b60ddba16619795ab14b402c02641aa0
 ;
-; The C++ bison/flex implementation remains CANONICAL; this document is the
-; tool-agnostic re-statement the audit asked for. The `sleighGrammarAudit`
-; gradle task (CI-gated) fails when either source file changes without the
-; pins above being updated — drift becomes visible, not silent.
+; SLEIGH has TWO canonical implementations in this tree, and this document is
+; pinned to both. The C++ bison/flex compiler above is the decompiler-side
+; canonical; the Java ANTLR3 compiler below (SoftwareModeling's
+; ghidra.sleigh.grammar, used by the `sleighCompile` build task) is the
+; build-side canonical that already parses every .slaspec on every full
+; build -- which is why no separate BNF-generated acceptance parser is
+; needed (DD-0078): acceptance verification runs continuously in CI through
+; it. The `sleighGrammarAudit` gradle task (CI-gated) fails when ANY pinned
+; source changes without the pins being updated -- drift in either
+; implementation becomes a visible review obligation, not silent rot.
+;
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/BaseLexer.g
+;   sha256=859e2d2de6d4ba32426f375216ea5f270159b45f4f94466f0502c18a5f40551b
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/DisplayLexer.g
+;   sha256=039cdba85c250c7ef053e3378488d14293573ffa2e8bed02966b13d83f4df627
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/DisplayParser.g
+;   sha256=dcdd05e265fad3d29ab27972da8204c34063efb25daad06e3546d65e256c6070
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/SemanticLexer.g
+;   sha256=1abd533f3790c59a93baef8ffbc3dd9ba88f0723636971cce57cee2739a2b9a8
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/SemanticParser.g
+;   sha256=850743f7f34696bfd261c730b2bbb344dd9b3b14209de96d404ca6ccbea8cc93
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/SleighLexer.g
+;   sha256=61063b90e15aec65279b3d13d2adc4e7cf2def49427f13b464b82d61732b957b
+; DERIVED-FROM: Ghidra/Framework/SoftwareModeling/src/main/antlr/ghidra/sleigh/grammar/SleighParser.g
+;   sha256=8323a412e9d0ef363e2074d112dd77bbcda12508bd2668e666d7c632113d599c
+;
+; (The "DERIVED-FROM" label on the Java grammars means "kept consistent
+; with" -- the EBNF was derived from the C++ pair; the Java pair is the
+; second implementation the same review obligation covers.)
 ;
 ; Derivation policy:
 ;  * Error-recovery alternatives in the .y (productions whose action is

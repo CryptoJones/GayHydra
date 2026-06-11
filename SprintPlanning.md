@@ -779,8 +779,11 @@ first implementation tier.
 - [x] ~~**PR #40-2:** BNF grammar at `docs/sleigh/grammar.bnf` + CI drift-detection job.~~
   Shipped (DD-0077): complete EBNF derivation of `slghparse.y` (error-recovery productions
   excluded by policy; symbol-feedback and lexer-modality documented in the header) +
-  `sleighGrammarAudit` sha256-pin drift gate (root task + CI step beside `cppRaiiAudit`). The
-  ANTLR acceptance-parity check over the 39 `.slaspec`s is deferred as its own heavier slice.
+  `sleighGrammarAudit` sha256-pin drift gate (root task + CI step beside `cppRaiiAudit`).
+  **Parity follow-up dissolved (DD-0078)**: the tree already ships a second canonical Sleigh
+  implementation (the Java ANTLR3 compiler behind `sleighCompile`, parsing every `.slaspec` on
+  every CI build) — its seven language-defining `.g` files joined the pin set instead of building
+  a duplicated third parser. Audit verified at 9 pins. **Workstream 1 complete in final form.**
 - [ ] **PR #40-3 + #40-4:** semantic model document.
   - [x] ~~**#40-3** — disassembly half.~~ Shipped: `docs/sleigh/semantic-model.md`, 24 constructs
     (definitions, attach forms, constructors/display, pattern equations, context actions,
