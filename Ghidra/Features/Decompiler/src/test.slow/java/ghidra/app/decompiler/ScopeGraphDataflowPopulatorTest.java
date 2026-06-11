@@ -97,6 +97,40 @@ public class ScopeGraphDataflowPopulatorTest extends AbstractDecompilerHighFunct
 	}
 
 	@Test
+	public void testStackLocalArgumentMintsStorageKeyedIdentity() throws Exception {
+		// f: sub rsp,0x18 ; mov ecx,[rsp+4] ; call g ; add rsp,0x18 ; ret — the argument is a
+		// stack local. Probe-grounded: the decompiler hands it a symbol with concrete
+		// Stack[-0x14]:4 storage even with no database local, and that storage is the
+		// decompile-invariant LocalEquiv key (DD-0076).
+		builder.dispose();
+		builder = new ProgramBuilder("dataflowLocalArg", ProgramBuilder._X64);
+		builder.createMemory("text", CALLER, 0x200);
+		builder.setBytes(CALLER, "48 83 ec 18 8b 4c 24 04 e8 f3 00 00 00 48 83 c4 18 c3", false);
+		builder.setBytes(CALLEE, "c3", false);
+		program = builder.getProgram();
+		String convention = program.getCompilerSpec().getDefaultCallingConvention().getName();
+		builder.createEmptyFunction("g", null, convention, CALLEE, 1,
+			VoidDataType.dataType, IntegerDataType.dataType);
+		caller = builder.createEmptyFunction("f", null, convention, CALLER, 18,
+			VoidDataType.dataType);
+		builder.disassemble(CALLER, 18, false);
+		builder.disassemble(CALLEE, 1, false);
+		HighFunction highFunction = decompileToHighFunction(program, caller);
+
+		ScopeGraph graph = new ScopeGraph();
+		int added = ScopeGraphDataflowPopulator.populate(highFunction, graph);
+
+		ScopeEdge expected = new ScopeEdge(
+			new ghidra.app.util.scope.ScopeNode.LocalEquiv(caller.getEntryPoint(),
+				"Stack[-0x14]:4"),
+			new Parameter(addr(program, 0x401100L), 0),
+			Kind.SAME_VALUE, ScopeGraphDataflowPopulator.PASS_THROUGH_CONFIDENCE,
+			Origin.DATAFLOW);
+		assertEquals("the stack-local argument must relate to the callee slot", 1, added);
+		assertTrue(graph.getEdges().contains(expected));
+	}
+
+	@Test
 	public void testRepopulationIsIdempotent() throws Exception {
 		HighFunction highFunction = decompileToHighFunction(program, caller);
 		ScopeGraph graph = new ScopeGraph();

@@ -763,8 +763,12 @@ first implementation tier.
     (DD-0076): storage is the decompile-invariant anchor (Ghidra's own `HighSymbol`↔DB-local
     matching); opaque ids invite unstable minting, hashes are not identities. Codec `L` tag carries
     the escaped key; landed before anything persisted real `LocalEquiv` nodes (no format bump).
-    Suites 10/7/7. Remaining Rec 38: local-argument dataflow minting (needs a DB-backed-local
-    fixture probe), `#38-4` UI (DISPLAY-gated).
+    Suites 10/7/7.
+  - [x] ~~**local-argument dataflow minting.**~~ Shipped (DD-0075 addendum): probe showed a
+    stack-local argument's `HighSymbol` carries concrete storage even with no DB local — the
+    populator mints `LocalEquiv(callerEntry, storageKey)` alongside the parameter case. RFC-0002's
+    full motivating case flows end-to-end. Harness 4/4. **Remaining Rec 38: only `#38-4` UI
+    (DISPLAY-gated).**
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
 

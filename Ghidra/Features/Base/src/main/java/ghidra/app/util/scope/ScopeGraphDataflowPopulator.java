@@ -19,9 +19,11 @@ import java.util.Iterator;
 
 import ghidra.app.util.scope.ScopeEdge.Kind;
 import ghidra.app.util.scope.ScopeEdge.Origin;
+import ghidra.app.util.scope.ScopeNode.LocalEquiv;
 import ghidra.app.util.scope.ScopeNode.Parameter;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.HighSymbol;
 import ghidra.program.model.pcode.HighVariable;
@@ -35,14 +37,16 @@ import ghidra.program.model.pcode.Varnode;
  * decompiled {@link HighFunction} — RFC-0002's "local in function A passed as parameter to
  * function B &rarr; the local in A and B's parameter share a node".
  *
- * <p><b>This slice covers the deterministic end of the heuristic band: pass-through
- * parameters.</b> When a direct {@code CALL}'s argument is itself a <em>parameter of the
- * caller</em>, both endpoints are {@link Parameter} identities — caller slot and callee slot — and
- * the positional mapping comes from the decompiler's recovered call (inputs after the target map
- * to callee slots in order, the same recovery the Rec 37 argument threading uses). A local-variable
- * argument needs a stable local equivalence id ({@code LocalEquiv}) that no pass mints yet, so
- * locals are deferred rather than keyed off per-decompile {@code HighVariable} identity that would
- * not survive recomputation.
+ * <p><b>Covered argument shapes.</b> When a direct {@code CALL}'s argument is a <em>parameter of
+ * the caller</em>, both endpoints are {@link Parameter} identities — caller slot and callee slot —
+ * with the positional mapping from the decompiler's recovered call (inputs after the target map to
+ * callee slots in order, the same recovery the Rec 37 argument threading uses). When the argument
+ * is a <em>local</em> whose {@code HighSymbol} carries valid concrete storage, the caller endpoint
+ * is a {@link ScopeNode.LocalEquiv} keyed by the canonical storage string (DD-0076) — probe-grounded:
+ * the decompiler hands a stack-local argument a symbol with concrete {@code Stack[-0xNN]:size}
+ * storage even when no database local exists, and that storage is the decompile-invariant
+ * identity. An argument with no symbol, or whose storage is bad/unassigned (a unique temporary, a
+ * computed value), contributes nothing (never-wrong).
  *
  * <p><b>Confidence.</b> Edges carry {@link #PASS_THROUGH_CONFIDENCE} with origin
  * {@link Origin#DATAFLOW} — high (the prototype mapping is the decompiler's own) but deliberately
@@ -92,11 +96,11 @@ public final class ScopeGraphDataflowPopulator {
 				continue;
 			}
 			for (int i = 1; i < op.getNumInputs(); i++) {
-				int callerSlot = parameterSlot(op.getInput(i));
-				if (callerSlot < 0) {
+				ScopeNode argumentIdentity = argumentIdentity(callerEntry, op.getInput(i));
+				if (argumentIdentity == null) {
 					continue;
 				}
-				ScopeEdge edge = new ScopeEdge(new Parameter(callerEntry, callerSlot),
+				ScopeEdge edge = new ScopeEdge(argumentIdentity,
 					new Parameter(callee.getEntryPoint(), i - 1), Kind.SAME_VALUE,
 					PASS_THROUGH_CONFIDENCE, Origin.DATAFLOW);
 				if (graph.addEdge(edge)) {
@@ -120,20 +124,29 @@ public final class ScopeGraphDataflowPopulator {
 				.getFunctionAt(target.getAddress());
 	}
 
-	// The caller parameter slot the argument varnode carries, or -1 when the argument is not a
-	// caller parameter (a local, a constant, a computed value -- all out of this slice's scope).
-	private static int parameterSlot(Varnode argument) {
+	// The caller-side value-identity the argument varnode carries: a Parameter for a forwarded
+	// caller parameter, a storage-keyed LocalEquiv for a local with valid concrete storage
+	// (DD-0076), or null for anything unnameable (no symbol, bad/unassigned storage -- a unique
+	// temporary or computed value).
+	private static ScopeNode argumentIdentity(Address callerEntry, Varnode argument) {
 		if (argument == null) {
-			return -1;
+			return null;
 		}
 		HighVariable high = argument.getHigh();
 		if (high == null) {
-			return -1;
+			return null;
 		}
 		HighSymbol symbol = high.getSymbol();
-		if (symbol == null || !symbol.isParameter()) {
-			return -1;
+		if (symbol == null) {
+			return null;
 		}
-		return symbol.getCategoryIndex();
+		if (symbol.isParameter()) {
+			return new Parameter(callerEntry, symbol.getCategoryIndex());
+		}
+		VariableStorage storage = symbol.getStorage();
+		if (storage == null || storage.isBadStorage() || storage.isUnassignedStorage()) {
+			return null;
+		}
+		return new LocalEquiv(callerEntry, storage.toString());
 	}
 }
