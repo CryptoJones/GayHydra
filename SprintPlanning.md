@@ -782,6 +782,11 @@ first implementation tier.
   `sleighGrammarAudit` sha256-pin drift gate (root task + CI step beside `cppRaiiAudit`). The
   ANTLR acceptance-parity check over the 39 `.slaspec`s is deferred as its own heavier slice.
 - [ ] **PR #40-3 + #40-4:** semantic model document.
+  - [x] ~~**#40-3** — disassembly half.~~ Shipped: `docs/sleigh/semantic-model.md`, 24 constructs
+    (definitions, attach forms, constructors/display, pattern equations, context actions,
+    with-blocks, macro declarations) per the plan's template; every C++ anchor verified.
+    Remaining: **#40-4** RTL/expression layer (assignments, operator→`CPUI_*` map incl. the
+    swapped-comparison canonicalisations, flow statements, export, sized deref, address-of).
 - [ ] **PR #40-5:** differential-fuzzer framework + x86-64 via Unicorn.
 
 ---
