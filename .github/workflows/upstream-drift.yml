@@ -1,0 +1,60 @@
+# Sprint 15 (meta-review 2026-06-11), Tier 1 item 2: inbound upstream-drift
+# measurement. The fork's upstream tracking was outbound-only (give-back
+# candidates, PR/issue crossref); nothing measured how far we've drifted
+# from NSA/ghidra master or what a merge would cost. This publishes that
+# number weekly so the merge cadence (docs/upstream-tracking/MERGE_POLICY.md,
+# Sprint 15) is decided on data.
+#
+# Same auto-commit pattern as upstream-crossref-refresh.yml.
+
+name: Upstream drift report
+
+on:
+  schedule:
+    - cron: '11 5 * * 1'   # weekly, Monday 05:11 UTC (before the 06:17 crossref)
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to push the refreshed report
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history: the script needs the merge-base with upstream.
+          fetch-depth: 0
+
+      - name: Generate drift report
+        id: drift
+        run: |
+          scripts/upstream-drift.sh | tee /tmp/drift-summary.txt
+          # Surface the headline numbers as step outputs for the summary.
+          eval "$(grep -E '^behind=' /tmp/drift-summary.txt)"
+          {
+            echo "behind=$behind"
+            echo "ahead=$ahead"
+            echo "both_touched=$both_touched"
+            echo "conflicts=$conflicts"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish step summary
+        run: |
+          cat docs/upstream-tracking/drift-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit any changes
+        run: |
+          if [[ -z $(git status --porcelain docs/upstream-tracking/drift-report.md) ]]; then
+            echo "No drift change; nothing to commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/upstream-tracking/drift-report.md
+          git commit -m "$(printf 'chore: refresh upstream drift report (%s) — %s behind, %s dry-run conflicts\n\nAutomated update by .github/workflows/upstream-drift.yml.' \
+            "$(date -u +%Y-%m-%d)" \
+            "${{ steps.drift.outputs.behind }}" \
+            "${{ steps.drift.outputs.conflicts }}")"
+          git push origin master
