@@ -178,6 +178,7 @@ public:
 class DecompileAt : public GhidraCommand {
   Address addr;				///< The entry point address of the function to decompile
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);	///< Schema-v1 form: default-space bare offset (#34-10e)
 public:
   virtual void rawAction(void);
 };

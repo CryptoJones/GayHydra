@@ -142,6 +142,39 @@ these messages was that v0 already used it.
 rule-of-three `parseSchemaProgramId` extraction; `setOptions` + `structureGraph` follow as
 `#34-10d-2` implementing this addendum.
 
+## Addendum (#34-10e, 2026-06-11): address rides as a space-gated bare offset; the budget sub-table stays absent
+
+Grounding `decompileAt` before wiring it surfaced two gaps between the #34-1
+schema sketch and shipped reality:
+
+**Address space.** The schema carries `function_address : uint64`, but the v0
+wire carries a full `<addr>` element — space name + `getUnsignedOffset()`
+verbatim (no wordsize conversion on either side; verified in
+`AddressXML.encodeAttributes` and `AddrSpace::decodeAttributes`). A bare
+uint64 cannot name a space. **Decision: the host sends schema-v1 `decompileAt`
+only when the function's entry is in the program's default address space**
+(the same space the worker resolves as `getDefaultCodeSpace()` — both derive
+from the one language definition the registerProgram tspec carries); any
+other space (overlay, non-default) falls back to v0 **per call**. This is
+never-wrong by construction and covers the overwhelmingly common case.
+Consequence for the re-keyed `#34-7`: the v0 `decompileAt` encode survives as
+the non-default-space path — full removal needs an additive
+`address_space : string` schema field first (FlatBuffers-sanctioned append,
+but it requires a flatc 25.12.19 binding regen — its own slice, undertaken
+only if evidence shows non-default-space decompiles matter).
+
+**Budget sub-table.** The five-cap `DecompileBudget` sketch (wall-clock, RSS,
+pcode-op, per-pass caps) never matched the budget that actually shipped:
+Rec 35 `#35-4` landed a *single* flow-iteration cap riding the **options
+document** — which itself rides schema-v1 since `#34-10d-2`. No worker code
+implements the five sketch caps. **Decision: the sub-table stays absent on
+the wire** (the four-arg encoder; absent reads back as schema defaults, which
+nothing consumes), and `timeout_ms`/`flags` ride their schema defaults —
+host-side `GTimer` remains the timeout enforcement, exactly as v0. Wiring
+sketch caps with no implementation would be speculative behavior. The
+sub-table waits for a real producer/consumer pair; if none appears by the
+response-direction checkpoint below, fold its removal into the same decision.
+
 ## Addendum (2026-06-11): #34-10e is a go/no-go checkpoint for the response direction
 
 The `#34-10d` addendum above concedes that for *document-shaped* payloads the schema

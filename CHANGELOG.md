@@ -871,6 +871,27 @@ generated from the GitHub Releases UI at sprint close.
   **The request direction now lacks only `decompileAt` (`#34-10e`).** Design: DD-0080
   addendum.
 
+- **Rec 34 `#34-10e` — `decompileAt` goes schema-v1; the request direction completes** —
+  grounding the #34-1 sketch against shipped reality produced a second DD-0080 addendum:
+  (1) the schema's `function_address : uint64` cannot name an address *space*, so the host
+  sends schema-v1 **only for a default-address-space entry** (the verbatim
+  `getUnsignedOffset()` number the v0 `<addr>` form carries — no wordsize conversion exists
+  on either path) and any other space falls back to v0 *per call*, never-wrong by
+  construction; full v0-encode removal under the re-keyed `#34-7` therefore waits on an
+  additive `address_space` schema field (flatc 25.12.19 regen — its own slice, only if
+  evidenced). (2) The five-cap `DecompileBudget` sub-table never matched the shipped Rec 35
+  budget (a single iteration cap riding the options document, itself schema-v1 since
+  `#34-10d-2`), so it stays **absent on the wire**; `timeout_ms`/`flags` ride schema
+  defaults and the host-side `GTimer` remains the timeout enforcement. Worker:
+  `DecompileAt::loadParametersV1` resolves the offset in `getDefaultCodeSpace()`. Host: the
+  space gate lives in `DecompInterface.decompileFunction`; the timeout-preserving send core
+  is shared with structureGraph (two users). A new e2e leg isolates the decompileAt send
+  between two counter reads and asserts byte-identical output v0↔schema and across reruns.
+  Stale "inert" markers in `ipc_request_codec.h` / `DecompileRequestCodec` corrected per
+  DD-0080's rule. **All seven schematized request commands are now live; the `#34-7` clock
+  starts at the next release, and the `#34-10f+` go/no-go checkpoint (response direction) is
+  open.** Design: DD-0080 addenda.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

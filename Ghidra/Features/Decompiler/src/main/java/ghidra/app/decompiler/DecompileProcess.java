@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32;
 
 import ghidra.app.decompiler.ipc.CommandRequestCodec;
+import ghidra.app.decompiler.ipc.DecompileRequestCodec;
 import ghidra.app.decompiler.ipc.IpcCommandId;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.InjectPayload;
@@ -896,15 +897,16 @@ public class DecompileProcess {
 	}
 
 	/**
-	 * {@return true if the document-carrying commands (setOptions,
-	 * structureGraph) will go out as schema-v1 requests}. Unlike the
-	 * string-field commands, their schema-v1 form changes how the caller must
-	 * encode the document — XML text via {@code XmlEncode}, not
-	 * {@code PatchPackedEncode} (#34-10d-2, DD-0080 addendum: packed binary
-	 * cannot ride a FlatBuffers UTF-8 string field) — so the encoding choice
-	 * has to be made by {@link DecompInterface} <i>before</i> the send, and
-	 * this gate is public where the others stay behind the command-name
-	 * branches.
+	 * {@return true if the commands whose schema-v1 form changes what the
+	 * caller must encode will go out as schema-v1 requests}. For setOptions
+	 * and structureGraph the document must be encoded as XML text via
+	 * {@code XmlEncode}, not {@code PatchPackedEncode} (#34-10d-2, DD-0080
+	 * addendum: packed binary cannot ride a FlatBuffers UTF-8 string field);
+	 * for decompileAt the entry must be a default-space bare offset rather
+	 * than a packed {@code <addr>} document (#34-10e). In each case the
+	 * choice has to be made by {@link DecompInterface} <i>before</i> the
+	 * send, so this gate is public where the string-field commands' gates
+	 * stay behind the command-name branches.
 	 */
 	public synchronized boolean schemaDocumentCommandsAvailable() {
 		return schemaPayloadAvailable();
@@ -948,13 +950,50 @@ public class DecompileProcess {
 		if (!statusGood) {
 			throw new IOException("structureGraph called on bad process");
 		}
+		sendSchemaCommandTimeout(IpcCommandId.STRUCTURE_GRAPH, CommandRequestCodec
+				.encodeStructureGraphRequest(Integer.toString(archId), controlFlowXml),
+			timeoutSecs, encodeSet);
+	}
+
+	/**
+	 * Send the decompileAt command as a schema-v1 request (#34-10e, DD-0080
+	 * addendum) with the v0 {@link #sendCommandTimeout} semantics (timeout +
+	 * callback decoders) preserved. The entry rides as a bare offset in the
+	 * program's <i>default</i> address space — the caller gates on exactly
+	 * that space (and on {@link #schemaDocumentCommandsAvailable()}); any
+	 * other space keeps the v0 {@code <addr>} form. The budget sub-table is
+	 * absent on the wire by decision; {@code timeout_ms}/{@code flags} ride
+	 * their schema defaults — this host-side timer remains the enforcement.
+	 * @param functionOffset the entry's {@code getUnsignedOffset()} (verbatim,
+	 *            the same number the v0 wire carries)
+	 * @param timeoutSecs the number of seconds to run before timing out
+	 * @param encodeSet contains the response container and callback channels
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 * @throws DecompileException for any problems while executing the command
+	 */
+	public synchronized void sendDecompileAtSchema(long functionOffset, int timeoutSecs,
+			DecompInterface.EncodeDecodeSet encodeSet) throws IOException, DecompileException {
+		if (!statusGood) {
+			throw new IOException("decompileAt called on bad process");
+		}
+		sendSchemaCommandTimeout(IpcCommandId.DECOMPILE_AT,
+			DecompileRequestCodec.encodeRequest(Integer.toString(archId), functionOffset, 30000, 0),
+			timeoutSecs, encodeSet);
+	}
+
+	/**
+	 * The shared timeout-preserving schema-send core (two users: structureGraph
+	 * and decompileAt): callback decoders armed, the host-side timer running,
+	 * one SCHEMA_PAYLOAD frame out, v0 response burst back.
+	 */
+	private void sendSchemaCommandTimeout(IpcCommandId id, byte[] requestBytes, int timeoutSecs,
+			DecompInterface.EncodeDecodeSet encodeSet) throws IOException, DecompileException {
 		paramDecoder = encodeSet.callbackQuery;
 		resultEncoder = encodeSet.callbackResponse;
 		int validatedTimeoutMs = getTimeoutMs(timeoutSecs);
 		GTimerMonitor timerMonitor = GTimer.scheduleRunnable(validatedTimeoutMs, timeoutRunnable);
 		try {
-			writeSchemaRequest(IpcCommandId.STRUCTURE_GRAPH, CommandRequestCodec
-					.encodeStructureGraphRequest(Integer.toString(archId), controlFlowXml));
+			writeSchemaRequest(id, requestBytes);
 			readResponse(encodeSet.mainResponse);
 		}
 		catch (IOException e) {

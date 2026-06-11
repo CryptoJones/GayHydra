@@ -905,8 +905,18 @@ first implementation tier.
     rig (this box has no host toolchain): Java framing/ipc fast suites green, C++
     `decomp_test_dbg` 336/336, e2e 7/7. **Request direction lacks only `decompileAt`
     (`#34-10e`).**
-  - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
-    direction; starts the re-keyed `#34-7` clock (one release after this ships).
+  - [x] ~~**#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
+    direction; starts the re-keyed `#34-7` clock (one release after this ships).~~ Shipped
+    2026-06-11 in grounded form (second DD-0080 addendum): the entry rides as a verbatim
+    **default-space bare offset** (the schema has no field to name a space — any other space
+    falls back to v0 per call, narrowing `#34-7`'s removal scope until an `address_space`
+    field append), and the `DecompileBudget` sub-table stays **absent on the wire** (the
+    five-cap sketch never matched the shipped `#35-4` options-document budget; no worker
+    implementation exists). New e2e leg isolates the decompileAt send and asserts
+    byte-identical output v0↔schema. Podman rig: Java fast suites green, C++ 336/336,
+    e2e 8/8. **Request direction complete — the `#34-7` clock starts at the next release;
+    the `#34-10f+` go/no-go checkpoint is open (see the DD-0080 response-direction
+    addendum).**
   - [ ] **#34-10f+** — response direction: host-side `DecompileResponseCodec` (new), worker emit
     behind `SCHEMA_V1_RESPONSES`, command-by-command.
   - [ ] **#34-7 (re-keyed)** — remove the host v0 request encode for the seven schematized

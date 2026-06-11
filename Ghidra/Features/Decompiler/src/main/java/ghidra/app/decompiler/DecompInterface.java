@@ -863,9 +863,21 @@ public class DecompInterface {
 			EncodeDecodeSet activeSet = setupEncodeDecode(funcEntry);
 			decoder = activeSet.mainResponse;
 			verifyProcess();
-			activeSet.mainQuery.clear();
-			AddressXML.encode(activeSet.mainQuery, funcEntry);
-			decompProcess.sendCommandTimeout("decompileAt", timeoutSecs, activeSet);
+			if (decompProcess.schemaDocumentCommandsAvailable() && funcEntry.getAddressSpace()
+					.equals(program.getAddressFactory().getDefaultAddressSpace())) {
+				// #34-10e (DD-0080 addendum): a default-space entry rides
+				// schema-v1 as its verbatim bare offset — the same number the
+				// v0 <addr> form carries. Any other space (overlay,
+				// non-default) keeps the v0 form per call, since the schema
+				// has no field to name a space.
+				decompProcess.sendDecompileAtSchema(funcEntry.getUnsignedOffset(), timeoutSecs,
+					activeSet);
+			}
+			else {
+				activeSet.mainQuery.clear();
+				AddressXML.encode(activeSet.mainQuery, funcEntry);
+				decompProcess.sendCommandTimeout("decompileAt", timeoutSecs, activeSet);
+			}
 			decompileMessage = decompCallback.getNativeMessage();
 		}
 		catch (Exception ex) {

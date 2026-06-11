@@ -17,12 +17,14 @@
 // request. This is the testable half of the dual-encode step — the pure
 // payload<->fields mapping, with no dependency on the live command loop or on
 // Ghidra's native Address/Architecture types, so it can be unit-tested in
-// isolation (see ../unittests/testipc_codec.cc). The command-loop wiring that
-// would actually call decode_decompile_request() on an incoming v1 frame is a
-// separate, end-to-end-only change (it compiles solely into ghidra_dbg and is
-// not exercisable by the C++ precheck) and is intentionally NOT done here.
-// Until that wiring lands this header is inert: nothing in the production
-// decompiler includes it.
+// isolation (see ../unittests/testipc_codec.cc). Live since #34-10e
+// (DD-0080 addendum): ghidra_process.cc includes this header and
+// DecompileAt::loadParametersV1 dispatches through decode_decompile_request()
+// — function_address is a bare verbatim offset in the worker's default code
+// space (the host gates the schema send on exactly that space; any other
+// space rides v0), and the budget sub-table is absent on the wire by decision
+// (nothing implements its sketch caps; the shipped Rec 35 budget rides the
+// options document).
 #ifndef GHIDRA_IPC_REQUEST_CODEC_H
 #define GHIDRA_IPC_REQUEST_CODEC_H
 

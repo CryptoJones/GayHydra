@@ -20,6 +20,7 @@
 #include "schema/ipc_command_ids.h"
 #include "schema/ipc_config_codec.h"
 #include "schema/ipc_lifecycle_codec.h"
+#include "schema/ipc_request_codec.h"
 
 #ifdef _WINDOWS
 #include <fcntl.h>
@@ -426,6 +427,24 @@ void DecompileAt::loadParameters(void)
   PackedDecode decoder(ghidra);
   ArchitectureGhidra::readStringStream(sin,decoder);	// Read encoded address directly from in stream
   addr = Address::decode(decoder); 		// Decode for functions address
+}
+
+/// Decode the schema-v1 decompileAt request (#34-10e, DD-0080 addendum): the
+/// entry rides as a bare uint64 offset in the program's \e default address
+/// space — the host gates the schema send on exactly that space (any other
+/// space keeps the v0 \<addr> form), and the offset is the same verbatim
+/// `getUnsignedOffset()` number the v0 wire carries (no wordsize conversion
+/// on either path). The optional budget sub-table is absent by decision —
+/// nothing implements its sketch caps — and `timeout_ms`/`flags` ride their
+/// schema defaults (host-side timeout enforcement is unchanged).
+void DecompileAt::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::DecompileRequestV1 req;
+  if (!ipc::decode_decompile_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 decompileAt request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
+  addr = Address(ghidra->getDefaultCodeSpace(),req.function_address);
 }
 
 void DecompileAt::rawAction(void) 

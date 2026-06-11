@@ -246,6 +246,27 @@ public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadles
 	}
 
 	/**
+	 * #34-10e (DD-0080 addendum): decompileAt rides schema-v1 as a
+	 * default-space bare offset. A second decompile between two counter reads
+	 * isolates the decompileAt send itself (nothing else fires in between);
+	 * its output must match the first decompile, and the whole auto leg's
+	 * output must match the v0 leg byte-for-byte — proving the worker resolved
+	 * the bare offset to the very address the v0 {@code <addr>} form named.
+	 */
+	@Test
+	public void testSchemaV1DecompileAtMatchesV0() throws Exception {
+		String v0 = decompileUnder("v0");
+		String auto = withDecompiler("auto", (decompiler, firstC) -> {
+			int before = decompiler.decompProcess.getSchemaV1RequestsSent();
+			String secondC = decompileTestFunction(decompiler, "auto second decompile");
+			assertTrue("decompileAt did not ride schema-v1",
+				decompiler.decompProcess.getSchemaV1RequestsSent() > before);
+			assertEquals("schema-v1 decompileAt changed output across reruns", firstC, secondC);
+		});
+		assertEquals("schema-v1 decompileAt diverged from v0", v0, auto);
+	}
+
+	/**
 	 * #34-10d-2 (DD-0080 addendum): setOptions rides schema-v1 with its
 	 * {@code <optionslist>} document as XML text. The accepted response plus a
 	 * decompile-after-options byte-identical to the v0 path proves the worker

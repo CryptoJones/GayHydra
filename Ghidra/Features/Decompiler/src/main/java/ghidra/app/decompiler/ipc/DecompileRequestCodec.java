@@ -34,9 +34,11 @@ import ghidra.ipc.DecompileFunctionRequest;
  * accessors to prove the round-trip; the worker's verified decode is covered by
  * the C++ {@code testipc_codec.cc}.
  * <p>
- * Inert until the command-loop wiring lands: nothing in {@code DecompileProcess}
- * calls this yet. That wiring is an end-to-end-only change, deferred out of the
- * codec PRs.
+ * Live since #34-10e (DD-0080 addendum): {@code DecompileProcess.
+ * sendDecompileAtSchema} calls the four-argument overload with a verbatim
+ * default-space offset and schema-default {@code timeout_ms}/{@code flags};
+ * the budget-carrying overload stays test-only — the sub-table is absent on
+ * the wire by decision (nothing implements its sketch caps).
  */
 public final class DecompileRequestCodec {
 
