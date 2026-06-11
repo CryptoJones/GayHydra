@@ -696,6 +696,16 @@ generated from the GitHub Releases UI at sprint close.
   across two instances with an interior reference, unreferenced-struct no-op). **Completes the
   deterministic `#38-3` static source**; the dataflow source (heuristic, confidence-thresholded)
   is the band's remaining populator. Design: DD-0074 (band).
+- **Rec 38 dataflow source, slice 1 — pass-through parameters** — the heuristic band opens at its
+  deterministic end: `ScopeGraphDataflowPopulator.populate(HighFunction, ScopeGraph)` relates
+  `Parameter(callerSlot)` to `Parameter(calleeSlot)` with a `SAME_VALUE` edge (confidence **0.9**,
+  origin `DATAFLOW`) when a decompiled direct `CALL` forwards a caller parameter positionally —
+  RFC-0002's motivating "passed as parameter" case with **both endpoints deterministic**, riding
+  the same call-input recovery as the Rec 37 argument threading. Renaming a forwarded parameter now
+  reaches the callee's slot in `sameValueComponent`, end-to-end from a real decompiled call.
+  Local-variable arguments are deferred, not approximated: a `LocalEquiv` endpoint needs a stable
+  equivalence id, and per-decompile `HighVariable` identity does not survive recomputation. Harness
+  suite 3/3. Design: DD-0075.
 
 ### Changed
 

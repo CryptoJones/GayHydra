@@ -753,6 +753,13 @@ first implementation tier.
     field across loads", evidenced not speculative. Populator 7/7. **The deterministic static
     source is complete.** Remaining `#38-3`: the dataflow source (heuristic, the RFC's "hardest
     case", behind a confidence threshold — its own grounded band).
+  - [x] ~~**dataflow slice 1** — pass-through parameters.~~ Shipped (DD-0075):
+    `ScopeGraphDataflowPopulator` — caller-parameter forwarded in a resolved direct `CALL` →
+    `SAME_VALUE` edge between the two `Parameter` slots at confidence 0.9/`DATAFLOW` (both
+    endpoints deterministic; the RFC's motivating case). Locals deferred until a stable
+    `LocalEquiv` id scheme exists (per-decompile `HighVariable` identity would not survive
+    recomputation). Harness 3/3. Remaining Rec 38: local-argument dataflow (stable-id design),
+    `#38-4` UI (DISPLAY-gated).
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
 
