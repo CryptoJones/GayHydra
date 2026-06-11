@@ -47,8 +47,17 @@ subprojects {
 
             tasks.withType(JavaCompile).configureEach {
                 options.errorprone {
-                    // Stage 1: signal-only. No checks at ERROR.
-                    allErrorsAsWarnings = true
+                    // Stage 3 (Rec 25/26 step 6, shipped 2026-06-11): ErrorProne's
+                    // native ERROR severity fails the build with no -Werror
+                    // involved, which dissolves the PR #271 Catch-22 (-Werror
+                    // would have re-promoted the demoted ErrorProne warnings AND
+                    // every -Xlint warning). A tree-wide forced-recompile probe
+                    // measured the ERROR backlog at ZERO (124 main + 356
+                    // test/integrationTest compile tasks, 0 error lines), so
+                    // strict is simply the default. `-PerrorProneLenient`
+                    // restores the old demotion as an escape hatch for local
+                    // experimentation; CI never sets it.
+                    allErrorsAsWarnings = project.hasProperty('errorProneLenient')
 
                     // High-EV checks at WARNING, expressed as raw javac args
                     // so we don't need to import CheckSeverity in this script.

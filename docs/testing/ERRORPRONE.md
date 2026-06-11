@@ -78,6 +78,21 @@ The full ratchet:
 Stage transitions are PR-gated, each with a recorded warning count
 in `docs/testing/errorprone-ratchet-progress.md`.
 
+> **Stage 3 shipped (2026-06-11), in dissolved form.** PR #271 deferred
+> "step 6" over a `-Werror` Catch-22: `allErrorsAsWarnings = true`
+> demotes ErrorProne errors to javac warnings, which `-Werror` would
+> promote right back — together with every `-Xlint` warning. The probe
+> that grounded the fix found the Catch-22 dissolves without `-Werror`:
+> ErrorProne's **native ERROR severity already fails the build on its
+> own**, and a tree-wide forced-recompile probe (124 main + 356
+> test/integrationTest compile tasks) measured the default-ERROR backlog
+> at **zero**. So `allErrorsAsWarnings` is now simply `false` by default
+> (`-PerrorProneLenient` restores the demotion locally; CI never sets
+> it). ErrorProne's ~400 default-ERROR bugpatterns are now fatal
+> tree-wide. The `-Xlint` *warning* categories stay non-fatal — their
+> ratchet is [XLINT_RATCHET.md](XLINT_RATCHET.md)'s separate floor-count
+> story, untouched by this flip.
+
 ## Suppression policy
 
 When a finding is a true positive but the fix is out of scope for
