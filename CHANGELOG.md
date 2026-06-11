@@ -789,6 +789,21 @@ generated from the GitHub Releases UI at sprint close.
   `#34-7`/`#34-8` removals re-keyed to go-live (`#34-8` additionally subordinated to DD-0005's
   upstream-client commitment). Design: DD-0080.
 
+- **Rec 34 `#34-10a` — schema-payload capability + command-id registry** — the pure layer the
+  go-live band builds on. `frame_v1.hh` gains `flags::SCHEMA_PAYLOAD` (0x08 — a frame body of
+  `[u8 command-id][FlatBuffers bytes]`; known at the frame layer, "reject unless negotiated" is
+  deliberately the dispatch layer's job) and `capab::SCHEMA_V1_REQUESTS`/`SCHEMA_V1_RESPONSES`
+  (0x04/0x08, one per direction), with greeting overloads to advertise extra CAPABS and surface
+  the peer's — production call sites unchanged, wire bytes byte-identical until a go-live slice
+  flips. The Java host now records the worker greeting's CAPABS
+  (`getPeerCapabilities`/`peerAcceptsSchemaV1Requests`). The command-id registry of the seven
+  schematized commands ships as cross-language twins — `schema/ipc_command_ids.h` (deliberately
+  FlatBuffers-free so the live loop can include it without touching the production compile
+  rules) and `ghidra.app.decompiler.ipc.IpcCommandId` — locked by pinned-value tests on both
+  sides, the framing-CRC golden-vector pattern; the un-schematized surface answers
+  INVALID/null, the "stays v0" signal. C++ 334/334 (9 new); Java framing 15/15 (+2 incl. the
+  cross-language pins), registry 4/4. Design: DD-0080.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

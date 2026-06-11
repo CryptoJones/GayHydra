@@ -671,6 +671,107 @@ TEST(frame_v1_negotiate_v0_on_bad_major_version) {
 }
 
 // ------------------------------------------------------------------
+// Rec 34 #34-10a (DD-0080): schema-payload capability + flag plumbing.
+// The capability bits and the SCHEMA_PAYLOAD flag are a wire contract
+// shared with the Java side (DecompileProcess constants, pinned by
+// DecompileProcessFramingV1Test) — pin the values here too.
+// ------------------------------------------------------------------
+
+TEST(frame_v1_schema_capab_and_flag_pinned_values) {
+  ASSERT_EQUALS(frame_v1::flags::SCHEMA_PAYLOAD, (uint1)0x08);
+  ASSERT_EQUALS(frame_v1::capab::SCHEMA_V1_REQUESTS, 0x00000004u);
+  ASSERT_EQUALS(frame_v1::capab::SCHEMA_V1_RESPONSES, 0x00000008u);
+}
+
+TEST(frame_v1_greeting_payload_extra_capabs) {
+  // The two-argument builder ORs extra bits onto CRC_REQUIRED; the
+  // one-argument form must stay byte-identical to extra_capabs=0
+  // (production callers are unchanged until a go-live slice flips).
+  vector<uint1> base = build_greeting_payload_v1("srv");
+  vector<uint1> zero = build_greeting_payload_v1("srv", 0);
+  ASSERT_EQUALS(base.size(), zero.size());
+  for (size_t i = 0; i < base.size(); ++i)
+    ASSERT_EQUALS(base[i], zero[i]);
+
+  vector<uint1> p = build_greeting_payload_v1(
+      "srv", frame_v1::capab::SCHEMA_V1_REQUESTS);
+  uint2 version;
+  uint4 capabs;
+  string ident;
+  ASSERT(parse_greeting_payload_v1(p, version, capabs, ident));
+  ASSERT_EQUALS(capabs, frame_v1::capab::CRC_REQUIRED |
+                        frame_v1::capab::SCHEMA_V1_REQUESTS);
+  // Big-endian CAPABS low byte carries 0x01|0x04.
+  ASSERT_EQUALS(p[5], (uint1)0x05);
+}
+
+TEST(frame_v1_negotiate_exposes_peer_capabs) {
+  // Client advertises SCHEMA_V1_RESPONSES; the five-argument negotiate
+  // surfaces it and ORs our extra capab into the reply greeting.
+  vector<uint1> clientGreeting = build_greeting_payload_v1(
+      "ghidra-java", frame_v1::capab::SCHEMA_V1_RESPONSES);
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::GREETING, clientGreeting);
+  stringstream in = make_stream(wire);
+  stringstream out(std::ios::in | std::ios::out | std::ios::binary);
+
+  uint4 peerCapabs = 0xdeadbeef;  // must be overwritten
+  frame_v1::ChannelMode m = negotiate_greeting_v1(
+      in, out, "GayHydra-decompiler",
+      frame_v1::capab::SCHEMA_V1_REQUESTS, peerCapabs);
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V1);
+  ASSERT_EQUALS(peerCapabs, frame_v1::capab::CRC_REQUIRED |
+                            frame_v1::capab::SCHEMA_V1_RESPONSES);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload, peeked;
+  ASSERT_EQUALS((int)read_frame_v1(out, hdr, payload, peeked),
+                (int)frame_v1::Error::OK);
+  uint2 version;
+  uint4 replyCapabs;
+  string ident;
+  ASSERT(parse_greeting_payload_v1(payload, version, replyCapabs, ident));
+  ASSERT_EQUALS(replyCapabs, frame_v1::capab::CRC_REQUIRED |
+                             frame_v1::capab::SCHEMA_V1_REQUESTS);
+}
+
+TEST(frame_v1_negotiate_peer_capabs_zero_on_v0) {
+  // A v0 peer has no capability concept: the out-param must come back
+  // 0, not stale, when the channel stays v0.
+  vector<uint1> v0bytes = { 0x00, 0x00, 0x01, 0x02 };
+  stringstream in = make_stream(v0bytes);
+  stringstream out(std::ios::out | std::ios::binary);
+  uint4 peerCapabs = 0xdeadbeef;
+  frame_v1::ChannelMode m = negotiate_greeting_v1(in, out, "srv", 0, peerCapabs);
+  ASSERT_EQUALS((int)m, (int)frame_v1::ChannelMode::V0);
+  ASSERT_EQUALS(peerCapabs, 0u);
+}
+
+TEST(frame_v1_schema_payload_flag_passes_frame_layer) {
+  // DD-0080 layering: SCHEMA_PAYLOAD is a KNOWN flag at the frame
+  // layer (not RESERVED_FLAG_SET) — "reject unless negotiated" is the
+  // command-loop dispatch's job, because only it has negotiation
+  // state. Craft a COMMAND frame with bit 3 set (re-deriving the CRC,
+  // which covers TYPE|FLAGS|LENGTH|PAYLOAD) and assert it decodes.
+  vector<uint1> wire = encode_frame_v1(frame_v1::Type::COMMAND, string("\x04", 1));
+  wire[5] |= frame_v1::flags::SCHEMA_PAYLOAD;
+  uint4 crc = crc32_ieee802_3(wire.data() + 4, wire.size() - 8);
+  size_t t = wire.size() - 4;
+  wire[t]     = (uint1)((crc >> 24) & 0xff);
+  wire[t + 1] = (uint1)((crc >> 16) & 0xff);
+  wire[t + 2] = (uint1)((crc >> 8) & 0xff);
+  wire[t + 3] = (uint1)(crc & 0xff);
+
+  frame_v1::Header hdr;
+  vector<uint1> payload;
+  size_t next = 0;
+  frame_v1::Error e = decode_frame_v1(wire, 0, hdr, payload, next);
+  ASSERT_EQUALS((int)e, (int)frame_v1::Error::OK);
+  ASSERT(hdr.flagbits & frame_v1::flags::SCHEMA_PAYLOAD);
+  ASSERT_EQUALS(payload.size(), (size_t)1);
+  ASSERT_EQUALS(payload[0], (uint1)0x04);
+}
+
+// ------------------------------------------------------------------
 // Framing tunnel streambufs (#33-2.6). The transparent tunnel that
 // carries v0 command-loop bytes inside v1 frames: FrameOutStreambuf
 // emits one frame per flush, FrameInStreambuf yields one frame's

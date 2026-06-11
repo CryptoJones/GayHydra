@@ -708,8 +708,15 @@ first implementation tier.
   `[u8 command-id][FlatBuffers bytes]`. Requests before responses; smallest command first; the
   PR #201 `ipc_e2e` harness gains a payload-v1 leg from `#34-10b` on. Signature commands + the
   mid-decompile callback sub-protocol are carved out (no schema tables — future `#34-11`).
-  - [ ] **#34-10a** — capability bits + `SCHEMA_PAYLOAD` flag + command-id registry, both ends
-    (pure layer, unit-testable; negotiated but unused).
+  - [x] ~~**#34-10a** — capability bits + `SCHEMA_PAYLOAD` flag + command-id registry, both ends
+    (pure layer, unit-testable; negotiated but unused).~~ Shipped: `frame_v1.hh` gains
+    `flags::SCHEMA_PAYLOAD` (0x08) + `capab::SCHEMA_V1_REQUESTS`/`_RESPONSES` (0x04/0x08) with
+    advertise/record greeting overloads (production call sites unchanged — byte-identical wire);
+    the host records the peer's CAPABS (`getPeerCapabilities`/`peerAcceptsSchemaV1Requests`);
+    the command-id registry ships as twins — `schema/ipc_command_ids.h` (deliberately
+    FlatBuffers-free, so the live loop can include it without Makefile changes) and
+    `IpcCommandId.java` — locked by pinned-value tests on both sides (the framing-CRC
+    golden-vector pattern). C++ 334/334 (9 new); Java framing 15/15 (+2), registry 4/4.
   - [ ] **#34-10b** — worker v1-request dispatch + `flushNative` go-live end-to-end;
     `FLATBUF_INCLUDE` enters the production compile rules; `ipc_e2e` payload-v1 leg.
   - [ ] **#34-10c** — lifecycle remainder (`registerProgram`, `deregisterProgram`).
