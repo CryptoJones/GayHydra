@@ -651,35 +651,47 @@ A top-to-bottom meta-review of the planning corpus + tree (2026-06-11) found the
 per-slice discipline strong but four *one-level-up* risks unowned. This sprint owns
 them. They are ordered by strategic weight, not effort.
 
-- [ ] **Inbound upstream-merge strategy** — the existential fork risk. No `upstream`
-  remote is even configured; everything under `docs/upstream-tracking/` is *outbound*
-  (give-back). With ~9k LOC of fork-only production code and growing, every sprint
-  makes the next upstream merge more expensive, and nothing measures or schedules it.
-  Work: (1) add the `NationalSecurityAgency/ghidra` remote + a scheduled
-  `upstream-drift.yml` that fetches upstream master and publishes a drift report
-  (commits behind, upstream-touched files intersected with a fork-owned-paths
-  manifest, dry-run merge conflict count); (2) write
-  `docs/upstream-tracking/MERGE_POLICY.md` — merge cadence (e.g. after each upstream
-  stable release), conflict playbook, fork-owned-paths manifest. Known collision
-  watch-list to record there: upstream decompiler-IPC evolution vs Rec 33/34;
-  upstream Jython/PyGhidra moves vs Rec 42; upstream `RttiAnalyzer`/demangler churn
-  under the Rec 37 harvest scans (a *behavioral* dependency — DD-0061 deliberately
-  consumes upstream analyzer output).
-- [ ] **Scheduled deep-CI job** — a nightly/weekly workflow running what PR CI never
-  does: full `gradle integrationTest` (the ~5.1k LOC of Rec 37 recognition tests +
-  the Rec 30 harness currently run only on dev machines — the `ipc_e2e` job runs
-  exactly one `test.slow` class, so an upstream merge or refactor could break the
-  whole hint stack with green CI); a bounded fuzz smoke of the three `Makefile.fuzz`
-  harnesses (post-OSS-Fuzz-rejection they were re-scoped to "local + our own CI" but
-  no workflow runs them — the decompiler parses untrusted input, this was a top-EV
-  audit item at zero coverage); and the `samples/re-targets/decompiler-smoke` gate
-  against a master build (today it fires only on tag push, so master can carry
-  user-visible decompiler breakage between releases).
-- [ ] **Rec 42 calendar lands in the queue** — Jython default-off is dated
-  **2026-09-30** and removal **2027-01-31**; neither has a sprint or issue. File both
-  issues now. Before executing removal, check upstream's own Jython/PyGhidra posture
-  so deleting `Ghidra/Features/Jython/` doesn't create a permanent merge-conflict
-  surface (interacts with the merge-policy item above).
+- **Inbound upstream-merge strategy** — the existential fork risk. Everything under
+  `docs/upstream-tracking/` was *outbound* (give-back). With ~9k LOC of fork-only
+  production code and growing, every sprint makes the next upstream merge more
+  expensive, and nothing measured or scheduled it.
+  - [x] ~~**Measurement half** — add the `NationalSecurityAgency/ghidra` remote + a
+    scheduled `upstream-drift.yml` publishing a drift report (commits behind,
+    both-touched conflict candidates, worktree-safe `git merge-tree` dry-run
+    conflict count).~~ Shipped 2026-06-11: `scripts/upstream-drift.sh` +
+    `.github/workflows/upstream-drift.yml` (weekly Mon 05:11 UTC, auto-commits
+    [`drift-report.md`](docs/upstream-tracking/drift-report.md)). First live
+    numbers: merge-base `94164bd6e9` (2026-05-20 — the fork has **never** merged
+    upstream), **203 behind**, 635 ahead, 80 both-touched, **74 dry-run conflicts**
+    — including `decompile/cpp/Makefile`, the predicted Rec 34 collision.
+  - [ ] **Policy half (Tier 3)** — `docs/upstream-tracking/MERGE_POLICY.md`: merge
+    cadence (e.g. after each upstream stable release), conflict playbook,
+    fork-owned-paths manifest. Known collision watch-list to record there: upstream
+    decompiler-IPC evolution vs Rec 33/34; upstream Jython/PyGhidra moves vs Rec 42;
+    upstream `RttiAnalyzer`/demangler churn under the Rec 37 harvest scans (a
+    *behavioral* dependency — DD-0061 deliberately consumes upstream analyzer
+    output). First actual sync only after the Tier-3 recall corpus + perf baseline
+    exist to guard it.
+- [x] ~~**Scheduled deep-CI job** — a nightly workflow running what PR CI never
+  does: the fork-owned `test.slow` suites, a bounded fuzz smoke, and the
+  decompiler-smoke gate against a master build.~~ Shipped 2026-06-11:
+  `.github/workflows/deep-ci.yml` (nightly 03:23 UTC + dispatch), three jobs —
+  `fork_integration_tests` (Cpp*/Rec 30/ScopeGraph suites by class-name filter, so
+  the upstream headed suites stay out), `fuzz_smoke` (5 min each, ASan+UBSan),
+  `master_smoke` (release.yml's gate vs a fresh master build). Standing the fuzz
+  leg up **proved the dormancy finding**: both harnesses had bit-rotted against
+  shipped RAII refactors (PR #46 removed `ingestBytes`, PR #82 changed `xml_tree`
+  to `unique_ptr`), the Makefile's `CXX ?= clang++` was dead (make predefines CXX,
+  so the documented build always picked g++ — no `-fsanitize=fuzzer`), and the
+  minimal link closure had drifted. All repaired and container-verified against
+  the CI runner image; the two gradle legs get first live validation via
+  `workflow_dispatch` after push.
+- [x] ~~**Rec 42 calendar lands in the queue** — Jython default-off is dated
+  **2026-09-30** and removal **2027-01-31**; neither has a sprint or issue.~~ Filed
+  2026-06-11: [#440](https://github.com/CryptoJones/GayHydra/issues/440)
+  (default-off) and [#441](https://github.com/CryptoJones/GayHydra/issues/441)
+  (removal, gated on checking upstream's Jython/PyGhidra posture first so deleting
+  `Ghidra/Features/Jython/` doesn't create a permanent merge-conflict surface).
 - [ ] **Rec 12 GHSA redo** — the oldest open security commitment (drafts lost in the
   repo deletion, carried across three sprint sections since). Smallest item here;
   schedule it out of carry-over limbo.
