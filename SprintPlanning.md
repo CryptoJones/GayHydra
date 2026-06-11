@@ -664,14 +664,13 @@ them. They are ordered by strategic weight, not effort.
     numbers: merge-base `94164bd6e9` (2026-05-20 — the fork has **never** merged
     upstream), **203 behind**, 635 ahead, 80 both-touched, **74 dry-run conflicts**
     — including `decompile/cpp/Makefile`, the predicted Rec 34 collision.
-  - [ ] **Policy half (Tier 3)** — `docs/upstream-tracking/MERGE_POLICY.md`: merge
-    cadence (e.g. after each upstream stable release), conflict playbook,
-    fork-owned-paths manifest. Known collision watch-list to record there: upstream
-    decompiler-IPC evolution vs Rec 33/34; upstream Jython/PyGhidra moves vs Rec 42;
-    upstream `RttiAnalyzer`/demangler churn under the Rec 37 harvest scans (a
-    *behavioral* dependency — DD-0061 deliberately consumes upstream analyzer
-    output). First actual sync only after the Tier-3 recall corpus + perf baseline
-    exist to guard it.
+  - [x] ~~**Policy half (Tier 3)** — `docs/upstream-tracking/MERGE_POLICY.md`: merge
+    cadence, conflict playbook, fork-owned-paths manifest, collision watch-list.~~
+    Drafted 2026-06-11 (cadence recommendation: each upstream stable tag, ad-hoc on
+    security-relevant drift or conflicts crossing ~150 — **Aaron ratifies**). The
+    guards it requires now exist (deep-CI, hint-recall corpus). Remaining: the
+    **first actual sync** (`merge/upstream-<tag>` branch per the procedure), an
+    Aaron-scheduled event.
 - [x] ~~**Scheduled deep-CI job** — a nightly workflow running what PR CI never
   does: the fork-owned `test.slow` suites, a bounded fuzz smoke, and the
   decompiler-smoke gate against a master build.~~ Shipped 2026-06-11:

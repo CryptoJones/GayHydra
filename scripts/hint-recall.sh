@@ -30,6 +30,7 @@ trap 'rm -f "$RESULTS"' EXIT
 for obj in "$CORPUS"/build/*.o; do
   name=$(basename "$obj" .o)
   PROJECT_DIR=$(mktemp -d)
+  t0=$(date +%s%3N)
   OUT=$("$HEADLESS" "$PROJECT_DIR" RecallRE \
     -import "$obj" \
     -postScript CountCppHintRecallScript.java \
@@ -39,9 +40,16 @@ for obj in "$CORPUS"/build/*.o; do
       echo "analyzeHeadless failed on $name" >&2
       exit 2
     }
+  t1=$(date +%s%3N)
   line=$(echo "$OUT" | grep -oE 'RECALL( [A-Z_]+=[0-9]+)+ TOTAL=[0-9]+' | tail -1)
   test -n "$line" || { echo "$OUT" | tail -40; echo "no RECALL line for $name" >&2; exit 2; }
   echo "$name $line"
+  # Perf is published, not gated (meta-review Tier 3 item 10 v1): shared-CI
+  # wall-time variance is unmeasured, so a hard threshold would flake. The
+  # PERF lines accumulate trend data (job logs / step summary); a gate comes
+  # once variance is known. Time covers import + auto-analysis + the
+  # all-functions decompile pass — the user-visible decompiler path.
+  echo "PERF $name elapsed_ms=$((t1 - t0))"
   echo "$name ${line#RECALL }" >> "$RESULTS"
   rm -rf "$PROJECT_DIR"
 done
