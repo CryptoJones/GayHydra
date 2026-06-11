@@ -1,0 +1,70 @@
+# The "Rec 30 for the GUI" enabler (meta-review 2026-06-11, DISPLAY-ceiling
+# reframe): headed Swing tests run under Xvfb on a stock Linux runner, so the
+# DISPLAY-gated feature tails (Rec 35 #35-5b-2 retry action, Rec 38 #38-4
+# rename-propagation UI, the Rec 37 hints margin) finally have a CI test
+# layer to land behind. The pilot (XvfbPilotHeadedTest) is deliberately
+# feature-free — it proves the plumbing; each GUI feature adds its own headed
+# test to the filter list below as it lands.
+#
+# Scheduled weekly (not per-PR): headed tests are the most
+# environment-sensitive class in the tree, and the gated features don't
+# exist yet — cadence grows with usage.
+
+name: Xvfb GUI tests
+
+on:
+  schedule:
+    - cron: '41 4 * * 0'   # weekly, Sunday 04:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  headed_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Install Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Run headed tests under Xvfb
+        # ADD NEW HEADED FORK TESTS HERE as their features land. Gradle
+        # fails if a filter matches nothing, so a renamed test breaks this
+        # job loudly rather than silently dropping coverage.
+        run: >-
+          xvfb-run --auto-servernum
+          gradle :Decompiler:integrationTest
+          --tests "ghidra.app.decompiler.XvfbPilotHeadedTest"
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-xvfb-gui
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14

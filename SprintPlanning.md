@@ -1057,17 +1057,19 @@ Work that doesn't fit a current sprint but is documented in the audit:
 - **Rec 42 milestones:** 2026-09-30 default-off Jython; 2027-01-31 removal. *(Now
   owned by Sprint 15 — file the dated issues.)*
 - Mirror to Codeberg once their repo-creation gateway recovers.
-- **DISPLAY-ceiling reframe (meta-review 2026-06-11):** Rec 35 `#35-5b-2`
-  (retry-with-2x action), Rec 38 `#38-4` (rename-propagation UI — the entire
-  user-facing value of the scope graph, which currently has zero production
-  consumers), and the Rec 37 GUI hints margin are all parked on "needs a DISPLAY".
-  But upstream already ships headed integration-test infrastructure
-  (`AbstractGhidraHeadedIntegrationTest` + the docking test harness), and Xvfb on a
-  Linux CI runner is the standard, boring unblock. The Rec 30 lesson applies — when a
-  whole queue blocks on a missing test layer, build the layer first: an Xvfb CI job +
-  one pilot headed test, then land the three GUI tails behind it. (The
-  `HEADLESS_TEST_LAYER.md` `#30-2`..`#30-7` view-interface layer remains the deeper
-  alternative; Xvfb is the cheap door.)
+- **DISPLAY-ceiling reframe (meta-review 2026-06-11):** ~~Rec 35 `#35-5b-2`
+  (retry-with-2x action), Rec 38 `#38-4` (rename-propagation UI), and the Rec 37 GUI
+  hints margin are all parked on "needs a DISPLAY" — build the Xvfb enabler first.~~
+  **Enabler shipped 2026-06-11**: `XvfbPilotHeadedTest` (fork-owned, feature-free —
+  a real tool frame showing on a real X display via `AbstractGhidraHeadedIntegrationTest`
+  + `TestEnv`) passes under `xvfb-run` (1/1, ~2s; container-verified — the only gap
+  was AWT's X client libs, which GHA runners already carry);
+  `.github/workflows/xvfb-gui-tests.yml` runs it weekly + on dispatch, with the
+  filter list as the landing pad for each GUI feature's own headed tests. **The
+  DISPLAY ceiling is empirically a door — `#35-5b-2`, `#38-4`, and the hints margin
+  are now unblocked** and land behind this layer, each bringing its own headed test.
+  (The `HEADLESS_TEST_LAYER.md` `#30-2`..`#30-7` view-interface layer remains the
+  deeper alternative; reassess its motivation now that this exists.)
 - **Surfacing & measurement band (meta-review 2026-06-11)** — sequenced *before*
   any new Rec 37 recognition forms, because shipped-but-invisible features and
   unmeasured quality compound:
