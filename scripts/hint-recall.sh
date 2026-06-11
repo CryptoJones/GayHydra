@@ -27,7 +27,7 @@ test -x "$HEADLESS" || { echo "no analyzeHeadless at $HEADLESS" >&2; exit 2; }
 RESULTS=$(mktemp)
 trap 'rm -f "$RESULTS"' EXIT
 
-for obj in "$CORPUS"/build/*.o; do
+for obj in "$CORPUS"/objects/*.o; do
   name=$(basename "$obj" .o)
   PROJECT_DIR=$(mktemp -d)
   t0=$(date +%s%3N)

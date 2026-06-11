@@ -45,6 +45,9 @@ Thumbs.db
 *.o
 *.obj
 *.class
+# ...except the hint-recall corpus: the committed .o bytes ARE the corpus
+# (samples/hint-recall-corpus/README.md) — recall is pinned to exact codegen.
+!samples/hint-recall-corpus/objects/*.o
 
 # Ignore MS Visual Studio artifcats
 Release

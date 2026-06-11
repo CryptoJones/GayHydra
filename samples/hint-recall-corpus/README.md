@@ -17,7 +17,7 @@ output distribution.
   function for attribution. Header-free so cross-compiles need no sysroot;
   deliberately unstripped (callee-name classification is part of the
   measured contract — stripped recall is a known zero, a future column).
-- `build/<cc>-<arch>-<opt>.o` — the committed corpus: {gcc, clang} ×
+- `objects/<cc>-<arch>-<opt>.o` — the committed corpus: {gcc, clang} ×
   {x86_64, aarch64} × {O0, O2}. **The committed bytes are the corpus**, not
   the source: recall is pinned to exact codegen. `build.sh` regenerates them
   — that is a deliberate baseline-update event, never CI.

@@ -3,7 +3,7 @@
 //
 // One call site per Rec 37 hint form, each in its own exported function so
 // recall is attributable per form per binary. The committed .o artifacts in
-// build/ are the *fixed* corpus — the metric must not drift with toolchain
+// objects/ are the *fixed* corpus — the metric must not drift with toolchain
 // versions, so the baseline is pinned to those exact bytes; build.sh exists
 // to regenerate them deliberately (a baseline-update event, not CI).
 //
