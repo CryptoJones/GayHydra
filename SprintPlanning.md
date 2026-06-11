@@ -729,7 +729,14 @@ first implementation tier.
     rules + a `buildNatives.gradle` exportedHeaders srcDir). Responses stay v0 (#34-10f+).
     Ronin28: C++ 336/336, `ghidra_dbg` builds clean, Java framing 18/18, e2e 5/5 (3 new legs:
     advertisement, flush-survives, kill-switch).
-  - [ ] **#34-10c** — lifecycle remainder (`registerProgram`, `deregisterProgram`).
+  - [x] ~~**#34-10c** — lifecycle remainder (`registerProgram`, `deregisterProgram`).~~ Shipped —
+    mechanical against the `#34-10b` dispatch: two `loadParametersV1` overrides on the worker
+    (four-spec decode for register; FlushNative-twin id parse for deregister) and two host
+    branches through a new `writeSchemaRequest` core, split out because registerProgram must
+    keep its callback decoders alive across the send (the worker queries back during
+    registration regardless of request encoding) while the simple commands null them. Every
+    e2e leg now exercises schema register/deregister implicitly via openProgram/dispose.
+    Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
   - [ ] **#34-10d** — config trio (`structureGraph`, `setAction`, `setOptions`).
   - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
     direction; starts the re-keyed `#34-7` clock (one release after this ships).

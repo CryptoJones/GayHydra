@@ -127,6 +127,7 @@ class RegisterProgram : public GhidraCommand {
   string tspec;				///< Configuration (address-spaces) for the Translate object
   string corespec;			///< A description of core data-types for the TypeFactory object
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   int4 archid;				///< Resulting id of the program to send back
@@ -141,6 +142,7 @@ public:
 class DeregisterProgram : public GhidraCommand {
   int4 inid;				///< The id of the Architecture being terminated
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   int4 res;				///< The meta-command being issued to send back
