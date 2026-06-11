@@ -802,8 +802,10 @@ first implementation tier.
     in-tree `PcodeEmulator` equivalence-test pattern, golden-case-validated, with a pluggable
     `DifftestReference` interface; Unicorn/QEMU adapters wait behind it for Aaron's vendoring
     approval. Test-layer first (the Rec 30 precedent).
-  - [ ] **#40-5b** — `SleighInstructionExecutor` + golden x86-64 cases (implements DD-0079
-    slice 1).
+  - [x] ~~**#40-5b** — `SleighInstructionExecutor` + golden x86-64 cases (implements DD-0079
+    slice 1).~~ Shipped: the Ghidra half executes one instruction through the in-tree
+    `PcodeEmulator` and samples registers, behind the `DifftestReference` seam; goldens incl. the
+    `CF` carry-out case all hand-computed. Suite 4/4.
   - [ ] **#40-5c+** — reference adapters (vendoring: **Aaron-gated**), pattern-driven generation,
     CLI packaging.
 

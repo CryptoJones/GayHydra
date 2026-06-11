@@ -784,6 +784,15 @@ generated from the GitHub Releases UI at sprint close.
   vendoring decision (Aaron's) drops into a tested socket later. Reproducer record shape baked into
   the API from day one. Design: DD-0079.
 
+- **Rec 40 `#40-5b` — `SleighInstructionExecutor` + golden x86-64 corpus** — the difftest's Ghidra
+  half is live: `step(languageId, instruction bytes, initial registers, sample registers)` executes
+  exactly one instruction through the in-tree `PcodeEmulator` (the proven equivalence-test pattern)
+  and samples registers — implementing the `DifftestReference` seam a vendoring-approved
+  Unicorn/QEMU adapter will share. Validated against hand-computed goldens (`ADD RAX,RBX` 2+3=5;
+  `SUB` wrapping to all-ones; `MOV`; `ADD` carry-out setting `CF`) — until a real reference exists,
+  the golden corpus *is* the reference for harness correctness. The argument tuple is the plan
+  doc's stable reproducer record by construction. Suite 4/4. Design: DD-0079.
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
