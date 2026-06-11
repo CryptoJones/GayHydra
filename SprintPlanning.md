@@ -701,7 +701,28 @@ first implementation tier.
 - [x] ~~**Rec 33 PR #33-2:** framing v1 — greeting, CRC32, resync. v0 fallback active. **Design landed at [DD-0005](docs/decisions/0005-ipc-framing-v1.md)** — sequence is `#33-2.1` (`frame_v1.hh`/`.cc` + unit tests), `#33-2.2` (server-side reader with v0 fallback), `#33-2.3` (server-side writer), `#33-2.4` (greeting handshake), `#33-2.5` (Java-side wiring + default flip to v1).~~ **`#33-2.1`–`#33-2.5` all shipped in v26.1.16** (see DD-0005's post-#33-2.5 status section — this entry was stale). Both ends negotiate a v1 *greeting*; the command loop deliberately stays v0 on both sides. `#33-2.6` (the command-loop flip) also shipped later — 26.2.0 sprint close ([PR #189](https://github.com/CryptoJones/GayHydra/pull/189)) with the e2e IPC test in CI ([PR #201](https://github.com/CryptoJones/GayHydra/pull/201)). **Rec 33 is closed.**
 - [x] ~~**Rec 34 PR #34-2:** vendor FlatBuffers C++ headers + Java jar.~~ Shipped (prerequisite of the landed schema/codecs below).
 - [x] ~~**Rec 34 PR #34-3:** land `decompile.fbs` schema + generated bindings.~~ Shipped — `src/decompile/cpp/schema/decompile.fbs` in tree.
-- [x] ~~**Rec 34 PR #34-4:** dual-encode the decompile-function request path.~~ Shipped — host-side encoder ([PR #213](https://github.com/CryptoJones/GayHydra/pull/213)), worker-side codec ([PR #211](https://github.com/CryptoJones/GayHydra/pull/211)); band advanced through `#34-5a` (#215) and the `fuzz_ipc_schema` harness `#34-9` (#227).
+- [x] ~~**Rec 34 PR #34-4:** dual-encode the decompile-function request path.~~ Shipped — host-side encoder ([PR #213](https://github.com/CryptoJones/GayHydra/pull/213)), worker-side codec ([PR #211](https://github.com/CryptoJones/GayHydra/pull/211)); band advanced through `#34-5a` (#215) and the `fuzz_ipc_schema` harness `#34-9` (#227). **Truth note (2026-06-11, DD-0080):** the *codec halves* shipped; the live dual-encode wiring did not — every `#34-4`..`#34-6` codec is deliberately inert (test/fuzz-only; the production Makefile rules can't even compile them), the live loop is v0 in both directions, and no Java v1 response decoder exists. Go-live is the `#34-10` band below; the `#34-7`/`#34-8` removal clocks re-key to go-live.
+- [ ] **Rec 34 #34-10 band — payload-v1 go-live** (DD-0080): wire the inert codecs into the live
+  loop behind two greeting capability bits (`SCHEMA_V1_REQUESTS` worker-side,
+  `SCHEMA_V1_RESPONSES` host-side) and a `SCHEMA_PAYLOAD` frame flag whose payload is
+  `[u8 command-id][FlatBuffers bytes]`. Requests before responses; smallest command first; the
+  PR #201 `ipc_e2e` harness gains a payload-v1 leg from `#34-10b` on. Signature commands + the
+  mid-decompile callback sub-protocol are carved out (no schema tables — future `#34-11`).
+  - [ ] **#34-10a** — capability bits + `SCHEMA_PAYLOAD` flag + command-id registry, both ends
+    (pure layer, unit-testable; negotiated but unused).
+  - [ ] **#34-10b** — worker v1-request dispatch + `flushNative` go-live end-to-end;
+    `FLATBUF_INCLUDE` enters the production compile rules; `ipc_e2e` payload-v1 leg.
+  - [ ] **#34-10c** — lifecycle remainder (`registerProgram`, `deregisterProgram`).
+  - [ ] **#34-10d** — config trio (`structureGraph`, `setAction`, `setOptions`).
+  - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
+    direction; starts the re-keyed `#34-7` clock (one release after this ships).
+  - [ ] **#34-10f+** — response direction: host-side `DecompileResponseCodec` (new), worker emit
+    behind `SCHEMA_V1_RESPONSES`, command-by-command.
+  - [ ] **#34-7 (re-keyed)** — remove the host v0 request encode for the seven schematized
+    commands, one release after `#34-10e`.
+  - [ ] **#34-8 (re-keyed + subordinated)** — remove the worker v0 request decode: deferred to
+    the v27.x horizon with DD-0005's framing-v0 fallback, so an upstream-Ghidra host driving the
+    GayHydra worker keeps working (DD-0080 resolves the contract tension in DD-0005's favour).
 
 ---
 
@@ -828,7 +849,10 @@ Work that doesn't fit a current sprint but is documented in the audit:
 - **Rec 24:** add Windows (MSVC) to the C++ decompiler test workflow. **Strategic sprint pending** — see [DD-0004](docs/decisions/0004-decompiler-cpp-tests-windows.md): gated on picking a Windows libbfd-substitute approach (port vs. exclude vs. stub) and writing the MSVC `CMakeLists.txt` that replaces the GCC `Makefile`. MinGW shortcut explicitly rejected to avoid carrying two Windows toolchains.
 - **Rec 30:** headless test layer — ships after Rec 29 (JUnit 5) is partway through; opportunistic.
 - ~~**Rec 31 Stages 3–8:** the bulk of the RAII migration.~~ **Closed at v26.1.13** — see Rec 31 row in Sprint 6 above. Hand-written tree at 226/229 = 99% under audit gate. The four remaining (bison/flex-generated) need the Option A variant-mode rewrite, tracked separately.
-- **Rec 34 PRs #34-5 through #34-8:** the rest of the FlatBuffers migration + v0 removal.
+- ~~**Rec 34 PRs #34-5 through #34-8:** the rest of the FlatBuffers migration + v0 removal.~~
+  **Superseded by the `#34-10` go-live band** (Sprint 7 row, DD-0080): the `#34-5`/`#34-6` codec
+  halves shipped inert in v26.2.2; the genuinely open work is the live wiring, after which the
+  re-keyed `#34-7`/`#34-8` removals follow.
 - **Rec 41:** opt-in PRs to fill the per-architecture maintainer column.
 - **Rec 42 milestones:** 2026-09-30 default-off Jython; 2027-01-31 removal.
 - Mirror to Codeberg once their repo-creation gateway recovers.
