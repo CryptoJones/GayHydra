@@ -51,7 +51,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 		assertEquals(new GlobalAddress(addr(0x1000)), new GlobalAddress(addr(0x1000)));
 		assertEquals(new StructField("Packet", 8), new StructField("Packet", 8));
 		assertEquals(new Parameter(addr(0x401000), 1), new Parameter(addr(0x401000), 1));
-		assertEquals(new LocalEquiv(addr(0x401000), 3), new LocalEquiv(addr(0x401000), 3));
+		assertEquals(new LocalEquiv(addr(0x401000), "Stack[-0x8]:4"), new LocalEquiv(addr(0x401000), "Stack[-0x8]:4"));
 		assertNotEquals(new Parameter(addr(0x401000), 1), new Parameter(addr(0x401000), 2));
 		assertNotEquals(new StructField("Packet", 8), new StructField("Packet", 12));
 	}
@@ -77,7 +77,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 	public void testAddEdgeRegistersBothEndpointsAsNodes() {
 		ScopeGraph graph = new ScopeGraph();
 		Parameter param = new Parameter(addr(0x401000), 0);
-		LocalEquiv local = new LocalEquiv(addr(0x402000), 7);
+		LocalEquiv local = new LocalEquiv(addr(0x402000), "Stack[-0x10]:8");
 
 		graph.addEdge(new ScopeEdge(param, local, Kind.SAME_VALUE, 0.8f, Origin.DATAFLOW));
 
@@ -92,7 +92,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 		// a —SAME— b —SAME— c, with the b—c edge pointing c→b to prove the walk is undirected.
 		ScopeGraph graph = new ScopeGraph();
 		Parameter a = new Parameter(addr(0x401000), 0);
-		LocalEquiv b = new LocalEquiv(addr(0x402000), 1);
+		LocalEquiv b = new LocalEquiv(addr(0x402000), "EDI:4");
 		Parameter c = new Parameter(addr(0x403000), 2);
 		graph.addEdge(new ScopeEdge(a, b, Kind.SAME_VALUE, 1.0f, Origin.STATIC));
 		graph.addEdge(new ScopeEdge(c, b, Kind.SAME_VALUE, 0.9f, Origin.DATAFLOW));
@@ -108,7 +108,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 		// it would be wrong, so the component must not cross those edges (never-wrong).
 		ScopeGraph graph = new ScopeGraph();
 		Parameter a = new Parameter(addr(0x401000), 0);
-		LocalEquiv same = new LocalEquiv(addr(0x402000), 1);
+		LocalEquiv same = new LocalEquiv(addr(0x402000), "EDI:4");
 		GlobalAddress aliased = new GlobalAddress(addr(0x5000));
 		StructField derived = new StructField("Packet", 8);
 		graph.addEdge(new ScopeEdge(a, same, Kind.SAME_VALUE, 1.0f, Origin.STATIC));
@@ -131,7 +131,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 	public void testUserAssertedEdgesAreTheDurableSubset() {
 		ScopeGraph graph = new ScopeGraph();
 		ScopeEdge analysis = new ScopeEdge(new Parameter(addr(0x401000), 0),
-			new LocalEquiv(addr(0x402000), 1), Kind.SAME_VALUE, 1.0f, Origin.STATIC);
+			new LocalEquiv(addr(0x402000), "EDI:4"), Kind.SAME_VALUE, 1.0f, Origin.STATIC);
 		ScopeEdge asserted = new ScopeEdge(new Parameter(addr(0x401000), 0),
 			new GlobalAddress(addr(0x5000)), Kind.SAME_VALUE, 1.0f, Origin.USER_ASSERTED);
 		graph.addEdge(analysis);
@@ -143,7 +143,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 	@Test
 	public void testEdgeContractsRejectBadValues() {
 		Parameter a = new Parameter(addr(0x401000), 0);
-		LocalEquiv b = new LocalEquiv(addr(0x402000), 1);
+		LocalEquiv b = new LocalEquiv(addr(0x402000), "EDI:4");
 		assertThrows(IllegalArgumentException.class,
 			() -> new ScopeEdge(a, a, Kind.SAME_VALUE, 1.0f, Origin.STATIC));
 		assertThrows(IllegalArgumentException.class,
@@ -160,7 +160,7 @@ public class ScopeGraphTest extends AbstractGenericTest {
 		assertThrows(IllegalArgumentException.class, () -> new StructField(" ", 0));
 		assertThrows(IllegalArgumentException.class, () -> new StructField("Packet", -1));
 		assertThrows(IllegalArgumentException.class, () -> new Parameter(addr(0x401000), -1));
-		assertThrows(IllegalArgumentException.class, () -> new LocalEquiv(addr(0x401000), -1));
+		assertThrows(IllegalArgumentException.class, () -> new LocalEquiv(addr(0x401000), " "));
 	}
 
 	@Test

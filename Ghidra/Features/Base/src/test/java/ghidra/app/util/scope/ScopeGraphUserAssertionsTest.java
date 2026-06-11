@@ -66,7 +66,7 @@ public class ScopeGraphUserAssertionsTest extends AbstractGenericTest {
 	public void testUserAssertionsRoundTripAcrossAllNodeKinds() {
 		ScopeGraph graph = new ScopeGraph();
 		ScopeEdge acrossFunctions = new ScopeEdge(new Parameter(addr(0x401000), 1),
-			new LocalEquiv(addr(0x402000), 7), Kind.SAME_VALUE, 1.0f, Origin.USER_ASSERTED);
+			new LocalEquiv(addr(0x402000), "Stack[-0x8]:4"), Kind.SAME_VALUE, 1.0f, Origin.USER_ASSERTED);
 		ScopeEdge globalToField = new ScopeEdge(new GlobalAddress(addr(0x5000)),
 			new StructField("MyVec<int>", 8), Kind.ALIAS_OF, 0.75f, Origin.USER_ASSERTED);
 		// An analysis edge must NOT persist -- it is recomputed by its producer.

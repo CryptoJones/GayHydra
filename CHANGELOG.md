@@ -706,6 +706,14 @@ generated from the GitHub Releases UI at sprint close.
   Local-variable arguments are deferred, not approximated: a `LocalEquiv` endpoint needs a stable
   equivalence id, and per-decompile `HighVariable` identity does not survive recomputation. Harness
   suite 3/3. Design: DD-0075.
+- **Rec 38 — `LocalEquiv` keys by canonical storage string** — the design study DD-0075 demanded:
+  a local's decompile-invariant identity is its **storage** (`Stack[-0x8]:4`, `EDI:4`) — the
+  anchor Ghidra itself uses to match a `HighSymbol` back to the database local. The
+  analysis-assigned opaque id the RFC sketched invites unstable minting, and a hash is not an
+  identity (collisions would silently merge two locals' rename sets — the worst failure for a
+  propagation feature). The persistence codec's `L` tag carries the escaped key; done now, while
+  nothing has persisted real `LocalEquiv` nodes, avoiding a future format-version bump. Unblocks
+  the dataflow band's local-argument case. Suites 10/7/7. Design: DD-0076.
 
 ### Changed
 

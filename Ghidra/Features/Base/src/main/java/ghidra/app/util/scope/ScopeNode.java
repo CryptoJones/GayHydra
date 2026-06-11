@@ -77,18 +77,22 @@ public sealed interface ScopeNode {
 
 	/**
 	 * A local-variable equivalence class within one function, identified by the function's entry
-	 * address and an analysis-assigned class id (stable within one population pass).
+	 * address and the local's canonical storage key (DD-0076) &mdash; the variable's
+	 * {@code VariableStorage} rendered as its canonical string (e.g. {@code Stack[-0x8]:4},
+	 * {@code EDI:4}). Storage is the decompile-invariant anchor: it is how Ghidra itself matches a
+	 * decompiler {@code HighSymbol} back to the database local, so the identity survives
+	 * recomputation, which an analysis-assigned opaque id (the RFC's original sketch) would not.
 	 *
 	 * @param functionEntry the owning function's entry address; must not be null
-	 * @param equivalenceClassId the analysis-assigned class id; must not be negative
+	 * @param storageKey the local's canonical storage string; must not be null or blank
 	 */
-	record LocalEquiv(Address functionEntry, long equivalenceClassId) implements ScopeNode {
+	record LocalEquiv(Address functionEntry, String storageKey) implements ScopeNode {
 		public LocalEquiv {
 			if (functionEntry == null) {
 				throw new IllegalArgumentException("function entry must not be null");
 			}
-			if (equivalenceClassId < 0) {
-				throw new IllegalArgumentException("equivalence class id must not be negative");
+			if (storageKey == null || storageKey.isBlank()) {
+				throw new IllegalArgumentException("storage key must not be null or blank");
 			}
 		}
 	}
