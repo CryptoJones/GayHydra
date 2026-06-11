@@ -797,6 +797,15 @@ first implementation tier.
     fuzzer (months-scale; needs Unicorn et al. — its own sprint) and the deferred ANTLR parity
     slice.
 - [ ] **PR #40-5:** differential-fuzzer framework + x86-64 via Unicorn.
+  - [x] ~~**#40-5a** — architecture DD.~~ Shipped (DD-0079): the sprint splits at the *reference
+    seam* — slice 1 is a zero-new-dependency Ghidra-side `SleighInstructionExecutor` on the
+    in-tree `PcodeEmulator` equivalence-test pattern, golden-case-validated, with a pluggable
+    `DifftestReference` interface; Unicorn/QEMU adapters wait behind it for Aaron's vendoring
+    approval. Test-layer first (the Rec 30 precedent).
+  - [ ] **#40-5b** — `SleighInstructionExecutor` + golden x86-64 cases (implements DD-0079
+    slice 1).
+  - [ ] **#40-5c+** — reference adapters (vendoring: **Aaron-gated**), pattern-driven generation,
+    CLI packaging.
 
 ---
 
