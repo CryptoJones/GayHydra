@@ -1,0 +1,82 @@
+{
+  "clang-aarch64-O0": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "clang-aarch64-O2": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "clang-x86_64-O0": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "clang-x86_64-O2": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "gcc-aarch64-O0": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "gcc-aarch64-O2": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "gcc-x86_64-O0": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  },
+  "gcc-x86_64-O2": {
+    "ARRAY_CONSTRUCTION": 0,
+    "CAST": 0,
+    "CONSTRUCTION": 0,
+    "DELETE": 2,
+    "DESTRUCTOR_CALL": 0,
+    "PLACEMENT_CONSTRUCTION": 0,
+    "TOTAL": 2,
+    "VIRTUAL_CALL": 0
+  }
+}

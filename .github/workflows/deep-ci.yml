@@ -207,3 +207,11 @@ jobs:
             echo "::error::See samples/re-targets/decompiler-smoke/README.md for what this gate asserts."
             exit 1
           fi
+
+          # Reuse the same extracted build for the hint-recall corpus check
+          # (samples/hint-recall-corpus/README.md): fails on any per-form
+          # recall drop vs the committed baseline.
+          echo "GAYHYDRA_DIR=$GAYHYDRA" >> "$GITHUB_ENV"
+
+      - name: Hint-recall corpus check
+        run: scripts/hint-recall.sh "$GAYHYDRA_DIR"

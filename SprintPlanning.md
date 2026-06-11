@@ -1077,13 +1077,21 @@ Work that doesn't fit a current sprint but is documented in the audit:
     exists. One docs page (enable, run headless via `-postScript`, read the `C++:`
     PRE comments) + README/CHANGELOG pointers; consider an opt-in tool-menu/analyzer
     surfacing path.
-  - *Recall corpus.* Every Rec 37 matcher is grounded on x86-64 / one compiler's
+  - *Recall corpus.* ~~Every Rec 37 matcher is grounded on x86-64 / one compiler's
     idioms (per their own javadoc; no `Language` gating exists in
     `ghidra.app.util.cpp`). The never-wrong contract protects precision, but recall
     on arm64/MSVC-codegen/-O2 binaries is unmeasured, and upstream-decompiler idiom
     churn could silently collapse it — the tests pin fork fixtures, not the real
     output distribution. Build a small fixed corpus (gcc/clang/msvc × x86-64/arm64 ×
-    O0/O2) with counted hint hits as a tracked recall metric.
+    O0/O2) with counted hint hits as a tracked recall metric.~~ **Shipped
+    2026-06-11**: `samples/hint-recall-corpus/` (8 committed ELF objects: gcc/clang
+    × x86_64/aarch64 × O0/O2; MSVC PE column deferred to the win11-ci box) +
+    `CountCppHintRecallScript` + `scripts/hint-recall.sh` + `baseline.json`, wired
+    into deep-ci's `master_smoke` job (fails on any per-form drop). **First real
+    numbers prove the gap**: only `DELETE` fires (2/binary) — every type-resolving
+    form is 0 across all 8 cells because the production analyzers gate on MSVC PE
+    and the ELF type system goes unfed. Closing the gap (an Itanium-RTTI analyzer
+    leg, the PE column) is now a measured, baseline-locked workstream.
   - *Perf baseline.* Rec 35/36 are performance recs with no benchmark loop anywhere
     in CI — a 2x decompiler slowdown would ship silently. Add a decompile-throughput
     baseline over the same corpus + a regression threshold. This also resolves the
