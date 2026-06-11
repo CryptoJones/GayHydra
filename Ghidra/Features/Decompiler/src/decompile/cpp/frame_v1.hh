@@ -79,10 +79,18 @@ enum class Type : uint1 {
 
 /// Flag bitmask (1 byte). Bit 0 = CRC32 present (must be set in v1).
 /// Bit 1 = compression (reserved). Bit 2 = continuation (reserved).
+/// Bit 3 = schema payload (Rec 34 #34-10, DD-0080): the frame body is
+/// `[u8 command-id][FlatBuffers bytes]` rather than tunneled v0 bytes.
+/// Only valid on COMMAND/RESPONSE-family frames after the matching
+/// greeting capability was negotiated; enforcement lives in the
+/// command-loop dispatch (the frame layer has no negotiation state),
+/// which is why SCHEMA_PAYLOAD is deliberately NOT in the readers'
+/// reserved-flag reject set.
 namespace flags {
-  constexpr uint1 CRC_PRESENT   = 0x01;
-  constexpr uint1 COMPRESSION   = 0x02;  // reserved
-  constexpr uint1 CONTINUATION  = 0x04;  // reserved
+  constexpr uint1 CRC_PRESENT    = 0x01;
+  constexpr uint1 COMPRESSION    = 0x02;  // reserved
+  constexpr uint1 CONTINUATION   = 0x04;  // reserved
+  constexpr uint1 SCHEMA_PAYLOAD = 0x08;  // DD-0080 #34-10
 }
 
 /// Header struct (post-MAGIC, pre-PAYLOAD). 6 bytes on the wire.
@@ -121,6 +129,16 @@ constexpr uint1 GREETING_VERSION_MINOR = 0x00;
 namespace capab {
   constexpr uint4 CRC_REQUIRED          = 0x00000001;
   constexpr uint4 COMPRESSION_SUPPORTED = 0x00000002;  // reserved
+  /// Rec 34 #34-10 (DD-0080): "I can decode FlatBuffers schema-v1
+  /// REQUEST payloads" — advertised by the worker once its command
+  /// loop dispatches SCHEMA_PAYLOAD frames (#34-10b+). A host sends
+  /// v1 requests only toward a peer advertising this bit.
+  constexpr uint4 SCHEMA_V1_REQUESTS    = 0x00000004;
+  /// Rec 34 #34-10 (DD-0080): "I can decode FlatBuffers schema-v1
+  /// RESPONSE payloads" — advertised by the host once a Java response
+  /// decoder exists (#34-10f+). The worker emits v1 responses only
+  /// toward a peer advertising this bit.
+  constexpr uint4 SCHEMA_V1_RESPONSES   = 0x00000008;
 }
 
 } // namespace frame_v1
@@ -242,6 +260,20 @@ frame_v1::Error read_frame_v1(
 /// \return Greeting payload bytes (6 + ident.size()).
 vector<uint1> build_greeting_payload_v1(const string &ident);
 
+/// \brief Build a v1 greeting payload advertising extra capabilities.
+///
+/// Same layout as the one-argument form; the CAPABS field is
+/// `capab::CRC_REQUIRED | extra_capabs`. This is the #34-10a seam the
+/// payload-v1 go-live slices flip: the worker ORs in
+/// `capab::SCHEMA_V1_REQUESTS` when its dispatch can decode schema
+/// payloads (#34-10b+); until then production callers use the
+/// one-argument form and the wire bytes are unchanged.
+///
+/// \param ident Free-text peer identity.
+/// \param extra_capabs Capability bits ORed onto CRC_REQUIRED.
+/// \return Greeting payload bytes (6 + ident.size()).
+vector<uint1> build_greeting_payload_v1(const string &ident, uint4 extra_capabs);
+
 /// \brief Parse a v1 greeting payload.
 ///
 /// Inverse of \c build_greeting_payload_v1. Requires at least 6 bytes
@@ -281,6 +313,32 @@ frame_v1::ChannelMode negotiate_greeting_v1(
     std::istream &sin,
     std::ostream &sout,
     const string &server_ident);
+
+/// \brief Greeting handshake exposing the peer's capabilities (#34-10a).
+///
+/// Identical handshake to the three-argument form, plus: the client's
+/// CAPABS bitmask is returned through \c peer_capabs_out (0 when the
+/// channel stays v0), and \c server_extra_capabs is ORed onto the
+/// CRC_REQUIRED bit in our reply greeting. This is the seam the
+/// payload-v1 go-live slices wire up (DD-0080): the worker passes
+/// `capab::SCHEMA_V1_REQUESTS` once its dispatch decodes schema
+/// payloads, and reads `capab::SCHEMA_V1_RESPONSES` out of
+/// \c peer_capabs_out before emitting v1 responses. Until then the
+/// production call site uses the three-argument form and behaviour is
+/// unchanged.
+///
+/// \param sin Connection input stream (peer → us).
+/// \param sout Connection output stream (us → peer).
+/// \param server_ident Our IDENT string for the reply greeting.
+/// \param server_extra_capabs Capability bits ORed into our reply CAPABS.
+/// \param peer_capabs_out The client greeting's CAPABS (0 if v0).
+/// \return The negotiated channel mode.
+frame_v1::ChannelMode negotiate_greeting_v1(
+    std::istream &sin,
+    std::ostream &sout,
+    const string &server_ident,
+    uint4 server_extra_capabs,
+    uint4 &peer_capabs_out);
 
 /// \brief Output streambuf that wraps each flush as one v1 frame.
 ///

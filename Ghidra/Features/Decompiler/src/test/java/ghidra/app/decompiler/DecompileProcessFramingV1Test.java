@@ -80,6 +80,40 @@ public class DecompileProcessFramingV1Test {
 	}
 
 	@Test
+	public void testSchemaCapabAndFlagPinnedValues() {
+		// Rec 34 #34-10a (DD-0080): wire contract shared with
+		// frame_v1.hh's capab/flags namespaces, pinned on the C++ side
+		// by testframe_v1.cc. Numeric literals on purpose — the test
+		// must fail if either side silently changes a value.
+		assertEquals("SCHEMA_PAYLOAD flag", 0x08, DecompileProcess.FRAME_FLAG_SCHEMA_PAYLOAD);
+		assertEquals("SCHEMA_V1_REQUESTS capab", 0x00000004,
+			DecompileProcess.GREETING_CAPAB_SCHEMA_V1_REQUESTS);
+		assertEquals("SCHEMA_V1_RESPONSES capab", 0x00000008,
+			DecompileProcess.GREETING_CAPAB_SCHEMA_V1_RESPONSES);
+	}
+
+	@Test
+	public void testParseGreetingPayloadCapabs() {
+		// Round-trip our own builder: the host advertises CRC_REQUIRED
+		// only (the RESPONSES bit flips in #34-10f when a Java response
+		// decoder exists).
+		byte[] payload = DecompileProcess.buildGreetingPayloadV1("X");
+		assertEquals("own greeting capabs", 0x00000001,
+			DecompileProcess.parseGreetingPayloadCapabs(payload));
+
+		// A worker reply advertising schema-v1 requests (CRC|REQUESTS)
+		// parses to the full bitmask — big-endian, low byte last.
+		byte[] reply = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x05, 'w' };
+		assertEquals("peer greeting capabs", 0x00000005,
+			DecompileProcess.parseGreetingPayloadCapabs(reply));
+
+		// High-byte bits survive the widening (no sign smear).
+		byte[] high = { 0x01, 0x00, (byte) 0x80, 0x00, 0x00, 0x01 };
+		assertEquals("high-bit capabs", 0x80000001,
+			DecompileProcess.parseGreetingPayloadCapabs(high));
+	}
+
+	@Test
 	public void testGreetingFrameExactBytes() {
 		String ident = "GayHydra-Ghidra (v1 framing)";
 		byte[] identBytes = ident.getBytes(StandardCharsets.UTF_8);

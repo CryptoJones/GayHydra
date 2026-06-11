@@ -296,6 +296,11 @@ frame_v1::Error read_frame_v1(
 
 vector<uint1> build_greeting_payload_v1(const string &ident)
 {
+  return build_greeting_payload_v1(ident, 0);
+}
+
+vector<uint1> build_greeting_payload_v1(const string &ident, uint4 extra_capabs)
+{
   vector<uint1> p;
   p.reserve(6 + ident.size());
 
@@ -303,8 +308,9 @@ vector<uint1> build_greeting_payload_v1(const string &ident)
   p.push_back(frame_v1::GREETING_VERSION_MAJOR);
   p.push_back(frame_v1::GREETING_VERSION_MINOR);
 
-  // 4-byte big-endian CAPABS — v1 always advertises CRC-required.
-  uint4 caps = frame_v1::capab::CRC_REQUIRED;
+  // 4-byte big-endian CAPABS — v1 always advertises CRC-required;
+  // the go-live slices OR in their schema-payload bits (DD-0080).
+  uint4 caps = frame_v1::capab::CRC_REQUIRED | extra_capabs;
   p.push_back((uint1)((caps >> 24) & 0xff));
   p.push_back((uint1)((caps >> 16) & 0xff));
   p.push_back((uint1)((caps >> 8)  & 0xff));
@@ -346,6 +352,19 @@ frame_v1::ChannelMode negotiate_greeting_v1(
     std::ostream &sout,
     const string &server_ident)
 {
+  uint4 peer_capabs;
+  return negotiate_greeting_v1(sin, sout, server_ident, 0, peer_capabs);
+}
+
+frame_v1::ChannelMode negotiate_greeting_v1(
+    std::istream &sin,
+    std::ostream &sout,
+    const string &server_ident,
+    uint4 server_extra_capabs,
+    uint4 &peer_capabs_out)
+{
+  peer_capabs_out = 0;
+
   // v0 streams always begin with 0x00 (the \0\0\1\NN burst); the v1
   // greeting begins with MAGIC[0] (0x47). A single non-consuming peek
   // distinguishes them, leaving a v0 peer's stream byte-identical for
@@ -371,10 +390,13 @@ frame_v1::ChannelMode negotiate_greeting_v1(
   if (((version >> 8) & 0xff) != frame_v1::GREETING_VERSION_MAJOR)
     return frame_v1::ChannelMode::V0;
 
-  // Reply with our own greeting and switch the channel to v1.
-  vector<uint1> reply = build_greeting_payload_v1(server_ident);
+  // Reply with our own greeting and switch the channel to v1. The
+  // peer's capabilities are surfaced only on a successful v1
+  // negotiation — a v0 channel has no capability concept.
+  vector<uint1> reply = build_greeting_payload_v1(server_ident, server_extra_capabs);
   write_frame_v1(sout, frame_v1::Type::GREETING, reply);
   sout.flush();
+  peer_capabs_out = capabs;
   return frame_v1::ChannelMode::V1;
 }
 

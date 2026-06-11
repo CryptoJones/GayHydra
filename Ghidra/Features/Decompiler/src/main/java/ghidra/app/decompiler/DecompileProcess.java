@@ -75,9 +75,21 @@ public class DecompileProcess {
 	private final static int FRAME_TYPE_COMMAND = 0x01;
 	private final static int FRAME_FLAG_CRC_PRESENT = 0x01;
 	private final static int FRAME_FLAGS_RESERVED = 0x06; // compression|continuation
+	// Rec 34 #34-10a (DD-0080): frame body is [u8 command-id][FlatBuffers
+	// bytes] instead of tunneled v0 bytes. Known at the frame layer (not
+	// in FRAME_FLAGS_RESERVED); "reject unless negotiated" is the
+	// dispatch layer's job. Unused until the #34-10b go-live wiring.
+	final static int FRAME_FLAG_SCHEMA_PAYLOAD = 0x08;
 	private final static int GREETING_VERSION_MAJOR = 0x01;
 	private final static int GREETING_VERSION_MINOR = 0x00;
 	private final static int GREETING_CAPAB_CRC_REQUIRED = 0x00000001;
+	// Rec 34 #34-10a (DD-0080) capability bits, mirroring frame_v1.hh's
+	// capab namespace (pinned cross-language by the unit tests). The
+	// worker advertises REQUESTS once its dispatch decodes schema
+	// payloads (#34-10b+); this host advertises RESPONSES once a Java
+	// response decoder exists (#34-10f+).
+	final static int GREETING_CAPAB_SCHEMA_V1_REQUESTS = 0x00000004;
+	final static int GREETING_CAPAB_SCHEMA_V1_RESPONSES = 0x00000008;
 	private final static int FRAME_MAX_PAYLOAD_LEN = 16 * 1024 * 1024;
 	private final static String CLIENT_IDENT = "GayHydra-Ghidra (v1 framing)";
 
@@ -89,6 +101,11 @@ public class DecompileProcess {
 	private volatile String framingMode = "auto";
 	// True once a v1 greeting handshake has completed with the peer.
 	private volatile boolean channelV1 = false;
+	// The peer greeting's CAPABS bitmask, recorded by the v1 handshake
+	// (#34-10a); 0 while the channel is v0. The payload-v1 go-live
+	// slices key off this: requests go v1 only when the worker
+	// advertised GREETING_CAPAB_SCHEMA_V1_REQUESTS.
+	private volatile int peerCapabilities = 0;
 
 	//private static final int MAXIMUM_RESULT_SIZE = 50 * 1024 * 1024; // maximum result size in bytes to allow from decompiler
 
@@ -342,6 +359,22 @@ public class DecompileProcess {
 	}
 
 	/**
+	 * {@return the peer greeting's CAPABS bitmask, or 0 while the channel
+	 * is v0 (a v0 channel has no capability concept).}
+	 */
+	public int getPeerCapabilities() {
+		return peerCapabilities;
+	}
+
+	/**
+	 * {@return true if the negotiated peer advertised that it decodes
+	 * FlatBuffers schema-v1 request payloads (DD-0080 #34-10).}
+	 */
+	public boolean peerAcceptsSchemaV1Requests() {
+		return (peerCapabilities & GREETING_CAPAB_SCHEMA_V1_REQUESTS) != 0;
+	}
+
+	/**
 	 * Build a complete v1 GREETING frame: MAGIC + TYPE + FLAGS + LENGTH +
 	 * PAYLOAD + CRC32. The CRC (java.util.zip.CRC32 == IEEE 802.3) covers
 	 * TYPE|FLAGS|LENGTH|PAYLOAD, not MAGIC — matching frame_v1.cc.
@@ -408,6 +441,7 @@ public class DecompileProcess {
 	 */
 	private void negotiateFramingV1() throws IOException {
 		channelV1 = false;
+		peerCapabilities = 0;
 		if ("v0".equals(framingMode)) {
 			return;
 		}
@@ -480,7 +514,25 @@ public class DecompileProcess {
 			return false;
 		}
 		// Reject a mismatched major version; minor bumps are compatible.
-		return (payload[0] & 0xff) == GREETING_VERSION_MAJOR;
+		if ((payload[0] & 0xff) != GREETING_VERSION_MAJOR) {
+			return false;
+		}
+		// Record the peer's capabilities (#34-10a) — the payload-v1
+		// go-live slices key off these bits.
+		peerCapabilities = parseGreetingPayloadCapabs(payload);
+		return true;
+	}
+
+	/**
+	 * Extract the 4-byte big-endian CAPABS bitmask from a greeting
+	 * payload (VERSION | CAPABS | IDENT). Package-private for unit
+	 * testing of the exact wire layout.
+	 * @param payload the greeting payload (at least 6 bytes)
+	 * @return the CAPABS bitmask
+	 */
+	static int parseGreetingPayloadCapabs(byte[] payload) {
+		return ((payload[2] & 0xff) << 24) | ((payload[3] & 0xff) << 16) |
+			((payload[4] & 0xff) << 8) | (payload[5] & 0xff);
 	}
 
 	/**
