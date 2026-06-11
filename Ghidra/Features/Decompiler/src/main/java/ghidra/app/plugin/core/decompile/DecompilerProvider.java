@@ -1093,6 +1093,11 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 		RenameLocalAction renameLocalAction = new RenameLocalAction();
 		setGroupInfo(renameLocalAction, variableGroup, subGroupPosition++);
 
+		// Rec 38 #38-4 (RFC-0002 minimal): explicit propagation of a
+		// parameter's name across its SAME_VALUE scope-graph peers.
+		PropagateNameAction propagateNameAction = new PropagateNameAction();
+		setGroupInfo(propagateNameAction, variableGroup, subGroupPosition++);
+
 		RenameGlobalAction renameGlobalAction = new RenameGlobalAction();
 		setGroupInfo(renameGlobalAction, variableGroup, subGroupPosition++);
 
@@ -1303,6 +1308,7 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 		addLocalAction(lockProtoAction);
 		addLocalAction(lockLocalAction);
 		addLocalAction(renameLocalAction);
+		addLocalAction(propagateNameAction);
 		addLocalAction(renameGlobalAction);
 		addLocalAction(renameFieldAction);
 		addLocalAction(renameBitFieldAction);

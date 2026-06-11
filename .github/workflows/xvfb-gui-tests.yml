@@ -58,6 +58,7 @@ jobs:
           gradle :Decompiler:integrationTest
           --tests "ghidra.app.decompiler.XvfbPilotHeadedTest"
           --tests "ghidra.app.plugin.core.decompile.RetryWithDoubledBudgetHeadedTest"
+          --tests "ghidra.app.plugin.core.decompile.PropagateNameActionHeadedTest"
 
       - name: Upload test results on failure
         if: failure()

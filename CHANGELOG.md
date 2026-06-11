@@ -902,6 +902,20 @@ generated from the GitHub Releases UI at sprint close.
   tests pass under `xvfb-run` (installed/disabled-on-complete, double-and-redecompile,
   overflow saturation) and run weekly via `xvfb-gui-tests.yml`. Design: DD-0010.
 
+- **Rec 38 `#38-4` (minimal) — propagate-name action; the scope graph gets its first
+  production consumer** — an explicit decompiler context action ("Propagate Name to
+  Same-Value Peers", enabled on parameter tokens) rather than a rename-flow interception:
+  the user names a parameter with the ordinary rename, then propagates it. The headless
+  `ScopeGraphRenamePropagator` walks the parameter's `SAME_VALUE` component (graph populated
+  on demand from the function + its direct callers through the DD-0075 dataflow populator),
+  resolves `Parameter` peers to live slots (the program is the truth; stale nodes resolve to
+  nothing), and applies the name `USER_DEFINED` with per-peer collision-skip — never-wrong
+  over all-or-nothing. The action wraps it in RFC-0002's confirmation dialog and a
+  transaction. Tests: propagator 3/3 headless (the DD-0075 pass-through fixture taken to a
+  live rename), headed install test under the Xvfb layer. Remaining #38-4 tail (LocalEquiv
+  renames, the automatic on-rename hook, user-asserted-edge UI) now layers on a shipped
+  consumer. Design: RFC-0002.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

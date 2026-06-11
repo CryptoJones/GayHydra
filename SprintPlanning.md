@@ -998,8 +998,18 @@ first implementation tier.
     populator mints `LocalEquiv(callerEntry, storageKey)` alongside the parameter case. RFC-0002's
     full motivating case flows end-to-end. Harness 4/4. **Remaining Rec 38: only `#38-4` UI
     (DISPLAY-gated).**
-- [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
-  tails.)*
+- [x] ~~**PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
+  tails.)*~~ **Minimal slice shipped 2026-06-11** behind the Xvfb layer — the scope graph's
+  first production consumer. Deliberately an *explicit* action ("Propagate Name to Same-Value
+  Peers", on a parameter token) rather than a rename-flow interception: the headless
+  `ScopeGraphRenamePropagator` walks the `SAME_VALUE` component (graph populated from the
+  function + its direct callers via the DD-0075 dataflow populator), resolves `Parameter`
+  peers to live slots, and applies the name with per-peer collision-skip; the action wraps it
+  in the RFC-0002 confirmation dialog + transaction. Propagator 3/3 (headless, the pass-through
+  fixture taken to a live rename), headed install test under Xvfb. Remaining #38-4 tail:
+  `LocalEquiv` peer renames (needs a decompile-context rename surface), the automatic
+  on-rename hook + per-project remember setting, and user-asserted-edge UI — each its own
+  slice now that the consumer exists.
 
 ---
 
