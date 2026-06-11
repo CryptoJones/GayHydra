@@ -52,9 +52,11 @@ YACC=bison
 INCLUDES=
 BFDLIB=-lbfd
 
-# Vendored FlatBuffers C++ runtime headers (Rec 34). Only the unit-test build
-# needs these: the ghidra::ipc::* bindings are exercised by ../unittests, not
-# linked into the production decompiler yet (#34-4b).
+# Vendored FlatBuffers C++ runtime headers (Rec 34). Used by the unit-test
+# build and, since #34-10b (DD-0080), by the production worker rules
+# (ghi_dbg/ghi_opt): ghidra_process.cc includes the schema codecs to decode
+# schema-v1 request payloads. The gradle native build mirrors this via an
+# exportedHeaders srcDir in buildNatives.gradle.
 FLATBUF_INCLUDE=-Ivendor/flatbuffers/include
 
 LNK=-lz
@@ -227,9 +229,9 @@ test_dbg/%.o:	%.cc
 test_dbg/%.o:	../unittests/%.cc
 	$(CXX) -I. $(FLATBUF_INCLUDE) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(TEST_DEBUG)        $< -o $@
 ghi_dbg/%.o:	%.cc
-	$(CXX) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(GHIDRA_DEBUG)      $< -o $@
+	$(CXX) -I. $(FLATBUF_INCLUDE) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(GHIDRA_DEBUG)      $< -o $@
 ghi_opt/%.o:	%.cc
-	$(CXX) $(ARCH_TYPE) -c $(OPT_CXXFLAGS) $(ADDITIONAL_FLAGS) $(GHIDRA_OPT)        $< -o $@
+	$(CXX) -I. $(FLATBUF_INCLUDE) $(ARCH_TYPE) -c $(OPT_CXXFLAGS) $(ADDITIONAL_FLAGS) $(GHIDRA_OPT)        $< -o $@
 sla_dbg/%.o:	%.cc
 	$(CXX) $(ARCH_TYPE) -c $(DBG_CXXFLAGS) $(ADDITIONAL_FLAGS) $(SLEIGH_DEBUG)      $< -o $@
 sla_opt/%.o:	%.cc
@@ -376,14 +378,14 @@ test_dbg/depend:	$(TEST_NAMES:%=%.cc) $(UNITTEST_NAMES:%=%.cc)
 ghi_dbg/depend:	$(GHIDRA_NAMES_DBG:%=%.cc)
 	mkdir -p ghi_dbg
 	@set -e; rm -f $@; \
-	$(CXX) -MM $(GHIDRA_DEBUG) $^ > $@.$$$$; \
+	$(CXX) -I. $(FLATBUF_INCLUDE) -MM $(GHIDRA_DEBUG) $^ > $@.$$$$; \
 	sed 's,\(.*\)\.o[ :]*,ghi_dbg/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 ghi_opt/depend:	$(GHIDRA_NAMES:%=%.cc)
-	mkdir -p ghi_opt 
+	mkdir -p ghi_opt
 	@set -e; rm -f $@; \
-	$(CXX) -MM $(GHIDRA_OPT) $^ > $@.$$$$; \
+	$(CXX) -I. $(FLATBUF_INCLUDE) -MM $(GHIDRA_OPT) $^ > $@.$$$$; \
 	sed 's,\(.*\)\.o[ :]*,ghi_opt/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 

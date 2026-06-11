@@ -182,6 +182,60 @@ public class DecompileProcessFramingV1Test {
 	}
 
 	@Test
+	public void testEncodeFrameV1ExtraFlags() {
+		// #34-10b: the 3-arg overload ORs extra FLAGS onto CRC_PRESENT and
+		// the CRC (which covers TYPE|FLAGS|LENGTH|PAYLOAD) still verifies;
+		// the 2-arg form stays byte-identical to extraFlags=0.
+		byte[] payload = { 0x03, (byte) 0xAA };
+		byte[] plain = DecompileProcess.encodeFrameV1(0x01, payload);
+		byte[] zero = DecompileProcess.encodeFrameV1(0x01, 0, payload);
+		assertArrayEquals("2-arg == 3-arg with 0", plain, zero);
+
+		byte[] flagged =
+			DecompileProcess.encodeFrameV1(0x01, DecompileProcess.FRAME_FLAG_SCHEMA_PAYLOAD,
+				payload);
+		assertEquals("flags = CRC_PRESENT|SCHEMA_PAYLOAD", 0x09, flagged[5] & 0xff);
+		assertEquals("crc trailer matches recompute", expectedCrc(flagged),
+			beU32(flagged, flagged.length - 4));
+	}
+
+	@Test
+	public void testTunnelOneShotFrameFlags() throws IOException {
+		// #34-10b: setNextFrameFlags marks exactly one frame; the following
+		// frame reverts to CRC_PRESENT only.
+		ByteArrayOutputStream transport = new ByteArrayOutputStream();
+		FrameOutputStream out = new FrameOutputStream(transport, TYPE_RESPONSE);
+		out.setNextFrameFlags(DecompileProcess.FRAME_FLAG_SCHEMA_PAYLOAD);
+		out.write(new byte[] { 0x03, 0x01 });
+		out.flush();
+		out.write(new byte[] { 'v', '0' });
+		out.flush();
+		byte[] wire = transport.toByteArray();
+
+		assertEquals("two frames", 14 + 2 + 14 + 2, wire.length);
+		assertEquals("first frame flagged", 0x09, wire[5] & 0xff);
+		assertEquals("first crc verifies", expectedCrc(java.util.Arrays.copyOfRange(wire, 0, 16)),
+			beU32(wire, 12));
+		assertEquals("second frame unflagged", FLAG_CRC_PRESENT, wire[16 + 5] & 0xff);
+	}
+
+	@Test
+	public void testTunnelArmedFlagClearedByEmptyFlush() throws IOException {
+		// An armed flag must not survive an empty flush — otherwise a later,
+		// unrelated command's frame would be mis-marked as schema payload.
+		ByteArrayOutputStream transport = new ByteArrayOutputStream();
+		FrameOutputStream out = new FrameOutputStream(transport, TYPE_RESPONSE);
+		out.setNextFrameFlags(DecompileProcess.FRAME_FLAG_SCHEMA_PAYLOAD);
+		out.flush(); // nothing buffered: no frame, but the armed flag clears
+		out.write(new byte[] { 'v', '0' });
+		out.flush();
+		byte[] wire = transport.toByteArray();
+
+		assertEquals("one frame only", 14 + 2, wire.length);
+		assertEquals("frame unflagged after cleared arm", FLAG_CRC_PRESENT, wire[5] & 0xff);
+	}
+
+	@Test
 	public void testTunnelOutOneFramePerFlush() throws IOException {
 		byte[] payload = "hello".getBytes(StandardCharsets.UTF_8);
 		byte[] wire = tunnelOut(payload);

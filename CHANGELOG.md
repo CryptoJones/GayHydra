@@ -804,6 +804,29 @@ generated from the GitHub Releases UI at sprint close.
   INVALID/null, the "stays v0" signal. C++ 334/334 (9 new); Java framing 15/15 (+2 incl. the
   cross-language pins), registry 4/4. Design: DD-0080.
 
+- **Rec 34 `#34-10b` — worker v1-request dispatch + `flushNative` go-live** — **the first live
+  schema-v1 payload**. `FrameInStreambuf` surfaces per-frame FLAGS out-of-band (`lastFlags`,
+  updated unconditionally per frame, plus `takeSchemaPayload` to hand a whole frame body out so
+  the v0 burst scanner never sees FlatBuffers bytes); `readCommand` checks the flag at the
+  command boundary — the one point the previous frame is provably drained — and dispatches
+  `[u8 command-id][FlatBuffers bytes]` through the registry to a new
+  `doitSchema`/`loadParametersV1` path that mirrors `doit()`'s response protocol exactly (an
+  unknown id drains the frame into the existing bad-command response; commands not yet migrated
+  throw through the standard Java-exception path). The worker greeting now advertises
+  `SCHEMA_V1_REQUESTS`; the host sends `flushNative` as a `SCHEMA_PAYLOAD` COMMAND frame
+  (one-shot `setNextFrameFlags` on the tunnel — an armed flag clears on every flush so it can
+  never leak onto a later frame) when the worker advertised, gated by a
+  `decompiler.schemapayload=auto|off` kill switch (the DD-0005 staging pattern, default auto
+  because the capability negotiation protects every peer), with a sent-counter observable so
+  the e2e can distinguish a real schema exchange from a silent v0 fallback. Vendored FlatBuffers
+  entered the production builds for the first time: Makefile `ghi_dbg`/`ghi_opt` compile+depend
+  rules gained `-I. $(FLATBUF_INCLUDE)`, and the gradle native model mirrors it via an
+  `exportedHeaders` srcDir (decompile component only — toolchain-correct `-I`//`/I` on all three
+  platforms). Responses deliberately stay v0 until `#34-10f+`. Ronin28: C++ 336/336 (2 new
+  tunnel-flag tests), `ghidra_dbg` builds clean, Java framing 18/18 (+3: flags overload,
+  one-shot, empty-flush clear), e2e 5/5 (+3: worker advertisement, schema-`flushNative`
+  survives with byte-identical post-flush decompile, kill-switch leg). Design: DD-0080.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

@@ -717,8 +717,18 @@ first implementation tier.
     FlatBuffers-free, so the live loop can include it without Makefile changes) and
     `IpcCommandId.java` — locked by pinned-value tests on both sides (the framing-CRC
     golden-vector pattern). C++ 334/334 (9 new); Java framing 15/15 (+2), registry 4/4.
-  - [ ] **#34-10b** — worker v1-request dispatch + `flushNative` go-live end-to-end;
-    `FLATBUF_INCLUDE` enters the production compile rules; `ipc_e2e` payload-v1 leg.
+  - [x] ~~**#34-10b** — worker v1-request dispatch + `flushNative` go-live end-to-end;
+    `FLATBUF_INCLUDE` enters the production compile rules; `ipc_e2e` payload-v1 leg.~~ Shipped —
+    **the first live schema-v1 payload**: `FrameInStreambuf` surfaces per-frame FLAGS
+    (`lastFlags`/`takeSchemaPayload`); `readCommand` dispatches a `SCHEMA_PAYLOAD` frame at the
+    command boundary through the registry to a new `doitSchema`/`loadParametersV1` path (unknown
+    id → existing bad-command response); the worker advertises `SCHEMA_V1_REQUESTS`; the host
+    sends `flushNative` as `[0x03][FlushNativeRequest]` when advertised, behind a
+    `decompiler.schemapayload` kill switch (DD-0005 staging pattern, default auto) with a
+    sent-counter test observable. FlatBuffers entered the production builds (Makefile `ghi_*`
+    rules + a `buildNatives.gradle` exportedHeaders srcDir). Responses stay v0 (#34-10f+).
+    Ronin28: C++ 336/336, `ghidra_dbg` builds clean, Java framing 18/18, e2e 5/5 (3 new legs:
+    advertisement, flush-survives, kill-switch).
   - [ ] **#34-10c** — lifecycle remainder (`registerProgram`, `deregisterProgram`).
   - [ ] **#34-10d** — config trio (`structureGraph`, `setAction`, `setOptions`).
   - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
