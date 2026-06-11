@@ -17,7 +17,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sstream>
+#include <string>
 
+/* LowlevelError lives in error.hh and is not reachable through
+ * marshal.hh's own includes. */
+#include "error.hh"
 #include "marshal.hh"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -27,12 +32,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     /* The marshal Decoder consumes a length-prefixed byte stream of
      * elements. We feed the fuzzer-generated buffer straight in and
-     * let the decoder walk it. */
+     * let the decoder walk it. The byte-range ingestBytes() entry this
+     * harness originally used did not survive the marshal RAII
+     * migration (PR #46); ingestStream() is the surviving ingest
+     * surface — the same one the live IPC path feeds. */
+    std::string input(reinterpret_cast<const char *>(data), size);
+    std::istringstream in(input);
+
     try {
         ghidra::PackedDecode decoder(nullptr /* AddrSpaceManager: not
             needed for parser-side fuzzing of malformed input */);
-        decoder.ingestBytes(reinterpret_cast<const char *>(data),
-                            reinterpret_cast<const char *>(data) + size);
+        decoder.ingestStream(in);
         /* Walk one element to exercise the parse paths. */
         decoder.peekElement();
     } catch (ghidra::DecoderError &) {

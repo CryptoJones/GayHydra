@@ -10,7 +10,15 @@
 # OSS-Fuzz overrides CXX/CXXFLAGS/LIB_FUZZING_ENGINE itself; this
 # Makefile is for local reproduction.
 
-CXX ?= clang++
+# `?=` would never fire here: GNU Make *predefines* CXX (to g++), so the
+# variable is always "defined" and the conditional assignment is dead —
+# and g++ has no -fsanitize=fuzzer, so the documented `make -f
+# Makefile.fuzz …` usage failed to link unless the caller exported
+# CXX=clang++ themselves. Override make's built-in default while still
+# respecting an explicit environment/command-line CXX (OSS-Fuzz-style).
+ifeq ($(origin CXX),default)
+  CXX := clang++
+endif
 CPP_DIR := ..
 
 # libFuzzer is the default driver locally; OSS-Fuzz substitutes its
@@ -37,17 +45,21 @@ CXXFLAGS += $(CXXSTD) -O1 -g $(WARN) $(INCLUDES) $(SAN) -fno-omit-frame-pointer
 # Minimum set of decompiler object files needed to link a harness.
 # The full set lives in $(CPP_DIR)/Makefile under DECOMP_OBJS; we
 # track only the subset required by each harness here for build speed.
+# (Grown 2026-06-11: space.o now pulls AddrSpaceManager's key function
+# from translate.o, which in turn needs float/pcoderaw/globalcontext/
+# opcodes — link-verified as the current minimal closure.)
 XML_OBJS := \
     $(CPP_DIR)/xml.o \
     $(CPP_DIR)/marshal.o \
     $(CPP_DIR)/address.o \
-    $(CPP_DIR)/space.o
+    $(CPP_DIR)/space.o \
+    $(CPP_DIR)/translate.o \
+    $(CPP_DIR)/float.o \
+    $(CPP_DIR)/pcoderaw.o \
+    $(CPP_DIR)/globalcontext.o \
+    $(CPP_DIR)/opcodes.o
 
-MARSHAL_OBJS := \
-    $(CPP_DIR)/marshal.o \
-    $(CPP_DIR)/xml.o \
-    $(CPP_DIR)/address.o \
-    $(CPP_DIR)/space.o
+MARSHAL_OBJS := $(XML_OBJS)
 
 .PHONY: all clean fuzz_xml fuzz_marshal fuzz_ipc_schema
 

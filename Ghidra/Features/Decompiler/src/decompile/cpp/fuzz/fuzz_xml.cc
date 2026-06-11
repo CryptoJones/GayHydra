@@ -21,6 +21,9 @@
 #include <sstream>
 #include <string>
 
+/* LowlevelError lives in error.hh and is no longer reachable through
+ * xml.hh's own includes. */
+#include "error.hh"
 #include "xml.hh"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -35,8 +38,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     std::istringstream in(input);
 
     try {
-        ghidra::Document *doc = ghidra::xml_tree(in);
-        delete doc;
+        /* xml_tree returns unique_ptr<Document> since the Stage 2C RAII
+         * migration (PR #82); ownership releases at scope exit. */
+        auto doc = ghidra::xml_tree(in);
     } catch (ghidra::DecoderError &) {
         /* Expected on malformed input; not a finding. */
     } catch (ghidra::LowlevelError &) {
