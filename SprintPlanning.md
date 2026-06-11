@@ -776,7 +776,11 @@ first implementation tier.
 
 ## Sprint 11 — Sleigh Formalization (Rec 40)
 
-- [ ] **PR #40-2:** BNF grammar at `docs/sleigh/grammar.bnf` + CI drift-detection job.
+- [x] ~~**PR #40-2:** BNF grammar at `docs/sleigh/grammar.bnf` + CI drift-detection job.~~
+  Shipped (DD-0077): complete EBNF derivation of `slghparse.y` (error-recovery productions
+  excluded by policy; symbol-feedback and lexer-modality documented in the header) +
+  `sleighGrammarAudit` sha256-pin drift gate (root task + CI step beside `cppRaiiAudit`). The
+  ANTLR acceptance-parity check over the 39 `.slaspec`s is deferred as its own heavier slice.
 - [ ] **PR #40-3 + #40-4:** semantic model document.
 - [ ] **PR #40-5:** differential-fuzzer framework + x86-64 via Unicorn.
 

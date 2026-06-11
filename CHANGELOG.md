@@ -723,6 +723,19 @@ generated from the GitHub Releases UI at sprint close.
   RFC-0002's full motivating case — "local in A passed as parameter to B" — now flows end-to-end
   from a real decompiled call. Harness suite 4/4. Design: DD-0075 addendum.
 
+- **Rec 40 `#40-2` — Sleigh formal grammar + drift gate** (opens the Rec 40 band's Workstream 1) —
+  `docs/sleigh/grammar.bnf` is a complete EBNF derivation of the canonical `slghparse.y` (~70
+  productions, terminal spellings from `slghscan.l`), with the language's two non-context-free
+  realities documented rather than papered over: identifier classification is symbol-table
+  *feedback* (the symbol-class terminals), and the lexer is *modal* (`&`/`|` mean different things
+  in pattern vs action position; PRINT mode whitespace is display-significant). Error-recovery
+  productions are excluded by stated policy — they diagnose rejected input, not language. Drift is
+  gated by `sleighGrammarAudit` (root gradle task + CI step beside `cppRaiiAudit`): the grammar
+  pins the sha256 of both sources, and a source change without a pin refresh fails CI — visible
+  drift, zero new toolchain. The plan doc's ANTLR acceptance-parity check over the 39 `.slaspec`s
+  is deferred as its own heavier slice. Both audit paths verified (pass + corrupted-pin failure).
+  Design: DD-0077.
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
