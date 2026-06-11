@@ -79,10 +79,11 @@ current `master` under the appropriate lane.
 Reported weekly in the public maintainers' digest, committed to
 `docs/governance/sla-dashboard.md` by a workflow:
 
-> **Status (2026-06-11):** the dashboard workflow is not yet
-> implemented — `sla-dashboard.md` does not exist, and the queue-health
-> gate below is therefore not armed. Build the workflow or amend this
-> policy before relying on either.
+> **Status (2026-06-11, later same day):** implemented —
+> [`sla-dashboard.yml`](../../.github/workflows/sla-dashboard.yml) runs
+> `scripts/sla-dashboard.py` nightly and commits
+> [`sla-dashboard.md`](sla-dashboard.md). The queue-health gate reads
+> p90 from that file's history.
 
 - Open PR count, broken down by lane.
 - p50 / p90 days to first human response.

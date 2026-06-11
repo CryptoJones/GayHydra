@@ -78,9 +78,9 @@ the public record. When p90 exceeds the SLA for two consecutive weeks,
 the maintainers' meeting agenda is rewritten to put queue health first
 until the SLA is met again.
 
-> **Status (2026-06-11):** the nightly dashboard Action is not yet
-> implemented — `sla-dashboard.md` does not exist. The SLA itself
-> stands; the automated public record does not, yet.
+> **Status (2026-06-11, later same day):** implemented — the nightly
+> [`sla-dashboard.yml`](../../.github/workflows/sla-dashboard.yml)
+> commits [`sla-dashboard.md`](sla-dashboard.md) as the public record.
 
 ## When we will miss it
 
