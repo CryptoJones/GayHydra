@@ -39,6 +39,16 @@ argument *is* a parameter of the caller. In that case **both endpoints are deter
 - Unresolved/indirect targets, constant or computed arguments: contribute nothing (never-wrong);
   re-population is idempotent via the graph's deduplicating adds.
 
+## Addendum (2026-06-10, same day): local arguments unblocked by DD-0076 + a probe
+
+The deferral above resolved faster than expected. [DD-0076](0076-rec38-localequiv-storage-key.md)
+re-keyed `LocalEquiv` by canonical storage string, and a probe answered the remaining question: a
+stack-local argument's `HighSymbol` carries concrete `Stack[-0xNN]:size` storage **even when no
+database local exists** (the decompiler synthesizes the symbol; the storage is the invariant). So
+`argumentIdentity` now also mints `LocalEquiv(callerEntry, storage.toString())` for a local whose
+storage is valid (not bad/unassigned); unique temporaries and computed values still contribute
+nothing. Harness suite 4/4 (stack-local fixture added).
+
 ## Consequences
 
 - The first cross-function `SAME_VALUE` edges flow: renaming a forwarded parameter in the caller

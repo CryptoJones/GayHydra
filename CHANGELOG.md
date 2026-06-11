@@ -714,6 +714,14 @@ generated from the GitHub Releases UI at sprint close.
   propagation feature). The persistence codec's `L` tag carries the escaped key; done now, while
   nothing has persisted real `LocalEquiv` nodes, avoiding a future format-version bump. Unblocks
   the dataflow band's local-argument case. Suites 10/7/7. Design: DD-0076.
+- **Rec 38 dataflow — local arguments mint storage-keyed identities** — DD-0075's deferral
+  resolved same-day: a probe showed a stack-local argument's `HighSymbol` carries concrete
+  `Stack[-0xNN]:size` storage **even with no database local** (the decompiler synthesizes the
+  symbol; the storage is the invariant — exactly DD-0076's key). `argumentIdentity` now mints
+  `LocalEquiv(callerEntry, storageKey)` for a local with valid storage alongside the
+  pass-through-parameter case; unique temporaries and computed values still contribute nothing.
+  RFC-0002's full motivating case — "local in A passed as parameter to B" — now flows end-to-end
+  from a real decompiled call. Harness suite 4/4. Design: DD-0075 addendum.
 
 ### Changed
 
