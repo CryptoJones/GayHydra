@@ -763,6 +763,19 @@ generated from the GitHub Releases UI at sprint close.
   sections as `crossbuild` splice targets. Every C++ anchor verified. **Workstream 2 is complete.**
   Design: DD-0077 (band).
 
+- **Rec 40 — the ANTLR acceptance-parity job dissolves; both canonicals pinned** — grounding the
+  deferred parity slice surfaced what the plan doc missed: **the tree already ships a second
+  canonical Sleigh implementation** (SoftwareModeling's Java ANTLR3 compiler,
+  `ghidra.sleigh.grammar`), and its `sleighCompile` build task parses every `.slaspec` on every
+  full CI build — continuous acceptance verification, no derived third parser needed (building one
+  would be the DD-0061 duplicated-machinery anti-pattern in grammar form). Instead the seven
+  language-defining `.g` files join `grammar.bnf`'s pin set ("derived-from" meaning
+  *kept-consistent-with* for the Java pair), so `sleighGrammarAudit` now fails when **either**
+  canonical implementation changes without the EBNF being reviewed — 9 pins verified.
+  Tree-walkers and the preprocessor grammar deliberately unpinned (semantics/preprocessing, not
+  surface language). **Rec 40 Workstream 1 is complete in its final form**; the band's remainder
+  is the months-scale `#40-5+` differential fuzzer (its own sprint). Design: DD-0078.
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
