@@ -758,8 +758,13 @@ first implementation tier.
     `SAME_VALUE` edge between the two `Parameter` slots at confidence 0.9/`DATAFLOW` (both
     endpoints deterministic; the RFC's motivating case). Locals deferred until a stable
     `LocalEquiv` id scheme exists (per-decompile `HighVariable` identity would not survive
-    recomputation). Harness 3/3. Remaining Rec 38: local-argument dataflow (stable-id design),
-    `#38-4` UI (DISPLAY-gated).
+    recomputation). Harness 3/3.
+  - [x] ~~**stable-id design** — `LocalEquiv` keys by canonical storage string.~~ Shipped
+    (DD-0076): storage is the decompile-invariant anchor (Ghidra's own `HighSymbol`↔DB-local
+    matching); opaque ids invite unstable minting, hashes are not identities. Codec `L` tag carries
+    the escaped key; landed before anything persisted real `LocalEquiv` nodes (no format bump).
+    Suites 10/7/7. Remaining Rec 38: local-argument dataflow minting (needs a DB-backed-local
+    fixture probe), `#38-4` UI (DISPLAY-gated).
 - [ ] **PR #38-4:** rename-propagation UI + opt-in dialog. *(DISPLAY-gated, like the other GUI
   tails.)*
 

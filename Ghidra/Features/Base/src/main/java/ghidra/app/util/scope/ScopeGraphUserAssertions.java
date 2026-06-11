@@ -170,7 +170,7 @@ public final class ScopeGraphUserAssertions {
 		}
 		LocalEquiv local = (LocalEquiv) node;
 		return LOCAL_EQUIV_TAG + ":" + encodeAddress(local.functionEntry()) + ":" +
-			local.equivalenceClassId();
+			escape(local.storageKey());
 	}
 
 	private static ScopeNode decodeNode(String encoded, Program program) {
@@ -193,7 +193,7 @@ public final class ScopeGraphUserAssertions {
 				case LOCAL_EQUIV_TAG:
 					return parts.length == 4
 							? new LocalEquiv(decodeAddress(parts[1], parts[2], program),
-								Long.parseLong(parts[3]))
+								unescape(parts[3]))
 							: null;
 				default:
 					return null;
