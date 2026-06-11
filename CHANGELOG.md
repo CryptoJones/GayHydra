@@ -827,6 +827,19 @@ generated from the GitHub Releases UI at sprint close.
   one-shot, empty-flush clear), e2e 5/5 (+3: worker advertisement, schema-`flushNative`
   survives with byte-identical post-flush decompile, kill-switch leg). Design: DD-0080.
 
+- **Rec 34 `#34-10c` — lifecycle commands go schema-v1** — `registerProgram` and
+  `deregisterProgram` join `flushNative` on the live schema-v1 path, mechanical against the
+  `#34-10b` dispatch: two worker `loadParametersV1` overrides (the four-spec FlatBuffers decode
+  for register — unset fields read back empty, matching an empty v0 burst; the FlushNative-twin
+  decimal id parse for deregister, with identical bad-id behaviour) and two host branches
+  through a new `writeSchemaRequest` core. The core is split from `sendSchemaCommand` because
+  registerProgram must keep its callback decoders alive across the send — the worker queries
+  back during registration regardless of how the request was encoded — while the simple
+  commands null them. The capability is known inside the very registerProgram call that
+  negotiates it, so the first command a v1 session sends is already schema-v1. Every e2e leg
+  now exercises schema register/deregister implicitly (openProgram/dispose). Ronin28: C++
+  336/336, `ghidra_dbg` builds clean, e2e 5/5 on a forced rerun. Design: DD-0080.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

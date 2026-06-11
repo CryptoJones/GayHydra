@@ -245,6 +245,22 @@ void RegisterProgram::loadParameters(void)
   ArchitectureGhidra::readStringStream(sin,corespec);
 }
 
+/// Decode the schema-v1 registerProgram request (#34-10c): the four spec
+/// documents arrive as fields of a FlatBuffers RegisterProgramRequest
+/// instead of four v0 string bursts. An unset field reads back empty —
+/// the same value an empty v0 burst would produce.
+void RegisterProgram::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::RegisterProgramRequestV1 req;
+  if (!ipc::decode_register_program_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 registerProgram request");
+  pspec = req.processor_spec;
+  cspec = req.compiler_spec;
+  tspec = req.translate_spec;
+  corespec = req.core_types_spec;
+}
+
 
 void RegisterProgram::rawAction(void)
 
@@ -299,6 +315,28 @@ void DeregisterProgram::loadParameters(void)
   if (ghidra == (ArchitectureGhidra *)0)
     throw JavaError("decompiler","No architecture registered with decompiler");
   ghidra->clearWarnings();
+}
+
+/// Decode the schema-v1 deregisterProgram request (#34-10c): program_id
+/// carries the same decimal string the v0 burst carried. The id parse and
+/// bad-id behaviour mirror FlushNative::loadParametersV1 (kept per-form
+/// twins until a third schema id-parser earns extraction).
+void DeregisterProgram::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::DeregisterProgramRequestV1 req;
+  if (!ipc::decode_deregister_program_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 deregisterProgram request");
+  inid = -1;
+  try {
+    size_t pos = 0;
+    inid = std::stoi(req.program_id,&pos);
+    if (pos != req.program_id.size())
+      inid = -1;
+  } catch(...) {
+    inid = -1;
+  }
+  resolveArchitecture(inid);
 }
 
 void DeregisterProgram::rawAction(void)

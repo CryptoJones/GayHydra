@@ -784,13 +784,25 @@ public class DecompileProcess {
 		setup();
 		negotiateFramingV1();
 		try {
-			write(command_start);
-			writeString("registerProgram");
-			writeString(pspecxml);
-			writeString(cspecxml);
-			writeString(tspecxml);
-			writeString(coretypesxml);
-			write(command_end);
+			if (schemaPayloadAvailable()) {
+				// #34-10c: the greeting just negotiated, so the worker's
+				// advertised capability is already known inside this very
+				// call. The callback decoders above stay live — the worker
+				// queries back during registration regardless of how the
+				// request payload was encoded.
+				writeSchemaRequest(IpcCommandId.REGISTER_PROGRAM,
+					CommandRequestCodec.encodeRegisterProgramRequest(pspecxml, cspecxml, tspecxml,
+						coretypesxml));
+			}
+			else {
+				write(command_start);
+				writeString("registerProgram");
+				writeString(pspecxml);
+				writeString(cspecxml);
+				writeString(tspecxml);
+				writeString(coretypesxml);
+				write(command_end);
+			}
 			readResponse(response);
 		}
 		catch (IOException e) {
@@ -813,10 +825,18 @@ public class DecompileProcess {
 		// Once a program is deregistered, the process is never
 		// used again
 		statusGood = false;
-		write(command_start);
-		writeString("deregisterProgram");
-		writeString(Integer.toString(archId));
-		write(command_end);
+		if (schemaPayloadAvailable()) {
+			// #34-10c: same single-flagged-frame shape as the other
+			// schematized commands; the response stays the v0 meta-command.
+			writeSchemaRequest(IpcCommandId.DEREGISTER_PROGRAM,
+				CommandRequestCodec.encodeDeregisterProgramRequest(Integer.toString(archId)));
+		}
+		else {
+			write(command_start);
+			writeString("deregisterProgram");
+			writeString(Integer.toString(archId));
+			write(command_end);
+		}
 		paramDecoder = null;		// Don't expect callback queries
 		resultEncoder = null;
 		StringIngest response = new StringIngest();		// Don't use stringResponse
@@ -891,18 +911,32 @@ public class DecompileProcess {
 		paramDecoder = null;	// Don't expect callback queries
 		resultEncoder = null;
 		try {
-			// Arm-write-flush stays adjacent inside this synchronized send:
-			// the readResponse flush emits exactly one flagged frame.
-			frameOut.setNextFrameFlags(FRAME_FLAG_SCHEMA_PAYLOAD);
-			nativeOut.write(id.getWireId());
-			nativeOut.write(requestBytes);
-			schemaV1RequestsSent++;
+			writeSchemaRequest(id, requestBytes);
 			readResponse(response);
 		}
 		catch (IOException e) {
 			statusGood = false;
 			throw e;
 		}
+	}
+
+	/**
+	 * Buffer one schema-v1 request: arm the SCHEMA_PAYLOAD flag for the next
+	 * frame and write the one-byte wire command-id followed by the
+	 * FlatBuffers request bytes. The flush inside the subsequent
+	 * readResponse emits exactly one flagged frame. Split from
+	 * {@link #sendSchemaCommand} because registerProgram must keep its
+	 * callback decoders alive across the send (#34-10c) while the simple
+	 * commands null them.
+	 * @param id the schema-v1 command id
+	 * @param requestBytes the FlatBuffers-encoded request payload
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 */
+	private void writeSchemaRequest(IpcCommandId id, byte[] requestBytes) throws IOException {
+		frameOut.setNextFrameFlags(FRAME_FLAG_SCHEMA_PAYLOAD);
+		nativeOut.write(id.getWireId());
+		nativeOut.write(requestBytes);
+		schemaV1RequestsSent++;
 	}
 
 	public synchronized boolean isReady() {
