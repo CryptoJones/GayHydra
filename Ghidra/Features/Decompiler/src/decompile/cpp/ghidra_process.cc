@@ -18,6 +18,7 @@
 #include "blockaction.hh"
 #include "frame_v1.hh"
 #include "schema/ipc_command_ids.h"
+#include "schema/ipc_config_codec.h"
 #include "schema/ipc_lifecycle_codec.h"
 
 #ifdef _WINDOWS
@@ -130,6 +131,27 @@ void GhidraCommand::loadParametersV1(const uint1 *buf,int4 len)
 
 {
   throw JavaError("decompiler","Command does not accept schema-v1 payloads");
+}
+
+/// Parse a schema-v1 program_id field — the same decimal string the v0
+/// burst carried. A non-numeric, partially-numeric, or out-of-range value
+/// yields -1, which resolveArchitecture() turns into the identical JavaError
+/// the v0 path throws for a bad id. Extracted at the third user
+/// (FlushNative, DeregisterProgram, SetAction — rule of three, #34-10d).
+/// \param programId is the schema-v1 program_id string
+/// \return the parsed id, or -1
+int4 GhidraCommand::parseSchemaProgramId(const string &programId)
+
+{
+  try {
+    size_t pos = 0;
+    int4 id = std::stoi(programId,&pos);
+    if (pos == programId.size())
+      return id;
+  } catch(...) {
+    // fall through
+  }
+  return -1;
 }
 
 /// This method sends any warnings accumulated during execution back, but it can be overloaded
@@ -318,24 +340,15 @@ void DeregisterProgram::loadParameters(void)
 }
 
 /// Decode the schema-v1 deregisterProgram request (#34-10c): program_id
-/// carries the same decimal string the v0 burst carried. The id parse and
-/// bad-id behaviour mirror FlushNative::loadParametersV1 (kept per-form
-/// twins until a third schema id-parser earns extraction).
+/// carries the same decimal string the v0 burst carried, with the shared
+/// parseSchemaProgramId bad-id behaviour.
 void DeregisterProgram::loadParametersV1(const uint1 *buf,int4 len)
 
 {
   ipc::DeregisterProgramRequestV1 req;
   if (!ipc::decode_deregister_program_request(buf,(size_t)len,req))
     throw JavaError("alignment","Malformed schema-v1 deregisterProgram request");
-  inid = -1;
-  try {
-    size_t pos = 0;
-    inid = std::stoi(req.program_id,&pos);
-    if (pos != req.program_id.size())
-      inid = -1;
-  } catch(...) {
-    inid = -1;
-  }
+  inid = parseSchemaProgramId(req.program_id);
   resolveArchitecture(inid);
 }
 
@@ -381,16 +394,7 @@ void FlushNative::loadParametersV1(const uint1 *buf,int4 len)
   ipc::FlushNativeRequestV1 req;
   if (!ipc::decode_flush_native_request(buf,(size_t)len,req))
     throw JavaError("alignment","Malformed schema-v1 flushNative request");
-  int4 id = -1;
-  try {
-    size_t pos = 0;
-    id = std::stoi(req.program_id,&pos);
-    if (pos != req.program_id.size())
-      id = -1;
-  } catch(...) {
-    id = -1;
-  }
-  resolveArchitecture(id);
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
 }
 
 void FlushNative::rawAction(void)
@@ -516,6 +520,20 @@ void SetAction::loadParameters(void)
   printstring.clear();
   ArchitectureGhidra::readStringStream(sin,actionstring);
   ArchitectureGhidra::readStringStream(sin,printstring);
+}
+
+/// Decode the schema-v1 setAction request (#34-10d): the two selector
+/// strings ride as FlatBuffers fields; an unset field reads back empty —
+/// the legacy "leave that setting unchanged" value.
+void SetAction::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::SetActionRequestV1 req;
+  if (!ipc::decode_set_action_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 setAction request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
+  actionstring = req.root_action;
+  printstring = req.print_config;
 }
 
 void SetAction::rawAction(void)

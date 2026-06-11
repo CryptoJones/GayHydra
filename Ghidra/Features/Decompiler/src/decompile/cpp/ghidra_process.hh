@@ -94,6 +94,7 @@ protected:
   ArchitectureGhidra *ghidra;		///< The Architecture on which to perform the command
   int4 status;				///< Meta-command to system (0=wait for next command, 1=terminate process)
   void resolveArchitecture(int4 id);	///< Select the active Architecture by id (shared by both parameter paths)
+  static int4 parseSchemaProgramId(const string &programId);	///< Parse a schema-v1 program_id string (-1 if malformed)
   virtual void loadParameters(void);	///< Read parameters directing command execution
   virtual void loadParametersV1(const uint1 *buf,int4 len);	///< Decode parameters from a schema-v1 payload (#34-10b)
   virtual void sendResult(void);	///< Send results of the command (if any) back to the Ghidra client
@@ -229,6 +230,7 @@ class SetAction : public GhidraCommand {
   string actionstring;			///< The \e root Action to switch to
   string printstring;			///< The \e printing output configuration to toggle
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   bool res;				///< Set to \b true if the configuration action was successful

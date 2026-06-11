@@ -1006,6 +1006,15 @@ public class DecompileProcess {
 		if (!statusGood) {
 			throw new IOException(command + " called on bad process");
 		}
+		if ("setAction".equals(command) && schemaPayloadAvailable()) {
+			// #34-10d: keyed on the literal command name like the other
+			// schematized branches. An empty selector string stays the
+			// legacy leave-unchanged value on both encodings.
+			sendSchemaCommand(IpcCommandId.SET_ACTION, CommandRequestCodec
+					.encodeSetActionRequest(Integer.toString(archId), param1, param2),
+				response);
+			return;
+		}
 		paramDecoder = null;	// Don't expect callback queries
 		resultEncoder = null;
 		try {
