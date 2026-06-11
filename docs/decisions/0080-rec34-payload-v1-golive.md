@@ -142,6 +142,26 @@ these messages was that v0 already used it.
 rule-of-three `parseSchemaProgramId` extraction; `setOptions` + `structureGraph` follow as
 `#34-10d-2` implementing this addendum.
 
+## Addendum (2026-06-11): #34-10e is a go/no-go checkpoint for the response direction
+
+The `#34-10d` addendum above concedes that for *document-shaped* payloads the schema
+buys an envelope, not a format: the document rides as XML text inside a FlatBuffers
+string. The response direction (`#34-10f+`) is **dominated** by document-shaped
+payloads — a decompile result is one large marshaled document — so the same concession
+would recur at scale: v1 responses risk becoming FlatBuffers envelopes around the same
+documents, while a third protocol combination stays alive (v0 framing / v1 framing +
+v0 payload / v1 + schema payloads, × per-command capability) at least until the v27.x
+horizon the `#34-8` subordination already commits to. That carrying cost (test matrix,
+upstream-host compatibility story) has not been totalled anywhere.
+
+**Decision point:** when `#34-10e` ships (request direction complete, re-keyed `#34-7`
+clock starts), make an explicit go/no-go on `#34-10f+` before starting it. *Go*
+requires showing the response schema carries structured, non-document data whose typed
+decode is worth the third protocol state. Otherwise *no-go*: declare **requests-only
+schema-v1 the terminal state** — greeting + framing + request schema are the realized
+hardening wins — and close `#34-10f+` as not-earned, the same honest dissolution the
+`#37-10u` template slice got (DD-0070).
+
 ## Consequences
 
 - `#34-7` executed on the written clock would have deleted the only production encode

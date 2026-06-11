@@ -45,6 +45,10 @@ the only document that decides whether a PR sits or moves.
 Each PR is auto-labelled with one (and only one) of these lanes by a
 GitHub Action. Default if rules don't match is `Framework`.
 
+> **Status (2026-06-11):** the lane auto-labelling Action is not yet
+> implemented — no workflow under `.github/workflows/` applies lane
+> labels. Lanes are applied manually until it ships.
+
 ## SLA
 
 See [TRIAGE_SLA.md](TRIAGE_SLA.md). Briefly: first human response within
@@ -70,6 +74,11 @@ current `master` under the appropriate lane.
 
 Reported weekly in the public maintainers' digest, committed to
 `docs/governance/sla-dashboard.md` by a workflow:
+
+> **Status (2026-06-11):** the dashboard workflow is not yet
+> implemented — `sla-dashboard.md` does not exist, and the queue-health
+> gate below is therefore not armed. Build the workflow or amend this
+> policy before relying on either.
 
 - Open PR count, broken down by lane.
 - p50 / p90 days to first human response.

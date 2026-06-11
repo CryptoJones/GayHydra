@@ -238,6 +238,11 @@ Upstream Ghidra Java still speaks v0; if a user invokes the
 GayHydra decompile binary from upstream Ghidra, the v0 fallback
 keeps it working.
 
+*(Correction 2026-06-11: as shipped in v26.1.16, "v1 by default"
+covered the greeting only — the command loop deliberately stayed v0
+until the #33-2.6 flip landed in 26.2.0. See the two addenda below;
+they, not this paragraph, describe the shipped sequence.)*
+
 ## Addendum (2026-06-10): #33-2.6 has since shipped
 
 The section below is preserved as written but is no longer current: path (a)

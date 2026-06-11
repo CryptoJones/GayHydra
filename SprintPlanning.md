@@ -8,6 +8,98 @@ For completed sprints, see [SprintHistory.md](SprintHistory.md).
 For the *why* behind individual choices, see
 [DesignDecisions.md](DesignDecisions.md).
 
+*Numbering note (2026-06-11):* some sprint numbers below appear twice
+(two "Sprint 5"/"Sprint 6"/"Sprint 10" sections) — an artifact of two
+numbering eras (the audit-phase plan vs the later operational sprints).
+The numbers are kept as-is because DDs and PRs cross-reference them;
+the section *titles* disambiguate.
+
+---
+
+## Implementation order (2026-06-11) — every open item, by necessity
+
+The canonical queue. "Necessity" = dependency order + cost-of-delay + hard dates,
+not effort or interest. Each entry links to the section that specifies it; tiers
+are barriers (don't start tier N+1 work while tier N has unstarted items), order
+*within* a tier is the recommended sequence but items are parallelizable.
+
+**Tier 1 — guards.** Everything below changes code that PR CI cannot see; these are
+small and multiply the safety of all later work.
+
+1. **Scheduled deep-CI job** (Sprint 15) — full `integrationTest` + bounded fuzz
+   smoke + master-build decompiler-smoke, nightly/weekly. Without it the entire
+   Rec 37 stack regresses invisibly.
+2. **Upstream remote + drift report** (Sprint 15, measurement half only) — prices
+   the existential risk so the merge itself can be scheduled on data, not anxiety.
+3. **File the dated obligations** (Sprint 15) — the two Rec 42 issues
+   (2026-09-30 / 2027-01-31). Minutes of work; calendar risk if skipped.
+
+**Tier 2 — finish the in-flight band to its natural checkpoint.** Context is
+loaded and each slice is mechanical against DD-0080; stopping mid-band wastes it.
+
+4. **#34-10d-2** — `setOptions` + `structureGraph` as XML-text schema payloads
+   (Sprint 7 row; designed, mechanical).
+5. **#34-10e** — `decompileAt` + `DecompileBudget`. Completes the request
+   direction; starts the re-keyed #34-7 clock.
+6. **DD-0080 go/no-go on #34-10f+** (Aaron decision, at the #34-10e checkpoint) —
+   decides whether the response direction exists at all; deciding *now* prevents
+   speculative prep on a band that may dissolve.
+7. **Rec 12 GHSA redo** (Aaron-attended) — oldest open security commitment;
+   git-blame for affected ranges + re-create the three drafts.
+8. **Open the Rec 18 #18-2 disclosure thread with NSA** — external latency
+   dominates this item, so *start the coordination now*; the `ItemDeserializer`
+   hardening code lands later (Tier 5) whenever the thread allows.
+
+**Tier 3 — measurement before the merge.** The recall corpus and perf baseline
+must exist *before* the first big upstream sync, or merge-induced regressions in
+hint recall / decompiler throughput land invisibly.
+
+9. **Recall corpus** (Backlog, surfacing & measurement band) — fixed multi-
+   compiler/arch/opt-level corpus with counted hint hits.
+10. **Perf baseline** (same band) — decompile-throughput baseline over the same
+    corpus + regression threshold; also restates the Rec 36 #36-4 gate honestly.
+11. **MERGE_POLICY.md + first upstream sync** (Sprint 15, policy half) — now
+    guarded by items 1, 9, 10. Cadence decision + conflict playbook + the merge.
+
+**Tier 4 — surface the shipped value.** Features users can't see don't exist;
+do this before the next feature release announcement.
+
+12. **C++ hints user docs** (Backlog band) — one page + README/CHANGELOG pointers.
+13. **Xvfb enabler + pilot headed test** (Backlog, DISPLAY-ceiling reframe) — the
+    Rec 30 move for the GUI queue; unblocks the three parked tails.
+14. **Rec 35 #35-5b-2** — retry-with-2x action (smallest GUI tail; everything
+    else already shipped headlessly).
+15. **Rec 38 #38-4 (minimal)** — rename-propagation opt-in; gives the scope graph
+    its first production consumer, which the whole of Rec 38 currently lacks.
+
+**Tier 5 — dated and clock-driven.** Land when their clocks fire; don't let them
+slip past Tier 4.
+
+16. **Rec 42 default-off Jython** — must ship in a release before **2026-09-30**.
+17. **#34-7 (re-keyed)** — remove host v0 request encode, one release after
+    #34-10e ships.
+18. **Rec 18 #18-2 implementation** — when the Tier-2 disclosure thread allows.
+
+**Tier 6 — strategic sprints, pick by appetite once Tiers 1–4 are done.**
+
+19. **Rec 24 MSVC decompiler tests** — DD-0004's libbfd decision; note the
+    win11-ci QEMU box with MSVC already exists for the experiment.
+20. **Stage 3 step 6 `-Werror`/ErrorProne ratchet** — its own sprint per PR #271.
+21. **Rec 40 #40-5c+** — reference adapters (vendoring **Aaron-gated**), pattern
+    generation, CLI packaging.
+22. **Bison/flex Option A variant rewrite** + the `xml.cc`/`marshal.cc`
+    `std::span` audit tail — closes the last 4 files of Rec 31.
+
+**Deliberately parked (gated, not queued):** #34-8 (v27.x horizon per DD-0080);
+Rec 36 #36-4 (evidence-gated — gate becomes real once item 10 exists); Rec 39
+loop-shaped patterns (needs loop-collapse infra); #37-12c+ signature consumers
+(until a real consumer); Rec 30 #30-2..#30-7 view-interface layer (item 13 may
+dissolve most of its motivation — reassess after the Xvfb pilot); the 3
+structural-drift upstream PRs (NSA#5593/#3974/#3137 — **recommend closing as
+won't-port** after two sprints of carrying); Rec 7/41 (community-passive);
+Codeberg mirror (their gateway); Jython removal 2027-01-31 (issue filed in
+item 3, executes on its date).
+
 ---
 
 ## Sprint 14 — Headless integration harness (Rec 30) → unblock the Program-coupled queue
@@ -553,6 +645,52 @@ then land the work it unblocks.
 
 ---
 
+## Sprint 15 — Fork sustainability (from the 2026-06-11 meta-review)
+
+A top-to-bottom meta-review of the planning corpus + tree (2026-06-11) found the
+per-slice discipline strong but four *one-level-up* risks unowned. This sprint owns
+them. They are ordered by strategic weight, not effort.
+
+- [ ] **Inbound upstream-merge strategy** — the existential fork risk. No `upstream`
+  remote is even configured; everything under `docs/upstream-tracking/` is *outbound*
+  (give-back). With ~9k LOC of fork-only production code and growing, every sprint
+  makes the next upstream merge more expensive, and nothing measures or schedules it.
+  Work: (1) add the `NationalSecurityAgency/ghidra` remote + a scheduled
+  `upstream-drift.yml` that fetches upstream master and publishes a drift report
+  (commits behind, upstream-touched files intersected with a fork-owned-paths
+  manifest, dry-run merge conflict count); (2) write
+  `docs/upstream-tracking/MERGE_POLICY.md` — merge cadence (e.g. after each upstream
+  stable release), conflict playbook, fork-owned-paths manifest. Known collision
+  watch-list to record there: upstream decompiler-IPC evolution vs Rec 33/34;
+  upstream Jython/PyGhidra moves vs Rec 42; upstream `RttiAnalyzer`/demangler churn
+  under the Rec 37 harvest scans (a *behavioral* dependency — DD-0061 deliberately
+  consumes upstream analyzer output).
+- [ ] **Scheduled deep-CI job** — a nightly/weekly workflow running what PR CI never
+  does: full `gradle integrationTest` (the ~5.1k LOC of Rec 37 recognition tests +
+  the Rec 30 harness currently run only on dev machines — the `ipc_e2e` job runs
+  exactly one `test.slow` class, so an upstream merge or refactor could break the
+  whole hint stack with green CI); a bounded fuzz smoke of the three `Makefile.fuzz`
+  harnesses (post-OSS-Fuzz-rejection they were re-scoped to "local + our own CI" but
+  no workflow runs them — the decompiler parses untrusted input, this was a top-EV
+  audit item at zero coverage); and the `samples/re-targets/decompiler-smoke` gate
+  against a master build (today it fires only on tag push, so master can carry
+  user-visible decompiler breakage between releases).
+- [ ] **Rec 42 calendar lands in the queue** — Jython default-off is dated
+  **2026-09-30** and removal **2027-01-31**; neither has a sprint or issue. File both
+  issues now. Before executing removal, check upstream's own Jython/PyGhidra posture
+  so deleting `Ghidra/Features/Jython/` doesn't create a permanent merge-conflict
+  surface (interacts with the merge-policy item above).
+- [ ] **Rec 12 GHSA redo** — the oldest open security commitment (drafts lost in the
+  repo deletion, carried across three sprint sections since). Smallest item here;
+  schedule it out of carry-over limbo.
+- [x] ~~**Hygiene pass** — DD-0005 body correction (stale "clients use v1 by default"
+  claim), duplicate-sprint-number note at the top of this file, governance docs
+  reconciled to implementation status (sla-dashboard + lane-labeler Action are
+  documented but unbuilt), `dependency-submission.yml` Gradle pin aligned to CI's
+  8.5.~~ Shipped with the commit that added this section.
+
+---
+
 ## Sprint 10 — OSS-Fuzz submission + Stage 3 finish + give-back PRs
 
 **Done:**
@@ -886,8 +1024,41 @@ Work that doesn't fit a current sprint but is documented in the audit:
   halves shipped inert in v26.2.2; the genuinely open work is the live wiring, after which the
   re-keyed `#34-7`/`#34-8` removals follow.
 - **Rec 41:** opt-in PRs to fill the per-architecture maintainer column.
-- **Rec 42 milestones:** 2026-09-30 default-off Jython; 2027-01-31 removal.
+- **Rec 42 milestones:** 2026-09-30 default-off Jython; 2027-01-31 removal. *(Now
+  owned by Sprint 15 — file the dated issues.)*
 - Mirror to Codeberg once their repo-creation gateway recovers.
+- **DISPLAY-ceiling reframe (meta-review 2026-06-11):** Rec 35 `#35-5b-2`
+  (retry-with-2x action), Rec 38 `#38-4` (rename-propagation UI — the entire
+  user-facing value of the scope graph, which currently has zero production
+  consumers), and the Rec 37 GUI hints margin are all parked on "needs a DISPLAY".
+  But upstream already ships headed integration-test infrastructure
+  (`AbstractGhidraHeadedIntegrationTest` + the docking test harness), and Xvfb on a
+  Linux CI runner is the standard, boring unblock. The Rec 30 lesson applies — when a
+  whole queue blocks on a missing test layer, build the layer first: an Xvfb CI job +
+  one pilot headed test, then land the three GUI tails behind it. (The
+  `HEADLESS_TEST_LAYER.md` `#30-2`..`#30-7` view-interface layer remains the deeper
+  alternative; Xvfb is the cheap door.)
+- **Surfacing & measurement band (meta-review 2026-06-11)** — sequenced *before*
+  any new Rec 37 recognition forms, because shipped-but-invisible features and
+  unmeasured quality compound:
+  - *User-facing docs for the C++ hints pipeline.* The flagship Rec 37 feature is
+    reachable only via `RecoverCppHintsScript` and no user-facing document says it
+    exists. One docs page (enable, run headless via `-postScript`, read the `C++:`
+    PRE comments) + README/CHANGELOG pointers; consider an opt-in tool-menu/analyzer
+    surfacing path.
+  - *Recall corpus.* Every Rec 37 matcher is grounded on x86-64 / one compiler's
+    idioms (per their own javadoc; no `Language` gating exists in
+    `ghidra.app.util.cpp`). The never-wrong contract protects precision, but recall
+    on arm64/MSVC-codegen/-O2 binaries is unmeasured, and upstream-decompiler idiom
+    churn could silently collapse it — the tests pin fork fixtures, not the real
+    output distribution. Build a small fixed corpus (gcc/clang/msvc × x86-64/arm64 ×
+    O0/O2) with counted hint hits as a tracked recall metric.
+  - *Perf baseline.* Rec 35/36 are performance recs with no benchmark loop anywhere
+    in CI — a 2x decompiler slowdown would ship silently. Add a decompile-throughput
+    baseline over the same corpus + a regression threshold. This also resolves the
+    Rec 36 `#36-4` telemetry gate honestly: nothing collects "real session"
+    telemetry today, so either build a collection path or restate the gate as
+    closed-until-users-exist.
 
 ---
 

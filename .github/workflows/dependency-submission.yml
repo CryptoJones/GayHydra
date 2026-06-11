@@ -32,4 +32,8 @@ jobs:
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@v6
         with:
-          gradle-version: '9.4.0'
+          # Same Gradle the rest of CI builds with (build-ghidra.yml pins
+          # 8.5) so the submitted graph matches what is actually resolved
+          # at build time. Was 9.4.0 since the workflow's first version,
+          # with no recorded reason for the divergence.
+          gradle-version: '8.5'
