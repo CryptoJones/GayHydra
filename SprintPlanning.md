@@ -629,10 +629,18 @@ then land the work it unblocks.
 
 **Step 3 — deferred runtime blockers (unblocked by Step 1 / a GUI harness):**
 
-- [ ] **Rec 35 #35-5b-2** — Retry-with-2x-budget action (re-decompile +
+- [x] ~~**Rec 35 #35-5b-2** — Retry-with-2x-budget action (re-decompile +
   partial-banner clear; needs a DISPLAY). The budget-doubling + `isPartial`
   enablement helpers are already headlessly tested and shipped; only the GUI
-  action remains.
+  action remains.~~ Shipped 2026-06-11 behind the new Xvfb layer: a
+  `DecompilerProvider` local action enabled only while the displayed result
+  `isPartial()`; the action doubles the iteration-budget tool option
+  (saturating) and lets the existing options-changed listener re-decompile —
+  the fresh result resolves the `#35-5b-1` banner, and the action can never
+  diverge from a manual option edit. Three headed tests
+  (`RetryWithDoubledBudgetHeadedTest`: installed/disabled-on-complete,
+  double-and-redecompile, overflow saturation) pass under `xvfb-run` and run
+  weekly via `xvfb-gui-tests.yml`. **Closes Rec 35.**
 - [x] ~~**Rec 33 #33-2.6** — flip the v1 IPC command-loop default. The live
   command loop only links into `ghidra_dbg`; needs an end-to-end IPC test, not
   just the headless precheck (DD-0005).~~ **Already shipped** (entry was stale,
@@ -929,7 +937,7 @@ first implementation tier.
 ## Sprint 8 — Decompiler UX Wins (Recs 35, 36, 39)
 
 - [x] ~~**Rec 35 PR #35-2:** add `DecompileBudget` to request schema; yield-point checks in `flow_analysis` and `data_flow`.~~ Shipped in re-scoped form — per-pass budget + bypass façade (`#35-4`/`#35-4b`, PRs #243/#251), GUI budget + partial detection (`#35-5a-1`/`-2`, PRs #306/#308).
-- [ ] **Rec 35 PR #35-3:** UI partial-result banner + Retry-with-2x path. *(Half shipped: the banner is `#35-5b-1` [PR #310]; the Retry action is `#35-5b-2`, the one genuinely open Sprint 14 item — DISPLAY-gated.)*
+- [x] ~~**Rec 35 PR #35-3:** UI partial-result banner + Retry-with-2x path.~~ Complete 2026-06-11: the banner is `#35-5b-1` (PR #310); the Retry action shipped as `#35-5b-2` behind the Xvfb GUI test layer (see the Sprint 14 row). **Rec 35 is closed.**
 - [x] ~~**Rec 36 PR #36-2 + PR #36-3:** per-function dependency bitmaps replace global-flush invalidation.~~ Shipped in re-scoped form per [DD-0009](docs/decisions/0009-rec36-incremental-invalidation.md): `#36-2` demoted into `#36-3b`; address-set invalidation `#36-3a` + recompute backstop `#36-3b-2` (PR #293) landed, plus the `#36-5a`/`b` telemetry (PRs #299/#301).
 - [ ] **Rec 36 PR #36-4:** in-place rewrite paths for local rename / type / comment. *(Evidence-gated per DD-0009 addendum 8 — not merely deferred: the layout bakes token text, upstream deliberately re-decompiles on rename, and #36-3a already reduced the cost to one function's decompile. Revisit only if the shipped #36-5 telemetry, read from real sessions, shows measured user-visible cost. Building it speculatively would reintroduce the staleness risk Rec 36 removed.)*
 - [x] ~~**Rec 39 PR #39-2 + #39-3:** `for`-loop detection + datatest corpus.~~ **Already provided by upstream** — `BlockWhileDo::finalTransform`/`PrintC::emitForLoop` (gated by `analyze_for_loops`, default on) already render canonical `for` loops, and upstream's `forloop*.xml` / `noforloop*.xml` datatests cover + guard it (verified passing 2026-06-03). No fork reimplementation; see the "Phase 1 status" section in [`FOR_LOOP_INLINE_DETECTION.md`](docs/decompiler/FOR_LOOP_INLINE_DETECTION.md). Remaining Rec 39 value is Phase 2 below.

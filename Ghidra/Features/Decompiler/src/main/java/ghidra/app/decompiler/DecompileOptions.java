@@ -97,7 +97,12 @@ public class DecompileOptions {
 	private final static boolean ANALYZEFORLOOPS_OPTIONDEFAULT = true;	// Must match Architecture::resetDefaultsInternal
 	private boolean analyzeForLoops;
 
-	private final static String DECOMPILEBUDGET_OPTIONSTRING = "Analysis.Iteration budget (0 = unlimited)";
+	/**
+	 * Tool-options path of the Rec 35 iteration-budget option. Public because the
+	 * #35-5b-2 retry-with-doubled-budget action drives a re-decompile by
+	 * rewriting this option value (the options-changed listener does the rest).
+	 */
+	public final static String DECOMPILEBUDGET_OPTIONSTRING = "Analysis.Iteration budget (0 = unlimited)";
 	private final static String DECOMPILEBUDGET_OPTIONDESCRIPTION =
 		"If greater than 0, caps the number of flow-analysis iterations the decompiler performs on a " +
 			"single function. When the cap is reached the decompiler returns a partial result annotated " +

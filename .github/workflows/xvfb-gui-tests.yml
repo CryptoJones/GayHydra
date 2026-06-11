@@ -57,6 +57,7 @@ jobs:
           xvfb-run --auto-servernum
           gradle :Decompiler:integrationTest
           --tests "ghidra.app.decompiler.XvfbPilotHeadedTest"
+          --tests "ghidra.app.plugin.core.decompile.RetryWithDoubledBudgetHeadedTest"
 
       - name: Upload test results on failure
         if: failure()

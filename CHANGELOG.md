@@ -892,6 +892,16 @@ generated from the GitHub Releases UI at sprint close.
   starts at the next release, and the `#34-10f+` go/no-go checkpoint (response direction) is
   open.** Design: DD-0080 addenda.
 
+- **Rec 35 `#35-5b-2` — retry-with-doubled-budget action; Rec 35 closes** — the last
+  DISPLAY-gated Rec 35 item lands behind the new Xvfb GUI test layer. A `DecompilerProvider`
+  local action ("Retry With Doubled Budget"), enabled only while the displayed result is
+  budget-truncated (`DecompileResults.isPartial()`, the DD-0010 structured signal), doubles
+  the iteration-budget tool option (saturating at `Integer.MAX_VALUE`) and lets the existing
+  options-changed listener drive the re-decompile — the fresh result resolves the `#35-5b-1`
+  banner, and the action can never diverge from what a manual option edit does. Three headed
+  tests pass under `xvfb-run` (installed/disabled-on-complete, double-and-redecompile,
+  overflow saturation) and run weekly via `xvfb-gui-tests.yml`. Design: DD-0010.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

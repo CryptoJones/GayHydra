@@ -646,6 +646,37 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 		return controller;
 	}
 
+	/**
+	 * {@return true while the displayed decompile result is budget-truncated}
+	 * (Rec 35 #35-5b-2): the retry action only makes sense against the partial
+	 * result the #35-5b-1 banner is showing.
+	 */
+	boolean isRetryWithDoubledBudgetEnabled() {
+		DecompileData data = controller.getDecompileData();
+		if (data == null || !data.hasDecompileResults()) {
+			return false;
+		}
+		return data.getDecompileResults().isPartial();
+	}
+
+	/**
+	 * Rec 35 #35-5b-2: double the iteration-budget tool option (saturating).
+	 * The {@link #optionsChanged} listener then re-decompiles the current
+	 * function, and the fresh result resolves the partial banner — no direct
+	 * re-decompile call here, so the action can never diverge from what a
+	 * manual option edit does.
+	 */
+	void retryWithDoubledBudget() {
+		ToolOptions opt = tool.getOptions(DecompilePlugin.OPTIONS_TITLE);
+		int budget = opt.getInt(DecompileOptions.DECOMPILEBUDGET_OPTIONSTRING, 0);
+		if (budget <= 0) {
+			return;	// budget disengaged: nothing to double (isPartial implies engaged)
+		}
+		int doubled = budget > Integer.MAX_VALUE / 2 ? Integer.MAX_VALUE : budget * 2;
+		opt.setInt(DecompileOptions.DECOMPILEBUDGET_OPTIONSTRING, doubled);
+		tool.setStatusInfo("Decompile budget doubled to " + doubled + "; re-decompiling");
+	}
+
 //==================================================================================================
 // methods called from the controller
 //==================================================================================================
@@ -914,6 +945,19 @@ public class DecompilerProvider extends NavigatableComponentProviderAdapter
 				.helpLocation(new HelpLocation(HelpTopics.DECOMPILER, "ToolBarRedecompile"))
 				.description("Re-decompile and update the display")
 				.onAction(c -> refresh())
+				.buildAndInstallLocal(this);
+
+		// Rec 35 #35-5b-2 (DD-0010): the partial-result banner's retry affordance.
+		// Enabled only while the displayed result is budget-truncated; doubling the
+		// budget *option* is the whole action — the options-changed listener
+		// re-decompiles, and the fresh result resolves the banner (#35-5b-1).
+		new ActionBuilder("Retry With Doubled Budget", owner)
+				.popupMenuPath("Retry With Doubled Budget")
+				.helpLocation(new HelpLocation(HelpTopics.DECOMPILER, "ToolBarRedecompile"))
+				.description(
+					"Double the analysis iteration budget and re-decompile this function")
+				.enabledWhen(c -> isRetryWithDoubledBudgetEnabled())
+				.onAction(c -> retryWithDoubledBudget())
 				.buildAndInstallLocal(this);
 
 		displayUnreachableCodeToggle = new ToggleDockingAction("Toggle Unreachable Code", owner) {
