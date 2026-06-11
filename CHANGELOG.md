@@ -736,6 +736,18 @@ generated from the GitHub Releases UI at sprint close.
   is deferred as its own heavier slice. Both audit paths verified (pass + corrupted-pin failure).
   Design: DD-0077.
 
+- **Rec 40 `#40-3` — Sleigh semantic model, disassembly half** — `docs/sleigh/semantic-model.md`
+  defines what 24 constructs *mean*, per the plan's template (meaning, pattern/pcode-level meaning,
+  subtle notes, C++ anchor): the definition layer (endian/alignment/token/field/context/space/
+  varnode/bitrange/pcodeop, the three `attach` forms with their `_`-hole and match-invalidation
+  semantics), constructors/tables/display (the three display rules with teeth: significant
+  whitespace, `^` gluing, `SYMBOLSTRING`-declares-an-operand), pattern equations (`&`/`|`/`;`
+  precedence and cursor semantics, constraints, ellipsis alignment, invisible operands,
+  self-definition), context actions (`noflow` vs flowing sets, the `inst_next` prohibition,
+  `globalset`), `with`-block composition, and macro declaration (lexical substitution, compile-time
+  expansion). Every C++ anchor verified against the tree. `#40-4` continues with the RTL/expression
+  layer. Design: DD-0077 (band).
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
