@@ -1,0 +1,209 @@
+# Sprint 15 (meta-review 2026-06-11), Tier 1 item 1: the scheduled deep-CI
+# safety net. Runs what per-PR CI never does:
+#
+#   1. fork_integration_tests — the fork-owned `src/test.slow` suites (the
+#      Rec 37 recognition/driver stack, the Rec 30 headless harness, the
+#      Rec 38 dataflow populator). The `unit_tests` job runs `gradle test`
+#      only, and the `ipc_e2e` job runs exactly one test.slow class, so
+#      before this job an upstream merge or refactor could break the whole
+#      C++-hints pipeline with green CI.
+#   2. fuzz_smoke — bounded ASan+UBSan libFuzzer runs of the three Rec 13
+#      harnesses (fuzz_xml, fuzz_marshal, fuzz_ipc_schema). After the
+#      OSS-Fuzz rejection (2026-05-26) these were re-scoped to "local + our
+#      own CI", but no workflow ran them — a top-EV audit item at zero
+#      coverage. This is a smoke, not a campaign: minutes per harness,
+#      enough to catch a regression that crashes on near-trivial inputs.
+#   3. master_smoke — the same decompiler-smoke gate release.yml runs, but
+#      against a fresh master build, so user-visible decompiler breakage is
+#      caught nightly instead of at the next tag push.
+#
+# Scheduled (not per-PR) because the jobs are heavy; workflow_dispatch for
+# on-demand runs after a risky merge.
+
+name: Deep CI (nightly)
+
+on:
+  schedule:
+    - cron: '23 3 * * *'   # nightly, before the 4:37 sanitizers job
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fork_integration_tests:
+    name: Fork test.slow suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build native decompiler
+        # The recognition suites decompile real functions through the
+        # native worker (same reason as the ipc_e2e job in
+        # build-ghidra.yml).
+        run: gradle :Decompiler:decompileLinux_x86_64Executable --parallel
+
+      - name: Run fork-owned integration tests
+        # Class-name-prefix filters, NOT a package wildcard: Gradle
+        # `--tests` matching is text-based, so "ghidra.app.decompiler.*"
+        # would also pull in the upstream headed suites under
+        # ghidra.app.decompiler.component and
+        # ghidra.app.plugin.core.decompile, which need a DISPLAY and
+        # would fail on a headless runner.
+        #
+        # NEW FORK test.slow SUITES MUST BE ADDED HERE unless their class
+        # name already matches a pattern below. Gradle fails the build if
+        # a filter matches nothing, so a renamed suite breaks this job
+        # loudly rather than silently dropping coverage.
+        run: >-
+          gradle :Decompiler:integrationTest
+          --tests "ghidra.app.decompiler.Cpp*"
+          --tests "ghidra.app.decompiler.HeadlessHighFunctionHarnessTest"
+          --tests "ghidra.app.decompiler.ScopeGraph*"
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-fork-integration
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
+
+  fuzz_smoke:
+    name: Fuzz smoke (ASan+UBSan, bounded)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: Ghidra/Features/Decompiler/src/decompile/cpp/fuzz
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install build deps
+        # Same toolchain as decompiler-sanitizers.yml; clang++ matches the
+        # compiler the harnesses were written against.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libstdc++-12-dev
+
+      - name: Build harnesses
+        # Makefile.fuzz builds the needed decompiler objects (../xml.o,
+        # ../marshal.o, …) via make implicit rules with its own sanitized
+        # CXXFLAGS, so the whole link is instrumented.
+        run: make -f Makefile.fuzz ASAN=1 UBSAN=1 all
+
+      - name: Run fuzz_xml (5 min)
+        run: ./fuzz_xml -max_total_time=300 -rss_limit_mb=4096 -print_final_stats=1
+
+      - name: Run fuzz_marshal (5 min)
+        run: ./fuzz_marshal -max_total_time=300 -rss_limit_mb=4096 -print_final_stats=1
+
+      - name: Run fuzz_ipc_schema (5 min)
+        run: ./fuzz_ipc_schema -max_total_time=300 -rss_limit_mb=4096 -print_final_stats=1
+
+      - name: Upload crash artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          # libFuzzer writes crash-* / leak-* / oom-* repro files to cwd.
+          path: |
+            Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/crash-*
+            Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/leak-*
+            Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/oom-*
+          if-no-files-found: ignore
+          retention-days: 30
+
+  master_smoke:
+    name: Decompiler smoke vs master build
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
+      - name: Fetch Dependencies
+        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra
+        run: gradle buildGhidra --parallel
+
+      - name: Decompiler smoke test (decompiler-smoke)
+        # Same gate as release.yml's "Decompiler smoke test" step (see
+        # samples/re-targets/decompiler-smoke/README.md), run against the
+        # zip a master build produces — so the failure class that gate
+        # catches surfaces nightly instead of at the next tag push. The
+        # working tree IS master here, so no separate master-snapshot
+        # checkout is needed.
+        run: |
+          set -euxo pipefail
+
+          ZIP=$(ls build/dist/ghidra_*.zip | head -1)
+          test -n "$ZIP" || { echo "::error::no release zip produced by buildGhidra"; exit 1; }
+
+          EXTRACT_DIR=$(mktemp -d)
+          unzip -q "$ZIP" -d "$EXTRACT_DIR"
+          GAYHYDRA=$(ls -d "$EXTRACT_DIR"/ghidra_* | head -1)
+          test -n "$GAYHYDRA" || { echo "::error::no ghidra_* dir in $EXTRACT_DIR"; exit 1; }
+
+          # JDK 21.0.10+ workaround, mirrored from release.yml: drop the
+          # -Djdk.serialFilterFactory line so Ghidra's programmatic
+          # serial-filter install is the first/only one.
+          sed -i 's|^VMARGS=-Djdk.serialFilterFactory=ghidra.framework.remote.GhidraSerialFilterFactory|#&|' \
+            "$GAYHYDRA/support/launch.properties"
+
+          SMOKE_SRC=samples/re-targets/decompiler-smoke
+          gcc -O0 -o /tmp/decompiler-smoke "$SMOKE_SRC/main.c"
+          file /tmp/decompiler-smoke
+
+          PROJECT_DIR=$(mktemp -d)
+          OUTPUT=$("$GAYHYDRA"/support/analyzeHeadless "$PROJECT_DIR" SmokeRE \
+            -import /tmp/decompiler-smoke \
+            -postScript AssertDecompiles.java \
+            -scriptPath "$SMOKE_SRC/scripts" \
+            -deleteProject 2>&1) || {
+              echo "$OUTPUT"
+              echo "::error::analyzeHeadless exited non-zero (smoke-test infrastructure failure)"
+              exit 1
+            }
+          echo "$OUTPUT"
+
+          if ! echo "$OUTPUT" | grep -q "RESULT: PASS"; then
+            echo "::error::Decompiler smoke test FAILED on master — see RESULT line above"
+            echo "::error::See samples/re-targets/decompiler-smoke/README.md for what this gate asserts."
+            exit 1
+          fi
