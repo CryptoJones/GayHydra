@@ -37,9 +37,10 @@ dependencies {
 }
 
 // Compile the flatc-generated FlatBuffers IPC bindings (Rec 34) that live alongside
-// the C++ schema sources. Inert groundwork: nothing imports ghidra.ipc.* yet, but
-// wiring them onto the main source set means any drift from the vendored runtime
-// fails the build.
+// the C++ schema sources. Consumed by the ghidra.app.decompiler.ipc codecs, which
+// are live on the schematized commands since #34-10b (DD-0080); wiring the bindings
+// onto the main source set also means any drift from the vendored runtime fails
+// the build.
 sourceSets {
 	main {
 		java {

@@ -29,7 +29,8 @@ import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
 
 /**
- * End-to-end regression guard for the Rec 33 #33-2.6 v1 framing tunnel.
+ * End-to-end regression guard for the Rec 33 #33-2.6 v1 framing tunnel and,
+ * since #34-10b (DD-0080), the Rec 34 schema-v1 payload go-live.
  *
  * <p>Unlike {@code DecompileProcessFramingV1Test} (pure wire-format byte math
  * with no process spawn), this test drives a real decompilation against the
@@ -44,10 +45,19 @@ import ghidra.util.task.TaskMonitor;
  * v1 decompiled C is byte-identical to the v0 decompiled C proves the tunnel is
  * transparent across the full bidirectional protocol: any frame-boundary
  * desync would either change the output or hang/abort the decompile.
+ *
+ * <p>The schema-payload legs additionally exercise the first live schema-v1
+ * command ({@code flushNative} as a SCHEMA_PAYLOAD frame): a checked flush
+ * between two decompiles of the same function proves the worker decodes the
+ * FlatBuffers request, keeps functioning, and the frame stream stays aligned.
+ * The {@code decompiler.schemapayload} kill switch ("off") is asserted against
+ * the default ("auto") baseline, and a sent-counter observable distinguishes a
+ * real schema exchange from a silent fallback to v0 payloads.
  */
 public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	private static final String FRAMING_PROPERTY = "decompiler.framing";
+	private static final String SCHEMA_PAYLOAD_PROPERTY = "decompiler.schemapayload";
 	private static final String LANGUAGE_ID = "avr8:LE:16:atmega256";
 	private static final String FUNCTION_ADDR = "0x1000";
 	private static final int FUNCTION_LENGTH = 27;
@@ -63,10 +73,12 @@ public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadles
 	private ProgramBuilder builder;
 	private Program program;
 	private String savedFramingProperty;
+	private String savedSchemaPayloadProperty;
 
 	@Before
 	public void setUp() throws Exception {
 		savedFramingProperty = System.getProperty(FRAMING_PROPERTY);
+		savedSchemaPayloadProperty = System.getProperty(SCHEMA_PAYLOAD_PROPERTY);
 		builder = new ProgramBuilder("framingV1E2E", LANGUAGE_ID);
 		builder.setBytes(FUNCTION_ADDR, FUNCTION_BYTES);
 		builder.disassemble(FUNCTION_ADDR, FUNCTION_LENGTH, false);
@@ -76,36 +88,65 @@ public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadles
 
 	@After
 	public void tearDown() {
-		if (savedFramingProperty == null) {
-			System.clearProperty(FRAMING_PROPERTY);
-		}
-		else {
-			System.setProperty(FRAMING_PROPERTY, savedFramingProperty);
-		}
+		restoreProperty(FRAMING_PROPERTY, savedFramingProperty);
+		restoreProperty(SCHEMA_PAYLOAD_PROPERTY, savedSchemaPayloadProperty);
 		if (builder != null) {
 			builder.dispose();
 		}
 	}
 
-	private String decompileUnder(String framingMode) throws Exception {
+	private static void restoreProperty(String name, String saved) {
+		if (saved == null) {
+			System.clearProperty(name);
+		}
+		else {
+			System.setProperty(name, saved);
+		}
+	}
+
+	/** Callback receiving a live, opened decompiler before it is disposed. */
+	private interface DecompilerCheck {
+		void check(DecompInterface decompiler, String firstC) throws Exception;
+	}
+
+	/**
+	 * Open the program under the given framing mode, decompile the test
+	 * function once, run the callback against the live decompiler (handing it
+	 * that first decompile for comparisons), and dispose. The first decompile's
+	 * C is returned for baseline comparisons.
+	 */
+	private String withDecompiler(String framingMode, DecompilerCheck body) throws Exception {
 		System.setProperty(FRAMING_PROPERTY, framingMode);
 		DecompInterface decompiler = new DecompInterface();
 		try {
 			assertTrue("openProgram failed under framing=" + framingMode,
 				decompiler.openProgram(program));
-			Address addr =
-				program.getAddressFactory().getDefaultAddressSpace().getAddress(FUNCTION_ADDR);
-			Function func = program.getListing().getFunctionAt(addr);
-			assertNotNull("no function at " + FUNCTION_ADDR, func);
-			DecompileResults results = decompiler.decompileFunction(func,
-				DecompileOptions.SUGGESTED_DECOMPILE_TIMEOUT_SECS, TaskMonitor.DUMMY);
-			assertTrue("decompile did not complete under framing=" + framingMode + ": " +
-				results.getErrorMessage(), results.decompileCompleted());
-			return results.getDecompiledFunction().getC();
+			String c = decompileTestFunction(decompiler, framingMode);
+			if (body != null) {
+				body.check(decompiler, c);
+			}
+			return c;
 		}
 		finally {
 			decompiler.dispose();
 		}
+	}
+
+	private String decompileTestFunction(DecompInterface decompiler, String label)
+			throws Exception {
+		Address addr =
+			program.getAddressFactory().getDefaultAddressSpace().getAddress(FUNCTION_ADDR);
+		Function func = program.getListing().getFunctionAt(addr);
+		assertNotNull("no function at " + FUNCTION_ADDR, func);
+		DecompileResults results = decompiler.decompileFunction(func,
+			DecompileOptions.SUGGESTED_DECOMPILE_TIMEOUT_SECS, TaskMonitor.DUMMY);
+		assertTrue("decompile did not complete under " + label + ": " +
+			results.getErrorMessage(), results.decompileCompleted());
+		return results.getDecompiledFunction().getC();
+	}
+
+	private String decompileUnder(String framingMode) throws Exception {
+		return withDecompiler(framingMode, null);
 	}
 
 	@Test
@@ -128,5 +169,70 @@ public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadles
 		String v0 = decompileUnder("v0");
 		String auto = decompileUnder("auto");
 		assertEquals("auto framing changed the decompiled output", v0, auto);
+	}
+
+	@Test
+	public void testWorkerAdvertisesSchemaV1Requests() throws Exception {
+		// #34-10b: on a v1 channel the worker greeting advertises that it
+		// decodes schema-v1 request payloads; a v0 channel has no
+		// capability concept and must report 0.
+		withDecompiler("v1", (decompiler, firstC) -> {
+			DecompileProcess process = decompiler.decompProcess;
+			assertTrue("v1 channel did not negotiate", process.isChannelV1());
+			assertTrue("worker did not advertise SCHEMA_V1_REQUESTS",
+				process.peerAcceptsSchemaV1Requests());
+		});
+		withDecompiler("v0", (decompiler, firstC) -> {
+			DecompileProcess process = decompiler.decompProcess;
+			assertFalse(process.isChannelV1());
+			assertEquals("v0 channel must carry no capabilities", 0,
+				process.getPeerCapabilities());
+		});
+	}
+
+	@Test
+	public void testSchemaV1FlushNativeWorkerSurvives() throws Exception {
+		// #34-10b: the first live schema-v1 command. flushCache() returns the
+		// worker's FlushNative result (0) on success and -1 on the
+		// swallowed-exception/stopProcess path, so the return value is the
+		// desync detector; the second decompile on the same live process
+		// proves the frame stream stayed aligned after the schema exchange
+		// (the re-fetch callbacks ride v0 inside the same v1 session — the
+		// mixed-per-frame session DD-0080 designed for).
+		String v0 = decompileUnder("v0");
+		String auto = withDecompiler("auto", (decompiler, firstC) -> {
+			DecompileProcess process = decompiler.decompProcess;
+			// decompileFunction already flushed once via its trailing
+			// flushCache, so a schema exchange has happened by now.
+			assertTrue("no schema-v1 request was sent (silent v0 fallback?)",
+				process.getSchemaV1RequestsSent() > 0);
+			assertEquals("flushNative round-trip failed", 0, decompiler.flushCache());
+			String again = decompileTestFunction(decompiler, "auto+flush");
+			assertEquals("output changed after schema-v1 flushNative", firstC, again);
+			assertTrue("process not ready after schema-v1 flushNative",
+				process.isReady());
+		});
+		assertEquals("schema-v1 payloads changed the decompiled output", v0, auto);
+	}
+
+	@Test
+	public void testSchemaPayloadOffMatchesAuto() throws Exception {
+		// The kill switch: under decompiler.schemapayload=off every payload
+		// stays v0 even on a v1 channel (counter stays 0), and the output is
+		// byte-identical to the default-auto leg.
+		System.setProperty(SCHEMA_PAYLOAD_PROPERTY, "off");
+		String off = withDecompiler("auto", (decompiler, firstC) -> {
+			DecompileProcess process = decompiler.decompProcess;
+			assertEquals("kill switch leaked a schema-v1 request", 0,
+				process.getSchemaV1RequestsSent());
+			assertEquals("v0-payload flushNative failed under off", 0,
+				decompiler.flushCache());
+		});
+		System.setProperty(SCHEMA_PAYLOAD_PROPERTY, "auto");
+		String auto = withDecompiler("auto", (decompiler, firstC) -> {
+			assertTrue("auto leg sent no schema-v1 request",
+				decompiler.decompProcess.getSchemaV1RequestsSent() > 0);
+		});
+		assertEquals("schemapayload=off changed the decompiled output", off, auto);
 	}
 }

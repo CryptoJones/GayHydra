@@ -461,12 +461,24 @@ int FrameInStreambuf::underflow()
       return traits_type::eof();
     }
     lastFrameType = hdr.type;
+    lastFlagbits = hdr.flagbits;  // unconditional, even for skipped empties
     if (payload.empty())
       continue;  // no-op frame (symmetric with an empty flush) — skip
     char *base = (char *)payload.data();
     setg(base, base, base + payload.size());
     return traits_type::to_int_type((char)payload[0]);
   }
+}
+
+bool FrameInStreambuf::takeSchemaPayload(vector<uint1> &body_out)
+{
+  if (gptr() == nullptr || gptr() >= egptr())
+    return false;
+  // Hand the unconsumed remainder of the current frame body out and
+  // empty the get area, so the v0 burst scanner never sees these bytes.
+  body_out.assign(gptr(), egptr());
+  setg(nullptr, nullptr, nullptr);
+  return true;
 }
 
 } // End namespace ghidra
