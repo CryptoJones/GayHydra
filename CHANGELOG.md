@@ -776,6 +776,14 @@ generated from the GitHub Releases UI at sprint close.
   surface language). **Rec 40 Workstream 1 is complete in its final form**; the band's remainder
   is the months-scale `#40-5+` differential fuzzer (its own sprint). Design: DD-0078.
 
+- **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
+  differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
+  instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against
+  `AbstractEmulationEquivalenceTest`), validated by hand-computed golden cases, with a pluggable
+  `DifftestReference` interface — so the harness ships and hardens now while the Unicorn/QEMU
+  vendoring decision (Aaron's) drops into a tested socket later. Reproducer record shape baked into
+  the API from day one. Design: DD-0079.
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the
