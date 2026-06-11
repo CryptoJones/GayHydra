@@ -748,6 +748,21 @@ generated from the GitHub Releases UI at sprint close.
   expansion). Every C++ anchor verified against the tree. `#40-4` continues with the RTL/expression
   layer. Design: DD-0077 (band).
 
+- **Rec 40 `#40-4` — Sleigh semantic model, RTL/expression layer** — completes
+  `docs/sleigh/semantic-model.md` (sections 6–9): assignment forms including the
+  read-modify-write bitrange stores and the *deliberately illegal* truncation/subpiece LHS;
+  `local` temporaries and the bare-name fallback; `STORE`/`LOAD` through sized space pointers; the
+  full flow table (`goto`/`call`/`return` × direct/conditional/indirect, the bare-`return`
+  prohibition, label-relative intra-constructor flow, the operand-as-destination code-address
+  flip); `build`/`crossbuild`/`delayslot`; macro expansion's lexical-substitution edge; **the
+  complete operator→`CPUI_*` table with the swapped-comparison canonicalisations written down as
+  contract** (the source never reaches p-code with a greater-than opcode — the rule the Rec 37
+  renderers re-derived empirically this morning); function-style operators including variadic
+  `cpool`'s ≥2-input floor; truncation/subpiece/bitrange reads; address-of as disassembly-time
+  constant; `export`'s handle-template result model and the NOP-vs-`unimpl` distinction; named
+  sections as `crossbuild` splice targets. Every C++ anchor verified. **Workstream 2 is complete.**
+  Design: DD-0077 (band).
+
 ### Changed
 
 - **Rec 37 `#37-10` refactor — extract the shared `CppOperandRenderer`** (Sprint 14) — the

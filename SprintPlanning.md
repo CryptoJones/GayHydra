@@ -787,6 +787,12 @@ first implementation tier.
     with-blocks, macro declarations) per the plan's template; every C++ anchor verified.
     Remaining: **#40-4** RTL/expression layer (assignments, operator→`CPUI_*` map incl. the
     swapped-comparison canonicalisations, flow statements, export, sized deref, address-of).
+  - [x] ~~**#40-4** — RTL/expression layer.~~ Shipped: sections 6–9 complete the model — flow
+    table, operator→`CPUI_*` map with the swapped-comparison canonicalisations as written
+    contract, export's handle-template result model, macro-expansion edges, NOP-vs-`unimpl`.
+    Every anchor verified. **Workstream 2 complete.** Remaining Rec 40: `#40-5+` differential
+    fuzzer (months-scale; needs Unicorn et al. — its own sprint) and the deferred ANTLR parity
+    slice.
 - [ ] **PR #40-5:** differential-fuzzer framework + x86-64 via Unicorn.
 
 ---

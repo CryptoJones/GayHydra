@@ -16,10 +16,10 @@ Each entry follows the plan's template: the construct's syntax, its meaning,
 its pattern- or pcode-level meaning, anything subtle, and the C++ anchor a
 reader can verify against.
 
-**Scope of this revision (`#40-3`): the disassembly half** — definitions,
-constructors and display, pattern equations, context actions, with-blocks,
-and macros-as-declarations. The RTL/expression layer (statements, operators,
-exports, jump destinations — everything inside `{ … }`) is `#40-4`.
+**Scope:** complete. Sections 1–5 (`#40-3`) cover the disassembly half —
+definitions, constructors and display, pattern equations, context actions,
+with-blocks, and macros-as-declarations. Sections 6–9 (`#40-4`) cover the
+RTL/expression layer — everything inside `{ … }`.
 
 ---
 
@@ -341,9 +341,256 @@ at `.sla` compile time, never at runtime.
 
 ---
 
-*`#40-4` continues with the semantic/RTL layer: assignment and truncation
-forms, the operator-to-`CPUI_*` mapping (including the `>=`→swapped-`<=`
-canonicalisations the grammar's actions encode), `local` declarations,
-`goto`/`call`/`return` and label flow, `build`/`crossbuild`/`delayslot`,
-`export` and the constructor-result model, sized dereference (`*[space]:n`),
-and the `&` address-of forms.*
+## 6. RTL statements
+
+### 6.1 Assignment: `lhs = expr ;`
+
+**Meaning:** evaluates `expr` and stores it to the left-hand varnode.
+
+**Pcode-level meaning:** the expression tree emits its op sequence; the final
+op's output is set to the LHS varnode. The LHS must be a *specific* symbol
+(register varnode, operand, special) — assigning to a table or unknown name
+is rejected.
+
+**Subtle:** the bitrange LHS forms `lhs[LO,WIDTH] = expr` and `BITSYM = expr`
+are read-modify-write on the parent varnode (mask the slice out, shift the
+value in, OR, store) — they emit several ops, not one. Truncation on the LHS
+(`v:4 = …`) and subpiece on the LHS (`v(2) = …`) are *illegal* — both are
+explicit compile errors, by design: a partial-store must be written as a
+bitrange so its read-modify-write cost is visible.
+
+**C++ anchor:** `ExprTree::toVector` (plain), `PcodeCompile::assignBitRange`.
+
+### 6.2 Local declarations: `local NAME [: SIZE] [= expr] ;`
+
+**Meaning:** introduces a temporary varnode in the compiler's `unique` space,
+scoped to this constructor body. With `= expr`, declaration and assignment in
+one. The bare `NAME = expr ;` form (no `local`, name unbound) also creates a
+temporary — the grammar's deliberate shift-resolution — but `local` is the
+explicit, collision-proof spelling.
+
+**Subtle:** without `: SIZE`, the temporary's size is inferred from the first
+assignment; a size mismatch downstream is a compile error, not a truncation.
+
+**C++ anchor:** `PcodeCompile::newLocalDefinition` / `newOutput`.
+
+### 6.3 Store through pointer: `*[space]:size expr1 = expr2 ;`
+
+**Meaning:** stores `expr2` at the address `expr1` inside `space` (default:
+the default code space), writing `size` bytes (default: inferred).
+
+**Pcode-level meaning:** emits `CPUI_STORE` with the space id as input 0,
+`expr1` as the pointer, `expr2` as the value. The mirrored *load* form is an
+expression (7.2).
+
+**C++ anchor:** `PcodeCompile::createStore` (`StarQuality`).
+
+### 6.4 Flow: `goto`, `call`, `return`, conditional and indirect forms
+
+**Meaning and pcode mapping:**
+
+| Sleigh | P-code |
+|---|---|
+| `goto DEST;` | `CPUI_BRANCH DEST` |
+| `if expr goto DEST;` | `CPUI_CBRANCH DEST, expr` |
+| `goto [expr];` | `CPUI_BRANCHIND expr` |
+| `call DEST;` | `CPUI_CALL DEST` |
+| `call [expr];` | `CPUI_CALLIND expr` |
+| `return [expr];` | `CPUI_RETURN expr` |
+
+**Subtle:** bare `return;` is illegal — `CPUI_RETURN` requires its indirect
+input (typically the link register / popped address). `goto` to a `<label>`
+is intra-constructor flow: the label is a relative jump destination inside
+the emitted op sequence, not an address.
+
+**C++ anchor:** `PcodeCompile::createOpNoOut`; labels via
+`PcodeCompile::defineLabel` / `placeLabel`.
+
+### 6.5 Jump destinations
+
+**Meaning:** a flow target is one of: an operand (its value becomes a *code
+address* in the current space), an integer literal (absolute address in the
+current space), `INTEGER[SPACESYM]` (absolute address in a named space), a
+start/next special (`JUMPSYM`: `inst_start`, `inst_next`, `inst_next2`), or a
+`<label>`.
+
+**Subtle:** naming an operand as a destination flips it to code-address
+interpretation (`setCodeAddress`) — this is what makes `call dest` with a
+computed operand relocatable, versus `call [dest]` which takes the *value*
+as an indirect target.
+
+**C++ anchor:** the `jumpdest` actions (`VarnodeTpl` with `j_curspace` /
+`j_relative` const templates).
+
+### 6.6 `build OPERANDSYM ;`
+
+**Meaning:** explicitly orders a subtable operand's p-code emission at this
+point in the body. Without `build`, sub-constructor semantics emit in
+display order before the body's own ops.
+
+**Pcode-level meaning:** a `BUILD` directive op carrying the operand index,
+resolved at instruction-assembly time into the sub-constructor's emitted
+sequence.
+
+**C++ anchor:** `PcodeCompile::createOpConst(BUILD, …)`.
+
+### 6.7 `crossbuild varnode, section ;`
+
+**Meaning:** splices the named p-code *section* (2.x named sections,
+`<<name>>`) of the instruction at another address — the delay-slot idiom's
+big brother, used to stitch semantics across paired instructions.
+
+**C++ anchor:** `SleighCompile::createCrossBuild`.
+
+### 6.8 `delayslot(N) ;`
+
+**Meaning:** marks this point as where the following `N` bytes' instruction
+(the delay slot) executes; the disassembler decodes the slot instruction and
+its semantics emit here.
+
+**Pcode-level meaning:** a `DELAY_SLOT` directive op with `N`, expanded at
+assembly time.
+
+**C++ anchor:** `PcodeCompile::createOpConst(DELAY_SLOT, …)`.
+
+### 6.9 Macro invocation: `MACROSYM(args…) ;`
+
+**Meaning:** expands the macro body (5.2) inline with lexical substitution of
+the argument expressions for the parameters. Not a call: no frame, no
+return, recursion impossible.
+
+**Subtle:** an argument expression with side effects is evaluated where the
+parameter is *used* (substitution), and a macro assignment to a parameter
+writes the caller's expression — the model's sharpest edge.
+
+**C++ anchor:** `SleighCompile::createMacroUse` → expansion in
+`MacroBuilder`.
+
+### 6.10 User-op statement: `USEROPSYM(args…) ;`
+
+**Meaning:** invokes a declared pcodeop (1.9) for effect (no output).
+
+**Pcode-level meaning:** `CPUI_CALLOTHER` with the user-op index and the
+argument varnodes; the expression form (7.6) adds an output.
+
+**C++ anchor:** `PcodeCompile::createUserOpNoOut`.
+
+---
+
+## 7. RTL expressions
+
+### 7.1 Operator → p-code map
+
+Every binary/unary operator emits exactly one `CPUI_*` op. Loosest-to-
+tightest precedence: `||` < `&&`,`^^` < `|` < `^` < `&` < `==`,`!=`,`f==`,
+`f!=` < relationals (non-assoc) < `<<`,`>>`,`s>>` < `+`,`-`,`f+`,`f-` <
+`*`,`/`,`%`,`s/`,`s%`,`f*`,`f/` < unary `!`,`~`,`-`,`f-` (right-assoc).
+
+| Sleigh | P-code | Note |
+|---|---|---|
+| `+` `-` `*` | `INT_ADD` `INT_SUB` `INT_MULT` | |
+| `/` `%` | `INT_DIV` `INT_REM` | unsigned |
+| `s/` `s%` | `INT_SDIV` `INT_SREM` | signed |
+| `==` `!=` | `INT_EQUAL` `INT_NOTEQUAL` | |
+| `<` | `INT_LESS` | unsigned |
+| `>` | `INT_LESS` **operands swapped** | canonicalised |
+| `<=` | `INT_LESSEQUAL` | |
+| `>=` | `INT_LESSEQUAL` **operands swapped** | canonicalised |
+| `s<` `s<=` | `INT_SLESS` `INT_SLESSEQUAL` | |
+| `s>` `s>=` | `INT_SLESS` / `INT_SLESSEQUAL` **swapped** | canonicalised |
+| `f<` `f<=` | `FLOAT_LESS` `FLOAT_LESSEQUAL` | |
+| `f>` `f>=` | `FLOAT_LESS` / `FLOAT_LESSEQUAL` **swapped** | canonicalised |
+| `^` `&` `\|` | `INT_XOR` `INT_AND` `INT_OR` | bitwise |
+| `<<` `>>` `s>>` | `INT_LEFT` `INT_RIGHT` `INT_SRIGHT` | |
+| `&&` `\|\|` `^^` | `BOOL_AND` `BOOL_OR` `BOOL_XOR` | one-bit |
+| `f+` `f-` `f*` `f/` | `FLOAT_ADD/SUB/MULT/DIV` | |
+| `f==` `f!=` | `FLOAT_EQUAL` `FLOAT_NOTEQUAL` | |
+| unary `-` | `INT_2COMP` | |
+| unary `~` | `INT_NEGATE` | bitwise not |
+| unary `!` | `BOOL_NEGATE` | |
+| unary `f-` | `FLOAT_NEG` | |
+
+**Subtle (the canonicalisation rule):** the source never reaches p-code with
+a greater-than opcode — every `>`/`>=` family operator emits its `<`/`<=`
+dual with **swapped operands**. Downstream consumers (and the Rec 37 hint
+renderers, which re-derived this empirically) see only the canonical forms.
+
+**C++ anchor:** the `expr` actions (`PcodeCompile::createOp`).
+
+### 7.2 Load through pointer: `*[space]:size expr`
+
+**Meaning:** the expression dual of 6.3 — reads `size` bytes at address
+`expr` in `space`. Emits `CPUI_LOAD`.
+
+**C++ anchor:** `PcodeCompile::createLoad`.
+
+### 7.3 Function-style operators
+
+One-input: `zext`/`sext` (`INT_ZEXT`/`INT_SEXT`), `abs`/`sqrt`/`nan`/`trunc`
+/`ceil`/`floor`/`round` (`FLOAT_*`), `int2float`/`float2float`
+(`FLOAT_INT2FLOAT`/`FLOAT_FLOAT2FLOAT`), `popcount`/`lzcount`
+(`POPCOUNT`/`LZCOUNT`). Two-input: `carry`/`scarry`/`sborrow`
+(`INT_CARRY`/`INT_SCARRY`/`INT_SBORROW`). Special: `newobject(expr[, expr])`
+→ `CPUI_NEW`; `cpool(args…)` → variadic `CPUI_CPOOLREF`, **minimum two
+inputs** (enforced).
+
+**C++ anchor:** the corresponding `expr` actions.
+
+### 7.4 Truncation, subpiece, bitrange reads
+
+`v:N` reads the low `N` *bytes* of `v`; `v(N)` reads `v` shifted down `N`
+bytes (`SUBPIECE` with byte offset); `v[LO,WIDTH]` reads a *bit* slice; a
+declared `BITSYM` reads its parent's slice. All are read-only forms — their
+LHS duals are 6.1's bitrange assignment (legal) and the illegal truncation/
+subpiece stores.
+
+**C++ anchor:** `PcodeCompile::createBitRange`, the `SUBPIECE` action.
+
+### 7.5 Address-of: `&v`, `&:N v`
+
+**Meaning:** the *constant* address of varnode `v` (optionally sized `N`) —
+a disassembly-time constant, not a runtime computation. Usable as an
+expression and in `export`.
+
+**C++ anchor:** `PcodeCompile::addressOf`.
+
+### 7.6 User-op expression: `USEROPSYM(args…)`
+
+As 6.10 with an output varnode — `CPUI_CALLOTHER` whose result feeds the
+surrounding expression.
+
+**C++ anchor:** `PcodeCompile::createUserOp`.
+
+---
+
+## 8. Constructor results: `export`
+
+### 8.1 `export varnode ;` / `export *[space]:size lhs ;`
+
+**Meaning:** sets the constructor's *result* — the value/location a parent
+constructor sees when it uses this subtable as an operand. The starred form
+exports a dereferenced location (dynamic address), making the operand an
+addressable lvalue for the parent.
+
+**Pcode-level meaning:** the result is a handle template (`HandleTpl`), not
+an op: parents splice the handle wherever the operand appears, so an
+exported register reads/writes that register in parent semantics.
+
+**Subtle:** a body that emits no ops and exports nothing is recorded as a
+NOP constructor (explicitly, so empty bodies are intentional). `unimpl`
+(2.x) is different — it marks semantics as *unimplemented*, poisoning
+instruction semantics rather than emitting nothing.
+
+**C++ anchor:** `SleighCompile::setResultVarnode` / `setResultStarVarnode`;
+`recordNop`.
+
+---
+
+## 9. Named sections (`<<name>>`) in bodies
+
+**Meaning:** splits a body into the default section plus named sections;
+named sections do not execute inline — they exist to be spliced elsewhere by
+`crossbuild` (6.7).
+
+**C++ anchor:** `SleighCompile::firstNamedSection` / `nextNamedSection` /
+`finalNamedSection` / `standaloneSection`.*
