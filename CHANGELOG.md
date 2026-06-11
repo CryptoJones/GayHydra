@@ -854,6 +854,23 @@ generated from the GitHub Releases UI at sprint close.
   action selection. Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
   Design: DD-0080 + addendum.
 
+- **Rec 34 `#34-10d-2` — `setOptions` + `structureGraph` go schema-v1 as XML text** —
+  the config trio completes, implementing the DD-0080 addendum: the two document-carrying
+  commands ride schema-v1 with their documents as **XML text** (`SetOptionsRequest.options`
+  carries the `<optionslist>`, `StructureGraphRequest.control_flow` the `<block>` tree) —
+  the host picks `XmlEncode` over the packed `mainQuery` *before* encoding (a new public
+  `schemaDocumentCommandsAvailable()` gate on `DecompileProcess`, since the encoding choice
+  cannot live behind the command-name branches the string-field commands use), and the
+  worker's `loadParametersV1` overrides construct an `XmlDecode`; the format-agnostic
+  `Decoder` consumers (`SetOptions::rawAction`, `BlockGraph::decode`) are untouched.
+  `sendStructureGraphSchema` preserves the v0 `sendCommandTimeout` semantics (timeout +
+  callback decoders). Two new e2e legs assert each command rides schema-v1 (sent-counter)
+  *and* produces output byte-identical to the v0 packed path — decompile-after-setOptions
+  and the structured result graph respectively. The `ipc_config_codec.h` "inert" marker
+  (already stale since `#34-10d-1`) is corrected per DD-0080's update-with-the-slice rule.
+  **The request direction now lacks only `decompileAt` (`#34-10e`).** Design: DD-0080
+  addendum.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against

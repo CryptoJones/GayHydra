@@ -491,6 +491,24 @@ void StructureGraph::loadParameters(void)
   ingraph.decode(decoder);
 }
 
+/// Decode the schema-v1 structureGraph request (#34-10d-2, DD-0080 addendum):
+/// the control-flow document rides as XML \e text — the same \<block> element
+/// tree the v0 form carries packed, encoded by the host with XmlEncode because
+/// a packed-binary document cannot ride a FlatBuffers UTF-8 string field. The
+/// format-agnostic BlockGraph::decode consumer is unchanged.
+void StructureGraph::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::StructureGraphRequestV1 req;
+  if (!ipc::decode_structure_graph_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 structureGraph request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
+  XmlDecode decoder(ghidra);
+  istringstream s(req.control_flow);
+  decoder.ingestStream(s);
+  ingraph.decode(decoder);
+}
+
 void StructureGraph::rawAction(void)
 
 {
@@ -584,6 +602,28 @@ void SetOptions::loadParameters(void)
     delete decoder;
   decoder = make_unique<PackedDecode>(ghidra).release();
   ArchitectureGhidra::readStringStream(sin, *decoder);
+}
+
+/// Decode the schema-v1 setOptions request (#34-10d-2, DD-0080 addendum): the
+/// \<optionslist> document rides as XML \e text — the same element tree the
+/// v0 form carries packed, encoded by the host with XmlEncode because a
+/// packed-binary document cannot ride a FlatBuffers UTF-8 string field. The
+/// format-agnostic Decoder member (and its rawAction consumer) is unchanged.
+void SetOptions::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::SetOptionsRequestV1 req;
+  if (!ipc::decode_set_options_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 setOptions request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
+  if (decoder != (Decoder *)0) {
+    delete decoder;
+    decoder = (Decoder *)0;
+  }
+  unique_ptr<XmlDecode> xmlDecoder = make_unique<XmlDecode>(ghidra);
+  istringstream s(req.options);
+  xmlDecoder->ingestStream(s);
+  decoder = xmlDecoder.release();
 }
 
 SetOptions::~SetOptions(void)

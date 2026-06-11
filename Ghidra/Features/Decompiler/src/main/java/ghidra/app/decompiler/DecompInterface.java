@@ -332,12 +332,7 @@ public class DecompInterface {
 			throw new IOException("Could not register program: " + nativeMessage);
 		}
 		if (options != null) {
-			baseEncodingSet.mainQuery.clear();
-			options.encode(baseEncodingSet.mainQuery, this);
-			decompProcess.setMaxResultSize(options.getMaxPayloadMBytes());
-			decompProcess.sendCommand1Param("setOptions", baseEncodingSet.mainQuery,
-				stringResponse);
-			if (!stringResponse.toString().equals("t")) {
+			if (!sendSetOptions()) {
 				throw new IOException("Did not accept decompiler options");
 			}
 		}
@@ -714,12 +709,7 @@ public class DecompInterface {
 		}
 		try {
 			verifyProcess();
-			baseEncodingSet.mainQuery.clear();
-			options.encode(baseEncodingSet.mainQuery, this);
-			decompProcess.setMaxResultSize(options.getMaxPayloadMBytes());
-			decompProcess.sendCommand1Param("setOptions", baseEncodingSet.mainQuery,
-				stringResponse);
-			return stringResponse.toString().equals("t");
+			return sendSetOptions();
 		}
 		catch (IOException e) {
 			// don't care
@@ -729,6 +719,33 @@ public class DecompInterface {
 		}
 		stopProcess();
 		return false;
+	}
+
+	/**
+	 * Encode the current options document and send the setOptions command,
+	 * choosing the document encoding by the negotiated channel (#34-10d-2,
+	 * DD-0080 addendum): schema-v1 carries the same {@code <optionslist>}
+	 * element tree as XML text, v0 carries it packed. The encoding choice
+	 * lives here — by the time {@link DecompileProcess} sees the document it
+	 * is already encoded.
+	 * @return true if the decompiler process accepted the new options
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 * @throws DecompileException for any problems executing the command
+	 */
+	private boolean sendSetOptions() throws IOException, DecompileException {
+		decompProcess.setMaxResultSize(options.getMaxPayloadMBytes());
+		if (decompProcess.schemaDocumentCommandsAvailable()) {
+			XmlEncode xmlEncode = new XmlEncode(false);
+			options.encode(xmlEncode, this);
+			decompProcess.sendSetOptionsSchema(xmlEncode.toString(), stringResponse);
+		}
+		else {
+			baseEncodingSet.mainQuery.clear();
+			options.encode(baseEncodingSet.mainQuery, this);
+			decompProcess.sendCommand1Param("setOptions", baseEncodingSet.mainQuery,
+				stringResponse);
+		}
+		return stringResponse.toString().equals("t");
 	}
 
 	/**
@@ -781,9 +798,20 @@ public class DecompInterface {
 		try {
 			setupEncodeDecode(Address.NO_ADDRESS);
 			verifyProcess();
-			baseEncodingSet.mainQuery.clear();
-			ingraph.encode(baseEncodingSet.mainQuery);
-			decompProcess.sendCommandTimeout("structureGraph", timeoutSecs, baseEncodingSet);
+			if (decompProcess.schemaDocumentCommandsAvailable()) {
+				// #34-10d-2 (DD-0080 addendum): the control-flow document rides
+				// schema-v1 as XML text — same element tree, XmlEncode instead
+				// of the packed mainQuery.
+				XmlEncode xmlEncode = new XmlEncode(false);
+				ingraph.encode(xmlEncode);
+				decompProcess.sendStructureGraphSchema(xmlEncode.toString(), timeoutSecs,
+					baseEncodingSet);
+			}
+			else {
+				baseEncodingSet.mainQuery.clear();
+				ingraph.encode(baseEncodingSet.mainQuery);
+				decompProcess.sendCommandTimeout("structureGraph", timeoutSecs, baseEncodingSet);
+			}
 			decompileMessage = decompCallback.getNativeMessage();
 			if (!baseEncodingSet.mainResponse.isEmpty()) {
 				resgraph = new BlockGraph();

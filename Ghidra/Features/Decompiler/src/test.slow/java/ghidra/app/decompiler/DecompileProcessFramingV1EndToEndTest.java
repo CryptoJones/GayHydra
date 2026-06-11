@@ -17,14 +17,23 @@ package ghidra.app.decompiler;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.block.*;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.pcode.BlockCopy;
+import ghidra.program.model.pcode.BlockGraph;
+import ghidra.program.model.pcode.PcodeBlock;
+import ghidra.program.model.pcode.XmlEncode;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
 
@@ -234,5 +243,108 @@ public class DecompileProcessFramingV1EndToEndTest extends AbstractGhidraHeadles
 				decompiler.decompProcess.getSchemaV1RequestsSent() > 0);
 		});
 		assertEquals("schemapayload=off changed the decompiled output", off, auto);
+	}
+
+	/**
+	 * #34-10d-2 (DD-0080 addendum): setOptions rides schema-v1 with its
+	 * {@code <optionslist>} document as XML text. The accepted response plus a
+	 * decompile-after-options byte-identical to the v0 path proves the worker
+	 * decoded the XML-text document equivalently to the packed v0 form.
+	 */
+	@Test
+	public void testSchemaV1SetOptionsMatchesV0() throws Exception {
+		String[] decompiled = new String[2];
+		withDecompiler("v0", (decompiler, firstC) -> {
+			assertTrue("v0 setOptions rejected", decompiler.setOptions(new DecompileOptions()));
+			decompiled[0] = decompileTestFunction(decompiler, "v0+options");
+		});
+		withDecompiler("auto", (decompiler, firstC) -> {
+			int before = decompiler.decompProcess.getSchemaV1RequestsSent();
+			assertTrue("schema-v1 setOptions rejected",
+				decompiler.setOptions(new DecompileOptions()));
+			assertTrue("setOptions did not ride schema-v1",
+				decompiler.decompProcess.getSchemaV1RequestsSent() > before);
+			decompiled[1] = decompileTestFunction(decompiler, "v1+options");
+		});
+		assertEquals("decompile after schema-v1 setOptions diverged from v0", decompiled[0],
+			decompiled[1]);
+	}
+
+	/**
+	 * #34-10d-2 (DD-0080 addendum): structureGraph rides schema-v1 with its
+	 * {@code <block>} control-flow document as XML text. The structured result
+	 * graph must be identical to the v0 packed path's.
+	 */
+	@Test
+	public void testSchemaV1StructureGraphMatchesV0() throws Exception {
+		String[] structured = new String[2];
+		withDecompiler("v0", (decompiler, firstC) -> {
+			BlockGraph outgraph =
+				decompiler.structureGraph(buildFunctionBlockGraph(), 0, TaskMonitor.DUMMY);
+			assertNotNull("v0 structureGraph returned null: " + decompiler.getLastMessage(),
+				outgraph);
+			structured[0] = encodeGraph(outgraph);
+		});
+		withDecompiler("auto", (decompiler, firstC) -> {
+			int before = decompiler.decompProcess.getSchemaV1RequestsSent();
+			BlockGraph outgraph =
+				decompiler.structureGraph(buildFunctionBlockGraph(), 0, TaskMonitor.DUMMY);
+			assertNotNull(
+				"schema-v1 structureGraph returned null: " + decompiler.getLastMessage(),
+				outgraph);
+			assertTrue("structureGraph did not ride schema-v1",
+				decompiler.decompProcess.getSchemaV1RequestsSent() > before);
+			structured[1] = encodeGraph(outgraph);
+		});
+		assertEquals("schema-v1 structureGraph result diverged from v0", structured[0],
+			structured[1]);
+	}
+
+	/**
+	 * Build a {@link BlockGraph} of the test function's basic blocks — the
+	 * same shape {@code DecompilerNestedLayout.buildCurrentFunctionGraph}
+	 * feeds structureGraph in production, minus the GUI vertex refs.
+	 * LinkedHashMap keeps edge order deterministic so the two legs encode
+	 * identical input documents.
+	 */
+	private BlockGraph buildFunctionBlockGraph() throws Exception {
+		Address addr =
+			program.getAddressFactory().getDefaultAddressSpace().getAddress(FUNCTION_ADDR);
+		Function func = program.getListing().getFunctionAt(addr);
+		assertNotNull("no function at " + FUNCTION_ADDR, func);
+		CodeBlockModel blockModel = new BasicBlockModel(program);
+		BlockGraph blockGraph = new BlockGraph();
+		Map<CodeBlock, PcodeBlock> blocks = new LinkedHashMap<>();
+		CodeBlockIterator iterator =
+			blockModel.getCodeBlocksContaining(func.getBody(), TaskMonitor.DUMMY);
+		while (iterator.hasNext()) {
+			CodeBlock codeBlock = iterator.next();
+			PcodeBlock pcodeBlock = new BlockCopy(codeBlock, codeBlock.getMinAddress());
+			blocks.put(codeBlock, pcodeBlock);
+			blockGraph.addBlock(pcodeBlock);
+		}
+		for (Map.Entry<CodeBlock, PcodeBlock> entry : blocks.entrySet()) {
+			CodeBlockReferenceIterator destinations =
+				entry.getKey().getDestinations(TaskMonitor.DUMMY);
+			while (destinations.hasNext()) {
+				CodeBlockReference ref = destinations.next();
+				if (ref.getFlowType().isCall()) {
+					continue;
+				}
+				PcodeBlock dest = blocks.get(ref.getDestinationBlock());
+				if (dest == null) {
+					continue;
+				}
+				blockGraph.addEdge(entry.getValue(), dest);
+			}
+		}
+		blockGraph.setIndices();
+		return blockGraph;
+	}
+
+	private static String encodeGraph(BlockGraph graph) throws IOException {
+		XmlEncode encode = new XmlEncode(false);
+		graph.encode(encode);
+		return encode.toString();
 	}
 }

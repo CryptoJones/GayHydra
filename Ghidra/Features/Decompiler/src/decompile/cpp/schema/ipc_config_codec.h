@@ -27,17 +27,21 @@
 //
 // The StructureGraph control-flow document, the SetAction root_action /
 // print_config selectors, and the SetOptions <optionslist> are all carried as
-// opaque strings to match the legacy wire (see decompile.fbs); structuring them
-// is out of scope. None of these tables is the schema root_type (only
+// opaque strings (see decompile.fbs); structuring them is out of scope. Per
+// the DD-0080 addendum (#34-10d-2), the two *document* fields
+// (StructureGraphRequest.control_flow, SetOptionsRequest.options) carry the
+// document as XML text — a FlatBuffers string is UTF-8/NUL-unsafe, so the v0
+// packed-binary form cannot ride it; the host re-encodes the same element
+// tree with XmlEncode. None of these tables is the schema root_type (only
 // DecompileFunctionRequest is), so — like the response codec — the generic
 // FlatBufferBuilder::Finish / GetRoot / Verifier::VerifyBuffer API roots them.
 // Every decode verifies before reading and returns false (leaving its out-param
 // untouched) on a null or unverifiable payload.
 //
-// Like the rest of #34-4..#34-6 this header is inert: nothing in the production
-// decompiler includes it. The command-loop wiring that would dispatch on a Rec
-// 33 frame's command id and call these is the end-to-end-only change deferred
-// per DD-0005.
+// Live since the #34-10d band (DD-0080): ghidra_process.cc includes this
+// header and dispatches the SetAction (#34-10d-1) and SetOptions /
+// StructureGraph (#34-10d-2) request decodes through it. The response halves
+// (encode_*_response) stay test-only until the #34-10f+ response direction.
 #ifndef GHIDRA_IPC_CONFIG_CODEC_H
 #define GHIDRA_IPC_CONFIG_CODEC_H
 

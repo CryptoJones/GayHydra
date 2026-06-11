@@ -891,11 +891,20 @@ first implementation tier.
     plus the rule-of-three `parseSchemaProgramId` extraction (third user: FlushNative,
     DeregisterProgram, SetAction). Every e2e leg exercises it via openProgram's mandatory
     setAction. Ronin28: C++ 336/336, `ghidra_dbg` clean, e2e 5/5 (forced rerun).
-  - [ ] **#34-10d-2** — `setOptions` + `structureGraph` go schema-v1 **as XML text** (DD-0080
+  - [x] ~~**#34-10d-2** — `setOptions` + `structureGraph` go schema-v1 **as XML text** (DD-0080
     addendum): their packed-binary documents cannot ride FlatBuffers UTF-8/NUL-unsafe `string`
     fields, so the host encodes the same document with `XmlEncode` and the worker's
     `loadParametersV1` constructs an `XmlDecode` — no schema change, format-agnostic `Decoder`
-    consumers unchanged.
+    consumers unchanged.~~ Shipped 2026-06-11 — the config trio completes. Host side: the
+    encoding choice can't live behind the command-name branches (the document is already
+    encoded by then), so `DecompileProcess` exposes `schemaDocumentCommandsAvailable()` and
+    `DecompInterface` picks `XmlEncode` before encoding; `sendStructureGraphSchema` keeps the
+    v0 timeout + callback semantics. Two new e2e legs assert each command rides schema-v1
+    (sent-counter) and is output-byte-identical to v0. The `ipc_config_codec.h` "inert"
+    marker (stale since `#34-10d-1`) corrected per DD-0080's rule. Validated in the podman
+    rig (this box has no host toolchain): Java framing/ipc fast suites green, C++
+    `decomp_test_dbg` 336/336, e2e 7/7. **Request direction lacks only `decompileAt`
+    (`#34-10e`).**
   - [ ] **#34-10e** — `decompileAt` incl. the `DecompileBudget` sub-table. Completes the request
     direction; starts the re-keyed `#34-7` clock (one release after this ships).
   - [ ] **#34-10f+** — response direction: host-side `DecompileResponseCodec` (new), worker emit

@@ -196,6 +196,7 @@ public:
 class StructureGraph : public GhidraCommand {
   BlockGraph ingraph;				///< The control-flow graph to structure
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);	///< Schema-v1 form: control-flow rides as XML text (#34-10d-2)
 public:
   virtual void rawAction(void);
 };
@@ -249,6 +250,7 @@ public:
 class SetOptions : public GhidraCommand {
   Decoder *decoder;		///< The \<optionslist> decoder
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);	///< Schema-v1 form: \<optionslist> rides as XML text (#34-10d-2)
   virtual void sendResult(void);
 public:
   bool res;				///< Set to \b true if the option change succeeded

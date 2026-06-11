@@ -896,6 +896,81 @@ public class DecompileProcess {
 	}
 
 	/**
+	 * {@return true if the document-carrying commands (setOptions,
+	 * structureGraph) will go out as schema-v1 requests}. Unlike the
+	 * string-field commands, their schema-v1 form changes how the caller must
+	 * encode the document — XML text via {@code XmlEncode}, not
+	 * {@code PatchPackedEncode} (#34-10d-2, DD-0080 addendum: packed binary
+	 * cannot ride a FlatBuffers UTF-8 string field) — so the encoding choice
+	 * has to be made by {@link DecompInterface} <i>before</i> the send, and
+	 * this gate is public where the others stay behind the command-name
+	 * branches.
+	 */
+	public synchronized boolean schemaDocumentCommandsAvailable() {
+		return schemaPayloadAvailable();
+	}
+
+	/**
+	 * Send the setOptions command as a schema-v1 request (#34-10d-2): the
+	 * caller has already encoded the {@code <optionslist>} document as XML
+	 * text. Callers must check {@link #schemaDocumentCommandsAvailable()}
+	 * first; there is no packed fallback at this layer.
+	 * @param optionsXml the XML-text {@code <optionslist>} document
+	 * @param response the response accumulator
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 * @throws DecompileException for any problems executing the command
+	 */
+	public synchronized void sendSetOptionsSchema(String optionsXml, ByteIngest response)
+			throws IOException, DecompileException {
+		if (!statusGood) {
+			throw new IOException("setOptions called on bad process");
+		}
+		sendSchemaCommand(IpcCommandId.SET_OPTIONS,
+			CommandRequestCodec.encodeSetOptionsRequest(Integer.toString(archId), optionsXml),
+			response);
+	}
+
+	/**
+	 * Send the structureGraph command as a schema-v1 request (#34-10d-2) with
+	 * the v0 {@link #sendCommandTimeout} semantics (timeout + callback
+	 * decoders) preserved. The caller has already encoded the {@code <block>}
+	 * control-flow document as XML text and must check
+	 * {@link #schemaDocumentCommandsAvailable()} first; there is no packed
+	 * fallback at this layer.
+	 * @param controlFlowXml the XML-text {@code <block>} control-flow document
+	 * @param timeoutSecs the number of seconds to run before timing out
+	 * @param encodeSet contains the response container and callback channels
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 * @throws DecompileException for any problems while executing the command
+	 */
+	public synchronized void sendStructureGraphSchema(String controlFlowXml, int timeoutSecs,
+			DecompInterface.EncodeDecodeSet encodeSet) throws IOException, DecompileException {
+		if (!statusGood) {
+			throw new IOException("structureGraph called on bad process");
+		}
+		paramDecoder = encodeSet.callbackQuery;
+		resultEncoder = encodeSet.callbackResponse;
+		int validatedTimeoutMs = getTimeoutMs(timeoutSecs);
+		GTimerMonitor timerMonitor = GTimer.scheduleRunnable(validatedTimeoutMs, timeoutRunnable);
+		try {
+			writeSchemaRequest(IpcCommandId.STRUCTURE_GRAPH, CommandRequestCodec
+					.encodeStructureGraphRequest(Integer.toString(archId), controlFlowXml));
+			readResponse(encodeSet.mainResponse);
+		}
+		catch (IOException e) {
+			statusGood = false;
+			if (timerMonitor.didRun()) {
+				// Timeout occurred
+				throw new DecompileException("process", "timeout");
+			}
+			throw e;
+		}
+		finally {
+			timerMonitor.cancel();
+		}
+	}
+
+	/**
 	 * Send one command as a schema-v1 request (#34-10b, DD-0080): a single
 	 * COMMAND frame flagged SCHEMA_PAYLOAD whose body is the one-byte wire
 	 * command-id followed by the FlatBuffers request. The response is the
