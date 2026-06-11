@@ -53,6 +53,7 @@ apply from: 'gradle/objectInputStreamAudit.gradle'
 
 // C++ RAII audit — protected-file gate. See docs/decompiler/CPP20_ADOPTION.md (Rec 31 #31-2).
 apply from: 'gradle/cppRaiiAudit.gradle'
+apply from: 'gradle/sleighGrammarAudit.gradle'
 
 
 /***************************************************************************************

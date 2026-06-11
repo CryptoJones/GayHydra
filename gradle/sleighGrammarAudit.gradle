@@ -1,0 +1,84 @@
+/* ###
+ * Sleigh grammar drift audit — Rec 40 #40-2 (Workstream 1).
+ *
+ * docs/sleigh/grammar.bnf is derived from the canonical bison/flex
+ * implementation (slghparse.y / slghscan.l) and records the sha256 of
+ * the exact sources it was derived from in DERIVED-FROM pin lines.
+ * This task recomputes the hashes and fails when a source changed
+ * without the grammar's pins being updated — making grammar drift a
+ * visible CI failure instead of silent rot. Updating the pin is part
+ * of reviewing the grammar against the change (which may or may not
+ * require an edit to the EBNF itself).
+ *
+ * The plan doc's eventual end state — re-parsing all .slaspec files
+ * with a parser generated from the BNF and asserting acceptance parity
+ * — is a later, heavier slice; the pin gate is the honest first drift
+ * detector with no new toolchain.
+ *
+ * Apply this from the root build.gradle:
+ *   apply from: 'gradle/sleighGrammarAudit.gradle'
+ *
+ * The task is named `sleighGrammarAudit` at the root and is invoked
+ * as a dedicated CI step in `.github/workflows/build-ghidra.yml`,
+ * alongside `cppRaiiAudit` (the wiring precedent).
+ */
+
+import java.security.MessageDigest
+
+tasks.register('sleighGrammarAudit') {
+    group = 'verification'
+    description = 'Fails when slghparse.y/slghscan.l change without docs/sleigh/grammar.bnf pin updates'
+
+    doLast {
+        def grammar = file('docs/sleigh/grammar.bnf')
+        if (!grammar.exists()) {
+            throw new GradleException("sleighGrammarAudit: missing ${grammar}")
+        }
+        // Parse "DERIVED-FROM: <path>" followed by "sha256=<hex>" pin pairs.
+        def pins = [:]
+        def pendingPath = null
+        grammar.eachLine { line ->
+            def pathMatch = line =~ /DERIVED-FROM:\s+(\S+)/
+            if (pathMatch.find()) {
+                pendingPath = pathMatch.group(1)
+                return
+            }
+            def hashMatch = line =~ /sha256=([0-9a-f]{64})/
+            if (hashMatch.find() && pendingPath != null) {
+                pins[pendingPath] = hashMatch.group(1)
+                pendingPath = null
+            }
+        }
+        if (pins.size() < 2) {
+            throw new GradleException(
+                "sleighGrammarAudit: expected at least 2 DERIVED-FROM sha256 pins in ${grammar}, found ${pins.size()}")
+        }
+        def failures = []
+        pins.each { path, pinned ->
+            def source = file(path)
+            if (!source.exists()) {
+                failures << "${path}: pinned source missing"
+                return
+            }
+            def digest = MessageDigest.getInstance('SHA-256')
+            source.withInputStream { in_ ->
+                def buf = new byte[8192]
+                int n
+                while ((n = in_.read(buf)) > 0) {
+                    digest.update(buf, 0, n)
+                }
+            }
+            def actual = digest.digest().encodeHex().toString()
+            if (actual != pinned) {
+                failures << "${path}: sha256 ${actual} != pinned ${pinned}"
+            }
+        }
+        if (!failures.isEmpty()) {
+            throw new GradleException(
+                "sleighGrammarAudit: the canonical Sleigh grammar sources changed without " +
+                "updating docs/sleigh/grammar.bnf — review the grammar against the change and " +
+                "refresh its DERIVED-FROM pins.\n  " + failures.join('\n  '))
+        }
+        logger.lifecycle("sleighGrammarAudit: ${pins.size()} source pins verified — grammar.bnf is current")
+    }
+}

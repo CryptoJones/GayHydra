@@ -113,6 +113,13 @@ jobs:
         # regression that reintroduces a raw owning pointer.
         run: gradle cppRaiiAudit
 
+      - name: Sleigh grammar drift audit (Rec 40 #40-2)
+        # docs/sleigh/grammar.bnf pins the sha256 of the canonical
+        # slghparse.y/slghscan.l it was derived from; this gate fails CI
+        # when either changes without the grammar being reviewed and its
+        # pins refreshed -- grammar drift is visible, not silent.
+        run: gradle sleighGrammarAudit
+
       - name: i18n lint (Docking)
         # Localization PoC: fail the build if a hardcoded UI literal
         # reappears in Ghidra/Framework/Docking outside the

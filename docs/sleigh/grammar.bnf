@@ -1,0 +1,308 @@
+; =============================================================================
+; SLEIGH formal grammar (EBNF) — Rec 40 #40-2, Workstream 1 of
+; docs/sleigh/SLEIGH_FORMAL_AND_FUZZ.md.
+;
+; DERIVED-FROM: Ghidra/Features/Decompiler/src/decompile/cpp/slghparse.y
+;   sha256=2920d89b2bbc9b7ded2a24e217df3724d7266dc2884d1d722e3d475967fa0701
+; DERIVED-FROM: Ghidra/Features/Decompiler/src/decompile/cpp/slghscan.l
+;   sha256=6a9bc4125528d8c4d551c2d3e57e1064b60ddba16619795ab14b402c02641aa0
+;
+; The C++ bison/flex implementation remains CANONICAL; this document is the
+; tool-agnostic re-statement the audit asked for. The `sleighGrammarAudit`
+; gradle task (CI-gated) fails when either source file changes without the
+; pins above being updated — drift becomes visible, not silent.
+;
+; Derivation policy:
+;  * Error-recovery alternatives in the .y (productions whose action is
+;    reportError + YYERROR, and the `error` token rules) are DIAGNOSTICS for
+;    rejected input, not part of the accepted language. They are excluded.
+;  * SLEIGH is not context-free at the identifier level: the lexer classifies
+;    an identifier by symbol-table lookup (feedback), yielding the
+;    *symbol-class terminals* below (space-sym, token-sym, ...). A fresh
+;    implementation must reproduce that feedback or treat every symbol-class
+;    terminal as `identifier` and re-validate classes semantically.
+;  * The lexer is MODAL (flex start conditions): keyword spellings and some
+;    operator meanings depend on the active mode. Modes are noted per section:
+;    DEF (after `define`/`attach`), PRINT (constructor display), PATTERN
+;    (after `is` / inside `with`), SEM (inside `{ ... }` semantics).
+;  * `&` and `|` inside PATTERN mode are the equation operators below; inside
+;    a pattern *action expression* (context block) they lex as $and / $or
+;    (OP_AND / OP_OR) instead — see <pexpression>.
+;
+; Notation: EBNF. `*` = zero or more, `+` = one or more, `?` = optional,
+; `|` = alternative, parentheses group, "..." are literal terminals,
+; <UPPER> are lexical token classes defined in the LEXICAL section.
+; =============================================================================
+
+; ----------------------------------------------------------------------------
+; LEXICAL TOKEN CLASSES
+; ----------------------------------------------------------------------------
+; <INTEGER>      unsigned integer literal: decimal, 0x hex, or 0b binary
+; <CHAR>         a single display character in PRINT mode (anything that is
+;                not an identifier, whitespace, or print-significant symbol)
+; <STRING>       an identifier not currently bound in the symbol table, or a
+;                double-quoted string where the .y accepts names
+; <SYMBOLSTRING> an identifier in PRINT mode that is bound in the symbol table
+; symbol-class terminals (lexer feedback; each is an identifier whose
+; symbol-table entry has the named class):
+;   <SPACESYM> <SECTIONSYM> <TOKENSYM> <USEROPSYM> <VALUESYM> <VALUEMAPSYM>
+;   <CONTEXTSYM> <NAMESYM> <VARSYM> <BITSYM> <SPECSYM> <VARLISTSYM>
+;   <OPERANDSYM> <JUMPSYM> <MACROSYM> <LABELSYM> <SUBTABLESYM>
+; Comments: `#` to end of line. Whitespace separates tokens except in PRINT
+; mode, where a literal space is display-significant (see <constructprint>).
+
+; ----------------------------------------------------------------------------
+; TOP LEVEL
+; ----------------------------------------------------------------------------
+<spec>            ::= <endiandef> ( <aligndef> | <definition> | <constructorlike> )*
+
+<definition>      ::= <tokendef> | <contextdef> | <spacedef> | <varnodedef>
+                    | <bitrangedef> | <pcodeopdef> | <valueattach>
+                    | <nameattach> | <varattach>
+
+<constructorlike> ::= <constructor> | <macrodef> | <withblock>
+
+; ----------------------------------------------------------------------------
+; DEFINITIONS (lexer mode: DEF)
+; ----------------------------------------------------------------------------
+<endiandef>   ::= "define" "endian" "=" ( "big" | "little" ) ";"
+
+<aligndef>    ::= "define" "alignment" "=" <INTEGER> ";"
+
+<tokendef>    ::= <tokenprop> ";"
+<tokenprop>   ::= "define" "token" <STRING> "(" <INTEGER> ")"
+                  ( "endian" "=" ( "little" | "big" ) )?
+                  <fielddef>*
+
+<fielddef>    ::= <STRING> "=" "(" <INTEGER> "," <INTEGER> ")"
+                  ( "signed" | "hex" | "dec" )*
+
+<contextdef>      ::= <contextprop> ";"
+<contextprop>     ::= "define" "context" <VARSYM> <contextfielddef>*
+<contextfielddef> ::= <STRING> "=" "(" <INTEGER> "," <INTEGER> ")"
+                      ( "signed" | "noflow" | "hex" | "dec" )*
+
+<spacedef>    ::= <spaceprop> ";"
+<spaceprop>   ::= "define" "space" <STRING> <spacemod>*
+<spacemod>    ::= "type" "=" ( "ram_space" | "register_space" )
+                | "size" "=" <INTEGER>
+                | "wordsize" "=" <INTEGER>
+                | "default"
+
+<varnodedef>  ::= "define" <SPACESYM> "offset" "=" <INTEGER>
+                  "size" "=" <INTEGER> <stringlist> ";"
+
+<bitrangedef>    ::= "define" "bitrange" <bitrangesingle>+ ";"
+<bitrangesingle> ::= <STRING> "=" <VARSYM> "[" <INTEGER> "," <INTEGER> "]"
+
+<pcodeopdef>  ::= "define" "pcodeop" <stringlist> ";"
+
+<valueattach> ::= "attach" "values"    <valuelist> <intblist>      ";"
+<nameattach>  ::= "attach" "names"     <valuelist> <anystringlist> ";"
+<varattach>   ::= "attach" "variables" <valuelist> <varlist>       ";"
+
+; ----------------------------------------------------------------------------
+; MACROS AND WITH-BLOCKS
+; ----------------------------------------------------------------------------
+<macrodef>    ::= <macrostart> "{" <rtl> "}"
+<macrostart>  ::= "macro" <STRING> "(" <oplist> ")"
+
+<withblock>   ::= "with" <id_or_nil> ":" <bitpat_or_nil> <contextblock>
+                  "{" ( <definition> | <constructorlike> )* "}"
+<id_or_nil>   ::= ( <SUBTABLESYM> | <STRING> )?
+<bitpat_or_nil> ::= <pequation>?
+
+; ----------------------------------------------------------------------------
+; CONSTRUCTORS (lexer modes: PRINT for the display, PATTERN after "is",
+; SEM inside the body)
+; ----------------------------------------------------------------------------
+<constructor> ::= <constructprint> "is" <pequation> <contextblock> <rtlbody>
+
+; The display section. <subtablestart> opens it; the root (instruction) table
+; is the bare ":" form. In PRINT mode whitespace is display-significant: a
+; literal space is itself a print piece, and "^" concatenates adjacent pieces
+; without intervening whitespace. A <SYMBOLSTRING> in the root table prints
+; literally if it names the table itself; elsewhere it declares an operand.
+<constructprint> ::= <subtablestart>
+                     ( <STRING> | <charstring> | <SYMBOLSTRING> | "^" | " " )*
+<subtablestart>  ::= ( <SUBTABLESYM> | <STRING> )? ":" " "*
+<charstring>     ::= <CHAR>+
+
+<rtlbody>     ::= "{" <rtl> "}"
+                | "{" <rtlcontinue> <rtlmid> "}"
+                | "unimpl"
+
+; Named p-code sections within one body (e.g. <reset>): the unnamed first
+; section, then one or more named sections.
+<rtlfirstsection> ::= <rtl> <section_def>
+<rtlcontinue>     ::= <rtlfirstsection> ( <rtlmid> <section_def> )*
+<section_def>     ::= "<<" ( <STRING> | <SECTIONSYM> ) ">>"
+
+; ----------------------------------------------------------------------------
+; PATTERN EQUATIONS (lexer mode: PATTERN)
+; ----------------------------------------------------------------------------
+; Precedence (loosest to tightest): "|" , ";" , "&". All left-associative.
+<pequation>   ::= <elleq>
+                | <pequation> "&" <pequation>
+                | <pequation> "|" <pequation>
+                | <pequation> ";" <pequation>
+
+<elleq>       ::= "..." <ellrt> | <ellrt>
+<ellrt>       ::= <atomic> "..." | <atomic>
+
+<atomic>      ::= <constraint> | "(" <pequation> ")"
+
+<constraint>  ::= <familysymbol> ( "=" | "!=" | "<" | "<=" | ">" | ">=" ) <pexpression>
+                | <OPERANDSYM> "=" <pexpression>
+                | <OPERANDSYM>
+                | <SPECSYM>
+                | <familysymbol>
+                | <SUBTABLESYM>
+
+; Pattern-value expressions. Inside a context-block ACTION expression the
+; bitwise operators are spelled $and / $or / $xor ("&" and "|" belong to the
+; equation level there); "^"/"$xor", "<<", ">>" are as below. Precedence
+; follows the .y declarations: $or < $xor < $and < shifts < +,- < *,/ <
+; unary -,~.
+<pexpression> ::= <INTEGER>
+                | <familysymbol>
+                | <specificsymbol>
+                | "(" <pexpression> ")"
+                | <pexpression> "+"  <pexpression>
+                | <pexpression> "-"  <pexpression>
+                | <pexpression> "*"  <pexpression>
+                | <pexpression> "/"  <pexpression>
+                | <pexpression> "<<" <pexpression>
+                | <pexpression> ">>" <pexpression>
+                | <pexpression> "$and" <pexpression>
+                | <pexpression> "$or"  <pexpression>
+                | <pexpression> "$xor" <pexpression>
+                | "-" <pexpression>
+                | "~" <pexpression>
+
+; ----------------------------------------------------------------------------
+; CONTEXT BLOCKS (disassembly actions, between pattern and body)
+; ----------------------------------------------------------------------------
+<contextblock> ::= ( "[" <contextentry>* "]" )?
+<contextentry> ::= <CONTEXTSYM> "=" <pexpression> ";"
+                 | "globalset" "(" ( <familysymbol> | <specificsymbol> ) ","
+                   <CONTEXTSYM> ")" ";"
+                 | <OPERANDSYM> "=" <pexpression> ";"
+
+; ----------------------------------------------------------------------------
+; SEMANTICS / RTL (lexer mode: SEM)
+; ----------------------------------------------------------------------------
+<rtl>         ::= <rtlmid>
+                | <rtlmid> "export" <exportvarnode> ";"
+                | <rtlmid> "export" <sizedstar> <lhsvarnode> ";"
+
+<rtlmid>      ::= ( <statement>
+                  | "local" <STRING> ";"
+                  | "local" <STRING> ":" <INTEGER> ";" )*
+
+<statement>   ::= <lhsvarnode> "=" <expr> ";"
+                | "local" <STRING> "=" <expr> ";"
+                | <STRING> "=" <expr> ";"
+                | "local" <STRING> ":" <INTEGER> "=" <expr> ";"
+                | <STRING> ":" <INTEGER> "=" <expr> ";"
+                | <sizedstar> <expr> "=" <expr> ";"
+                | <USEROPSYM> "(" <paramlist> ")" ";"
+                | <lhsvarnode> "[" <INTEGER> "," <INTEGER> "]" "=" <expr> ";"
+                | <BITSYM> "=" <expr> ";"
+                | "build" <OPERANDSYM> ";"
+                | "crossbuild" <varnode> "," ( <SECTIONSYM> | <STRING> ) ";"
+                | "delayslot" "(" <INTEGER> ")" ";"
+                | "goto" <jumpdest> ";"
+                | "if" <expr> "goto" <jumpdest> ";"
+                | "goto" "[" <expr> "]" ";"
+                | "call" <jumpdest> ";"
+                | "call" "[" <expr> "]" ";"
+                | "return" "[" <expr> "]" ";"
+                | <MACROSYM> "(" <paramlist> ")" ";"
+                | <label>
+
+; Expression operators, loosest to tightest (all left-assoc unless noted):
+;   ||  <  && ^^  <  | <  ^  <  &  <  == != f== f!=
+;   <  < > <= >= s< s> s<= s>= f< f> f<= f>=   (non-associative)
+;   <  << >> s>>  <  + - f+ f-  <  * / % s/ s% f* f/  <  unary ! ~ - f- (right)
+<expr>        ::= <varnode>
+                | <sizedstar> <expr>
+                | "(" <expr> ")"
+                | <expr> <binop> <expr>
+                | <unaryop> <expr>
+                | <funcop1> "(" <expr> ")"
+                | <funcop2> "(" <expr> "," <expr> ")"
+                | "newobject" "(" <expr> ( "," <expr> )? ")"
+                | "cpool" "(" <paramlist> ")"          ; at least two arguments
+                | <USEROPSYM> "(" <paramlist> ")"
+                | <specificsymbol> "(" <integervarnode> ")"   ; subpiece
+                | <specificsymbol> ":" <INTEGER>              ; byte truncation
+                | <specificsymbol> "[" <INTEGER> "," <INTEGER> "]"  ; bitrange
+                | <BITSYM>
+
+<binop>       ::= "+" | "-" | "*" | "/" | "%" | "s/" | "s%"
+                | "==" | "!=" | "<" | ">" | "<=" | ">="
+                | "s<" | "s>" | "s<=" | "s>="
+                | "f==" | "f!=" | "f<" | "f>" | "f<=" | "f>="
+                | "f+" | "f-" | "f*" | "f/"
+                | "^" | "&" | "|" | "<<" | ">>" | "s>>"
+                | "^^" | "&&" | "||"
+
+<unaryop>     ::= "!" | "~" | "-" | "f-"
+
+<funcop1>     ::= "zext" | "sext" | "abs" | "sqrt" | "nan" | "trunc"
+                | "ceil" | "floor" | "round" | "int2float" | "float2float"
+                | "popcount" | "lzcount"
+<funcop2>     ::= "carry" | "scarry" | "sborrow"
+
+<sizedstar>   ::= "*" "[" <SPACESYM> "]" ":" <INTEGER>
+                | "*" "[" <SPACESYM> "]"
+                | "*" ":" <INTEGER>
+                | "*"
+
+<jumpdest>    ::= <JUMPSYM>
+                | <INTEGER>
+                | <OPERANDSYM>
+                | <INTEGER> "[" <SPACESYM> "]"
+                | <label>
+
+<varnode>        ::= <specificsymbol> | <integervarnode>
+<integervarnode> ::= <INTEGER>
+                   | <INTEGER> ":" <INTEGER>
+                   | "&" <varnode>
+                   | "&" ":" <INTEGER> <varnode>
+<lhsvarnode>     ::= <specificsymbol>
+<exportvarnode>  ::= <specificsymbol>
+                   | "&" <varnode>
+                   | "&" ":" <INTEGER> <varnode>
+                   | <INTEGER> ":" <INTEGER>
+
+<label>       ::= "<" ( <LABELSYM> | <STRING> ) ">"
+
+; ----------------------------------------------------------------------------
+; SYMBOL CLASSES AND LISTS
+; ----------------------------------------------------------------------------
+<familysymbol>   ::= <VALUESYM> | <VALUEMAPSYM> | <CONTEXTSYM>
+                   | <NAMESYM> | <VARLISTSYM>
+<specificsymbol> ::= <VARSYM> | <SPECSYM> | <OPERANDSYM> | <JUMPSYM>
+
+; "_" in value/varnode list positions is the explicit hole (unattached entry).
+<intblist>    ::= "[" <intbpart>+ "]" | <INTEGER> | "-" <INTEGER>
+<intbpart>    ::= <INTEGER> | "-" <INTEGER> | "_"
+
+<stringlist>  ::= "[" <STRING>+ "]" | <STRING>
+
+<anystringlist> ::= "[" ( <STRING> | <anysymbol> )+ "]"
+
+<valuelist>   ::= "[" ( <VALUESYM> | <CONTEXTSYM> )+ "]"
+                | <VALUESYM> | <CONTEXTSYM>
+
+<varlist>     ::= "[" ( <VARSYM> | "_" )+ "]" | <VARSYM>
+
+<paramlist>   ::= ( <expr> ( "," <expr> )* )?
+<oplist>      ::= ( <STRING> ( "," <STRING> )* )?
+
+<anysymbol>   ::= <SPACESYM> | <SECTIONSYM> | <TOKENSYM> | <USEROPSYM>
+                | <MACROSYM> | <SUBTABLESYM> | <VALUESYM> | <VALUEMAPSYM>
+                | <CONTEXTSYM> | <NAMESYM> | <VARSYM> | <VARLISTSYM>
+                | <OPERANDSYM> | <JUMPSYM> | <BITSYM>
