@@ -113,7 +113,7 @@ Each rec is filed as a GitHub issue ([#1–#42](https://codeberg.org/CryptoJones
 
 - [x] **36. Stop flushing the decompiler cache on trivial edits (#1871).** 26 reactions, sitting open. The fix is plausibly small relative to its UX impact. — [CACHE_FLUSH_1871.md](docs/decompiler/CACHE_FLUSH_1871.md)
 
-- [x] **37. Improve C++ / vtable handling as a coordinated roadmap, not point fixes.** #516 (49 👍), #992, related issues — community is loudly asking for first-class C++ analysis. IDA/Hex-Rays has it. This is a strategic, not tactical, gap. Spec a C++ frontend RFC. — [RFC 0001](docs/rfcs/0001-cpp-frontend.md)
+- [x] **37. Improve C++ / vtable handling as a coordinated roadmap, not point fixes.** #516 (49 👍), #992, related issues — community is loudly asking for first-class C++ analysis. IDA/Hex-Rays has it. This is a strategic, not tactical, gap. Spec a C++ frontend RFC. — [RFC 0001](docs/rfcs/0001-cpp-frontend.md). **Shipped and usable today**: seven C++ idiom forms render as `C++:` comments — see the [C++ Hints user guide](docs/CPP_HINTS_GUIDE.md).
 
 - [x] **38. Tackle variable-naming-across-scopes (#975, 53 👍).** The single most-upvoted open issue. Touches the symbol/scope model end to end; needs design, not a patch. Worth principal-architect time. — [RFC 0002](docs/rfcs/0002-variable-naming-across-scopes.md)
 
