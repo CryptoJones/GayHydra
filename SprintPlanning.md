@@ -674,11 +674,18 @@ them. They are ordered by strategic weight, not effort.
     — including `decompile/cpp/Makefile`, the predicted Rec 34 collision.
   - [x] ~~**Policy half (Tier 3)** — `docs/upstream-tracking/MERGE_POLICY.md`: merge
     cadence, conflict playbook, fork-owned-paths manifest, collision watch-list.~~
-    Drafted 2026-06-11 (cadence recommendation: each upstream stable tag, ad-hoc on
-    security-relevant drift or conflicts crossing ~150 — **Aaron ratifies**). The
+    Drafted 2026-06-11, **ratified 2026-06-12** (cadence: each upstream stable tag, ad-hoc on
+    security-relevant drift or conflicts crossing ~150). The
     guards it requires now exist (deep-CI, hint-recall corpus). Remaining: the
-    **first actual sync** (`merge/upstream-<tag>` branch per the procedure), an
-    Aaron-scheduled event.
+    **first actual sync**. Target chosen + fully triaged 2026-06-12
+    ([`merge-prep-2026-06.md`](docs/upstream-tracking/merge-prep-2026-06.md)):
+    merge the stable tag **`Ghidra_12.1.2_build`** (42 behind, **8 conflicts**),
+    not master. 7 of 8 conflict resolutions are determined; the 8th
+    (`ClassSearcher.java`) is a genuine architectural divergence
+    (fork's type-aware `loadExtensionPoint` vs upstream's safe-`forNameSafe`)
+    with app-wide class-loading blast radius — left as the one attended
+    decision, no speculative resolution pushed (the build can't catch a
+    wrong class-loading merge). The attended merge is now a ~1-hour guided job.
 - [x] ~~**Scheduled deep-CI job** — a nightly workflow running what PR CI never
   does: the fork-owned `test.slow` suites, a bounded fuzz smoke, and the
   decompiler-smoke gate against a master build.~~ Shipped 2026-06-11:

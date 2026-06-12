@@ -1,6 +1,12 @@
-# DRAFT — Rec 18 #18-2 coordination message for NSA/ghidra#1481
+# Rec 18 #18-2 coordination message for NSA/ghidra#1481
 
-**Status: DRAFT, Aaron-attended.** Sprint 15 / implementation-order Tier 2
+**Status: POSTED 2026-06-12** —
+[NSA/ghidra#1481 comment](https://github.com/NationalSecurityAgency/ghidra/issues/1481#issuecomment-4690019283).
+The text below is what was posted; the Tier-5 `ItemDeserializer` hardening
+implementation follows when the thread allows (the comment is forward-looking
+coordination, not a claim the fix has landed). Original draft note retained:
+
+**Was: DRAFT, Aaron-attended.** Sprint 15 / implementation-order Tier 2
 item 8 says: open the disclosure thread *now* (external latency dominates),
 land the hardening code later (Tier 5) when the thread allows. This is the
 draft to review and post as a comment on

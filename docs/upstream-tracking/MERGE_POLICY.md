@@ -3,7 +3,7 @@
 *Sprint 15 (meta-review 2026-06-11), Tier 3. The measurement half is
 [`drift-report.md`](drift-report.md) (weekly,
 `.github/workflows/upstream-drift.yml`); this is the policy half. The
-cadence below is the working recommendation — Aaron ratifies or amends it.*
+cadence below is the working recommendation — **ratified 2026-06-12.***
 
 ## Why this exists
 

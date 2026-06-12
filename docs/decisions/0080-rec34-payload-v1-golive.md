@@ -195,6 +195,23 @@ schema-v1 the terminal state** — greeting + framing + request schema are the r
 hardening wins — and close `#34-10f+` as not-earned, the same honest dissolution the
 `#37-10u` template slice got (DD-0070).
 
+## Resolution (2026-06-12): NO-GO — requests-only schema-v1 is the terminal state
+
+`#34-10e` has shipped; the request direction is complete. The go/no-go is decided
+**no-go**, on the evidence the addendum laid out: the response payload (the decompile
+result) is a large marshaled *document*, so a v1 response would be exactly the
+XML-text-in-a-FlatBuffers-string envelope the `#34-10d-2` addendum already showed buys
+no typed-decode benefit — while keeping a third live protocol combination (and its test
+matrix + upstream-host-compat cost) alive past the v27.x horizon. The realized hardening
+wins (greeting negotiation, CRC framing, schema-validated *requests* for the seven
+commands) stand on their own.
+
+**`#34-10f+` is closed as not-earned**, the honest dissolution the `#37-10u` template
+slice got (DD-0070). The `#34-7` request-encode removal (one release after `#34-10e`)
+and the `#34-8` v27.x decode removal still proceed — they are about the request
+direction, unaffected by this. If a future need surfaces a response schema carrying
+genuinely structured non-document data, this re-opens on that evidence.
+
 ## Consequences
 
 - `#34-7` executed on the written clock would have deleted the only production encode

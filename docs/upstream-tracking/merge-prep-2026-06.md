@@ -76,3 +76,62 @@ the fork's `forNameSafe` contract intact.
 The whole set is a few hours of mechanical work, not the multi-day
 archaeology "74 conflicts" implied — the corrected count is the de-risking
 finding.
+
+---
+
+## Update (2026-06-12): target the stable tag, and a deeper per-conflict pass
+
+A dry-run merge (on a throwaway branch, then aborted) refined the plan:
+
+**Target the stable tag `Ghidra_12.1.2_build` (2026-06-02), not master.** Per
+MERGE_POLICY's cadence it's the right target: **42 commits behind, 8
+conflicts** (vs 203 / 14 against master), and it's a released baseline. The
+post-12.1.2 master commits come in the next sync. *(Also: the drift report's
+"behind" is vs master; the per-sync conflict count is far lower against the
+stable tag.)*
+
+**Per-file resolution determined for 7 of the 8 — the 8th is the real
+judgment call:**
+
+| File | Resolution |
+|---|---|
+| `Ghidra/application.properties` | **ours** — pure fork version metadata (`26.3.0`/GayHydra, `upstream.version=12.2`) vs upstream's `12.1.2`/DEV; no upstream substance |
+| `LocationMemento.java` | hand-merge: keep upstream's other hunks (3 hunks upstream-side), take **ours** at the `forNameSafe` call (uses the fork's `loader` local; upstream inlines `getClassLoader()`) — functionally identical, both call `forNameSafe` |
+| `WrappedCustomOption.java` | hand-merge: **ours** `forNameSafe(className,…)` (matches the surrounding `className` declaration; upstream renamed the local to `customOptionClassName`) |
+| `ProgramLocation.java` | hand-merge: **ours** at the `forNameSafe` site (uses the declared `loader`); keep upstream's other 2 hunks |
+| `serialFilterREADME.md` | merge both — upstream text + the fork's typo corrections |
+| `MachoLoader.java` | **take upstream's added block** — a pure addition of Swift-compiler detection (`SwiftUtils.isSwift → SWIFT_COMPILER`) ahead of the Go check |
+| `DataTypeManagerDB.java` | hand-merge: keep the fork's `import ghidra.util.Lock.Closeable;` (used, 34 refs) + the fork's `clazz` local naming; the `forNameSafe` calls are cosmetic var-name diffs (`clazz` vs `c`) |
+| **`ClassSearcher.java`** | **ATTENDED — architectural divergence, do not auto-resolve** |
+
+**Why `ClassSearcher.java` is the one blocker (and why no PR was pushed):**
+the fork and upstream evolved the *same* class-loading safety goal two
+different ways, and choosing between them is an architecture decision with
+app-wide blast radius (a subtly-wrong merge here passes compilation and basic
+tests but breaks extension-point discovery at runtime — the `ClassCastException`
+flood seen when this class is wrong):
+
+- **`forNameSafe`** — *clear*: take **upstream**. Upstream's version is a
+  strict improvement: it verifies the type with `asSubclass` *before* running
+  the class's static initializers (`Class.forName(name, true, loader)
+  // Initialize it this time`), where the fork's older form returns
+  immediately after `asSubclass`. Adopt upstream's.
+- **`loadExtensionPoint`** — *the judgment call*: the fork made it generic and
+  type-aware — `loadExtensionPoint(path, Class<T> ancestorClass, className)
+  → Class<? extends T>`, doing the `asSubclass` *inside* and adding a
+  "not a known extension point" `Msg.error` — as its ClassCastException-
+  prevention fix (Rec 19-adjacent). Upstream kept it raw —
+  `loadExtensionPoint(path, className) → Class<?>` — and pushed the safety
+  into `forNameSafe` instead. **Keeping the fork's typed `loadExtensionPoint`
+  vs adopting upstream's raw-`loadExtensionPoint`+safe-`forNameSafe` is the
+  fork author's call.** Recommendation: keep the fork's typed
+  `loadExtensionPoint` (it's the stricter, intentional fork hardening) *and*
+  adopt upstream's improved `forNameSafe` — they compose — but verify
+  extension discovery at runtime before merging.
+
+So the attended merge is ~1 hour: apply the 7 determined resolutions
+mechanically, make the one `ClassSearcher` architecture call, then validate
+(deep-CI trio + `ipc_e2e` + hint-recall + `decomp_test_dbg`; the podman rig
+reproduces it). No speculative resolution was pushed because the
+`ClassSearcher` blast radius is exactly the case the build can't catch and the
+policy reserves for attended review.
