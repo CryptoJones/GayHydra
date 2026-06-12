@@ -214,4 +214,25 @@ jobs:
           echo "GAYHYDRA_DIR=$GAYHYDRA" >> "$GITHUB_ENV"
 
       - name: Hint-recall corpus check
-        run: scripts/hint-recall.sh "$GAYHYDRA_DIR"
+        # The recall comparison is the hard gate (fails on any per-form drop vs
+        # the committed baseline). The PERF wall-time the runner also emits is
+        # surfaced as a trend table in the step summary, NOT gated: an absolute-ms
+        # threshold flakes on shared-runner variance and is environment-specific
+        # (meta-review Tier 3 item 10; see scripts/hint-recall.sh). Accumulating
+        # the trend here is the prerequisite a real threshold needs.
+        run: |
+          set -o pipefail
+          OUT=$(scripts/hint-recall.sh "$GAYHYDRA_DIR" 2>&1) && RC=0 || RC=$?
+          echo "$OUT"
+          {
+            echo "### Hint-recall decompile throughput (trend, not gated)"
+            echo ""
+            echo "| corpus cell | elapsed_ms |"
+            echo "|---|---:|"
+            echo "$OUT" | sed -n 's/^PERF \([^ ]*\) elapsed_ms=\([0-9]*\)$/| \1 | \2 |/p'
+            echo ""
+            echo "_Wall-time on a shared GitHub-hosted runner — treat as trend, not"
+            echo "an absolute. A regression gate lands once run-to-run variance is"
+            echo "characterized from this accumulated data (scripts/hint-recall.sh)._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$RC"

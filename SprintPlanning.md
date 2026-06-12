@@ -1142,19 +1142,25 @@ Work that doesn't fit a current sprint but is documented in the audit:
     idiom calls), the type-resolving forms fire: `-O0` cells show
     `CONSTRUCTION`/`DESTRUCTOR_CALL`/`DELETE`/`CAST` (gcc also `PLACEMENT`),
     `-O2` collapses to `DELETE`/`CAST` (optimizer inlines idioms) — all now a
-    **non-zero CI-locked baseline** (deep-ci green). Remaining tracked zeros, each
-    precisely characterized in the corpus README: `VIRTUAL_CALL` (needs the `_ZTV`
-    leg `#37-4b-4`), `ARRAY_CONSTRUCTION` (idiom shape unrecovered on this
-    codegen), and `form_upcast` (a bare `PTRSUB` with no enclosing `CAST` —
-    `CppBaseCastRecognizer` matches `CAST(PTRSUB)` only; a grounded recognizer
-    extension is the next slice, needs a harness-based test). (The MSVC PE column
+    **non-zero CI-locked baseline** (deep-ci green). `VIRTUAL_CALL` moved off zero
+    to **3/cell** with the `_ZTV` leg `#37-4b-4` (shipped 2026-06-12; recognizer
+    extended to the typed-vtable `PTRADD`/`PTRSUB` shape). Remaining tracked zeros,
+    each precisely characterized in the corpus README: `ARRAY_CONSTRUCTION` (idiom
+    shape unrecovered on this codegen) and `form_upcast` (a bare `PTRSUB` with no
+    enclosing `CAST` — `CppBaseCastRecognizer` matches `CAST(PTRSUB)` only; the bare
+    extension over-fired on the corpus when tried, reverted). (The MSVC PE column
     via win11-ci is the parallel Windows move.)
   - *Perf baseline.* Rec 35/36 are performance recs with no benchmark loop anywhere
-    in CI — a 2x decompiler slowdown would ship silently. Add a decompile-throughput
-    baseline over the same corpus + a regression threshold. This also resolves the
-    Rec 36 `#36-4` telemetry gate honestly: nothing collects "real session"
-    telemetry today, so either build a collection path or restate the gate as
-    closed-until-users-exist.
+    in CI — a 2x decompiler slowdown would ship silently. **v1 (2026-06-12):** the
+    recall runner already times the user-visible decompile path (`PERF … elapsed_ms`
+    per cell), and deep-ci now surfaces those as a **trend table in the nightly step
+    summary** — so a throughput regression is *visible* rather than silent. The hard
+    regression *gate* stays deferred deliberately: an absolute-ms threshold flakes
+    on shared-runner variance, and worse, is environment-specific (a baseline
+    captured off-CI won't match the hosted runner). The step-summary trend is the
+    prerequisite — it accumulates the run-to-run variance data a real threshold
+    needs. The Rec 36 `#36-4` telemetry gate is already restated honestly in the
+    Sprint 8 row (evidence-gated, closed-until-real-session-cost-is-measured).
 
 ---
 
