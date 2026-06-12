@@ -60,9 +60,13 @@ What the current baseline shows (per cell, codegen-pinned):
 - **`-O2`**: the type-resolving forms largely collapse (the optimizer
   inlines/folds the idioms), leaving `DELETE` + `CAST`. This is a real,
   measured codegen sensitivity — now a tracked column, not a surprise.
-- **`VIRTUAL_CALL = 0` everywhere**: needs the `_ZTV` vtable leg
-  (`#37-4b-4`, not yet built) to name a recovered slot — a `b->draw()`
-  compiles to a `CALLIND` through the vtable the hierarchy feed cannot name.
+- **`VIRTUAL_CALL = 3` per binary** (was 0): the `_ZTV` vtable leg
+  (`#37-4b-4`, shipped 2026-06-12) feeds named vtable slots, and the
+  recognizer was extended to the typed-vtable `PTRADD`/`PTRSUB` shape
+  Ghidra emits when it types the vtable as a function-pointer array (the
+  raw `LOAD`/`INT_ADD` grounding alone didn't match real DWARF binaries).
+  The 3 are `~Base` (complete + deleting destructor slots) and `draw` — the
+  destructor slots are virtual-dtor dispatches, themselves virtual calls.
 - **`ARRAY_CONSTRUCTION = 0`**: the array-new idiom shape isn't recovered on
   this codegen; a documented follow-up.
 - **`form_upcast` declines** (so `CAST` counts the downcast only): at `-O0`

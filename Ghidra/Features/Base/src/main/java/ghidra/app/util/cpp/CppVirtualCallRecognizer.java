@@ -51,6 +51,14 @@ import ghidra.program.model.pcode.Varnode;
  * {@link PcodeOp#INT_ADD}; slot 0 has no add at all, so the slot load dereferences the vtable
  * pointer directly.
  *
+ * <p><b>The typed variant ({@code #37-4b-4}).</b> Once the Itanium vtable analyzer types a
+ * {@code _ZTV*} as a function-pointer array, the decompiler rewrites the same dispatch with typed
+ * pointer arithmetic: the slot access becomes {@code PTRADD(vtable, slotIndex, ptrSize)} (a scaled
+ * index, not a raw byte addend) and the vptr load reads from {@code PTRSUB(receiver, 0)} (the
+ * structured access to the object's vptr field) rather than the receiver pointer directly. The
+ * matcher accepts both shapes; without the typed branch, recall on real DWARF binaries was zero
+ * even though the raw idiom matched the hand-laid probe.
+ *
  * <p><b>Advisory and total-failure-safe.</b> Like the renderer it feeds, recognition is advisory: a
  * shape that does not match the idiom yields {@code null}, never an exception or a fabricated
  * dispatch, so an ordinary indirect call through a function-pointer variable is correctly declined
@@ -100,7 +108,16 @@ public final class CppVirtualCallRecognizer {
 		PcodeOp slotAdd = slotPtr.getDef();
 		if (slotAdd != null && slotAdd.getOpcode() == PcodeOp.INT_ADD &&
 			isConstant(slotAdd.getInput(1))) {
+			// raw shape: INT_ADD(vtable, byteOffset) (untyped vtable pointer arithmetic)
 			byteOffset = slotAdd.getInput(1).getOffset();
+			vtablePtr = stripCopyCast(slotAdd.getInput(0));
+		}
+		else if (slotAdd != null && slotAdd.getOpcode() == PcodeOp.PTRADD &&
+			isConstant(slotAdd.getInput(1)) && isConstant(slotAdd.getInput(2))) {
+			// typed shape (#37-4b-4 grounding): when Ghidra types the vtable as a
+			// function-pointer array, the slot access is PTRADD(vtable, slotIndex, ptrSize)
+			// instead of INT_ADD with a byte offset.
+			byteOffset = slotAdd.getInput(1).getOffset() * slotAdd.getInput(2).getOffset();
 			vtablePtr = stripCopyCast(slotAdd.getInput(0));
 		}
 		else {
@@ -116,6 +133,16 @@ public final class CppVirtualCallRecognizer {
 		Varnode receiver = stripCopyCast(vtableLoad.getInput(1));
 		if (receiver == null) {
 			return null;
+		}
+		// typed shape: the vtable-pointer load reads from PTRSUB(receiver, 0) — the structured
+		// access to the object's vptr field — rather than the receiver pointer directly.
+		PcodeOp receiverDef = receiver.getDef();
+		if (receiverDef != null && receiverDef.getOpcode() == PcodeOp.PTRSUB &&
+			isConstant(receiverDef.getInput(1)) && receiverDef.getInput(1).getOffset() == 0) {
+			receiver = stripCopyCast(receiverDef.getInput(0));
+			if (receiver == null) {
+				return null;
+			}
 		}
 
 		int pointerSize = vtablePtr.getSize();
