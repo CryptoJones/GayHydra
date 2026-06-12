@@ -37,8 +37,13 @@ BOTH_TOUCHED=$(comm -12 \
 BOTH_COUNT=$(printf '%s' "$BOTH_TOUCHED" | grep -c . || true)
 
 # Actual conflicts: a worktree-safe dry-run merge. merge-tree exits 1 when
-# the merge would conflict; the output is the tree OID then the conflicted
-# paths (--name-only).
+# the merge would conflict. The `--write-tree` output is: the tree OID
+# (line 1), then the conflicted-file section (one path per line with
+# `--name-only`), then a BLANK LINE, then informational messages
+# ("Auto-merging …", "CONFLICT …"). Take ONLY the conflicted-file section
+# (line 2 up to the first blank line) — an earlier version counted every
+# non-blank line after line 1, which wrongly included the dozens of
+# "Auto-merging" info lines and badly overcounted (74 reported vs 14 real).
 set +e
 MERGE_OUT=$(git merge-tree --write-tree --name-only HEAD upstream/master)
 MERGE_STATUS=$?
@@ -46,7 +51,7 @@ set -e
 if [ "$MERGE_STATUS" -eq 0 ]; then
   CONFLICTS=""
 else
-  CONFLICTS=$(printf '%s\n' "$MERGE_OUT" | tail -n +2 | sed '/^$/d')
+  CONFLICTS=$(printf '%s\n' "$MERGE_OUT" | awk 'NR==1{next} /^$/{exit} {print}')
 fi
 CONFLICT_COUNT=$(printf '%s' "$CONFLICTS" | grep -c . || true)
 
