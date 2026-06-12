@@ -1125,10 +1125,23 @@ Work that doesn't fit a current sprint but is documented in the audit:
     the decompiler no typed receiver to resolve against, (2) trivial implicit
     ctors are inlined away so most idioms never appear in an unlinked object, and
     (3) `VIRTUAL_CALL` needs the not-yet-built `_ZTV` vtable leg (`#37-4b-4`) to
-    name a slot. Moving ELF recall needs **linked `-g` corpus executables + the
-    `_ZTV` analyzer**, now the documented next slice; the unlinked corpus stays as
-    the `DELETE`/regression tripwire. (The MSVC PE column via win11-ci is the
-    parallel Windows move.)
+    name a slot. **Recall now MOVED (2026-06-12)**: a headless
+    decompiler-output investigation (`DiagnoseCppHints.java`, committed) caught a
+    **real shipped bug** — `CppItaniumRttiAnalyzer.canAnalyze` rejected the
+    `unknown` compiler string a relocatable `.o` reports, so the analyzer never
+    ran and the type system stayed empty (`fix(cpp)` commit; gate is now
+    format-only, the `_ZTI`-symbol presence is the real filter). With the corpus
+    regenerated to `-g` + non-trivial ctors (which give typed receivers + real
+    idiom calls), the type-resolving forms fire: `-O0` cells show
+    `CONSTRUCTION`/`DESTRUCTOR_CALL`/`DELETE`/`CAST` (gcc also `PLACEMENT`),
+    `-O2` collapses to `DELETE`/`CAST` (optimizer inlines idioms) — all now a
+    **non-zero CI-locked baseline** (deep-ci green). Remaining tracked zeros, each
+    precisely characterized in the corpus README: `VIRTUAL_CALL` (needs the `_ZTV`
+    leg `#37-4b-4`), `ARRAY_CONSTRUCTION` (idiom shape unrecovered on this
+    codegen), and `form_upcast` (a bare `PTRSUB` with no enclosing `CAST` —
+    `CppBaseCastRecognizer` matches `CAST(PTRSUB)` only; a grounded recognizer
+    extension is the next slice, needs a harness-based test). (The MSVC PE column
+    via win11-ci is the parallel Windows move.)
   - *Perf baseline.* Rec 35/36 are performance recs with no benchmark loop anywhere
     in CI — a 2x decompiler slowdown would ship silently. Add a decompile-throughput
     baseline over the same corpus + a regression threshold. This also resolves the
