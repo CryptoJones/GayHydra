@@ -67,8 +67,24 @@ What the current baseline shows (per cell, codegen-pinned):
   this codegen; a documented follow-up.
 - **`form_upcast` declines** (so `CAST` counts the downcast only): at `-O0`
   an upcast is a *bare* pointer-typed `PTRSUB` with no enclosing `CAST` op,
-  which `CppBaseCastRecognizer` (matching `CAST(PTRSUB)`) doesn't catch — a
-  recognizer-coverage gap, the documented next fix.
+  which `CppBaseCastRecognizer` (matching `CAST(PTRSUB)`) doesn't catch.
+  **A bare-`PTRSUB`/`PTRADD` matcher extension was tried and reverted
+  (2026-06-12): the corpus caught it over-firing** — `CAST` jumped 1→5..8
+  per cell because *every compiler-internal base adjustment* (e.g.
+  `Derived2`'s ctor doing `this+16` to construct its `Base` subobject) is
+  itself a base-subobject `PTRSUB` and passed the driver's base-edge
+  filter. Each such hint is technically a real adjustment but is **noise**
+  (the user wrote no `static_cast` there). This is exactly why the matcher
+  is `CAST`-anchored: the compiler emits an explicit `CAST` for a
+  *user-written* cast but only a bare `PTRSUB` for internal ctor
+  adjustments. Distinguishing a user upcast from an internal base-adjust at
+  `-O0` (both bare `PTRSUB`s) needs a more discriminating signal (e.g. the
+  adjusted pointer crossing a user-visible boundary — a return value or a
+  differently-typed argument) — attended matcher-design work, not a
+  coverage tweak. The recognizer/driver unit tests stayed 9/9 green
+  throughout; **the corpus was the safety net that caught the real-world
+  noise** the synthetic tests couldn't — the measurement infrastructure
+  working as designed.
 
 The absolute counts are **codegen-pinned tripwire values** (e.g.
 `DESTRUCTOR_CALL=7` includes the ctors'/dtors' own internal destructor
