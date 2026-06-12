@@ -15,7 +15,7 @@ mkdir -p objects
 build() { # name cc arch opt extra-flags...
   local name=$1 cc=$2 arch=$3 opt=$4; shift 4
   local out="objects/${name}-${arch}-${opt}.o"
-  "$cc" "$@" -"$opt" -c -fno-exceptions corpus.cpp -o "$out"
+  "$cc" "$@" -g -"$opt" -c -fno-exceptions corpus.cpp -o "$out"
   echo "built $out"
 }
 

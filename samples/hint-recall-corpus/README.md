@@ -35,58 +35,50 @@ count above prints an `IMPROVED` notice — lock it in with
 `.github/workflows/deep-ci.yml` runs the check against each night's master
 build.
 
+
 ## Reading the numbers
 
-Zeros are data. Only `DELETE` fires (2/binary) because it classifies by the
-callee *name* (`operator delete`); every other form needs the decompiler to
-type the *receiver* as the class, and the fed hierarchy then resolves it.
+The corpus is **DWARF (`-g`) + non-trivial out-of-line ctors/dtors** for a
+reason established by investigation (2026-06-11/12): a trivial-ctor /
+non-DWARF corpus measures `DELETE`-only and cannot exercise the
+type-resolving forms, because the decompiler then types receivers as
+`undefined8` and inlines the idioms away. With `-g` + real ctors, receivers
+are typed (`Base *`, not `undefined8`) and the ctor/dtor/cast idioms appear.
 
-### Why the Itanium-RTTI analyzer (shipped #37-4b-1..3) did NOT move these
+The investigation also caught a **real shipped bug**: `CppItaniumRttiAnalyzer`
+gated `canAnalyze` on the compiler *metadata* string, which is `unknown` for
+a relocatable `.o`, so the analyzer never ran and the type system stayed
+empty — every type-resolving driver then declined for lack of a class to
+resolve. The fix (format-only gate; `_ZTI` symbol presence is the real
+filter) is what moved these numbers off zero.
 
-Grounded by probe (2026-06-11), in two stacked reasons:
+What the current baseline shows (per cell, codegen-pinned):
 
-1. **No typed receiver.** These are unstripped but **non-DWARF** `.o`
-   objects, so the decompiler types a `Base *` parameter as `undefined8` —
-   the recognition drivers have no class name to resolve against the fed
-   hierarchy. (`DELETE` is immune: it never looks at the receiver type.)
-2. **The corpus source doesn't emit most idioms in an unlinked `.o`.** The
-   classes have trivial/implicit constructors, so `new C()`'s ctor call is
-   inlined away (nothing to fuse → CONSTRUCTION/ARRAY/PLACEMENT can't
-   match); `operator new`/`operator delete` and the ctors are undefined
-   externals an unlinked object never resolves. A `-g` rebuild probe
-   confirmed reason 1 is not the only gate: the numbers stayed at
-   `DELETE=2` even with DWARF, because of reason 2 plus —
-3. **VIRTUAL_CALL additionally needs the `_ZTV` vtable leg** (`#37-4b-4`,
-   not yet built) to map a recovered slot index to its method name; the
-   hierarchy feed alone cannot name `param_1->draw()`.
+- **`-O0`**: `CONSTRUCTION`, `DESTRUCTOR_CALL`, `DELETE`, `CAST` all fire
+  (gcc additionally gets `PLACEMENT_CONSTRUCTION`). The fed hierarchy +
+  typed receivers resolve.
+- **`-O2`**: the type-resolving forms largely collapse (the optimizer
+  inlines/folds the idioms), leaving `DELETE` + `CAST`. This is a real,
+  measured codegen sensitivity — now a tracked column, not a surprise.
+- **`VIRTUAL_CALL = 0` everywhere**: needs the `_ZTV` vtable leg
+  (`#37-4b-4`, not yet built) to name a recovered slot — a `b->draw()`
+  compiles to a `CALLIND` through the vtable the hierarchy feed cannot name.
+- **`ARRAY_CONSTRUCTION = 0`**: the array-new idiom shape isn't recovered on
+  this codegen; a documented follow-up.
+- **`form_upcast` declines** (so `CAST` counts the downcast only): at `-O0`
+  an upcast is a *bare* pointer-typed `PTRSUB` with no enclosing `CAST` op,
+  which `CppBaseCastRecognizer` (matching `CAST(PTRSUB)`) doesn't catch — a
+  recognizer-coverage gap, the documented next fix.
 
-### Sharper finding (2026-06-12 probe): even `-g` + non-trivial ctors stays `DELETE`-only
+The absolute counts are **codegen-pinned tripwire values** (e.g.
+`DESTRUCTOR_CALL=7` includes the ctors'/dtors' own internal destructor
+calls), not semantic idiom counts — their job is to fail CI if the Itanium
+feed or a recognizer regresses, locking in the gate-fix gain. The remaining
+zeros (`VIRTUAL_CALL`, `ARRAY_CONSTRUCTION`, `form_upcast`) are the
+well-characterized, tracked gaps. An MSVC PE column via the win11-ci box is
+the parallel Windows move.
 
-A second probe rebuilt the corpus with **DWARF (`-g`) *and* non-trivial
-out-of-line constructors/destructors** (so receivers are typed *and* the
-ctor/dtor calls are real, locally-resolvable functions). Recall **still
-measured `DELETE`-only** — so the gate is deeper than receiver typing, and
-it is **per-form**, each needing `HighFunction`/p-code-level investigation
-rather than a corpus change:
-
-- **`DESTRUCTOR_CALL`** — a `virtual ~Base()` compiles `b->~Base()` to a
-  *vtable dispatch* (`CALLIND`), not the direct `CALL` the destructor
-  recognizer matches. Only a *non-virtual* dtor is a direct call; a virtual
-  one is really a virtual-call site and needs the `_ZTV` leg. (The extra
-  `DELETE` hits the probe showed are the dtor's own internal `delete this`.)
-- **`CONSTRUCTION` / `CAST`** — declined even with a typed receiver, a real
-  local ctor, and the now-fed base-offset edge. Why needs reading the
-  decompiled `HighFunction` (is the DWARF param type actually applied to the
-  varnode? does the cast survive as the expected `PTRSUB`/`PTRADD` shape? is
-  `operator new`'s extern `CALL` classified?) — not answerable by black-box
-  recall counting.
-
-**Conclusion:** moving ELF type-resolving recall is a **multi-recognizer
-investigation best done attended** (with the decompiler output in hand),
-plus the `_ZTV` vtable leg — not a single corpus or analyzer change, and
-not tractable through ~40-minute black-box build probes. The shipped
-Itanium RTTI leg (`#37-4b-1..3`) is correct, matrix-verified infrastructure
-that this investigation will build on; it simply isn't *sufficient* alone.
-The unlinked-`.o` corpus stays as the `DELETE`/regression tripwire; the
-type-resolving columns are the tracked, now-well-characterized gap. An MSVC
-PE column via the win11-ci box is the parallel Windows move.
+`DiagnoseCppHints.java` (`@category C++`) is the headless diagnostic that
+drove this: it dumps the gate inputs, typeinfo symbols, fed type system, and
+per-function p-code with recognizer verdicts — point it at any binary to see
+why a form declines without a GUI.
