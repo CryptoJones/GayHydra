@@ -7,6 +7,14 @@ dependencies/
 flatRepo/
 Ghidra/.ghidraSvrKeys
 wrapper.log*
+# Stray log4j sink files: a headless/test run with an unresolved
+# ${sys:logFilename} / ${sys:scriptLogFilename} property drops literally
+# named files into the module dir, which then trips the `ip` task's
+# IP-header gate on the next build. Ignore them so they never get staged.
+${sys:logFilename}
+${sys:scriptLogFilename}
+**/${sys:logFilename}
+**/${sys:scriptLogFilename}
 
 Thumbs.db
 .DS_Store

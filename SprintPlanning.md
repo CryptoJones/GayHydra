@@ -1116,9 +1116,19 @@ Work that doesn't fit a current sprint but is documented in the audit:
     `CountCppHintRecallScript` + `scripts/hint-recall.sh` + `baseline.json`, wired
     into deep-ci's `master_smoke` job (fails on any per-form drop). **First real
     numbers prove the gap**: only `DELETE` fires (2/binary) — every type-resolving
-    form is 0 across all 8 cells because the production analyzers gate on MSVC PE
-    and the ELF type system goes unfed. Closing the gap (an Itanium-RTTI analyzer
-    leg, the PE column) is now a measured, baseline-locked workstream.
+    form is 0 across all 8 cells. **Itanium-RTTI analyzer leg shipped (`#37-4b-1..3`,
+    2026-06-11)**: `CppItaniumRttiDecoder` + `CppItaniumRttiScan` +
+    `CppItaniumRttiAnalyzer` now auto-feed the shared type system on GCC/Clang
+    ELF/Mach-O — the MSVC `CppRttiAnalyzer` twin. **Recall still measured zero
+    after it** — a precise grounded finding (corpus README): the fed *hierarchy*
+    isn't enough on these binaries because (1) the unlinked non-DWARF `.o`s give
+    the decompiler no typed receiver to resolve against, (2) trivial implicit
+    ctors are inlined away so most idioms never appear in an unlinked object, and
+    (3) `VIRTUAL_CALL` needs the not-yet-built `_ZTV` vtable leg (`#37-4b-4`) to
+    name a slot. Moving ELF recall needs **linked `-g` corpus executables + the
+    `_ZTV` analyzer**, now the documented next slice; the unlinked corpus stays as
+    the `DELETE`/regression tripwire. (The MSVC PE column via win11-ci is the
+    parallel Windows move.)
   - *Perf baseline.* Rec 35/36 are performance recs with no benchmark loop anywhere
     in CI — a 2x decompiler slowdown would ship silently. Add a decompile-throughput
     baseline over the same corpus + a regression threshold. This also resolves the
