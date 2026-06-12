@@ -73,24 +73,17 @@ public class CppItaniumRttiAnalyzer extends AbstractAnalyzer {
 
 	@Override
 	public boolean canAnalyze(Program program) {
+		// Format-only gate: ELF or Mach-O. The compiler *metadata* string is
+		// NOT checked — a relocatable .o (and many linked binaries) reports
+		// "unknown", which an earlier compiler-string gate wrongly rejected,
+		// so the analyzer never ran (the bug the hint-recall probe caught).
+		// The real discriminator is the presence of `_ZTI*` typeinfo symbols,
+		// which are Itanium-ABI by definition; the scan reads exactly those
+		// and is never-wrong on a non-C++ ELF (no symbols -> nothing fed), so
+		// running on every ELF/Mach-O is correct and costs only a symbol walk.
+		// (A Windows PE -- the MSVC analyzer's job -- still declines here.)
 		String format = program.getExecutableFormat();
-		boolean itaniumFormat =
-			ElfLoader.ELF_NAME.equals(format) || MachoLoader.MACH_O_NAME.equals(format);
-		if (!itaniumFormat) {
-			return false;
-		}
-		// The compiler *metadata* string the loader populates (the same field
-		// PEUtil.isVisualStudioOrClangPe reads), not the language-fixed compiler
-		// spec id: an ELF's spec id is the processor cspec ("default"/"gcc"
-		// depending on language), while the loader records the detected
-		// toolchain here. Empty/unset (a bare disassembly) still counts as
-		// Itanium for the format — _ZTI symbols, if present, are Itanium-ABI.
-		String compiler = program.getCompiler();
-		if (compiler == null || compiler.isBlank()) {
-			return true;
-		}
-		String lower = compiler.toLowerCase();
-		return lower.contains("gcc") || lower.contains("clang") || lower.contains("default");
+		return ElfLoader.ELF_NAME.equals(format) || MachoLoader.MACH_O_NAME.equals(format);
 	}
 
 	@Override

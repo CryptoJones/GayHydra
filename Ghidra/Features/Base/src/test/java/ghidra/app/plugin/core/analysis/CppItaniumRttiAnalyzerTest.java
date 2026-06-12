@@ -80,14 +80,25 @@ public class CppItaniumRttiAnalyzerTest extends AbstractGenericTest {
 	}
 
 	@Test
-	public void testClaimsElfDefaultCompiler() {
-		setFormatAndCompiler(ElfLoader.ELF_NAME, "default");
+	public void testClaimsMachoGcc() {
+		setFormatAndCompiler(MachoLoader.MACH_O_NAME, "gcc");
 		assertTrue(analyzer.canAnalyze(program));
 	}
 
 	@Test
-	public void testClaimsMachoGcc() {
-		setFormatAndCompiler(MachoLoader.MACH_O_NAME, "gcc");
+	public void testClaimsElfWithUnknownCompiler() {
+		// A relocatable .o (and many linked binaries) reports "unknown"; the
+		// gate must still claim it — the _ZTI-symbol presence is the real
+		// filter (this is the bug the recall probe caught).
+		setFormatAndCompiler(ElfLoader.ELF_NAME, "unknown");
+		assertTrue(analyzer.canAnalyze(program));
+	}
+
+	@Test
+	public void testClaimsElfRegardlessOfCompilerString() {
+		// Format-only gate: even a non-GCC compiler string claims, because the
+		// scan reads _ZTI symbols (never-wrong: a non-C++ ELF feeds nothing).
+		setFormatAndCompiler(ElfLoader.ELF_NAME, "borlandcpp");
 		assertTrue(analyzer.canAnalyze(program));
 	}
 
@@ -95,11 +106,5 @@ public class CppItaniumRttiAnalyzerTest extends AbstractGenericTest {
 	public void testDeclinesWindowsPe() {
 		setFormatAndCompiler(PeLoader.PE_NAME, "visualstudio:unknown");
 		assertFalse("a Windows PE is the MSVC analyzer's job", analyzer.canAnalyze(program));
-	}
-
-	@Test
-	public void testDeclinesElfWithNonGccCompiler() {
-		setFormatAndCompiler(ElfLoader.ELF_NAME, "borlandcpp");
-		assertFalse(analyzer.canAnalyze(program));
 	}
 }
