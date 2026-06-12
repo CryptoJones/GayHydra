@@ -305,6 +305,12 @@ public class ClassSearcher {
 	public static <T> Class<? extends T> forNameSafe(String name, Class<T> sup, ClassLoader loader)
 			throws ClassNotFoundException {
 		Class<?> cls = Class.forName(name, false, loader);
+		// Fork hardening (kept over upstream's variant on merge): forNameSafe does NOT
+		// run the class's static initializer — loading an untrusted class must not execute
+		// its <clinit> even after the type check. Upstream's 12.1.2 forNameSafe adds a
+		// second `Class.forName(name, true, loader)` to initialize; the fork deliberately
+		// omits it (enforced by ClassSearcherTest#testForNameSafeNoClinit). Callers that
+		// need an initialized class initialize it themselves.
 		return cls.asSubclass(sup);
 	}
 
@@ -670,7 +676,6 @@ public class ClassSearcher {
 	 * {@link GhidraClassLoader#ENABLE_RESTRICTED_EXTENSIONS_PROPERTY}.
 	 * <p>
 	 * Examples:
-	 * 
 	 * <pre>
 	 * /foo/bar/baz/file.jar fully.qualified.ClassName
 	 * /foo/bar/baz/bin fully.qualified.ClassName
