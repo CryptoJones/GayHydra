@@ -60,10 +60,33 @@ Grounded by probe (2026-06-11), in two stacked reasons:
    not yet built) to map a recovered slot index to its method name; the
    hierarchy feed alone cannot name `param_1->draw()`.
 
-**To actually move ELF recall**, the corpus must become **linked `-g`
-executables** (externals resolved, real idioms emitted, receivers typed)
-*and* the Itanium `_ZTV` vtable analyzer must ship. The current
-unlinked-`.o` corpus remains valuable as the **regression tripwire** for
-the forms that already fire and for `DELETE`; the type-resolving columns
-are the tracked gap. An MSVC PE column via the win11-ci box is the parallel
-move on the Windows side.
+### Sharper finding (2026-06-12 probe): even `-g` + non-trivial ctors stays `DELETE`-only
+
+A second probe rebuilt the corpus with **DWARF (`-g`) *and* non-trivial
+out-of-line constructors/destructors** (so receivers are typed *and* the
+ctor/dtor calls are real, locally-resolvable functions). Recall **still
+measured `DELETE`-only** — so the gate is deeper than receiver typing, and
+it is **per-form**, each needing `HighFunction`/p-code-level investigation
+rather than a corpus change:
+
+- **`DESTRUCTOR_CALL`** — a `virtual ~Base()` compiles `b->~Base()` to a
+  *vtable dispatch* (`CALLIND`), not the direct `CALL` the destructor
+  recognizer matches. Only a *non-virtual* dtor is a direct call; a virtual
+  one is really a virtual-call site and needs the `_ZTV` leg. (The extra
+  `DELETE` hits the probe showed are the dtor's own internal `delete this`.)
+- **`CONSTRUCTION` / `CAST`** — declined even with a typed receiver, a real
+  local ctor, and the now-fed base-offset edge. Why needs reading the
+  decompiled `HighFunction` (is the DWARF param type actually applied to the
+  varnode? does the cast survive as the expected `PTRSUB`/`PTRADD` shape? is
+  `operator new`'s extern `CALL` classified?) — not answerable by black-box
+  recall counting.
+
+**Conclusion:** moving ELF type-resolving recall is a **multi-recognizer
+investigation best done attended** (with the decompiler output in hand),
+plus the `_ZTV` vtable leg — not a single corpus or analyzer change, and
+not tractable through ~40-minute black-box build probes. The shipped
+Itanium RTTI leg (`#37-4b-1..3`) is correct, matrix-verified infrastructure
+that this investigation will build on; it simply isn't *sufficient* alone.
+The unlinked-`.o` corpus stays as the `DELETE`/regression tripwire; the
+type-resolving columns are the tracked, now-well-characterized gap. An MSVC
+PE column via the win11-ci box is the parallel Windows move.
