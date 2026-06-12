@@ -135,3 +135,51 @@ mechanically, make the one `ClassSearcher` architecture call, then validate
 reproduces it). No speculative resolution was pushed because the
 `ClassSearcher` blast radius is exactly the case the build can't catch and the
 policy reserves for attended review.
+
+---
+
+## Update (2026-06-12): PR #443 is open and green except one CodeQL alert — disposition
+
+PR **#443** (branch `merge/upstream-Ghidra_12.1.2`) is open with the full CI
+matrix **green** — build on ubuntu/macos/windows, C++ unit tests, ASan+UBSan,
+`unit_tests` ×3, `ipc_e2e`, and all four CodeQL `Analyze (actions / c-cpp /
+java-kotlin / python)` jobs all SUCCESS. The lone red check is the aggregate
+**CodeQL** status (GitHub Advanced Security), reporting:
+
+> 1 new alert including 1 high severity security vulnerability
+
+**The alert is a false-positive-grade finding on upstream code, no worse than
+master — it does not block the merge.** Detail:
+
+- Rule `java/sensitive-log` (high) at
+  `Ghidra/Framework/FileSystem/.../local/LocalFolderItem.java:812`:
+  `log.error("Removing folder item with unspecified file type: " + new File(
+  propertyFile.getParentStorageDirectory(), propertyFile.getStorageName()))`.
+- It is flagged "new" only because **upstream** refactored the surrounding
+  branch (the new `fileType == Integer.MIN_VALUE` badItem-repair path), changing
+  the line *text*. The "sensitive" datum — the `new File(parentStorageDir,
+  storageName)` path — is **already logged on master** at the analogous
+  `UNKNOWN_FILE_TYPE` branch (`log.error("Folder item has unspecified file
+  type: " + new File(...))`). Same exposure, upstream-authored, pre-existing.
+- The "sensitive information" is a local Ghidra **project storage path**, not a
+  credential or user secret; `java/sensitive-log` flags file paths broadly.
+- Zero open *branch-ref* code-scanning alerts; the alert is only PR-diff-scoped.
+
+**Recommended disposition (Aaron-attended, with the merge):** dismiss alert
+#195 as *"won't fix — upstream code, behaviorally equivalent to existing master
+logging; the value is a local project storage path, not sensitive in the
+credential sense."* Once dismissed, #443 is fully green and mergeable.
+
+### Correction to the `forNameSafe` recommendation above (lines ~114–118)
+
+The pre-merge analysis above recommended taking **upstream's** `forNameSafe`,
+calling it "a strict improvement" because it runs the class's static
+initializers (`Class.forName(name, true, loader)`). **That recommendation was
+wrong and was reverted in the actual merge.** Running `<clinit>` of an
+*untrusted* class is precisely the arbitrary-code-execution risk the fork
+deliberately avoids — the fork's `forNameSafe` uses `Class.forName(name,
+false, loader)` (resolve + `asSubclass`, **no** initialization). PR #443 keeps
+the fork's no-clinit form; the `testForNameSafeNoClinit` guard test enforces
+it and FAILED against upstream's clinit-running version (caught during
+validation, reverted). The guard test is exactly the kind MERGE_POLICY's STOP
+rule forbids weakening — take **fork's** `forNameSafe`, not upstream's.
