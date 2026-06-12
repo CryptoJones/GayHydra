@@ -48,13 +48,22 @@ Taking upstream is a dial, not on/off. As fork-only surface grows, turn it down:
 backwards-architecture divergence (fork is ahead of the merge target in a
 subsystem). One such hit = a warning; two in one merge = downgrade.
 
-**Current stage: 1, transitioning to 2.** The first sync (PR #443,
-`Ghidra_12.1.2_build`, 2026-06-12) hit *both* downgrade signals — a fork
-security-hardening divergence (`ClassSearcher.forNameSafe` no-clinit, guarded
-by a test, so caught) and a backwards-architecture divergence (the fork carries
-upstream master's Swift restructure the 12.1.2 stable tag lacks). **After PR
-\#443 merges, default to Stage 2 (cherry-pick).** Bulk-merging whole releases is
-retired unless a release is overwhelmingly bug-fixes with little fork overlap.
+**Current stage: 2 (cherry-pick) — active as of 2026-06-12.** The first and
+last full-release sync (PR #443, `Ghidra_12.1.2_build`, merged 2026-06-12) hit
+*both* downgrade signals — a fork security-hardening divergence
+(`ClassSearcher.forNameSafe` no-clinit, guarded by a test, so caught) and a
+backwards-architecture divergence (the fork carries upstream master's Swift
+restructure the 12.1.2 stable tag lacks). Per the formal trigger, two signals
+in one merge = downgrade, so Stage 1 (bulk-merge) is **retired**: going forward
+pull specific upstream commits (security + bug fixes in code we use), not whole
+releases — unless a release is overwhelmingly bug-fixes with little fork
+overlap.
+
+### Sync log
+
+| Date | Target | Merge commit | Conflicts resolved | Result |
+|---|---|---|---|---|
+| 2026-06-12 | `Ghidra_12.1.2_build` (`c0f584bf`) | `628a2749` (PR #443; upstream merge `8e32e006`) | 8 → 0 | Base advanced; tag now an ancestor of master, `merge-tree` vs the tag is clean. Stage 1 retired. |
 
 ## STOP conditions (hard rules — the agent must not cross these)
 
