@@ -13,15 +13,93 @@ with 74 dry-run conflicts, and every fork-only line makes the next merge
 more expensive — superlinearly, because conflicts compound. The outbound
 half (give-back) was always tracked; this closes the inbound half.
 
+## Operating model (read first — it sets the safety rules below)
+
+**An agent performs the merges; the maintainer QCs the UI/result, not the
+merge intent.** The safety of an inbound merge therefore rests on exactly two
+things, in this order:
+
+1. The **automated safety net** — it compiles, the test suite passes
+   (especially the fork's own guard tests), deep-CI is green, the hint-recall
+   baseline holds. This is what catches a wrong merge decision.
+2. The maintainer's **UI/result QC** — the last line, for behaviour the tests
+   don't cover.
+
+It does **not** rest on a human reviewing every conflict's intent. That is the
+whole reason small, well-tested changes are safe to delegate and large
+swallow-a-release merges are not: the bigger the merge, the more likely a wrong
+decision lands in code no test guards, slips past (1), and surfaces as a UI bug
+in (2). Optimise every rule below for "keep each change small enough that the
+safety net can actually catch a mistake."
+
+## Divergence stages — which dial setting we are on
+
+Taking upstream is a dial, not on/off. As fork-only surface grows, turn it down:
+
+| Stage | What it means | When |
+|---|---|---|
+| **1 — Full merge** | Merge whole upstream releases. | While fork-only surface is small and conflicts are mostly mechanical. |
+| **2 — Cherry-pick** | Stop bulk-merging; pull only specific upstream commits we want (security + bug fixes in code we use); skip refactors/features we've diverged on. | Once conflicts start hitting code where the fork and upstream *deliberately* disagree. |
+| **3 — Security-only** | Pull only critical security fixes. | When even cherry-picks routinely fight fork architecture. |
+| **4 — Hard fork** | Stop entirely; own all maintenance forever. | When upstream's direction no longer aligns with the fork's. |
+
+**Downgrade trigger (formal):** move to the next stage down the first time a
+*routine* merge hits a conflict in code the test suite does **not** cover, or a
+backwards-architecture divergence (fork is ahead of the merge target in a
+subsystem). One such hit = a warning; two in one merge = downgrade.
+
+**Current stage: 1, transitioning to 2.** The first sync (PR #443,
+`Ghidra_12.1.2_build`, 2026-06-12) hit *both* downgrade signals — a fork
+security-hardening divergence (`ClassSearcher.forNameSafe` no-clinit, guarded
+by a test, so caught) and a backwards-architecture divergence (the fork carries
+upstream master's Swift restructure the 12.1.2 stable tag lacks). **After PR
+\#443 merges, default to Stage 2 (cherry-pick).** Bulk-merging whole releases is
+retired unless a release is overwhelmingly bug-fixes with little fork overlap.
+
+## STOP conditions (hard rules — the agent must not cross these)
+
+These are absolute. When one trips, **stop and surface it to the maintainer; do
+not guess.**
+
+1. **No oracle for a conflict.** If resolving a conflict requires *choosing a
+   side* and there is **no test and no written rule** (a DD, a code comment, an
+   existing fork pattern) that determines which side is correct — STOP. A guess
+   that compiles and passes tests is exactly the failure mode the safety net
+   cannot catch. Escalate; do not pick.
+2. **A fork guard test would have to be deleted or weakened to make the merge
+   pass.** That test encodes a deliberate fork decision (e.g. the no-clinit
+   security property). Never resolve a merge by relaxing a fork test — STOP and
+   ask. (Adding new upstream tests is fine; removing/loosening fork tests is
+   not.)
+3. **A fork-only file or subsystem conflicts.** Fork-owned paths (see the
+   manifest below) should never conflict; if one does, something moved or was
+   restructured upstream in a way that needs intent, not mechanics — STOP.
+4. **The validation can't be run.** If the merged tree cannot be built and
+   test-validated end-to-end before landing (no rig available), the merge does
+   not land. An un-validatable merge is never "probably fine."
+
+If none trip and every conflict has an oracle (test or written rule), the agent
+may resolve and open a PR — but the merge still lands only through that PR, never
+a direct push to master.
+
 ## Cadence
 
-- **Trigger: each upstream stable release** (NSA tags `Ghidra_X.Y`), plus an
-  ad-hoc merge when the weekly drift report shows a security-relevant
-  upstream change or dry-run conflicts crossing ~150 (past that, conflict
-  archaeology dominates).
-- Between releases, the weekly drift report is the watch signal — no
-  routine master-to-master merging (upstream master carries churn the
-  stable tags later settle).
+*Subordinate to the divergence stage above. At Stage 2 (cherry-pick), "cadence"
+means "when we scan upstream for fixes worth picking," not "when we merge a
+whole release."*
+
+- **Stage 1 trigger (retired after PR #443): each upstream stable release.**
+- **Stage 2 trigger (current): the weekly drift report + any security-relevant
+  upstream commit.** Scan upstream for specific fixes in code the fork uses;
+  cherry-pick those, skip the rest.
+- **Target caveat (learned from PR #443):** the fork is *master-based*, so an
+  upstream *stable tag* can be architecturally **behind** the fork in some
+  subsystems (it lacked the Swift restructure the fork has). If a whole-release
+  merge is ever done again, prefer the target whose lineage matches the fork
+  (usually `master` for specific commits), and expect backwards-divergence when
+  merging a stable tag — resolve it by **preferring the fork's newer code**.
+- Ad-hoc escalation: dry-run conflicts crossing ~150 means the drift is past
+  the point cherry-picking can keep up — surface it, don't bulk-merge.
 
 ## Pre-merge checklist (the guards must exist and be green first)
 
