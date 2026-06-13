@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 339 open PRs scanned. 69 PR→open-issue closing-references found, across 69 distinct PRs and 68 distinct issues.
+Snapshot: 338 open PRs scanned. 68 PR→open-issue closing-references found, across 68 distinct PRs and 67 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -45,7 +45,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9170](https://github.com/NationalSecurityAgency/ghidra/issues/9170) Disassembly/Decompile manipulation due to loading discrepancy in PE | [#9176](https://github.com/NationalSecurityAgency/ghidra/pull/9176) Round down PointerToRawData to the nearest multiple 0x200 | @XOR-RAX | +16/-7 | 2026-05-10 |
 | 0 | [#8777](https://github.com/NationalSecurityAgency/ghidra/issues/8777) Incomprehensible decompilation of "bra ge,..." on PIC24 | [#8778](https://github.com/NationalSecurityAgency/ghidra/pull/8778) PIC24: Use a different pattern for OV/N handling on signed compare | @karcherm | +21/-3 | 2025-12-14 |
 | 0 | [#9238](https://github.com/NationalSecurityAgency/ghidra/issues/9238) ThreadPcodeExecutorState.getRegisterValues() does not contain full result operand until adjacent register is initialized | [#9239](https://github.com/NationalSecurityAgency/ghidra/pull/9239) Fix off by one register init check in pcode byte state | @EmirX3D | +25/-2 | 2026-05-31 |
-| 0 | [#9168](https://github.com/NationalSecurityAgency/ghidra/issues/9168) PE debug symbol limit not honored while parsing a PE file | [#9174](https://github.com/NationalSecurityAgency/ghidra/pull/9174) Correctly limit PE debug symbols | @XOR-RAX | +15/-13 | 2026-05-10 |
 | 0 | [#9225](https://github.com/NationalSecurityAgency/ghidra/issues/9225) RISC-V emulator incorrectly emulates remu instruction (divide by zero) | [#9235](https://github.com/NationalSecurityAgency/ghidra/pull/9235) Fix RISC-V division and remainder by zero emulation behavior | @EmirX3D | +32/-0 | 2026-05-30 |
 | 0 | [#9203](https://github.com/NationalSecurityAgency/ghidra/issues/9203) Decompiler can insert Pcode into the wrong block | [#9204](https://github.com/NationalSecurityAgency/ghidra/pull/9204) Fix conditional constant MULTIEQUAL placement | @EmirX3D | +30/-9 | 2026-05-21 |
 | 0 | [#4801](https://github.com/NationalSecurityAgency/ghidra/issues/4801) Add : "Disable/Enable printing of type casts" to the context menu in Decompiler | [#5623](https://github.com/NationalSecurityAgency/ghidra/pull/5623) Add 'Toggle Printing of Type Casts' decompiler pane menu item. | @Washi1337 | +40/-0 | 2023-08-01 |
