@@ -36,8 +36,6 @@ import java.util.zip.ZipInputStream;
  * <li>Data length</li>
  * </ul>
  */
-// Sprint 10 Stage-3 pre-clean: legacy API; suppress to clear -Werror floor.
-@SuppressWarnings({"deprecation", "removal", "rawtypes", "unchecked"})
 public class ItemDeserializer {
 
 	private static final long MAGIC_NUMBER = ItemSerializer.MAGIC_NUMBER;
@@ -105,14 +103,13 @@ public class ItemDeserializer {
 		}
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		dispose();
-		super.finalize();
-	}
-
 	/**
 	 * Close packed-file input stream and free resources.
+	 * <p>
+	 * All callers obtain an {@code ItemDeserializer} in a try/finally and call
+	 * {@code dispose()} in the finally block, so cleanup is deterministic. The
+	 * former {@code finalize()} override was a GC-timed backstop on top of that;
+	 * it is removed because {@code Object.finalize()} is deprecated for removal.
 	 */
 	public void dispose() {
 		if (in != null) {
