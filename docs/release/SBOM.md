@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-*Originally addressed Rec 21 of the 2026-05-21 principal-architect audit. The standalone CycloneDX-plugin implementation was removed in Sprint 7; the SBOM still ships, but produced by the upstream NSA generator and surfaced as a separate signed release asset.*
+*Originally addressed Rec 21 of the 2026-05-21 principal-architect audit. There are two SBOMs in the tree today: the **release SBOM** shipped to users (produced by the upstream NSA generator, surfaced as a separate signed release asset) and a build-local **CycloneDX-plugin SBOM** (`org.cyclonedx.bom`, reverted in Sprint 7 and re-added in Sprint 8 at 3.2.4). The release pipeline ships the former; see "CycloneDX plugin" below for the latter.*
 
 ## What ships today
 
@@ -17,36 +17,23 @@ The upstream generator walks every JAR in the distribution, pulls coordinates fr
 
 `release.yml` counts `.components[]` in the extracted SBOM after the extract step and fails the release if the count is < 10. PR [#233](https://github.com/CryptoJones/GayHydra/pull/233). This catches the silent-regression case where the upstream generator's JAR-walker stops finding components (a Gradle config rename, a packaging-step reorder, etc.) so we don't ship an empty SBOM that downstream scanners would happily ingest as "this build has no dependencies, scan clean!".
 
-## What was removed (Sprint 7)
+## CycloneDX plugin (reverted Sprint 7, re-added Sprint 8)
 
-Rec 21 originally added the [`org.cyclonedx.bom`](https://github.com/CycloneDX/cyclonedx-gradle-plugin) Gradle plugin (v1.10.0) as a separate, top-level SBOM path. It generated `build/reports/sbom/bom.{json,xml}` outside the dist zip and Cosign-signed both as separate release artifacts.
+Rec 21 originally added the [`org.cyclonedx.bom`](https://github.com/CycloneDX/cyclonedx-gradle-plugin) Gradle plugin (v1.10.0) as a separate SBOM path generating `build/reports/sbom/bom.{json,xml}`.
 
-That plugin path is gone (PR [#220](https://github.com/CryptoJones/GayHydra/pull/220)):
+**Reverted in Sprint 7** (PR [#220](https://github.com/CryptoJones/GayHydra/pull/220)) because v1.10.0 NPEs on Ghidra's flat-dir dependencies (`:AXMLPrinter2:` and similar — JARs declared via `flatDir` repository with no Maven coordinates). The plugin needs a group + name + version on every dependency to derive a PackageURL; flat-dir deps have only a name. Setting placeholder coords on the root project (PR [#217](https://github.com/CryptoJones/GayHydra/pull/217)) got past the first failure but the plugin then NPE'd on each flat-dir entry without a clean way to skip them in the 1.10.0 API.
 
-- The plugin declaration in `build.gradle` is commented out with the reason.
-- `gradle/sbom.gradle` (the plugin's config + the `sbomSanityCheck` gradle task) was deleted.
-- The `cyclonedxBom`-dependent steps in `.github/workflows/release.yml` were removed.
+**Re-added in Sprint 8.** The plugin is back, bumped to **3.2.4** — the 3.x rewrite uses `Configuration.getIncoming()` + a lenient `artifactView` that handles deps without resolvable POMs (the flat-dir case), so the original NPE no longer occurs. Current wiring:
 
-**Why removed:** the plugin NPEs on Ghidra's flat-dir dependencies (`:AXMLPrinter2:` and similar — JARs declared via `flatDir` repository with no Maven coordinates). The plugin needs a group + name + version on every dependency to derive a PackageURL; flat-dir deps have only a name. Setting placeholder coords on the root project (PR [#217](https://github.com/CryptoJones/GayHydra/pull/217)) got past the first failure but the plugin then NPEs on each flat-dir entry without a clean way to skip them in the 1.10.0 API.
+- The plugin is declared in `build.gradle`'s `plugins {}` block (`id 'org.cyclonedx.bom' version '3.2.4'`); `gradle/sbom.gradle` configures the task + the `sbomSanityCheck` gate.
+- The aggregate `cyclonedxBom` task writes `build/reports/sbom/bom.{json,xml}` (CycloneDX schema 1.6, both JSON and XML), guarded behind `plugins.hasPlugin('org.cyclonedx.bom')` so the stripped-down `dependency-submission` action doesn't trip over it.
+- `buildGhidra` `dependsOn 'cyclonedxBom'`, which is `finalizedBy 'sbomSanityCheck'` (≥10 components, else the build fails).
+- The per-subproject `cyclonedxDirectBom` tasks are disabled — they'd write into the tree-walked dist directories and break `:assembleDistribution` with an undeclared-input error; only the root aggregate is wanted.
+- The `org.cyclonedx.Version` / `Component$Type` enums are loaded via the plugin instance's classloader (an `apply from:` script can't `import` them — see the comments in `gradle/sbom.gradle`).
+
+**Relationship to the release SBOM:** these are two distinct artifacts. The plugin SBOM under `build/reports/sbom/` is build-local — `release.yml` does **not** ship or sign it. The release-shipped, signed standalone asset is still the in-zip SBOM from the upstream generator (the "What ships today" path above). The release pipeline keeps its own Python sanity gate (rather than reusing `sbomSanityCheck`) because it gates the extracted in-zip SBOM, not the plugin's `build/reports/` output.
 
 See [`DesignDecisions.md` DD-019](../../DesignDecisions.md#dd-019) for the full decision record + alternatives considered.
-
-## Sprint 8 re-implementation options (the *full* CycloneDX path)
-
-The bundled-extract path above is a working SBOM that ships today and is signed. It satisfies the practical requirement (verifiable, sanity-gated, downloadable as a separate asset). What it does NOT do is emit a strict CycloneDX-shape XML, or have plugin-grade per-dependency PURLs. If the fork ever needs those, Sprint 8 picks one of:
-
-1. **Upgrade the plugin** — newer cyclonedx-gradle-plugin versions (1.11+) may handle flat-dir deps; verify before adopting by running a test build against a tree that exercises flat-dir.
-2. **Switch SBOM generators** — alternatives like Microsoft's `sbom-tool` or the OSSF `scorecard` SBOM emitter can be invoked as workflow steps without a plugin contract; their input is just the on-disk JAR tree.
-3. **Extend the upstream generator** — `gradle/support/sbom.gradle` already produces a usable JSON SBOM; extending it to emit XML alongside is a Groovy change in that file (which is the upstream version — touch carries merge cost forever after).
-
-Whichever path is chosen, the post-PR-#230 requirements are:
-
-- Standalone signed SBOM as a release artifact ✓ (already shipped via extract).
-- CycloneDX-shape output ✓ (upstream generator emits CycloneDX-shaped JSON).
-- Sanity gate ≥10 components ✓ (in `release.yml`).
-- Compatible with Ghidra's flat-dir dep layout ✓ (upstream generator parses JARs directly).
-
-So Sprint 8's bar is now "add XML output" or "stricter per-dep PURLs", not "ship an SBOM at all."
 
 ## Verification
 
