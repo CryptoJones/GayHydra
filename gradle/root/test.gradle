@@ -181,19 +181,10 @@ def List<Project> getTestProjects(String files) {
  * Creates a new debug port randomly.
  *********************************************************************************/
 def generateRandomDebugPort() {
-	// keep port within narrow range (NOTE: must be greater than 1024 and less than 65535)
-	
-	// Generate random byte value
-	Random random = new Random()
-	def ran = random.nextInt();
-	for (int i = 1; i < 4; i++) {
-		ran ^= (ran >> 8);
-	}
-	ran &= 0xff;
-	
-	// Generate random port between 18300 and 18555
-	def port = 18300 + ran
-	return port
+	// Random port in [18300, 18555] — well clear of the 1024..65535
+	// bounds. nextInt(256) draws uniformly from 0..255 directly, so we
+	// don't need the old XOR-fold-then-mask dance over a full 32-bit int.
+	return 18300 + java.util.concurrent.ThreadLocalRandom.current().nextInt(256)
 }
 
 /*********************************************************************************
