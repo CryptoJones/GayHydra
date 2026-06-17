@@ -32,7 +32,7 @@ hierarchy. The Triage SLA and Stale Policy bind every maintainer equally.
 
 | Login | Role | Areas |
 |---|---|---|
-| (open) | Fork lead | |
+| Aaron K. Clark ([CryptoJones](https://github.com/CryptoJones), <aaron.clark@milcyber.org>) | Fork lead | all (interim, recruiting) |
 
 ### Decompiler (`Ghidra/Features/Decompiler/`)
 
@@ -70,7 +70,7 @@ for the per-architecture table.
 
 | Login | Areas they triage |
 |---|---|
-| (open) | |
+| [CryptoJones](https://github.com/CryptoJones) | all |
 
 ## Recognising community contributors
 
