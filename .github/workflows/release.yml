@@ -8,9 +8,12 @@ name: Release (build + sign + publish)
 # release zip (which bundles the upstream SBOM at the top of the
 # zip-prefix directory as bom.json via gradle/support/sbom.gradle),
 # signs the zip with cosign keyless using the workflow's OIDC identity,
-# and uploads zip + .sig + .crt to the GitHub release. Rec 21's
-# standalone CycloneDX SBOM step was removed in Sprint 7 and is queued
-# for Sprint 8 re-implementation.
+# and uploads zip + .sig + .crt to the GitHub release. The SBOM shipped
+# as a standalone signed asset is the in-zip one from the upstream
+# generator (extracted below). Rec 21's CycloneDX-plugin path
+# (org.cyclonedx.bom) was reverted in Sprint 7 and re-added in Sprint 8
+# at 3.2.4, but it is build-local (build/reports/sbom/) and not shipped
+# by this workflow; see docs/release/SBOM.md.
 
 on:
   push:
@@ -100,11 +103,14 @@ jobs:
           echo "Extracted SBOM: $(stat -c%s "$SBOM") bytes"
 
       - name: SBOM sanity gate (≥10 components)
-        # Replaces the sbomSanityCheck task that was removed with the
-        # cyclonedxBom revert in PR #220. If the upstream SBOM emitter
-        # silently regresses (e.g. a gradle config rename causes it to
-        # enumerate nothing), the count drops to ~0 and this step
-        # fails the release rather than shipping an empty SBOM.
+        # Gates the extracted in-zip SBOM (the shipped asset). This is
+        # intentionally separate from the cyclonedxBom plugin's own
+        # sbomSanityCheck task (re-added in Sprint 8): that task gates the
+        # build-local build/reports/sbom/ output, whereas this step gates
+        # the upstream-generator SBOM this workflow actually ships. If the
+        # upstream SBOM emitter silently regresses (e.g. a gradle config
+        # rename causes it to enumerate nothing), the count drops to ~0
+        # and this step fails the release rather than shipping an empty SBOM.
         env:
           SBOM: ${{ steps.artifacts.outputs.SBOM }}
         run: |
