@@ -395,6 +395,18 @@ public:
   frame_v1::Error getLastError() const { return lastError; }
   /// TYPE of the most recently delivered frame.
   frame_v1::Type lastType() const { return lastFrameType; }
+  /// FLAGS of the most recently read frame (#34-10b, DD-0080). Updated
+  /// unconditionally per frame read — including skipped empty frames —
+  /// so a stale value can never describe the current frame. Only
+  /// trustworthy at a command boundary (the previous frame provably
+  /// drained): mid-command frames (host callback replies) overwrite it.
+  uint1 lastFlags() const { return lastFlagbits; }
+  /// Move the current frame's remaining payload out and empty the get
+  /// area (#34-10b). The schema-payload dispatch calls this at the top
+  /// of the command loop, where the get area holds exactly one whole
+  /// frame body (`[u8 command-id][FlatBuffers bytes]`). Returns false
+  /// if the get area is empty (nothing buffered).
+  bool takeSchemaPayload(vector<uint1> &body_out);
 protected:
   int underflow() override;
 private:
@@ -402,6 +414,7 @@ private:
   vector<uint1> payload;        ///< Backing store for the current get area.
   frame_v1::Error lastError;    ///< Reason the stream ended (or OK).
   frame_v1::Type lastFrameType; ///< TYPE of the current frame.
+  uint1 lastFlagbits = 0;       ///< FLAGS of the current frame.
 };
 
 } // End namespace ghidra

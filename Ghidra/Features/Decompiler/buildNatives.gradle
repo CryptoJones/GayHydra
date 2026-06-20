@@ -144,8 +144,14 @@ model {
 		            }
 					exportedHeaders {
 						srcDir "src/decompile/cpp"
+						// #34-10b (DD-0080): the worker includes the schema codecs
+						// (FlatBuffers) to decode schema-v1 request payloads. Gradle
+						// emits the toolchain-correct include syntax per platform
+						// (-I for Gcc/Clang, /I for VisualCpp). Mirrors the
+						// Makefile's FLATBUF_INCLUDE on the ghi_* rules.
+						srcDir "src/decompile/cpp/vendor/flatbuffers/include"
 					}
-				} // end cpp				
+				} // end cpp
 			} // end sources
 		} // end decompile
 		

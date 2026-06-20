@@ -837,6 +837,72 @@ TEST(frame_v1_tunnel_empty_flush_is_noop) {
   ASSERT_EQUALS(wire.size(), (size_t)0);
 }
 
+// Encode a frame and force the given FLAGS bits on (re-deriving the CRC,
+// which covers TYPE|FLAGS|LENGTH|PAYLOAD).
+static vector<uint1> flagged_frame(frame_v1::Type type, const vector<uint1> &payload,
+                                   uint1 extraFlags) {
+  vector<uint1> wire = encode_frame_v1(type, string((const char *)payload.data(), payload.size()));
+  wire[5] |= extraFlags;
+  uint4 crc = crc32_ieee802_3(wire.data() + 4, wire.size() - 8);
+  size_t t = wire.size() - 4;
+  wire[t]     = (uint1)((crc >> 24) & 0xff);
+  wire[t + 1] = (uint1)((crc >> 16) & 0xff);
+  wire[t + 2] = (uint1)((crc >> 8) & 0xff);
+  wire[t + 3] = (uint1)(crc & 0xff);
+  return wire;
+}
+
+TEST(frame_v1_tunnel_in_surfaces_schema_flags) {
+  // #34-10b: a SCHEMA_PAYLOAD-flagged frame's FLAGS surface via lastFlags()
+  // after peek() loads it, and takeSchemaPayload() hands the whole body out,
+  // emptying the get area so the v0 scanner never sees schema bytes.
+  vector<uint1> body = { 0x03, 0xAA, 0xBB, 0xCC };  // [command-id][fbs...]
+  vector<uint1> wire = flagged_frame(frame_v1::Type::COMMAND, body,
+                                     frame_v1::flags::SCHEMA_PAYLOAD);
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+
+  ASSERT(is.peek() != EOF);  // forces the frame to load without consuming
+  ASSERT(inbuf.lastFlags() & frame_v1::flags::SCHEMA_PAYLOAD);
+
+  vector<uint1> taken;
+  ASSERT(inbuf.takeSchemaPayload(taken));
+  ASSERT(taken == body);
+  // Get area emptied: nothing left to take, next read hits EOF (no more frames).
+  vector<uint1> again;
+  ASSERT(!inbuf.takeSchemaPayload(again));
+  ASSERT_EQUALS(is.get(), EOF);
+}
+
+TEST(frame_v1_tunnel_in_flags_updated_per_frame) {
+  // A flagged frame followed by an unflagged one: lastFlags() must describe
+  // the CURRENT frame after each load — no stale schema bit.
+  vector<uint1> body1 = { 0x03, 0x01 };
+  vector<uint1> body2 = { 'v', '0' };
+  vector<uint1> wire = flagged_frame(frame_v1::Type::COMMAND, body1,
+                                     frame_v1::flags::SCHEMA_PAYLOAD);
+  vector<uint1> wire2 = encode_frame_v1(frame_v1::Type::COMMAND,
+                                        string((const char *)body2.data(), body2.size()));
+  wire.insert(wire.end(), wire2.begin(), wire2.end());
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+
+  ASSERT(is.peek() != EOF);
+  ASSERT(inbuf.lastFlags() & frame_v1::flags::SCHEMA_PAYLOAD);
+  vector<uint1> taken;
+  ASSERT(inbuf.takeSchemaPayload(taken));
+  ASSERT(taken == body1);
+
+  ASSERT(is.peek() != EOF);  // loads the second (unflagged) frame
+  ASSERT_EQUALS((int)(inbuf.lastFlags() & frame_v1::flags::SCHEMA_PAYLOAD), 0);
+  // Unflagged bytes stay readable through the normal stream path.
+  vector<uint1> got(body2.size());
+  is.read((char *)got.data(), (std::streamsize)body2.size());
+  ASSERT(got == body2);
+}
+
 TEST(frame_v1_tunnel_roundtrip_single) {
   vector<uint1> payload = { 'r', 'o', 'u', 'n', 'd', '-', 't', 'r', 'i', 'p' };
   vector<uint1> wire = tunnel_out(payload, frame_v1::Type::RESPONSE);

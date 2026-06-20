@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32;
 
+import ghidra.app.decompiler.ipc.CommandRequestCodec;
+import ghidra.app.decompiler.ipc.IpcCommandId;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.InjectPayload;
 import ghidra.program.model.lang.UnknownInstructionException;
@@ -64,21 +66,21 @@ public class DecompileProcess {
 	private final static byte[] byte_start = { 0, 0, 1, 12 };
 	private final static byte[] byte_end = { 0, 0, 1, 13 };
 
-	// Rec 33 IPC framing v1 (docs/decisions/0005-ipc-framing-v1.md). The
-	// greeting frame is the only v1 traffic emitted by this client: the
-	// command/response protocol below stays v0 because the native command
-	// loop (ghidra_process.cc) still reads v0 bursts regardless of the
-	// negotiated mode. The v1 command-loop dispatch is a follow-up; until
-	// then a successful greeting just records that the peer speaks v1.
+	// Rec 33 IPC framing v1 (docs/decisions/0005-ipc-framing-v1.md). After
+	// a successful greeting the legacy command-loop bytes tunnel inside v1
+	// frames (one frame per flush). Since #34-10b (DD-0080) the schematized
+	// commands additionally go out as schema-v1 FlatBuffers payloads when
+	// the worker advertises the capability — adopted one command at a time
+	// across #34-10b..e; everything else below remains v0 marshaling.
 	private final static byte[] FRAME_MAGIC = { 0x47, 0x48, 0x01, 0x00 };
 	private final static int FRAME_TYPE_GREETING = 0x00;
 	private final static int FRAME_TYPE_COMMAND = 0x01;
 	private final static int FRAME_FLAG_CRC_PRESENT = 0x01;
 	private final static int FRAME_FLAGS_RESERVED = 0x06; // compression|continuation
-	// Rec 34 #34-10a (DD-0080): frame body is [u8 command-id][FlatBuffers
+	// Rec 34 #34-10 (DD-0080): frame body is [u8 command-id][FlatBuffers
 	// bytes] instead of tunneled v0 bytes. Known at the frame layer (not
 	// in FRAME_FLAGS_RESERVED); "reject unless negotiated" is the
-	// dispatch layer's job. Unused until the #34-10b go-live wiring.
+	// dispatch layer's job. Armed per frame by sendSchemaCommand (#34-10b).
 	final static int FRAME_FLAG_SCHEMA_PAYLOAD = 0x08;
 	private final static int GREETING_VERSION_MAJOR = 0x01;
 	private final static int GREETING_VERSION_MINOR = 0x00;
@@ -106,6 +108,19 @@ public class DecompileProcess {
 	// slices key off this: requests go v1 only when the worker
 	// advertised GREETING_CAPAB_SCHEMA_V1_REQUESTS.
 	private volatile int peerCapabilities = 0;
+	// The COMMAND-direction frame wrapper once v1 negotiates (#34-10b) —
+	// the same object nativeOut refers to, kept under its concrete type
+	// so schema sends can arm per-frame FLAGS. Null while v0.
+	private volatile FrameOutputStream frameOut;
+	// Schema-payload kill switch (#34-10b, the DD-0005 staging pattern):
+	// "auto" sends schema-v1 request payloads whenever the worker
+	// advertised the capability; "off" keeps v0 payloads on a v1 channel.
+	// Set by DecompInterface from the decompiler.schemapayload property.
+	private volatile String schemaPayloadMode = "auto";
+	// Count of schema-v1 request frames sent (#34-10b). Package-private
+	// observable for the e2e test: without it a silent fallback to v0
+	// payloads would pass every byte-identical assertion.
+	private volatile int schemaV1RequestsSent = 0;
 
 	//private static final int MAXIMUM_RESULT_SIZE = 50 * 1024 * 1024; // maximum result size in bytes to allow from decompiler
 
@@ -352,6 +367,26 @@ public class DecompileProcess {
 	}
 
 	/**
+	 * Set the schema-payload preference for subsequent commands (#34-10b).
+	 * Accepts "auto" (send schema-v1 request payloads whenever the worker
+	 * advertised the capability) or "off" (keep v0 payloads even on a v1
+	 * channel); anything else defaults to "auto".
+	 * @param mode the schema-payload preference
+	 */
+	public void setSchemaPayloadMode(String mode) {
+		schemaPayloadMode = "off".equals(mode) ? "off" : "auto";
+	}
+
+	/**
+	 * {@return the number of schema-v1 request frames sent to the peer.}
+	 * Package-private test observable (#34-10b): distinguishes a real
+	 * schema-payload exchange from a silent fallback to v0.
+	 */
+	int getSchemaV1RequestsSent() {
+		return schemaV1RequestsSent;
+	}
+
+	/**
 	 * {@return true if a v1 framing greeting was negotiated with the peer.}
 	 */
 	public boolean isChannelV1() {
@@ -408,6 +443,15 @@ public class DecompileProcess {
 	 * appends the 4-byte BE CRC32 trailer.
 	 */
 	static byte[] encodeFrameV1(int type, byte[] payload) {
+		return encodeFrameV1(type, 0, payload);
+	}
+
+	/**
+	 * Encode a single v1 frame carrying extra FLAGS bits beyond
+	 * CRC_PRESENT (#34-10b: {@link #FRAME_FLAG_SCHEMA_PAYLOAD}). The CRC
+	 * covers TYPE|FLAGS|LENGTH|PAYLOAD, so the flags are checksummed.
+	 */
+	static byte[] encodeFrameV1(int type, int extraFlags, byte[] payload) {
 		int len = payload.length;
 		byte[] frame = new byte[14 + len];
 		frame[0] = FRAME_MAGIC[0];
@@ -415,7 +459,7 @@ public class DecompileProcess {
 		frame[2] = FRAME_MAGIC[2];
 		frame[3] = FRAME_MAGIC[3];
 		frame[4] = (byte) type;
-		frame[5] = (byte) FRAME_FLAG_CRC_PRESENT;
+		frame[5] = (byte) (FRAME_FLAG_CRC_PRESENT | extraFlags);
 		frame[6] = (byte) ((len >>> 24) & 0xff);
 		frame[7] = (byte) ((len >>> 16) & 0xff);
 		frame[8] = (byte) ((len >>> 8) & 0xff);
@@ -442,6 +486,7 @@ public class DecompileProcess {
 	private void negotiateFramingV1() throws IOException {
 		channelV1 = false;
 		peerCapabilities = 0;
+		frameOut = null;
 		if ("v0".equals(framingMode)) {
 			return;
 		}
@@ -456,8 +501,11 @@ public class DecompileProcess {
 			// frame; each refill of nativeIn unwraps one inbound frame. The
 			// raw greeting exchange above is already fully consumed, and the
 			// v0 marshaling inside the frames is untouched, so every write/
-			// read helper rides transparently from here on.
-			nativeOut = new FrameOutputStream(nativeOut, FRAME_TYPE_COMMAND);
+			// read helper rides transparently from here on. frameOut keeps
+			// the wrapper's concrete type so schema-payload sends (#34-10b)
+			// can arm per-frame FLAGS; both fields refer to the one object.
+			frameOut = new FrameOutputStream(nativeOut, FRAME_TYPE_COMMAND);
+			nativeOut = frameOut;
 			nativeIn = new FrameInputStream(nativeIn);
 		}
 	}
@@ -736,13 +784,25 @@ public class DecompileProcess {
 		setup();
 		negotiateFramingV1();
 		try {
-			write(command_start);
-			writeString("registerProgram");
-			writeString(pspecxml);
-			writeString(cspecxml);
-			writeString(tspecxml);
-			writeString(coretypesxml);
-			write(command_end);
+			if (schemaPayloadAvailable()) {
+				// #34-10c: the greeting just negotiated, so the worker's
+				// advertised capability is already known inside this very
+				// call. The callback decoders above stay live — the worker
+				// queries back during registration regardless of how the
+				// request payload was encoded.
+				writeSchemaRequest(IpcCommandId.REGISTER_PROGRAM,
+					CommandRequestCodec.encodeRegisterProgramRequest(pspecxml, cspecxml, tspecxml,
+						coretypesxml));
+			}
+			else {
+				write(command_start);
+				writeString("registerProgram");
+				writeString(pspecxml);
+				writeString(cspecxml);
+				writeString(tspecxml);
+				writeString(coretypesxml);
+				write(command_end);
+			}
 			readResponse(response);
 		}
 		catch (IOException e) {
@@ -765,10 +825,18 @@ public class DecompileProcess {
 		// Once a program is deregistered, the process is never
 		// used again
 		statusGood = false;
-		write(command_start);
-		writeString("deregisterProgram");
-		writeString(Integer.toString(archId));
-		write(command_end);
+		if (schemaPayloadAvailable()) {
+			// #34-10c: same single-flagged-frame shape as the other
+			// schematized commands; the response stays the v0 meta-command.
+			writeSchemaRequest(IpcCommandId.DEREGISTER_PROGRAM,
+				CommandRequestCodec.encodeDeregisterProgramRequest(Integer.toString(archId)));
+		}
+		else {
+			write(command_start);
+			writeString("deregisterProgram");
+			writeString(Integer.toString(archId));
+			write(command_end);
+		}
 		paramDecoder = null;		// Don't expect callback queries
 		resultEncoder = null;
 		StringIngest response = new StringIngest();		// Don't use stringResponse
@@ -793,6 +861,15 @@ public class DecompileProcess {
 		if (!statusGood) {
 			throw new IOException(command + " called on bad process");
 		}
+		if ("flushNative".equals(command) && schemaPayloadAvailable()) {
+			// #34-10b (DD-0080): first schema-v1 command go-live. The branch
+			// keys on the literal command name — sendCommand is shared with
+			// un-schematized commands (e.g. getSignatureSettings), which must
+			// keep riding v0. #34-10c..e add matching branches per command.
+			sendSchemaCommand(IpcCommandId.FLUSH_NATIVE,
+				CommandRequestCodec.encodeFlushNativeRequest(Integer.toString(archId)), response);
+			return;
+		}
 		paramDecoder = null;	// Don't expect callback queries
 		resultEncoder = null;
 		try {
@@ -806,6 +883,60 @@ public class DecompileProcess {
 			statusGood = false;
 			throw e;
 		}
+	}
+
+	/**
+	 * {@return true if requests may go out as schema-v1 payloads}: the v1
+	 * channel is up, the worker advertised the capability, and the
+	 * kill switch ({@code decompiler.schemapayload}) is not "off".
+	 */
+	private boolean schemaPayloadAvailable() {
+		return frameOut != null && peerAcceptsSchemaV1Requests() &&
+			!"off".equals(schemaPayloadMode);
+	}
+
+	/**
+	 * Send one command as a schema-v1 request (#34-10b, DD-0080): a single
+	 * COMMAND frame flagged SCHEMA_PAYLOAD whose body is the one-byte wire
+	 * command-id followed by the FlatBuffers request. The response is the
+	 * unchanged v0 burst protocol (the worker replies v0 until #34-10f+).
+	 * @param id the schema-v1 command id
+	 * @param requestBytes the FlatBuffers-encoded request payload
+	 * @param response the response accumulator
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 * @throws DecompileException for any problems executing the command
+	 */
+	private void sendSchemaCommand(IpcCommandId id, byte[] requestBytes, ByteIngest response)
+			throws IOException, DecompileException {
+		paramDecoder = null;	// Don't expect callback queries
+		resultEncoder = null;
+		try {
+			writeSchemaRequest(id, requestBytes);
+			readResponse(response);
+		}
+		catch (IOException e) {
+			statusGood = false;
+			throw e;
+		}
+	}
+
+	/**
+	 * Buffer one schema-v1 request: arm the SCHEMA_PAYLOAD flag for the next
+	 * frame and write the one-byte wire command-id followed by the
+	 * FlatBuffers request bytes. The flush inside the subsequent
+	 * readResponse emits exactly one flagged frame. Split from
+	 * {@link #sendSchemaCommand} because registerProgram must keep its
+	 * callback decoders alive across the send (#34-10c) while the simple
+	 * commands null them.
+	 * @param id the schema-v1 command id
+	 * @param requestBytes the FlatBuffers-encoded request payload
+	 * @throws IOException for any problems with the pipe to the decompiler process
+	 */
+	private void writeSchemaRequest(IpcCommandId id, byte[] requestBytes) throws IOException {
+		frameOut.setNextFrameFlags(FRAME_FLAG_SCHEMA_PAYLOAD);
+		nativeOut.write(id.getWireId());
+		nativeOut.write(requestBytes);
+		schemaV1RequestsSent++;
 	}
 
 	public synchronized boolean isReady() {
@@ -874,6 +1005,15 @@ public class DecompileProcess {
 			ByteIngest response) throws IOException, DecompileException {
 		if (!statusGood) {
 			throw new IOException(command + " called on bad process");
+		}
+		if ("setAction".equals(command) && schemaPayloadAvailable()) {
+			// #34-10d: keyed on the literal command name like the other
+			// schematized branches. An empty selector string stays the
+			// legacy leave-unchanged value on both encodings.
+			sendSchemaCommand(IpcCommandId.SET_ACTION, CommandRequestCodec
+					.encodeSetActionRequest(Integer.toString(archId), param1, param2),
+				response);
+			return;
 		}
 		paramDecoder = null;	// Don't expect callback queries
 		resultEncoder = null;
@@ -1195,9 +1335,8 @@ public class DecompileProcess {
 	// FrameOutStreambuf/FrameInStreambuf in frame_v1.cc: in v1 mode they
 	// wrap nativeOut/nativeIn so each flush becomes one v1 frame and each
 	// frame yields one byte-run, leaving the v0 marshaling above untouched.
-	// They are landed but not yet wired in (the flip is gated behind a
-	// channelV1 check in registerProgram, a follow-up); they exist now so
-	// the wire behavior is unit-testable without a live decompiler.
+	// Wired in by negotiateFramingV1 on a successful greeting (the 26.2.0
+	// flip); kept independently unit-testable without a live decompiler.
 
 	/**
 	 * Output filter that wraps each {@link #flush()} as exactly one v1 frame.
@@ -1211,10 +1350,23 @@ public class DecompileProcess {
 		private final OutputStream target;
 		private final int frameType;
 		private final ByteArrayOutputStream pending = new ByteArrayOutputStream();
+		private int nextFrameExtraFlags = 0;
 
 		FrameOutputStream(OutputStream target, int frameType) {
 			this.target = target;
 			this.frameType = frameType;
+		}
+
+		/**
+		 * Arm extra FLAGS bits for the next emitted frame only (#34-10b).
+		 * One-shot: every {@link #flush()} clears the armed bits — even an
+		 * empty flush that emits no frame — so an armed flag can never leak
+		 * onto a later command's frame. Callers arm immediately before the
+		 * body writes of the frame they mean to flag.
+		 * @param extraFlags FLAGS bits ORed onto CRC_PRESENT for one frame
+		 */
+		void setNextFrameFlags(int extraFlags) {
+			nextFrameExtraFlags = extraFlags;
 		}
 
 		@Override
@@ -1229,8 +1381,10 @@ public class DecompileProcess {
 
 		@Override
 		public void flush() throws IOException {
+			int extraFlags = nextFrameExtraFlags;
+			nextFrameExtraFlags = 0; // read-and-clear unconditionally
 			if (pending.size() > 0) {
-				target.write(encodeFrameV1(frameType, pending.toByteArray()));
+				target.write(encodeFrameV1(frameType, extraFlags, pending.toByteArray()));
 				pending.reset();
 			}
 			target.flush();

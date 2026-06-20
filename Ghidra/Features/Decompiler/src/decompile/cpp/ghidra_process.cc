@@ -17,6 +17,9 @@
 #include "flow.hh"
 #include "blockaction.hh"
 #include "frame_v1.hh"
+#include "schema/ipc_command_ids.h"
+#include "schema/ipc_config_codec.h"
+#include "schema/ipc_lifecycle_codec.h"
 
 #ifdef _WINDOWS
 #include <fcntl.h>
@@ -78,9 +81,26 @@ ElementId ELEM_BUDGETEXHAUSTED = ElementId("budgetexhausted",291);	// Rec 35 #35
 vector<ArchitectureGhidra *> archlist; // List of architectures currently running
 
 map<string,GhidraCommand *> GhidraCapability::commandmap; // List of commands we can receive from Ghidra proper
+FrameInStreambuf *GhidraCapability::schemaFrameIn = (FrameInStreambuf *)0; // Schema-payload dispatch (#34-10b); null = pure v0
 
 // Constructing the singleton registers the capability
 GhidraDecompCapability GhidraDecompCapability::ghidraDecompCapability;
+
+/// Select the Architecture the command acts on by its registration id, throwing
+/// the same JavaError both parameter paths historically threw when the id names
+/// no registered architecture. Shared by loadParameters() (v0 burst) and the
+/// schema-v1 overrides (#34-10b), which recover the id from their own encodings.
+/// \param id is the architecture registration id
+void GhidraCommand::resolveArchitecture(int4 id)
+
+{
+  if ((id>=0)&&(id<archlist.size()))
+    ghidra = archlist[id];
+
+  if (ghidra == (ArchitectureGhidra *)0)
+    throw JavaError("decompiler","No architecture registered with decompiler");
+  ghidra->clearWarnings();
+}
 
 /// This method reads an id selecting the Architecture to act on, but it can be overloaded
 /// to read any set of data from the Ghidra client to configure how the command is executed.
@@ -96,12 +116,42 @@ void GhidraCommand::loadParameters(void)
   type = ArchitectureGhidra::readToAnyBurst(sin);
   if (type != 15)
     throw JavaError("alignment","Expecting arch id end");
-  if ((id>=0)&&(id<archlist.size()))
-    ghidra = archlist[id];
+  resolveArchitecture(id);
+}
 
-  if (ghidra == (ArchitectureGhidra *)0)
-    throw JavaError("decompiler","No architecture registered with decompiler");
-  ghidra->clearWarnings();
+/// Decode this command's parameters out of a schema-v1 request payload — the
+/// FlatBuffers bytes following the command-id byte of a SCHEMA_PAYLOAD frame
+/// (#34-10b, DD-0080). Commands not yet migrated keep this default, which
+/// surfaces as a Java-side exception through the doitSchema() error path; a
+/// well-behaved host never sends a schema payload for such a command (its
+/// sender adopts them one command at a time across #34-10b..e).
+/// \param buf is the FlatBuffers payload bytes
+/// \param len is the payload length in bytes
+void GhidraCommand::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  throw JavaError("decompiler","Command does not accept schema-v1 payloads");
+}
+
+/// Parse a schema-v1 program_id field — the same decimal string the v0
+/// burst carried. A non-numeric, partially-numeric, or out-of-range value
+/// yields -1, which resolveArchitecture() turns into the identical JavaError
+/// the v0 path throws for a bad id. Extracted at the third user
+/// (FlushNative, DeregisterProgram, SetAction — rule of three, #34-10d).
+/// \param programId is the schema-v1 program_id string
+/// \return the parsed id, or -1
+int4 GhidraCommand::parseSchemaProgramId(const string &programId)
+
+{
+  try {
+    size_t pos = 0;
+    int4 id = std::stoi(programId,&pos);
+    if (pos == programId.size())
+      return id;
+  } catch(...) {
+    // fall through
+  }
+  return -1;
 }
 
 /// This method sends any warnings accumulated during execution back, but it can be overloaded
@@ -161,6 +211,49 @@ int4 GhidraCommand::doit(void)
   return status;
 }
 
+/// The schema-v1 twin of doit() (#34-10b, DD-0080): same response header,
+/// error handling, and result protocol, but the parameters arrive decoded
+/// from the SCHEMA_PAYLOAD frame body instead of v0 bursts — so there is no
+/// end-of-command burst to consume (the frame envelope replaced it). The
+/// response direction is deliberately unchanged v0 marshaling until the
+/// host grows a v1 response decoder (#34-10f+).
+/// \param buf is the FlatBuffers payload (the frame body after the command-id byte)
+/// \param len is the payload length in bytes
+/// \return the meta-command (0=continue, 1=terminate) as issued by the command.
+int4 GhidraCommand::doitSchema(const uint1 *buf,int4 len)
+
+{
+  status = 0;
+  sout.write("\000\000\001\006",4); // Command response header
+  try {
+    loadParametersV1(buf,len);
+    rawAction();
+  }
+  catch(DecoderError &err) {
+    string errmsg;
+    errmsg = "Marshaling error: " + err.explain;
+    ghidra->printMessage( errmsg );
+  }
+  catch(JavaError &err) {
+    ArchitectureGhidra::passJavaException(sout,err.type,err.explain);
+    return status;			// Abort sending any results
+  }
+  catch(RecovError &err) {
+    string errmsg;
+    errmsg = "Recoverable Error: " + err.explain;
+    ghidra->printMessage( errmsg );
+  }
+  catch(LowlevelError &err) {
+    string errmsg;
+    errmsg = "Low-level Error: " + err.explain;
+    ghidra->printMessage( errmsg );
+  }
+  sendResult();
+  sout.write("\000\000\001\007",4); // Command response closer
+  sout.flush();
+  return status;
+}
+
 void RegisterProgram::loadParameters(void)
 
 {
@@ -172,6 +265,22 @@ void RegisterProgram::loadParameters(void)
   ArchitectureGhidra::readStringStream(sin,cspec);
   ArchitectureGhidra::readStringStream(sin,tspec);
   ArchitectureGhidra::readStringStream(sin,corespec);
+}
+
+/// Decode the schema-v1 registerProgram request (#34-10c): the four spec
+/// documents arrive as fields of a FlatBuffers RegisterProgramRequest
+/// instead of four v0 string bursts. An unset field reads back empty —
+/// the same value an empty v0 burst would produce.
+void RegisterProgram::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::RegisterProgramRequestV1 req;
+  if (!ipc::decode_register_program_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 registerProgram request");
+  pspec = req.processor_spec;
+  cspec = req.compiler_spec;
+  tspec = req.translate_spec;
+  corespec = req.core_types_spec;
 }
 
 
@@ -230,6 +339,19 @@ void DeregisterProgram::loadParameters(void)
   ghidra->clearWarnings();
 }
 
+/// Decode the schema-v1 deregisterProgram request (#34-10c): program_id
+/// carries the same decimal string the v0 burst carried, with the shared
+/// parseSchemaProgramId bad-id behaviour.
+void DeregisterProgram::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::DeregisterProgramRequestV1 req;
+  if (!ipc::decode_deregister_program_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 deregisterProgram request");
+  inid = parseSchemaProgramId(req.program_id);
+  resolveArchitecture(inid);
+}
+
 void DeregisterProgram::rawAction(void)
 
 {
@@ -259,6 +381,20 @@ void DeregisterProgram::sendResult(void)
   sout << dec << res;
   sout.write("\000\000\001\017",4);
   GhidraCommand::sendResult();
+}
+
+/// Decode the schema-v1 flushNative request (#34-10b): a FlatBuffers
+/// FlushNativeRequest whose program_id carries the same decimal string the
+/// v0 burst carried. A malformed buffer is an alignment error; a
+/// non-numeric or out-of-range id resolves no architecture and throws the
+/// identical JavaError the v0 path throws for a bad id (behaviour parity).
+void FlushNative::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::FlushNativeRequestV1 req;
+  if (!ipc::decode_flush_native_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 flushNative request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
 }
 
 void FlushNative::rawAction(void)
@@ -386,6 +522,20 @@ void SetAction::loadParameters(void)
   ArchitectureGhidra::readStringStream(sin,printstring);
 }
 
+/// Decode the schema-v1 setAction request (#34-10d): the two selector
+/// strings ride as FlatBuffers fields; an unset field reads back empty —
+/// the legacy "leave that setting unchanged" value.
+void SetAction::loadParametersV1(const uint1 *buf,int4 len)
+
+{
+  ipc::SetActionRequestV1 req;
+  if (!ipc::decode_set_action_request(buf,(size_t)len,req))
+    throw JavaError("alignment","Malformed schema-v1 setAction request");
+  resolveArchitecture(parseSchemaProgramId(req.program_id));
+  actionstring = req.root_action;
+  printstring = req.print_config;
+}
+
 void SetAction::rawAction(void)
 
 {
@@ -478,6 +628,34 @@ int4 GhidraCapability::readCommand(istream &sin,ostream &out)
   string function;
   int4 type;
 
+  // Rec 34 #34-10b (DD-0080): schema-payload dispatch. Only at the top of
+  // the command loop is the previous frame provably drained, so this is
+  // the one point where the inbound frame buf's FLAGS describe the frame
+  // about to be consumed. peek() forces the next frame to load (without
+  // consuming payload bytes); EOF falls through to the v0 loop so
+  // readToAnyBurst stays the sole closed-pipe authority. A flagged frame's
+  // body is [u8 command-id][FlatBuffers bytes] — taken whole, so the v0
+  // burst scanner never sees schema bytes. An unknown or missing id drains
+  // the frame and answers with the existing bad-command response (the
+  // DD-0080 protocol error for an out-of-registry id).
+  if (schemaFrameIn != (FrameInStreambuf *)0 && sin.peek() != EOF &&
+      (schemaFrameIn->lastFlags() & frame_v1::flags::SCHEMA_PAYLOAD) != 0) {
+    vector<uint1> body;
+    if (schemaFrameIn->takeSchemaPayload(body) && !body.empty())
+      function = ipc_v1::name_for_command_id((ipc_v1::CommandId)body[0]);
+    map<string,GhidraCommand *>::const_iterator siter = commandmap.find(function);
+    if (siter == commandmap.end()) {
+      out.write("\000\000\001\006",4); // Command response header
+      out.write("\000\000\001\020",4);
+      out << "Bad command: " << function;
+      out.write("\000\000\001\021",4);
+      out.write("\000\000\001\007",4); // Command response closer
+      out.flush();
+      return 0;
+    }
+    return (*siter).second->doitSchema(body.data()+1,(int4)(body.size()-1));
+  }
+
   do {
     type = ArchitectureGhidra::readToAnyBurst(sin); // Align ourselves
   } while(type != 2);
@@ -556,10 +734,22 @@ int main(int argc,char **argv)
   // file already uses for every long-lived singleton, and the form the RAII
   // audit accepts; rdbuf() does not take ownership, so the buf must outlive
   // the stream and is reclaimed only at process exit).
+  // #34-10b (DD-0080): the worker's dispatch now decodes schema-v1 request
+  // payloads, so the greeting advertises SCHEMA_V1_REQUESTS — the capability
+  // bit a host checks before sending a SCHEMA_PAYLOAD frame. The host's
+  // capabilities come back through peer_capabs (unused until the worker
+  // emits v1 responses, #34-10f+). The inbound frame buf is handed to the
+  // dispatch so readCommand can observe per-frame FLAGS at command
+  // boundaries; a v0 channel installs nothing and stays byte-identical.
   static const string ghidraDecompIdent = "GayHydra-decompiler (v1 framing)";
-  if (negotiate_greeting_v1(cin, cout, ghidraDecompIdent) == frame_v1::ChannelMode::V1) {
-    cin.rdbuf(make_unique<FrameInStreambuf>(cin.rdbuf()).release());
+  uint4 peer_capabs = 0;
+  if (negotiate_greeting_v1(cin, cout, ghidraDecompIdent,
+                            frame_v1::capab::SCHEMA_V1_REQUESTS,
+                            peer_capabs) == frame_v1::ChannelMode::V1) {
+    FrameInStreambuf *finbuf = make_unique<FrameInStreambuf>(cin.rdbuf()).release();
+    cin.rdbuf(finbuf);
     cout.rdbuf(make_unique<FrameOutStreambuf>(cout.rdbuf(), frame_v1::Type::RESPONSE).release());
+    GhidraCapability::enableSchemaDispatch(finbuf);
   }
 
   int4 status = 0;

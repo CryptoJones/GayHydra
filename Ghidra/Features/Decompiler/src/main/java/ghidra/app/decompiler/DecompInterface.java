@@ -273,6 +273,24 @@ public class DecompInterface {
 	}
 
 	/**
+	 * Resolve the schema-payload preference (Rec 34 #34-10b, DD-0080) —
+	 * the staged-go-live kill switch, following the {@code decompiler.framing}
+	 * pattern. The {@code decompiler.schemapayload} system property
+	 * ("auto"/"off") wins; otherwise "auto" (send schema-v1 request payloads
+	 * whenever — and only when — the worker advertised the capability; the
+	 * negotiation makes the default safe for every peer, the DD-0005
+	 * precedent).
+	 * @return the mode string for {@link DecompileProcess#setSchemaPayloadMode}
+	 */
+	private String resolveSchemaPayloadMode() {
+		String sys = System.getProperty("decompiler.schemapayload");
+		if (sys != null && !sys.isBlank()) {
+			return sys.trim().toLowerCase();
+		}
+		return "auto";
+	}
+
+	/**
 	 * This is the main routine for making sure that a decompiler
 	 * process is active and that it is initialized properly
 	 * @throws IOException for any problems with the pipe to the decompiler process
@@ -306,6 +324,7 @@ public class DecompInterface {
 
 		decompCallback.setNativeMessage(null);
 		decompProcess.setFramingMode(resolveFramingMode());
+		decompProcess.setSchemaPayloadMode(resolveSchemaPayloadMode());
 		decompProcess.registerProgram(decompCallback, pspecxml, cspecxml, tspec, coretypes,
 			program);
 		String nativeMessage = decompCallback.getNativeMessage();

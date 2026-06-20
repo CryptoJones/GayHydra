@@ -33,6 +33,7 @@ using std::cin;
 using std::cout;
 
 class GhidraCommand;
+class FrameInStreambuf;
 
 extern ElementId ELEM_DOC;		///< Marshaling element \<doc>
 extern ElementId ELEM_BUDGETEXHAUSTED;	///< Marshaling element \<budgetexhausted> (Rec 35 #35-5a-2)
@@ -46,11 +47,21 @@ extern ElementId ELEM_BUDGETEXHAUSTED;	///< Marshaling element \<budgetexhausted
 class GhidraCapability : public CapabilityPoint {
 protected:
   static map<string,GhidraCommand *> commandmap;	///< The central map from \e name to Ghidra command
+  static FrameInStreambuf *schemaFrameIn;	///< Inbound frame buf for schema-payload dispatch (null = pure v0)
   string name;						///< Identifier for capability and associated commands
 public:
   const string &getName(void) const { return name; }	///< Get the capability name
   static int4 readCommand(istream &sin,ostream &out);	///< Dispatch a Ghidra command
   static void shutDown(void);				///< Release all GhidraCommand resources
+
+  /// \brief Enable schema-v1 payload dispatch (Rec 34 #34-10b, DD-0080)
+  ///
+  /// Called by main() after a v1 greeting negotiates, handing readCommand()
+  /// the installed inbound frame streambuf so it can observe each frame's
+  /// FLAGS at command boundaries. Never called on a v0 channel — the null
+  /// default keeps the pure-v0 path untouched.
+  /// \param fin is the frame streambuf installed on the command input stream
+  static void enableSchemaDispatch(FrameInStreambuf *fin) { schemaFrameIn = fin; }
 };
 
 /// \brief The core decompiler commands capability
@@ -82,11 +93,14 @@ protected:
   ostream &sout;			///< The output stream to the Ghidra client
   ArchitectureGhidra *ghidra;		///< The Architecture on which to perform the command
   int4 status;				///< Meta-command to system (0=wait for next command, 1=terminate process)
+  void resolveArchitecture(int4 id);	///< Select the active Architecture by id (shared by both parameter paths)
+  static int4 parseSchemaProgramId(const string &programId);	///< Parse a schema-v1 program_id string (-1 if malformed)
   virtual void loadParameters(void);	///< Read parameters directing command execution
+  virtual void loadParametersV1(const uint1 *buf,int4 len);	///< Decode parameters from a schema-v1 payload (#34-10b)
   virtual void sendResult(void);	///< Send results of the command (if any) back to the Ghidra client
 public:
   GhidraCommand(void) : sin(cin),sout(cout) {
-    ghidra = (ArchitectureGhidra *)0; 
+    ghidra = (ArchitectureGhidra *)0;
   }					///< Construct given i/o streams
   virtual ~GhidraCommand(void) {}	///< Destructor
 
@@ -96,6 +110,7 @@ public:
   /// examining and manipulating data under the active Architecture object to perform the command.
   virtual void rawAction(void)=0;
   int4 doit(void);			///< Configure and execute the command, then send back results
+  int4 doitSchema(const uint1 *buf,int4 len);	///< doit() for a schema-v1 request payload (#34-10b)
 };
 
 /// \brief Command to \b register a new Program (executable) with the decompiler
@@ -113,6 +128,7 @@ class RegisterProgram : public GhidraCommand {
   string tspec;				///< Configuration (address-spaces) for the Translate object
   string corespec;			///< A description of core data-types for the TypeFactory object
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   int4 archid;				///< Resulting id of the program to send back
@@ -127,6 +143,7 @@ public:
 class DeregisterProgram : public GhidraCommand {
   int4 inid;				///< The id of the Architecture being terminated
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   int4 res;				///< The meta-command being issued to send back
@@ -141,6 +158,7 @@ public:
 /// (re)fetch any symbols as needed.
 /// The command expects a single string parameter encoding the id of the program to flush.
 class FlushNative : public GhidraCommand {
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   int4 res;				///< Success status returned to the client (0=success)
@@ -212,6 +230,7 @@ class SetAction : public GhidraCommand {
   string actionstring;			///< The \e root Action to switch to
   string printstring;			///< The \e printing output configuration to toggle
   virtual void loadParameters(void);
+  virtual void loadParametersV1(const uint1 *buf,int4 len);
   virtual void sendResult(void);
 public:
   bool res;				///< Set to \b true if the configuration action was successful

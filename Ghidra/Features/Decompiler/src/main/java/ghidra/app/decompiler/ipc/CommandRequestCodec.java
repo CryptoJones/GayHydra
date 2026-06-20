@@ -47,9 +47,10 @@ import ghidra.ipc.StructureGraphRequest;
  * {@link FlatBufferBuilder#finish(int)} roots the buffer rather than a generated
  * {@code finish*Buffer} helper.
  * <p>
- * Inert until the command-loop wiring lands: nothing in {@code DecompileProcess}
- * calls this yet. That wiring is an end-to-end-only change, deferred out of the
- * codec PRs.
+ * Live wiring began with #34-10b (DD-0080): {@code DecompileProcess} sends
+ * {@link #encodeFlushNativeRequest} as a schema-v1 payload when the worker
+ * advertises the capability; the remaining encoders go live one command at a
+ * time across #34-10c..e.
  */
 public final class CommandRequestCodec {
 

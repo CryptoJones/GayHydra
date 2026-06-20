@@ -804,6 +804,22 @@ generated from the GitHub Releases UI at sprint close.
   INVALID/null, the "stays v0" signal. C++ 334/334 (9 new); Java framing 15/15 (+2 incl. the
   cross-language pins), registry 4/4. Design: DD-0080.
 
+- **Rec 34 `#34-10b`–`#34-10d` — schema-v1 request go-live (lifecycle + flushNative + setAction)** —
+  the first DD-0080 go-live slices, wiring the inert codecs into the live worker command loop.
+  `FrameInStreambuf.lastFlags()` + `takeSchemaPayload()` (#34-10b) surface the `SCHEMA_PAYLOAD` flag
+  and drain the schema frame body so the v0 burst scanner never sees it; `GhidraCommand::doitSchema()`
+  dispatches by command-id at the command-loop top, calling each command's `loadParametersV1()`
+  override. Live this slice, each gated on the negotiated `SCHEMA_V1_REQUESTS` capability so a v0
+  channel stays byte-identical: **`registerProgram`** + **`deregisterProgram`** (#34-10c),
+  **`flushNative`** (#34-10b), **`setAction`** (#34-10d). The remaining config-trio commands
+  (`structureGraph`/`setOptions`) stay v0 for now — their payloads are binary `PackedEncode`
+  documents that the current `string` schema field can't carry faithfully (needs a `[ubyte]` field
+  first). The production worker compile rules (`ghi_dbg`/`ghi_opt`, mirrored by an `exportedHeaders`
+  srcDir in the gradle native build) now include the FlatBuffers codecs. C++ `frame_v1` 40/40 (+2
+  schema-flag); Java `DecompileProcessFramingV1Test` + the 5-case end-to-end framing suite green
+  (exercises register/deregister/flushNative via the schema path; Ronin28, gradle 8.5 + JDK 21).
+  Design: DD-0080.
+
 - **Rec 40 `#40-5a` — difftest architecture** — DD-0079 opens Workstream 3 by splitting the
   differential fuzzer at the *reference seam*: slice 1 is a zero-new-dependency Ghidra-side
   instruction executor on the in-tree `PcodeEmulator` equivalence-test pattern (grounded against
