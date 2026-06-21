@@ -796,7 +796,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **Carried (still deferred):**
 
-- [ ] 3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137).
+- [x] ~~3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137).~~ **Won't-do (2026-06-20):** the fork is now orphaned from upstream NSA/ghidra — no give-back relationship, so upstream PRs are out of scope. Closed.
 
 **Give-back PRs to NSA/ghidra:**
 
@@ -808,7 +808,7 @@ Each fix shipped as a self-contained PR with the corresponding bug as the linked
 
 **Carried from Sprint 4:**
 
-- [ ] 3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137) — decide whether to invest the hand-port effort or just close as "won't backport".
+- [x] ~~3 structural-drift upstream PRs (NSA#5593, NSA#3974, NSA#3137) — decide whether to invest the hand-port effort or just close as "won't backport".~~ **Closed as won't-do (2026-06-20):** the fork is now orphaned from upstream NSA/ghidra.
 
 **Implementation surface — pick the cleanest next batch:**
 
@@ -838,7 +838,7 @@ first implementation tier.
 - [ ] **Rec 12:** open draft GHSAs for the three audit-named internal trackers (`GP-6832`, `GP-6719`, `GP-258`); fill in CVSS + affected ranges. *(Status note 2026-06-10: drafts were created once and lost in the repo deletion — see Apologies.md / PR #15; the redo is the open work.)*
 - [x] ~~**Rec 13:** submit `.github/oss-fuzz/` to [google/oss-fuzz](https://github.com/google/oss-fuzz) as `projects/ghidra-decompiler/`; verify first trial-run on their infrastructure.~~ Rejected 2026-05-26 by Google; see Sprint 10 canonical row.
 - [x] ~~**Rec 14:** add `projects/ghidra-loader/` JVM project to OSS-Fuzz once Rec 13 is green.~~ Deferred indefinitely — same policy rejection.
-- [ ] **Rec 18 PR #18-2:** `ItemDeserializer` hardening — declared-size precheck + running-counter cap + clean-up on failure (closes [upstream #1481](https://github.com/NationalSecurityAgency/ghidra/issues/1481)). Coordinate-disclose with NSA before publishing.
+- [ ] **Rec 18 PR #18-2:** `ItemDeserializer` hardening — declared-size precheck + running-counter cap + clean-up on failure. *(2026-06-20: the "coordinate-disclose with NSA" gate is **dropped** — the fork is orphaned from upstream NSA/ghidra, so this is now a fork-internal security hardening, doable directly. The original upstream #1481 reference is informational only.)*
 - [x] ~~**Rec 19 PR #19-1:** `SafeObjectInput` helper class + per-call allowlist + depth/byte caps + unit tests.~~ Shipped — `SafeObjectInput` exists with `headerStream()`/`openStream()` helpers and the `objectInputStreamAudit` gate (Sprint 6 rows, PRs #293/#299/#301).
 
 ---
@@ -986,7 +986,7 @@ first implementation tier.
     property; fresh-program/unknown-version/corrupt-line loads are never-wrong (skip, not fail);
     names percent-escaped; empty save removes the property. Codec 7/7. **Completes #38-2.** Next:
     **#38-3** static-analysis populator.
-- [ ] **PR #38-3:** static-analysis populator.
+- [x] ~~**PR #38-3:** static-analysis populator.~~ **Complete** — every sub-slice shipped (`#38-3a`/`#38-3b` identity + struct-field, the dataflow slices, the `LocalEquiv` stable-id design, local-argument minting). Doc itself notes "Remaining Rec 38: only `#38-4` UI," which shipped its minimal slice below. (Parent checkbox was stale — corrected 2026-06-20.)
   - [x] ~~**#38-3a** — deterministic identity minting.~~ Shipped: `ScopeGraphStaticPopulator` —
     one `Parameter` node per function parameter slot, one `GlobalAddress` per defined data unit;
     identity only (edges are the dataflow source's and the user's per the RFC split); idempotent,
@@ -1038,7 +1038,7 @@ first implementation tier.
   implementation (the Java ANTLR3 compiler behind `sleighCompile`, parsing every `.slaspec` on
   every CI build) — its seven language-defining `.g` files joined the pin set instead of building
   a duplicated third parser. Audit verified at 9 pins. **Workstream 1 complete in final form.**
-- [ ] **PR #40-3 + #40-4:** semantic model document.
+- [x] ~~**PR #40-3 + #40-4:** semantic model document.~~ **Complete** — both halves shipped (`#40-3` disassembly, `#40-4` RTL/expression layer); doc notes "Workstream 2 complete." (Parent checkbox was stale — corrected 2026-06-20.)
   - [x] ~~**#40-3** — disassembly half.~~ Shipped: `docs/sleigh/semantic-model.md`, 24 constructs
     (definitions, attach forms, constructors/display, pattern equations, context actions,
     with-blocks, macro declarations) per the plan's template; every C++ anchor verified.
