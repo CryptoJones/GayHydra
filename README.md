@@ -1,6 +1,6 @@
 <p align="center"><em>Proudly Made in Nebraska. Go Big Red! 🌽 <a href="https://xkcd.com/2347/">https://xkcd.com/2347/</a></em></p>
 
-<p align="center"><a href="#faq"><img src="GayHydra.png" width="400" alt="GayHydra logo — click for the FAQ"></a></p>
+<p align="center"><img src="docs/architecture/gayhydra-current-arch.png" width="880" alt="GayHydra / Ghidra — current implementation architecture (warts and all)"></p>
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?logo=apache)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases)
