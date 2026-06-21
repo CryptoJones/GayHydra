@@ -16,6 +16,14 @@
 
 # GayHydra
 
+> 🐙 **GayHydra has a child project: [Scylla](https://github.com/CryptoJones/Scylla).**
+> Scylla is a first-class reverse-engineering platform built from the ground up on
+> **hexagonal (ports-and-adapters) architecture** — it wraps GayHydra's proven engine as a
+> durable **Rust core** behind disposable adapter **heads** (MCP first), with the RE domain
+> model as a stable, zero-copy artifact: the system's **"narrow waist."**
+> **GayHydra is the hardened, proven engine; Scylla is the new platform built around it.**
+> (Codeberg mirror: [CryptoJones/Scylla](https://codeberg.org/CryptoJones/Scylla).)
+
 * Previously "Ghidra: Top 42 Principal-Architect Recommendations"
 * ("GT42PAR" didn't have the panache "GayHydra" does! 🏳️‍🌈)
 
