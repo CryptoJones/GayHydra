@@ -14,6 +14,24 @@ generated from the GitHub Releases UI at sprint close.
 
 ---
 
+## [v26.3.4] — 2026-06-20
+
+Patch release shipping the release-pipeline fix and verifying it end-to-end.
+
+### Fixed
+
+- **Release pipeline no longer burns the tag under GitHub immutable releases**
+  ([PR #469](https://github.com/CryptoJones/GayHydra/pull/469)) — `release.yml`'s
+  publish step previously `gh release delete`'d a pre-existing empty release for
+  the tag, which permanently poisons the tag under immutable releases (the
+  tag↔release binding survives the delete), 422-ing every later publish and
+  stranding v26.3.0 as an unpublishable draft. The publish step now leaves any
+  pre-existing entry in place and uploads to it; the normal fresh-tag path is
+  unchanged. This release doubles as the regression test that the edited workflow
+  still publishes cleanly.
+
+---
+
 ## [v26.3.3] — 2026-06-20
 
 Sprint-close release of everything merged since v26.3.0. Headlines: the
