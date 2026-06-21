@@ -209,15 +209,17 @@ jobs:
           # Aaron 2026-05-25: this is the unblock for the v26.1.x
           # release-artifact backfill.
           #
-          # If a pre-existing release entry has no artifacts yet (the
-          # bare entries hand-rolled during the deletion-incident
-          # recovery), delete it so we can recreate it as a draft.
-          # A release with assets is left alone — the workflow already
-          # ran successfully for it.
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets | length' 2>/dev/null | grep -qx 0; then
-            echo "Deleting empty pre-existing release $TAG so we can recreate it as a draft."
-            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
-          fi
+          # A pre-existing release entry for this tag is left in place and
+          # uploaded to (draft releases accept asset uploads). We must NOT
+          # `gh release delete` it: under GitHub immutable releases the
+          # tag<->release binding is permanent, so deleting the release
+          # *burns the tag* — every subsequent create/publish then fails with
+          # HTTP 422 "tag_name was used by an immutable release". That is
+          # exactly what stranded v26.3.0 as an unpublishable draft (build +
+          # sign succeeded; only the final publish-flip 422'd). If a tag
+          # somehow already has a *published* (immutable) empty release, the
+          # uploads below fail loudly — recover that by hand rather than
+          # deleting, which would poison the tag permanently.
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             ZIP_NAME=$(basename "${{ steps.artifacts.outputs.ZIP }}")
             SBOM_NAME=$(basename "${{ steps.artifacts.outputs.SBOM }}")
