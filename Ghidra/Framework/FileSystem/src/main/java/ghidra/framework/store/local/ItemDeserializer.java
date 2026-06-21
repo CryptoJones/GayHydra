@@ -46,6 +46,23 @@ public class ItemDeserializer {
 
 	private final static int IO_BUFFER_SIZE = ItemSerializer.IO_BUFFER_SIZE;
 
+	/**
+	 * System property to override {@link #DEFAULT_MAX_ITEM_LENGTH} — the
+	 * largest header-declared item length this deserializer will accept.
+	 * Set with {@code -Dghidra.store.maxItemLength=<bytes>} for installations
+	 * that legitimately store single items larger than the default ceiling.
+	 */
+	static final String MAX_ITEM_LENGTH_PROPERTY = "ghidra.store.maxItemLength";
+
+	/**
+	 * Default maximum declared length (64 GiB) for a single packed item.
+	 * The header-declared length is attacker-controlled; a hostile packed
+	 * file can claim any value up to {@link Long#MAX_VALUE}. Rec 18 #18-2:
+	 * reject an absurd declaration up front so a tiny malicious file cannot
+	 * drive an unbounded (zip-bomb-amplified) write into the output stream.
+	 */
+	static final long DEFAULT_MAX_ITEM_LENGTH = 64L * 1024 * 1024 * 1024;
+
 	private InputStream in;
 	private String itemName;
 	private String contentType;
@@ -89,6 +106,18 @@ public class ItemDeserializer {
 			}
 			fileType = objIn.readInt();
 			length = objIn.readLong();
+			// Rec 18 #18-2 declared-size precheck: the length field is
+			// attacker-controlled. Reject a negative value (which would
+			// corrupt the (int) cast in saveItem and the copy arithmetic)
+			// and an absurdly large one up front, before any bulk copy.
+			if (length < 0) {
+				throw new IOException("Invalid packed item length: " + length);
+			}
+			long maxItemLength = Long.getLong(MAX_ITEM_LENGTH_PROPERTY, DEFAULT_MAX_ITEM_LENGTH);
+			if (length > maxItemLength) {
+				throw new IOException("Packed item length " + length + " exceeds maximum " +
+					maxItemLength + " (override with -D" + MAX_ITEM_LENGTH_PROPERTY + ")");
+			}
 			success = true;
 		}
 		catch (UTFDataFormatException e) {
@@ -170,31 +199,62 @@ public class ItemDeserializer {
 		}
 		saved = true;
 
-		ZipInputStream zipIn = new ZipInputStream(in);
-		ZipEntry entry = zipIn.getNextEntry();
-		if (entry == null || !ZIP_ENTRY_NAME.equals(entry.getName())) {
-			throw new IOException("Data error");
-		}
-//		if (length != entry.getSize()) {
-//			throw new IOException("Content length is " + entry.getSize() + ", expected " + length);
-//		}
+		boolean success = false;
+		try {
+			ZipInputStream zipIn = new ZipInputStream(in);
+			ZipEntry entry = zipIn.getNextEntry();
+			if (entry == null || !ZIP_ENTRY_NAME.equals(entry.getName())) {
+				throw new IOException("Data error");
+			}
 
-		InputStream itemIn = zipIn;
-		if (monitor != null) {
-			itemIn = new MonitoredInputStream(zipIn, monitor);
-			monitor.initialize((int) length);
-		}
-		long len = length;
-		byte[] buffer = new byte[IO_BUFFER_SIZE];
+			InputStream itemIn = zipIn;
+			if (monitor != null) {
+				itemIn = new MonitoredInputStream(zipIn, monitor);
+				// length is bounded by the constructor precheck; clamp the
+				// monitor's int initialize for items larger than 2 GiB.
+				monitor.initialize((int) Math.min(length, Integer.MAX_VALUE));
+			}
 
-		// Copy file contents
-		int cnt = (int) (len < IO_BUFFER_SIZE ? len : IO_BUFFER_SIZE);
-		while ((cnt = itemIn.read(buffer, 0, cnt)) > 0) {
-			out.write(buffer, 0, cnt);
-			len -= cnt;
-			cnt = (int) (len < IO_BUFFER_SIZE ? len : IO_BUFFER_SIZE);
-		}
+			byte[] buffer = new byte[IO_BUFFER_SIZE];
 
+			// Copy exactly the declared number of bytes, never more.
+			long remaining = length;
+			long totalWritten = 0;
+			while (remaining > 0) {
+				int toRead = (int) Math.min(remaining, IO_BUFFER_SIZE);
+				int cnt = itemIn.read(buffer, 0, toRead);
+				if (cnt < 0) {
+					break; // stream ended before the declared length
+				}
+				out.write(buffer, 0, cnt);
+				totalWritten += cnt;
+				remaining -= cnt;
+			}
+
+			// Rec 18 #18-2 running-counter cap: the decompressed stream must
+			// match the declared length exactly — symmetric with the
+			// ItemSerializer.outputItem() lengthWritten==length invariant.
+			// A short stream means a truncated/forged file; a stream that
+			// still has bytes past the declared length is an over-producing
+			// (zip-bomb) payload. Either way, fail closed.
+			if (totalWritten != length) {
+				throw new IOException("Packed item length mismatch: wrote " + totalWritten +
+					" bytes, header declared " + length);
+			}
+			if (itemIn.read() != -1) {
+				throw new IOException("Packed item stream exceeds declared length " + length);
+			}
+
+			success = true;
+		}
+		finally {
+			// Rec 18 #18-2 clean-up on failure: a mid-copy error or cancel
+			// (e.g. IOCancelledException from the monitor) must not leak the
+			// underlying packed-file stream.
+			if (!success) {
+				dispose();
+			}
+		}
 	}
 
 }

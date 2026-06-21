@@ -974,6 +974,25 @@ generated from the GitHub Releases UI at sprint close.
   recognition behaviour is unchanged; consolidated recovery coverage moves to one
   integration test (`CppDirectCallRecognizerTest`). Design: DD-0032.
 
+### Security
+
+- **Rec 18 `#18-2` — `ItemDeserializer` hardened against forged / zip-bomb packed
+  files** ([PR #467](https://github.com/CryptoJones/GayHydra/pull/467)) — the packed-file
+  header's `length` field is attacker-controlled and was previously trusted (the
+  length-vs-content check was commented out, with no ceiling and no cleanup on a
+  mid-copy failure). The constructor now rejects a negative declared length (which also
+  corrupted the `(int) length` monitor cast and the copy arithmetic) and one above a
+  generous 64 GiB ceiling, overridable via `-Dghidra.store.maxItemLength`. `saveItem()`
+  copies exactly the declared budget and fails closed unless the decompressed stream
+  matches it — symmetric with `ItemSerializer.outputItem()`'s own
+  `lengthWritten == length` invariant — rejecting both a truncated/forged file (stream
+  shorter than declared) and an over-producing zip-bomb payload (stream longer than
+  declared) instead of silently truncating. The copy is wrapped so a mid-copy IO error
+  or monitor cancel disposes the underlying packed-file stream instead of leaking it.
+  New `ItemDeserializerTest` (round-trip + empty-item + four rejection cases);
+  `PackedDatabaseTest` still green. The orphaning from upstream NSA/ghidra dropped this
+  item's prior NSA-coordination gate (upstream #1481 ref informational only).
+
 ---
 
 ## [v26.3.0] — 2026-06-06
