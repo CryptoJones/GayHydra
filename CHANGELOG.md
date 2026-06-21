@@ -12,6 +12,21 @@ Work toward the next sprint. Tracked per-PR in
 [SprintPlanning.md](SprintPlanning.md); per-release notes are
 generated from the GitHub Releases UI at sprint close.
 
+---
+
+## [v26.3.3] — 2026-06-20
+
+Sprint-close release of everything merged since v26.3.0. Headlines: the
+**Rec 37 headless recognition layer** — the Rec 30 integration harness
+(`AbstractDecompilerHighFunctionTest`) plus the `#37-7b` virtual-call
+matcher/driver and the `#37-9b`–`#37-9f` construction / destruction /
+deallocation recognizers — which drives the v26.3.0 `CppDecompilerHints`
+renderer family from a live `HighFunction` and closes the recognition loop,
+alongside the `#37-10`/`#37-11` shared-helper refactors; and **Rec 18 #18-2**,
+hardening `ItemDeserializer` against forged / zip-bomb packed files
+(declared-size precheck + exact running-counter cap + clean-up on failure).
+Full per-area detail in the sections below.
+
 ### Added
 
 - **Rec 30 headless integration harness** (Sprint 14 Step 1, the enabler) —
