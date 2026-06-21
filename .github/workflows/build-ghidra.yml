@@ -64,7 +64,14 @@ jobs:
           gradle-version: '8.5'
 
       - name: Fetch Dependencies
-        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse && exit 0
+            echo "::warning::Fetch Dependencies attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::Fetch Dependencies failed after 3 attempts"; exit 1
 
       - name: Build Ghidra
         run: gradle buildGhidra --parallel
@@ -94,7 +101,14 @@ jobs:
           gradle-version: '8.5'
 
       - name: Fetch Dependencies
-        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse && exit 0
+            echo "::warning::Fetch Dependencies attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::Fetch Dependencies failed after 3 attempts"; exit 1
 
       - name: Audit @Ignore annotations (Rec 28 #28-3, strict)
         # Tree-wide sweep completed in PR #194; flip to strict so
@@ -182,7 +196,14 @@ jobs:
           gradle-version: '8.5'
 
       - name: Fetch Dependencies
-        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse && exit 0
+            echo "::warning::Fetch Dependencies attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::Fetch Dependencies failed after 3 attempts"; exit 1
 
       - name: Compile (prepdev)
         run: gradle prepdev --parallel
@@ -251,7 +272,14 @@ jobs:
           gradle-version: '8.5'
 
       - name: Fetch Dependencies
-        run: gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            gradle -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse && exit 0
+            echo "::warning::Fetch Dependencies attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::Fetch Dependencies failed after 3 attempts"; exit 1
 
       - name: Build native decompiler
         # The e2e test spawns the real native `decompile` worker. The
