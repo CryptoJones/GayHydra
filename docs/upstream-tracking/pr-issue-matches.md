@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 341 open PRs scanned. 67 PR→open-issue closing-references found, across 67 distinct PRs and 65 distinct issues.
+Snapshot: 342 open PRs scanned. 68 PR→open-issue closing-references found, across 68 distinct PRs and 66 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -60,6 +60,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8011](https://github.com/NationalSecurityAgency/ghidra/issues/8011) Pyghidra equivalent of from __main__ import ... | [#9015](https://github.com/NationalSecurityAgency/ghidra/pull/9015) Pyghidra `from __main__ import ...` improvement | @widberg | +91/-4 | 2026-03-02 |
 | 0 | [#9017](https://github.com/NationalSecurityAgency/ghidra/issues/9017) ARM64 SWP instruction with xzr Xs has wrong decompiler semantics | [#9079](https://github.com/NationalSecurityAgency/ghidra/pull/9079) AArch64: propagate zero when Rs=zr in LSE instructions | @liamwhite | +51/-51 | 2026-03-28 |
 | 0 | [#3688](https://github.com/NationalSecurityAgency/ghidra/issues/3688) ARM: Old Exception return is misinterpreted (SUBS PC, LR, #<const>) | [#3687](https://github.com/NationalSecurityAgency/ghidra/pull/3687) ARM: Old Exception Return is misinterpreted | @Werner2005 | +59/-49 | 2021-11-30 |
+| 0 | [#8910](https://github.com/NationalSecurityAgency/ghidra/issues/8910) ProgramModuleIndexer blocks UI for a long time opening debugger on remote project with lots of files | [#9299](https://github.com/NationalSecurityAgency/ghidra/pull/9299) Fix debugger module indexing startup hang | @sawirricardo | +113/-26 | 2026-06-23 |
 | 0 | [#3536](https://github.com/NationalSecurityAgency/ghidra/issues/3536) Build doesn't include cspec documentation for Decompiler | [#3137](https://github.com/NationalSecurityAgency/ghidra/pull/3137) Include cspec docs in build | @SamB | +107/-40 | 2021-06-14 |
 | 0 | [#9230](https://github.com/NationalSecurityAgency/ghidra/issues/9230) Expand builtin function recovery to memset / bzero | [#9232](https://github.com/NationalSecurityAgency/ghidra/pull/9232) Decompiler: Add builtin_memset optimizations | @EmirX3D | +148/-2 | 2026-05-29 |
 | 0 | [#9000](https://github.com/NationalSecurityAgency/ghidra/issues/9000) TriCore: Division and FPU conversion instructions have incorrect or missing SLEIGH semantics | [#8999](https://github.com/NationalSecurityAgency/ghidra/pull/8999) #9000 TriCore: Fix FPU conversion and division instruction semantics | @mmmorks | +59/-96 | 2026-02-23 |
