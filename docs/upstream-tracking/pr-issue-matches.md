@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 342 open PRs scanned. 68 PR→open-issue closing-references found, across 68 distinct PRs and 66 distinct issues.
+Snapshot: 344 open PRs scanned. 69 PR→open-issue closing-references found, across 69 distinct PRs and 67 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -26,6 +26,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 1 | [#7029](https://github.com/NationalSecurityAgency/ghidra/issues/7029) PCode: Expose default case address for switch statements in Ghidra API | [#7308](https://github.com/NationalSecurityAgency/ghidra/pull/7308) PCode: Add edge label information to XML encoding and expose it in Ghidra. | @kayemh | +20/-7 | 2024-12-20 |
 | 1 | [#4951](https://github.com/NationalSecurityAgency/ghidra/issues/4951) Decompiler: PCode representation produced by `TypeOp::printRaw` is ambiguous | [#5063](https://github.com/NationalSecurityAgency/ghidra/pull/5063) Decompiler: Add `printRaw` implementation for ambiguous `TypeOp`s | @LukeSerne | +141/-0 | 2023-03-05 |
 | 0 | [#8946](https://github.com/NationalSecurityAgency/ghidra/issues/8946) CompareExecutablesScript Elastic BSim database does not exist | [#8947](https://github.com/NationalSecurityAgency/ghidra/pull/8947) #8946 Fix CompareExecutablesScript Elastic BSim database does not exist | @jordanjohnson56 | +1/-0 | 2026-02-07 |
+| 0 | [#9303](https://github.com/NationalSecurityAgency/ghidra/issues/9303) NPE in ForceUnionAction.findUnion() [12.2-DEVELOPMENT head] | [#9304](https://github.com/NationalSecurityAgency/ghidra/pull/9304) 9303: Varnode.High NP gate in ForceUnionAction.findUnion | @pgalbraith | +1/-1 | 2026-06-24 |
 | 0 | [#6683](https://github.com/NationalSecurityAgency/ghidra/issues/6683) Can we stop replacing subtracted values with added negative versions? | [#8628](https://github.com/NationalSecurityAgency/ghidra/pull/8628) Decompiler: Extend `RuleAddUnsigned` to signed ints | @LukeSerne | +1/-1 | 2025-11-15 |
 | 0 | [#7998](https://github.com/NationalSecurityAgency/ghidra/issues/7998) Allow Batch Import dialog users to select which file system to use. | [#7999](https://github.com/NationalSecurityAgency/ghidra/pull/7999) Allow users to select file system when batch importing. | @nmggithub | +1/-1 | 2025-04-10 |
 | 0 | [#4639](https://github.com/NationalSecurityAgency/ghidra/issues/4639) Type propagation through INDIRECT ops from call clobbers leads to wrong type inference | [#4759](https://github.com/NationalSecurityAgency/ghidra/pull/4759) decompiler: Don't propagate types through call clobbers | @tavianator | +2/-0 | 2022-11-18 |
