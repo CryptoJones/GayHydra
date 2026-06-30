@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 339 open PRs scanned. 65 PR→open-issue closing-references found, across 65 distinct PRs and 64 distinct issues.
+Snapshot: 338 open PRs scanned. 64 PR→open-issue closing-references found, across 64 distinct PRs and 63 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -34,7 +34,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#2243](https://github.com/NationalSecurityAgency/ghidra/issues/2243) Exclude VScode folders from compilation | [#2244](https://github.com/NationalSecurityAgency/ghidra/pull/2244) Exclude VScode folders from compilation - see #2243 | @dp1 | +4/-0 | 2020-09-02 |
 | 0 | [#8948](https://github.com/NationalSecurityAgency/ghidra/issues/8948) CompareExecutablesScript Could not locate vector because ID is 0 | [#8949](https://github.com/NationalSecurityAgency/ghidra/pull/8949) #8948 skip missing vectors in ExecutableComparison | @jordanjohnson56 | +8/-1 | 2026-02-09 |
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
-| 0 | [#2752](https://github.com/NationalSecurityAgency/ghidra/issues/2752) Ghidra server operations over high latency networks is prohibitively slow | [#9316](https://github.com/NationalSecurityAgency/ghidra/pull/9316) Remove explicit socket buffer locks in remote block stream handles | @axd1x8a | +0/-14 | 2026-06-25 |
 | 0 | [#9195](https://github.com/NationalSecurityAgency/ghidra/issues/9195) Z80 register indirect addressing mode DefaultOperandRepresentation missing parentheses | [#9196](https://github.com/NationalSecurityAgency/ghidra/pull/9196) Z80: fix (HL) register indirect addressing missing from operand representation | @0xDI | +6/-9 | 2026-05-18 |
 | 0 | [#9171](https://github.com/NationalSecurityAgency/ghidra/issues/9171) Loading issue causing missing section data in PE/code cave | [#9175](https://github.com/NationalSecurityAgency/ghidra/pull/9175) Round SizeOfRawData up to the nearest multiple of the FileAlignment | @XOR-RAX | +11/-4 | 2026-05-10 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
