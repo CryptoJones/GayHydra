@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 339 open PRs scanned. 65 PR→open-issue closing-references found, across 65 distinct PRs and 64 distinct issues.
+Snapshot: 340 open PRs scanned. 65 PR→open-issue closing-references found, across 65 distinct PRs and 64 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -68,6 +68,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8627](https://github.com/NationalSecurityAgency/ghidra/issues/8627) x86_linux_syscall_numbers is incomplete/outdated | [#8815](https://github.com/NationalSecurityAgency/ghidra/pull/8815) Update Linux syscall numbers | @xiaoyinl | +382/-50 | 2025-12-21 |
 | 0 | [#6863](https://github.com/NationalSecurityAgency/ghidra/issues/6863) power PC VLE (EVX?) MPC5746R missing instructions | [#9036](https://github.com/NationalSecurityAgency/ghidra/pull/9036) Add e200 VLE PowerPC language support | @Scottcjn | +478/-92 | 2026-03-10 |
 | 0 | [#9106](https://github.com/NationalSecurityAgency/ghidra/issues/9106) Add correlator-independent similarity score to Version Tracking match table | [#9107](https://github.com/NationalSecurityAgency/ghidra/pull/9107) #9106: Add PDiff similarity score to Version Tracking | @clearbluejar | +847/-13 | 2026-04-07 |
+| 0 | [#9352](https://github.com/NationalSecurityAgency/ghidra/issues/9352) Feature Request: MCP (Model Context Protocol) Server for AI Agent Integration | [#9353](https://github.com/NationalSecurityAgency/ghidra/pull/9353) feat: Add MCP Server for AI Agent Integration | @lxcxjxhx | +937/-0 | 2026-07-08 |
 | 0 | [#1951](https://github.com/NationalSecurityAgency/ghidra/issues/1951) incorrect decompiled address for relative jumps with AVR8 microcontroller | [#6596](https://github.com/NationalSecurityAgency/ghidra/pull/6596) Fix wrong rcall operand on 8K AVR8 chips | @piotrva | +1565/-0 | 2024-05-29 |
 | 0 | [#5835](https://github.com/NationalSecurityAgency/ghidra/issues/5835) architecture support: XMOS XS1/XS2 (xCore-200 etc) | [#9112](https://github.com/NationalSecurityAgency/ghidra/pull/9112) Add XMOS processor | @CUB3D | +1696/-0 | 2026-04-08 |
-| 0 | [#9352](https://github.com/NationalSecurityAgency/ghidra/issues/9352) Feature Request: MCP (Model Context Protocol) Server for AI Agent Integration | [#9353](https://github.com/NationalSecurityAgency/ghidra/pull/9353) feat: Add MCP Server for AI Agent Integration | @lxcxjxhx | +2534/-0 | 2026-07-08 |
