@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 343 open PRs scanned. 65 PR→open-issue closing-references found, across 65 distinct PRs and 64 distinct issues.
+Snapshot: 340 open PRs scanned. 64 PR→open-issue closing-references found, across 64 distinct PRs and 63 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -32,7 +32,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#2632](https://github.com/NationalSecurityAgency/ghidra/issues/2632) cdecl16far calling conventions incorrectly return 4-byte value | [#2633](https://github.com/NationalSecurityAgency/ghidra/pull/2633) __cdecl16far incorectly return 32bit value | @neitri | +3/-0 | 2021-01-08 |
 | 0 | [#8269](https://github.com/NationalSecurityAgency/ghidra/issues/8269) PIC18: RLNCF and RRNCF implement wrong logic – shift instead of rotate | [#8270](https://github.com/NationalSecurityAgency/ghidra/pull/8270) Fix PIC18 RLNCF and RRNCF instructions to use rotate instead of shift | @simonabler | +2/-2 | 2025-06-18 |
 | 0 | [#2243](https://github.com/NationalSecurityAgency/ghidra/issues/2243) Exclude VScode folders from compilation | [#2244](https://github.com/NationalSecurityAgency/ghidra/pull/2244) Exclude VScode folders from compilation - see #2243 | @dp1 | +4/-0 | 2020-09-02 |
-| 0 | [#9367](https://github.com/NationalSecurityAgency/ghidra/issues/9367) Debugger (gdb): ghidragdb cannot map MIPS ISA-level architectures (e.g. mips:isa64r2), falls back to DATA64 | [#9368](https://github.com/NationalSecurityAgency/ghidra/pull/9368) #9367 Map MIPS ISA-level architectures in ghidragdb | @retrocpugeek | +6/-0 | 2026-07-12 |
 | 0 | [#9346](https://github.com/NationalSecurityAgency/ghidra/issues/9346) StoredAnalyzerTimes missing when using PyGhidra | [#9351](https://github.com/NationalSecurityAgency/ghidra/pull/9351) fix: persist StoredAnalyzerTimes in PyGhidra analysis | @namelessweakl1ng | +6/-2 | 2026-07-06 |
 | 0 | [#8948](https://github.com/NationalSecurityAgency/ghidra/issues/8948) CompareExecutablesScript Could not locate vector because ID is 0 | [#8949](https://github.com/NationalSecurityAgency/ghidra/pull/8949) #8948 skip missing vectors in ExecutableComparison | @jordanjohnson56 | +8/-1 | 2026-02-09 |
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
