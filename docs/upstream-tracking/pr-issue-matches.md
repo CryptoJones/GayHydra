@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 344 open PRs scanned. 67 PR→open-issue closing-references found, across 67 distinct PRs and 66 distinct issues.
+Snapshot: 345 open PRs scanned. 67 PR→open-issue closing-references found, across 67 distinct PRs and 66 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -39,9 +39,9 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
 | 0 | [#9195](https://github.com/NationalSecurityAgency/ghidra/issues/9195) Z80 register indirect addressing mode DefaultOperandRepresentation missing parentheses | [#9196](https://github.com/NationalSecurityAgency/ghidra/pull/9196) Z80: fix (HL) register indirect addressing missing from operand representation | @0xDI | +6/-9 | 2026-05-18 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
-| 0 | [#9217](https://github.com/NationalSecurityAgency/ghidra/issues/9217) mc68k: post-increment decompilation issues | [#9222](https://github.com/NationalSecurityAgency/ghidra/pull/9222) Fix 68000 MOVE post increment destination pcode order | @EmirX3D | +17/-3 | 2026-05-24 |
 | 0 | [#8777](https://github.com/NationalSecurityAgency/ghidra/issues/8777) Incomprehensible decompilation of "bra ge,..." on PIC24 | [#8778](https://github.com/NationalSecurityAgency/ghidra/pull/8778) PIC24: Use a different pattern for OV/N handling on signed compare | @karcherm | +21/-3 | 2025-12-14 |
 | 0 | [#9238](https://github.com/NationalSecurityAgency/ghidra/issues/9238) ThreadPcodeExecutorState.getRegisterValues() does not contain full result operand until adjacent register is initialized | [#9239](https://github.com/NationalSecurityAgency/ghidra/pull/9239) Fix off by one register init check in pcode byte state | @EmirX3D | +25/-2 | 2026-05-31 |
+| 0 | [#9386](https://github.com/NationalSecurityAgency/ghidra/issues/9386) Multi-tag function delete gives exception | [#9387](https://github.com/NationalSecurityAgency/ghidra/pull/9387) #9386 Fix function delete failing when 2 or more tags are applied | @brothersw | +30/-1 | 2026-07-18 |
 | 0 | [#9203](https://github.com/NationalSecurityAgency/ghidra/issues/9203) Decompiler can insert Pcode into the wrong block | [#9204](https://github.com/NationalSecurityAgency/ghidra/pull/9204) Fix conditional constant MULTIEQUAL placement | @EmirX3D | +30/-9 | 2026-05-21 |
 | 0 | [#4801](https://github.com/NationalSecurityAgency/ghidra/issues/4801) Add : "Disable/Enable printing of type casts" to the context menu in Decompiler | [#5623](https://github.com/NationalSecurityAgency/ghidra/pull/5623) Add 'Toggle Printing of Type Casts' decompiler pane menu item. | @Washi1337 | +40/-0 | 2023-08-01 |
 | 0 | [#9169](https://github.com/NationalSecurityAgency/ghidra/issues/9169) Out of memory due to long symbol names in PE | [#9173](https://github.com/NationalSecurityAgency/ghidra/pull/9173) Limit the maximum loadable characters for symbol names | @XOR-RAX | +46/-6 | 2026-05-10 |
