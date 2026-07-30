@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 344 open PRs scanned. 67 PR→open-issue closing-references found, across 67 distinct PRs and 66 distinct issues.
+Snapshot: 345 open PRs scanned. 68 PR→open-issue closing-references found, across 68 distinct PRs and 67 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -54,6 +54,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#2299](https://github.com/NationalSecurityAgency/ghidra/issues/2299) Unofficial 8085 opcodes are not properly decompiled | [#8843](https://github.com/NationalSecurityAgency/ghidra/pull/8843) i8085: Add unoffical instructions | @stonedDiscord | +77/-0 | 2025-12-31 |
 | 0 | [#3921](https://github.com/NationalSecurityAgency/ghidra/issues/3921) "Comments-> Set..." does not consistently default to the same type of comment | [#3974](https://github.com/NationalSecurityAgency/ghidra/pull/3974) Fix Comments -> Set... in the decompiler not defaulting to editing existing comments | @Pokechu22 | +62/-16 | 2022-02-07 |
 | 0 | [#8998](https://github.com/NationalSecurityAgency/ghidra/issues/8998) V850: Add p-code emulation test classes | [#8997](https://github.com/NationalSecurityAgency/ghidra/pull/8997) V850: Add p-code emulation test classes | @mmmorks | +84/-0 | 2026-02-22 |
+| 0 | [#9044](https://github.com/NationalSecurityAgency/ghidra/issues/9044) Decompiler fails to create a new local variable when stack addresses is constructed with binary or | [#9428](https://github.com/NationalSecurityAgency/ghidra/pull/9428) Decompiler: Detect stack local variable addresses constructed with binary OR | @CUB3D | +72/-15 | 2026-07-29 |
 | 0 | [#9423](https://github.com/NationalSecurityAgency/ghidra/issues/9423) Decompiler: SubvariableFlow truncates a constant with bits outside the traced mask, changing its value | [#9424](https://github.com/NationalSecurityAgency/ghidra/pull/9424) Decompiler: don't trace through a constant with bits outside the SubvariableFlow mask | @chaosben | +88/-0 | 2026-07-27 |
 | 0 | [#8438](https://github.com/NationalSecurityAgency/ghidra/issues/8438) BSim: Add option to list PostgreSQL BSim databases | [#8439](https://github.com/NationalSecurityAgency/ghidra/pull/8439) BSim: Add listdatabases subcommand to bsim_ctl | @gemesa | +75/-18 | 2025-08-14 |
 | 0 | [#8011](https://github.com/NationalSecurityAgency/ghidra/issues/8011) Pyghidra equivalent of from __main__ import ... | [#9015](https://github.com/NationalSecurityAgency/ghidra/pull/9015) Pyghidra `from __main__ import ...` improvement | @widberg | +91/-4 | 2026-03-02 |
