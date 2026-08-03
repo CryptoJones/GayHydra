@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 349 open PRs scanned. 72 PR→open-issue closing-references found, across 72 distinct PRs and 68 distinct issues.
+Snapshot: 350 open PRs scanned. 73 PR→open-issue closing-references found, across 73 distinct PRs and 69 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -43,6 +43,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9195](https://github.com/NationalSecurityAgency/ghidra/issues/9195) Z80 register indirect addressing mode DefaultOperandRepresentation missing parentheses | [#9196](https://github.com/NationalSecurityAgency/ghidra/pull/9196) Z80: fix (HL) register indirect addressing missing from operand representation | @0xDI | +6/-9 | 2026-05-18 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9436](https://github.com/NationalSecurityAgency/ghidra/pull/9436) #9434 Fix LoongArch scalar rotate semantics | @DORA-B | +8/-8 | 2026-07-30 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
+| 0 | [#9445](https://github.com/NationalSecurityAgency/ghidra/issues/9445) Decompiler emits a wider memory access for mixed-width loads through an inferred pointer | [#9446](https://github.com/NationalSecurityAgency/ghidra/pull/9446) #9445 Preserve inferred mixed-width load sizes | @nokitoino | +23/-1 | 2026-08-02 |
 | 0 | [#8777](https://github.com/NationalSecurityAgency/ghidra/issues/8777) Incomprehensible decompilation of "bra ge,..." on PIC24 | [#8778](https://github.com/NationalSecurityAgency/ghidra/pull/8778) PIC24: Use a different pattern for OV/N handling on signed compare | @karcherm | +21/-3 | 2025-12-14 |
 | 0 | [#9238](https://github.com/NationalSecurityAgency/ghidra/issues/9238) ThreadPcodeExecutorState.getRegisterValues() does not contain full result operand until adjacent register is initialized | [#9239](https://github.com/NationalSecurityAgency/ghidra/pull/9239) Fix off by one register init check in pcode byte state | @EmirX3D | +25/-2 | 2026-05-31 |
 | 0 | [#9203](https://github.com/NationalSecurityAgency/ghidra/issues/9203) Decompiler can insert Pcode into the wrong block | [#9204](https://github.com/NationalSecurityAgency/ghidra/pull/9204) Fix conditional constant MULTIEQUAL placement | @EmirX3D | +30/-9 | 2026-05-21 |
