@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 353 open PRs scanned. 73 PR→open-issue closing-references found, across 73 distinct PRs and 69 distinct issues.
+Snapshot: 355 open PRs scanned. 74 PR→open-issue closing-references found, across 74 distinct PRs and 70 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -53,6 +53,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#3314](https://github.com/NationalSecurityAgency/ghidra/issues/3314) Enums sharing names not recognised in decompiled output | [#3315](https://github.com/NationalSecurityAgency/ghidra/pull/3315) Fix for #3314 - Enums sharing names not recognised in decompiled output | @Wall-AF | +46/-6 | 2021-08-07 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch byte and halfword reversal semantics | @DORA-B | +22/-33 | 2026-07-30 |
 | 0 | [#1834](https://github.com/NationalSecurityAgency/ghidra/issues/1834) Sleigh pre-processor doesn't ignore undefined directives | [#1835](https://github.com/NationalSecurityAgency/ghidra/pull/1835) Handle undefined directives in preprocessor | @mumbel | +62/-0 | 2020-05-04 |
+| 0 | [#5214](https://github.com/NationalSecurityAgency/ghidra/issues/5214) Windows x86 PE RTTI Analyzer not available in Minidump Dump File Loader | [#9457](https://github.com/NationalSecurityAgency/ghidra/pull/9457) Issue #5214: Enable Microsoft PE analyzers for minidump-loaded programs | @Shalom-Karr | +63/-0 | 2026-08-05 |
 | 0 | [#5699](https://github.com/NationalSecurityAgency/ghidra/issues/5699) i386: AF flag not modeled in "neg; lahf" | [#9071](https://github.com/NationalSecurityAgency/ghidra/pull/9071) Added support for the AF flag in x86 | @Garfield1002 | +39/-24 | 2026-03-27 |
 | 0 | [#5592](https://github.com/NationalSecurityAgency/ghidra/issues/5592) Sleigh detect exporting a integer that is too big | [#5593](https://github.com/NationalSecurityAgency/ghidra/pull/5593) Detect exporting a constant integer that is too big | @rbran | +68/-0 | 2023-07-23 |
 | 0 | [#8391](https://github.com/NationalSecurityAgency/ghidra/issues/8391) Sleigh Cannot Decode Cortex-M33 Co-processor Instructions | [#8582](https://github.com/NationalSecurityAgency/ghidra/pull/8582) Add an Arm v8M+coprocessor variant, disabling the CDE extention | @adfernandes | +75/-1 | 2025-10-21 |
