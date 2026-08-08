@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 362 open PRs scanned. 80 PR→open-issue closing-references found, across 79 distinct PRs and 76 distinct issues.
+Snapshot: 364 open PRs scanned. 81 PR→open-issue closing-references found, across 80 distinct PRs and 77 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -57,6 +57,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#5214](https://github.com/NationalSecurityAgency/ghidra/issues/5214) Windows x86 PE RTTI Analyzer not available in Minidump Dump File Loader | [#9457](https://github.com/NationalSecurityAgency/ghidra/pull/9457) Issue #5214: Enable Microsoft PE analyzers for minidump-loaded programs | @Shalom-Karr | +63/-0 | 2026-08-05 |
 | 0 | [#5699](https://github.com/NationalSecurityAgency/ghidra/issues/5699) i386: AF flag not modeled in "neg; lahf" | [#9071](https://github.com/NationalSecurityAgency/ghidra/pull/9071) Added support for the AF flag in x86 | @Garfield1002 | +39/-24 | 2026-03-27 |
 | 0 | [#5592](https://github.com/NationalSecurityAgency/ghidra/issues/5592) Sleigh detect exporting a integer that is too big | [#5593](https://github.com/NationalSecurityAgency/ghidra/pull/5593) Detect exporting a constant integer that is too big | @rbran | +68/-0 | 2023-07-23 |
+| 0 | [#9330](https://github.com/NationalSecurityAgency/ghidra/issues/9330) x86-64: `RCL`/`RCR` should set `OF` flag when masked count is 0 or 1 | [#9487](https://github.com/NationalSecurityAgency/ghidra/pull/9487) x86: set OF flag for RCL/RCR when masked rotate count is 1 | @asharahmed | +45/-24 | 2026-08-07 |
 | 0 | [#8391](https://github.com/NationalSecurityAgency/ghidra/issues/8391) Sleigh Cannot Decode Cortex-M33 Co-processor Instructions | [#8582](https://github.com/NationalSecurityAgency/ghidra/pull/8582) Add an Arm v8M+coprocessor variant, disabling the CDE extention | @adfernandes | +75/-1 | 2025-10-21 |
 | 0 | [#2299](https://github.com/NationalSecurityAgency/ghidra/issues/2299) Unofficial 8085 opcodes are not properly decompiled | [#8843](https://github.com/NationalSecurityAgency/ghidra/pull/8843) i8085: Add unoffical instructions | @stonedDiscord | +77/-0 | 2025-12-31 |
 | 0 | [#3921](https://github.com/NationalSecurityAgency/ghidra/issues/3921) "Comments-> Set..." does not consistently default to the same type of comment | [#3974](https://github.com/NationalSecurityAgency/ghidra/pull/3974) Fix Comments -> Set... in the decompiler not defaulting to editing existing comments | @Pokechu22 | +62/-16 | 2022-02-07 |
