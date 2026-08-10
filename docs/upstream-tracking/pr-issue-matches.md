@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 364 open PRs scanned. 81 PR→open-issue closing-references found, across 80 distinct PRs and 77 distinct issues.
+Snapshot: 366 open PRs scanned. 82 PR→open-issue closing-references found, across 81 distinct PRs and 78 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -61,6 +61,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8391](https://github.com/NationalSecurityAgency/ghidra/issues/8391) Sleigh Cannot Decode Cortex-M33 Co-processor Instructions | [#8582](https://github.com/NationalSecurityAgency/ghidra/pull/8582) Add an Arm v8M+coprocessor variant, disabling the CDE extention | @adfernandes | +75/-1 | 2025-10-21 |
 | 0 | [#2299](https://github.com/NationalSecurityAgency/ghidra/issues/2299) Unofficial 8085 opcodes are not properly decompiled | [#8843](https://github.com/NationalSecurityAgency/ghidra/pull/8843) i8085: Add unoffical instructions | @stonedDiscord | +77/-0 | 2025-12-31 |
 | 0 | [#3921](https://github.com/NationalSecurityAgency/ghidra/issues/3921) "Comments-> Set..." does not consistently default to the same type of comment | [#3974](https://github.com/NationalSecurityAgency/ghidra/pull/3974) Fix Comments -> Set... in the decompiler not defaulting to editing existing comments | @Pokechu22 | +62/-16 | 2022-02-07 |
+| 0 | [#928](https://github.com/NationalSecurityAgency/ghidra/issues/928) Storage Address Editor: Register sorting not helpful on ARM/AArch64 | [#9489](https://github.com/NationalSecurityAgency/ghidra/pull/9489) Correct register sorting in storage editor | @JohannesLks | +69/-15 | 2026-08-09 |
 | 0 | [#8998](https://github.com/NationalSecurityAgency/ghidra/issues/8998) V850: Add p-code emulation test classes | [#8997](https://github.com/NationalSecurityAgency/ghidra/pull/8997) V850: Add p-code emulation test classes | @mmmorks | +84/-0 | 2026-02-22 |
 | 0 | [#9474](https://github.com/NationalSecurityAgency/ghidra/issues/9474) Decompiler drops a 64-bit return value when the caller consumes only the high 32 bits, emitting a read of a never-assigned `extraout_var` | [#9475](https://github.com/NationalSecurityAgency/ghidra/pull/9475) #9474 Decompiler: Don't truncate a pending call-output trial to an unjustifiable piece | @nokitoino | +86/-0 | 2026-08-06 |
 | 0 | [#9044](https://github.com/NationalSecurityAgency/ghidra/issues/9044) Decompiler fails to create a new local variable when stack addresses is constructed with binary or | [#9428](https://github.com/NationalSecurityAgency/ghidra/pull/9428) Decompiler: Detect stack local variable addresses constructed with binary OR | @CUB3D | +72/-15 | 2026-07-29 |
