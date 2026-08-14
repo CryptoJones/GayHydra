@@ -63,6 +63,15 @@ constexpr uint1 MAGIC[4] = { 0x47, 0x48, 0x01, 0x00 };
 /// reader allocate gigabytes.
 constexpr uint4 MAX_PAYLOAD_LEN = 16u * 1024u * 1024u;
 
+/// Cap on consecutive empty-payload frames the reader will skip in a
+/// single `underflow()` before giving up. Empty frames are valid and
+/// transparently skipped (symmetric with an empty flush), but an
+/// unbounded run of them lets a peer keep the worker spinning in
+/// `underflow()` without ever delivering a byte or reaching EOF — a
+/// CPU-spin DoS. After this many in a row the reader stops with
+/// `Error::TOO_MANY_EMPTY_FRAMES`.
+constexpr uint4 MAX_CONSECUTIVE_EMPTY_FRAMES = 16u;
+
 /// Frame type enumeration. One byte. Wire layout matches
 /// DD-0005's TYPE table.
 enum class Type : uint1 {
@@ -107,7 +116,8 @@ enum class Error {
   TRUNCATED,         ///< Stream ended mid-frame.
   LENGTH_TOO_LARGE,  ///< LENGTH exceeded MAX_PAYLOAD_LEN.
   CRC_MISMATCH,      ///< CRC32 trailer didn't match payload.
-  RESERVED_FLAG_SET  ///< COMPRESSION/CONTINUATION flag set (not supported yet).
+  RESERVED_FLAG_SET, ///< COMPRESSION/CONTINUATION flag set (not supported yet).
+  TOO_MANY_EMPTY_FRAMES ///< Run of empty frames exceeded MAX_CONSECUTIVE_EMPTY_FRAMES.
 };
 
 /// Negotiated framing mode for a connection. The greeting handshake

@@ -960,6 +960,46 @@ TEST(frame_v1_tunnel_in_skips_empty_payload_frame) {
   ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::OK);
 }
 
+TEST(frame_v1_tunnel_in_skips_max_empty_frames_then_delivers) {
+  // Exactly MAX_CONSECUTIVE_EMPTY_FRAMES empty frames ahead of a real
+  // one must still be skipped transparently — the cap rejects only a
+  // run that *exceeds* the limit.
+  vector<uint1> wire;
+  vector<uint1> empty = encode_frame_v1(frame_v1::Type::COMMAND, vector<uint1>());
+  for (uint4 i = 0; i < frame_v1::MAX_CONSECUTIVE_EMPTY_FRAMES; ++i)
+    wire.insert(wire.end(), empty.begin(), empty.end());
+  vector<uint1> real = encode_frame_v1(frame_v1::Type::RESPONSE, string("Z"));
+  wire.insert(wire.end(), real.begin(), real.end());
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  int c = is.get();
+  ASSERT_EQUALS(c, (int)'Z');
+  ASSERT_EQUALS((int)inbuf.getLastError(), (int)frame_v1::Error::OK);
+}
+
+TEST(frame_v1_tunnel_in_caps_empty_frame_flood) {
+  // A run of empty frames exceeding the cap must end the stream with
+  // TOO_MANY_EMPTY_FRAMES rather than spinning forever in underflow().
+  vector<uint1> wire;
+  vector<uint1> empty = encode_frame_v1(frame_v1::Type::COMMAND, vector<uint1>());
+  for (uint4 i = 0; i < frame_v1::MAX_CONSECUTIVE_EMPTY_FRAMES + 1; ++i)
+    wire.insert(wire.end(), empty.begin(), empty.end());
+  // A real frame after the flood must never be reached.
+  vector<uint1> real = encode_frame_v1(frame_v1::Type::RESPONSE, string("Z"));
+  wire.insert(wire.end(), real.begin(), real.end());
+
+  stringstream src = make_stream(wire);
+  FrameInStreambuf inbuf(src.rdbuf());
+  std::istream is(&inbuf);
+  int c = is.get();
+  ASSERT_EQUALS(c, EOF);
+  ASSERT(is.eof());
+  ASSERT_EQUALS((int)inbuf.getLastError(),
+		(int)frame_v1::Error::TOO_MANY_EMPTY_FRAMES);
+}
+
 TEST(frame_v1_tunnel_in_eof_sets_truncated) {
   // After the only frame's bytes are drained, the next read hits EOF
   // and getLastError reports the truncated next-frame read.

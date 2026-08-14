@@ -450,7 +450,11 @@ FrameInStreambuf::FrameInStreambuf(std::streambuf *srcbuf)
 
 int FrameInStreambuf::underflow()
 {
-  // Pull whole frames until one carries a non-empty payload.
+  // Pull whole frames until one carries a non-empty payload. Empty
+  // frames are skipped, but only up to MAX_CONSECUTIVE_EMPTY_FRAMES in a
+  // row — an unbounded run would spin here forever without ever
+  // delivering a byte or reaching EOF (CPU-spin DoS).
+  uint4 emptyRun = 0;
   for (;;) {
     frame_v1::Header hdr;
     vector<uint1> peeked;
@@ -462,8 +466,14 @@ int FrameInStreambuf::underflow()
     }
     lastFrameType = hdr.type;
     lastFlagbits = hdr.flagbits;  // unconditional, even for skipped empties
-    if (payload.empty())
+    if (payload.empty()) {
+      if (++emptyRun > frame_v1::MAX_CONSECUTIVE_EMPTY_FRAMES) {
+        lastError = frame_v1::Error::TOO_MANY_EMPTY_FRAMES;
+        setg(nullptr, nullptr, nullptr);
+        return traits_type::eof();
+      }
       continue;  // no-op frame (symmetric with an empty flush) — skip
+    }
     char *base = (char *)payload.data();
     setg(base, base, base + payload.size());
     return traits_type::to_int_type((char)payload[0]);
