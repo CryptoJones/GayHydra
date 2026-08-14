@@ -2,6 +2,23 @@
 
 *Addresses Rec 13 of the 2026-05-21 principal-architect audit.*
 
+> **Status: upstream submission declined (2026-05-26) — re-scoped to in-tree fuzzing.**
+> The new-project PR [google/oss-fuzz#15545](https://github.com/google/oss-fuzz/pull/15545)
+> (`ghidra-decompiler`, harnesses `fuzz_xml` + `fuzz_marshal`, AS/UBSan)
+> passed every automated check but was closed by Google collaborator
+> DavidKorczynski with a soft policy reject:
+> *"I don't think a fork of Ghidra is a great match with OSS-Fuzz. We
+> prefer projects with large user bases, so I suspect Ghidra itself would
+> be an interesting match."*
+> That's a policy call about forks, not a fixable submission defect, and
+> the reviewer's suggested path (submit upstream NSA/ghidra) is out of
+> scope for this fork. So there is **no Google-hosted OSS-Fuzz project**
+> and no `.github/oss-fuzz/` wrapper (removed in #84). The harness
+> sources under `cpp/fuzz/` stay as our own continuous-fuzzing
+> infrastructure, runnable locally and via our own CI. The sections below
+> describing the Google-hosted submission/embargo flow are retained as
+> historical design context — read them through the lens of this status.
+
 ## Why this exists
 
 The C++ decompiler is the single highest-EV fuzz target in the
@@ -12,11 +29,16 @@ harnesses. Google OSS-Fuzz is free for open-source projects and
 includes 24/7 fuzzing infrastructure, automatic crash triage, and
 private 90-day embargo windows on disclosed findings.
 
-This document is the integration plan. The scaffold lives at:
+This document was the integration plan for a Google-hosted OSS-Fuzz
+project. After the upstream rejection (see status above) the live
+artifact is just the in-tree harness scaffold:
 
-- `Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/` — harness sources.
-- `.github/oss-fuzz/` — OSS-Fuzz project files (Dockerfile, build.sh,
-  project.yaml) to be merged into google/oss-fuzz as `projects/ghidra-decompiler/`.
+- `Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/` — harness sources
+  (`fuzz_xml`, `fuzz_marshal`, `fuzz_ipc_schema`) + `Makefile.fuzz`.
+- `.github/oss-fuzz/` — the OSS-Fuzz project files (Dockerfile, build.sh,
+  project.yaml) that *were* submitted as `projects/ghidra-decompiler/`.
+  Removed in #84 once the submission was declined; preserved in git
+  history if the policy ever changes.
 
 ## Initial fuzz targets
 
@@ -114,34 +136,36 @@ embargoed for 90 days. The embargo timeline is compatible with the
    [SECURITY.md](../../SECURITY.md) embargo policy are met), the
    OSS-Fuzz bug becomes public.
 
-## OSS-Fuzz submission checklist
+## OSS-Fuzz submission checklist (historical — submission declined)
 
-To go live on OSS-Fuzz:
+The submission was assembled and opened; every build/wrapper item below
+was completed and all of [#15545](https://github.com/google/oss-fuzz/pull/15545)'s
+automated checks (`header-check`, `cla/google`, `check-changes`) passed.
+The submission itself was then declined on policy grounds (see status at
+top), so the last item is a permanent **won't-happen**:
 
-- [ ] Harness sources committed under
+- [x] Harness sources committed under
       `Ghidra/Features/Decompiler/src/decompile/cpp/fuzz/`.
-- [ ] `Makefile.fuzz` builds each target locally with libFuzzer.
-- [ ] Seed corpus committed under `cpp/fuzz/seeds/<target>/`.
-- [ ] `.github/oss-fuzz/Dockerfile` builds against an upstream
-      Ubuntu base.
-- [ ] `.github/oss-fuzz/build.sh` produces the harnesses and copies
-      them to `$OUT/`.
-- [ ] `.github/oss-fuzz/project.yaml` lists at least two
-      maintainer email addresses for vulnerability email.
-- [ ] PR to <https://github.com/google/oss-fuzz/> adding
-      `projects/ghidra-decompiler/` with the same three files.
-- [ ] First successful build and trial-run on the OSS-Fuzz
-      infrastructure.
+- [x] `Makefile.fuzz` builds each target locally with libFuzzer.
+- [x] Seed corpus committed under `cpp/fuzz/seeds/<target>/`.
+- [x] `.github/oss-fuzz/Dockerfile`, `build.sh`, `project.yaml` authored
+      and submitted (later removed in #84; see git history).
+- [x] PR to <https://github.com/google/oss-fuzz/> adding
+      `projects/ghidra-decompiler/` — opened as #15545.
+- [ ] ~~First successful build and trial-run on the OSS-Fuzz
+      infrastructure~~ — **won't happen**: #15545 declined 2026-05-26
+      (Google does not accept forks). Re-scoped to in-tree fuzzing.
 
 ## Maintenance commitment
 
-Once integrated, we commit to:
+With fuzzing kept in-tree (no Google-hosted project), we commit to:
 
-- Acknowledging OSS-Fuzz crash reports within the
-  [SECURITY.md](../../SECURITY.md) response-target windows.
-- Keeping the build green. OSS-Fuzz disables a project when its
-  build fails for a sustained period; we treat a red build as a
-  P1.
+- Treating any crash a local/CI fuzz run surfaces with the
+  [SECURITY.md](../../SECURITY.md) response-target windows, same as an
+  externally-reported finding.
+- Keeping the harnesses building. Nothing built them between the
+  rejection and the #84 cleanup, so they bit-rotted once (repaired in
+  cad859a); a CI fuzz-smoke run is the guard against a repeat.
 - Reviewing newly-added decompiler entry points for fuzz coverage
   in the same PR that adds them.
 
@@ -155,5 +179,5 @@ Once integrated, we commit to:
    (e.g., proprietary firmware images that exercise a loader)?
    For now we use only open-source samples.
 
-These are tracked in `docs/security/oss-fuzz-followups.md` once
-the initial integration lands.
+These remain open against the in-tree harnesses (the Google-hosted
+integration they were originally scoped to is not happening).
