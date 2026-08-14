@@ -2,16 +2,18 @@
 
 *Addresses Rec 26 of the 2026-05-21 principal-architect audit.*
 
-> **Status: design landed, wiring deferred (2026-05-21).** The plugin
-> declaration in [`build.gradle`](../../build.gradle) and the
-> `apply from: 'gradle/errorprone.gradle'` line are temporarily
-> commented out because the `errorprone` dependency configuration
-> doesn't register in time for the `dependencies { errorprone ... }`
-> block under Gradle 8.5 (the version GH Actions installs via
-> `setup-gradle@v4`). Locally it works under Gradle 9.5+. Re-enabling
-> is its own focused PR — likely by moving the plugin application
-> into root `build.gradle` directly or switching to the
-> `errorproneJavac` configuration path.
+> **Status: enabled (Sprint 8).** The `net.ltgt.errorprone` plugin is
+> declared (`apply false`) in [`build.gradle`](../../build.gradle)'s
+> `plugins {}` block and applied via
+> `apply from: 'gradle/errorprone.gradle'`. The original Gradle 8.5
+> timing bug — the `errorprone` dependency configuration not registering
+> in time for the `dependencies { errorprone ... }` / `options.errorprone`
+> references — is worked around by deferring the entire wiring inside
+> `pluginManager.withPlugin('net.ltgt.errorprone') { ... }`, which runs
+> only after the plugin has fully applied. That works on both Gradle 8.5
+> (the version GH Actions installs via `setup-gradle@v4`) and 9.5+.
+> Stage 3 shipped 2026-06-11: ErrorProne's native ERROR bugpatterns are
+> now fatal tree-wide (see the Stage 3 note below).
 
 ## Why ErrorProne
 
