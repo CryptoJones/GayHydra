@@ -185,7 +185,6 @@ clean {
  *
  * NOTE: This function is duplicated in buildExtension.gradle
  *********************************************************************************/
-import org.gradle.util.GradleVersion;
 def checkGradleVersion() {
 	GradleVersion min = null;
 	GradleVersion max = null;
