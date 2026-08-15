@@ -1,20 +1,18 @@
 # Queue-health dashboard
 
-Generated 2026-08-14 by `scripts/sla-dashboard.py`
+Generated 2026-08-15 by `scripts/sla-dashboard.py`
 (`.github/workflows/sla-dashboard.yml`, nightly). Metrics defined in
 [PR_QUEUE_POLICY.md](PR_QUEUE_POLICY.md) / [TRIAGE_SLA.md](TRIAGE_SLA.md).
 
 | Metric | Value |
 |---|---|
-| Open PRs | 8 |
-| Open issues | 28 |
-| Open PRs — lane:decomp-correctness | 1 |
-| Open PRs — lane:framework | 7 |
-| PRs missing any `triage:*` label | 8 |
+| Open PRs | 0 |
+| Open issues | 21 |
+| PRs missing any `triage:*` label | 0 |
 | p50 / p90 days to first response (PRs, responded) | — / — |
-| PRs still awaiting first response | 8 |
+| PRs still awaiting first response | 0 |
 | p50 / p90 days to first response (issues, responded) | — / — |
-| Issues still awaiting first response | 28 |
+| Issues still awaiting first response | 21 |
 | Median age in `triage:accepted-for-review` (days) | — |
 | `triage:needs-info` older than 30 days | 0 |
 
