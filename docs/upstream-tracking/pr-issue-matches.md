@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 363 open PRs scanned. 82 PR→open-issue closing-references found, across 81 distinct PRs and 78 distinct issues.
+Snapshot: 363 open PRs scanned. 83 PR→open-issue closing-references found, across 82 distinct PRs and 79 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -26,6 +26,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 1 | [#7029](https://github.com/NationalSecurityAgency/ghidra/issues/7029) PCode: Expose default case address for switch statements in Ghidra API | [#7308](https://github.com/NationalSecurityAgency/ghidra/pull/7308) PCode: Add edge label information to XML encoding and expose it in Ghidra. | @kayemh | +20/-7 | 2024-12-20 |
 | 1 | [#8908](https://github.com/NationalSecurityAgency/ghidra/issues/8908) Program export does not export globals' data | [#9293](https://github.com/NationalSecurityAgency/ghidra/pull/9293) Fix #8908 (Program export does not export globals' data) | @andrey-starodubtsev | +237/-13 | 2026-06-20 |
 | 0 | [#8946](https://github.com/NationalSecurityAgency/ghidra/issues/8946) CompareExecutablesScript Elastic BSim database does not exist | [#8947](https://github.com/NationalSecurityAgency/ghidra/pull/8947) #8946 Fix CompareExecutablesScript Elastic BSim database does not exist | @jordanjohnson56 | +1/-0 | 2026-02-07 |
+| 0 | [#9500](https://github.com/NationalSecurityAgency/ghidra/issues/9500) DialogResourceDataType incorrectly defines DLGITEMTEMPLATE.id as DWORD | [#9501](https://github.com/NationalSecurityAgency/ghidra/pull/9501) #9500 Fix DLGITEMTEMPLATE.id type | @fefacio | +1/-1 | 2026-08-13 |
 | 0 | [#9394](https://github.com/NationalSecurityAgency/ghidra/issues/9394) x86 16-bit: a CS segment override on a data operand discards the analyzed CS value and writes CS as a side effect | [#9395](https://github.com/NationalSecurityAgency/ghidra/pull/9395) 9394: Export CS directly for 16-bit CS segment overrides | @eb4x | +1/-1 | 2026-07-19 |
 | 0 | [#5984](https://github.com/NationalSecurityAgency/ghidra/issues/5984) Potentially incomplete sleigh definition of x86 `XLAT` resulting in horrible `C` | [#9391](https://github.com/NationalSecurityAgency/ghidra/pull/9391) 5984: Honor the segment override on 16-bit XLAT | @eb4x | +1/-1 | 2026-07-19 |
 | 0 | [#6683](https://github.com/NationalSecurityAgency/ghidra/issues/6683) Can we stop replacing subtracted values with added negative versions? | [#8628](https://github.com/NationalSecurityAgency/ghidra/pull/8628) Decompiler: Extend `RuleAddUnsigned` to signed ints | @LukeSerne | +1/-1 | 2025-11-15 |
