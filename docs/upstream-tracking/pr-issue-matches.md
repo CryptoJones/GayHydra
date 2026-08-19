@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 368 open PRs scanned. 84 PR→open-issue closing-references found, across 83 distinct PRs and 80 distinct issues.
+Snapshot: 370 open PRs scanned. 85 PR→open-issue closing-references found, across 84 distinct PRs and 81 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -82,6 +82,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#7283](https://github.com/NationalSecurityAgency/ghidra/issues/7283) Inplace assignment doesn't work in this specific case | [#8635](https://github.com/NationalSecurityAgency/ghidra/pull/8635) Decompiler: Improve support of in-place C operations | @LukeSerne | +159/-3 | 2025-11-16 |
 | 0 | [#6385](https://github.com/NationalSecurityAgency/ghidra/issues/6385) RISC-V: Support for WCH/QingKe XW extension | [#6390](https://github.com/NationalSecurityAgency/ghidra/pull/6390) RISC-V: Add WCH/QingKe XW extension | @ArcaneNibble | +245/-0 | 2024-04-07 |
 | 0 | [#8995](https://github.com/NationalSecurityAgency/ghidra/issues/8995) V850: 26 SLEIGH semantic bugs causing incorrect decompilation and disassembly | [#8996](https://github.com/NationalSecurityAgency/ghidra/pull/8996) V850: Fix 26 SLEIGH semantic bugs | @mmmorks | +194/-86 | 2026-02-22 |
+| 0 | [#9450](https://github.com/NationalSecurityAgency/ghidra/issues/9450) Decompiler cannot recover far pointers split across multiple call-site stack arguments (paged/banked architectures) | [#9522](https://github.com/NationalSecurityAgency/ghidra/pull/9522) #9450: Add cspec-driven mechanism for fusing split call-argument pairs into one far pointer | @professor-jonny | +286/-4 | 2026-08-19 |
 | 0 | [#8728](https://github.com/NationalSecurityAgency/ghidra/issues/8728) API to modify the username field of label history and comment history | [#8729](https://github.com/NationalSecurityAgency/ghidra/pull/8729) Add API to change/anonymize the username field of comment history and label history | @mattp-zetier | +299/-0 | 2025-12-03 |
 | 0 | [#8963](https://github.com/NationalSecurityAgency/ghidra/issues/8963) [PowerPC] Switch table analysis fails for MSVC-generated code patterns | [#8964](https://github.com/NationalSecurityAgency/ghidra/pull/8964) #8963 Fix PowerPC switch table analysis for MSVC-generated code | @freeqaz | +327/-14 | 2026-02-12 |
 | 0 | [#8627](https://github.com/NationalSecurityAgency/ghidra/issues/8627) x86_linux_syscall_numbers is incomplete/outdated | [#8815](https://github.com/NationalSecurityAgency/ghidra/pull/8815) Update Linux syscall numbers | @xiaoyinl | +382/-50 | 2025-12-21 |
