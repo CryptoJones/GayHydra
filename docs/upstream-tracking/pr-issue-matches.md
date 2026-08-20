@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 370 open PRs scanned. 85 PR→open-issue closing-references found, across 84 distinct PRs and 81 distinct issues.
+Snapshot: 371 open PRs scanned. 85 PR→open-issue closing-references found, across 84 distinct PRs and 81 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -55,7 +55,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9412](https://github.com/NationalSecurityAgency/ghidra/issues/9412) Debugger (gdb): ghidragdb misplaces MIPS $8-$15 register values under the n32/n64 ABI (name mismatch with O32 SLEIGH) | [#9413](https://github.com/NationalSecurityAgency/ghidra/pull/9413) ghidragdb: map n32/n64 MIPS GPR names to Ghidra's O32 register names (#9412) | @retrocpugeek | +48/-1 | 2026-07-24 |
 | 0 | [#9169](https://github.com/NationalSecurityAgency/ghidra/issues/9169) Out of memory due to long symbol names in PE | [#9173](https://github.com/NationalSecurityAgency/ghidra/pull/9173) Limit the maximum loadable characters for symbol names | @XOR-RAX | +46/-6 | 2026-05-10 |
 | 0 | [#3314](https://github.com/NationalSecurityAgency/ghidra/issues/3314) Enums sharing names not recognised in decompiled output | [#3315](https://github.com/NationalSecurityAgency/ghidra/pull/3315) Fix for #3314 - Enums sharing names not recognised in decompiled output | @Wall-AF | +46/-6 | 2021-08-07 |
-| 0 | [#2445](https://github.com/NationalSecurityAgency/ghidra/issues/2445) SLEIGH: 64-bit signed token field constraints do not compile | [#9512](https://github.com/NationalSecurityAgency/ghidra/pull/9512) #2445 Fix 64-bit token equality constraints | @sylvesterkaczmarek | +54/-1 | 2026-08-16 |
+| 0 | [#2445](https://github.com/NationalSecurityAgency/ghidra/issues/2445) SLEIGH: 64-bit signed token field constraints do not compile | [#9512](https://github.com/NationalSecurityAgency/ghidra/pull/9512) #2445 Fix 64-bit token equality constraints | @sylvesterkaczmarek | +52/-1 | 2026-08-16 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch byte and halfword reversal semantics | @DORA-B | +22/-33 | 2026-07-30 |
 | 0 | [#1834](https://github.com/NationalSecurityAgency/ghidra/issues/1834) Sleigh pre-processor doesn't ignore undefined directives | [#1835](https://github.com/NationalSecurityAgency/ghidra/pull/1835) Handle undefined directives in preprocessor | @mumbel | +62/-0 | 2020-05-04 |
 | 0 | [#5214](https://github.com/NationalSecurityAgency/ghidra/issues/5214) Windows x86 PE RTTI Analyzer not available in Minidump Dump File Loader | [#9457](https://github.com/NationalSecurityAgency/ghidra/pull/9457) Issue #5214: Enable Microsoft PE analyzers for minidump-loaded programs | @Shalom-Karr | +63/-0 | 2026-08-05 |
