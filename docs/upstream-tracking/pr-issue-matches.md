@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 370 open PRs scanned. 87 PR→open-issue closing-references found, across 86 distinct PRs and 83 distinct issues.
+Snapshot: 371 open PRs scanned. 88 PR→open-issue closing-references found, across 87 distinct PRs and 84 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -88,6 +88,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8728](https://github.com/NationalSecurityAgency/ghidra/issues/8728) API to modify the username field of label history and comment history | [#8729](https://github.com/NationalSecurityAgency/ghidra/pull/8729) Add API to change/anonymize the username field of comment history and label history | @mattp-zetier | +299/-0 | 2025-12-03 |
 | 0 | [#8963](https://github.com/NationalSecurityAgency/ghidra/issues/8963) [PowerPC] Switch table analysis fails for MSVC-generated code patterns | [#8964](https://github.com/NationalSecurityAgency/ghidra/pull/8964) #8963 Fix PowerPC switch table analysis for MSVC-generated code | @freeqaz | +327/-14 | 2026-02-12 |
 | 0 | [#8627](https://github.com/NationalSecurityAgency/ghidra/issues/8627) x86_linux_syscall_numbers is incomplete/outdated | [#8815](https://github.com/NationalSecurityAgency/ghidra/pull/8815) Update Linux syscall numbers | @xiaoyinl | +382/-50 | 2025-12-21 |
+| 0 | [#9540](https://github.com/NationalSecurityAgency/ghidra/issues/9540) Decompiler prints raw "register0x0e" placeholder text instead of a real expression for self-referential register arithmetic feeding a SEGMENTOP | [#9541](https://github.com/NationalSecurityAgency/ghidra/pull/9541) 9540: Fix "register0x0e" placeholder text for self-referential register arithmetic feeding a SEGMENTOP | @professor-jonny | +457/-5 | 2026-08-23 |
 | 0 | [#9498](https://github.com/NationalSecurityAgency/ghidra/issues/9498) Incorrect implementation of x86 BSF/BSR | [#9499](https://github.com/NationalSecurityAgency/ghidra/pull/9499) Fix implementation of x86 BSF/BSR and make constructors O(1) | @ashduino101 | +306/-183 | 2026-08-13 |
 | 0 | [#6863](https://github.com/NationalSecurityAgency/ghidra/issues/6863) power PC VLE (EVX?) MPC5746R missing instructions | [#9036](https://github.com/NationalSecurityAgency/ghidra/pull/9036) Add e200 VLE PowerPC language support | @Scottcjn | +478/-92 | 2026-03-10 |
 | 0 | [#9106](https://github.com/NationalSecurityAgency/ghidra/issues/9106) Add correlator-independent similarity score to Version Tracking match table | [#9107](https://github.com/NationalSecurityAgency/ghidra/pull/9107) #9106: Add PDiff similarity score to Version Tracking | @clearbluejar | +847/-13 | 2026-04-07 |
