@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 370 open PRs scanned. 87 PR→open-issue closing-references found, across 86 distinct PRs and 83 distinct issues.
+Snapshot: 370 open PRs scanned. 88 PR→open-issue closing-references found, across 87 distinct PRs and 84 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -58,6 +58,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9412](https://github.com/NationalSecurityAgency/ghidra/issues/9412) Debugger (gdb): ghidragdb misplaces MIPS $8-$15 register values under the n32/n64 ABI (name mismatch with O32 SLEIGH) | [#9413](https://github.com/NationalSecurityAgency/ghidra/pull/9413) ghidragdb: map n32/n64 MIPS GPR names to Ghidra's O32 register names (#9412) | @retrocpugeek | +48/-1 | 2026-07-24 |
 | 0 | [#9169](https://github.com/NationalSecurityAgency/ghidra/issues/9169) Out of memory due to long symbol names in PE | [#9173](https://github.com/NationalSecurityAgency/ghidra/pull/9173) Limit the maximum loadable characters for symbol names | @XOR-RAX | +46/-6 | 2026-05-10 |
 | 0 | [#3314](https://github.com/NationalSecurityAgency/ghidra/issues/3314) Enums sharing names not recognised in decompiled output | [#3315](https://github.com/NationalSecurityAgency/ghidra/pull/3315) Fix for #3314 - Enums sharing names not recognised in decompiled output | @Wall-AF | +46/-6 | 2021-08-07 |
+| 0 | [#9543](https://github.com/NationalSecurityAgency/ghidra/issues/9543) x86: Support for AVX512-BMM | [#9552](https://github.com/NationalSecurityAgency/ghidra/pull/9552) Add AVX512 BMM instructions | @CUB3D | +53/-0 | 2026-08-26 |
 | 0 | [#8623](https://github.com/NationalSecurityAgency/ghidra/issues/8623) "Apply Data Archives" analyzer applies function signature to unrelated function with same name | [#9535](https://github.com/NationalSecurityAgency/ghidra/pull/9535) #8623 Respect namespaces when applying imported archive signatures | @sylvesterkaczmarek | +61/-1 | 2026-08-21 |
 | 0 | [#1834](https://github.com/NationalSecurityAgency/ghidra/issues/1834) Sleigh pre-processor doesn't ignore undefined directives | [#1835](https://github.com/NationalSecurityAgency/ghidra/pull/1835) Handle undefined directives in preprocessor | @mumbel | +62/-0 | 2020-05-04 |
 | 0 | [#5699](https://github.com/NationalSecurityAgency/ghidra/issues/5699) i386: AF flag not modeled in "neg; lahf" | [#9071](https://github.com/NationalSecurityAgency/ghidra/pull/9071) Added support for the AF flag in x86 | @Garfield1002 | +39/-24 | 2026-03-27 |
