@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 371 open PRs scanned. 88 PR→open-issue closing-references found, across 87 distinct PRs and 84 distinct issues.
+Snapshot: 372 open PRs scanned. 89 PR→open-issue closing-references found, across 88 distinct PRs and 85 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -47,6 +47,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch halfword reversal semantics | @DORA-B | +6/-10 | 2026-07-30 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9436](https://github.com/NationalSecurityAgency/ghidra/pull/9436) #9434 Fix LoongArch scalar rotate semantics | @DORA-B | +8/-8 | 2026-07-30 |
 | 0 | [#9467](https://github.com/NationalSecurityAgency/ghidra/issues/9467) fix(test): make unitTestReport expose failed tests in its process status | [#9506](https://github.com/NationalSecurityAgency/ghidra/pull/9506) #9467 Make unitTestReport fail after aggregate test failures | @sylvesterkaczmarek | +17/-0 | 2026-08-16 |
+| 0 | [#9325](https://github.com/NationalSecurityAgency/ghidra/issues/9325) x86-64: various instructions fail to clear upper 32 bits of 64-bit register when writing to 32-bit alias | [#9560](https://github.com/NationalSecurityAgency/ghidra/pull/9560) #9325 Zero-extend 32-bit register destinations in 64-bit mode | @qatcod | +12/-6 | 2026-08-30 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
 | 0 | [#9445](https://github.com/NationalSecurityAgency/ghidra/issues/9445) Decompiler emits a wider memory access for mixed-width loads through an inferred pointer | [#9446](https://github.com/NationalSecurityAgency/ghidra/pull/9446) #9445 Preserve inferred mixed-width load sizes | @nokitoino | +23/-1 | 2026-08-02 |
 | 0 | [#8777](https://github.com/NationalSecurityAgency/ghidra/issues/8777) Incomprehensible decompilation of "bra ge,..." on PIC24 | [#8778](https://github.com/NationalSecurityAgency/ghidra/pull/8778) PIC24: Use a different pattern for OV/N handling on signed compare | @karcherm | +21/-3 | 2025-12-14 |
