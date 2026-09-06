@@ -1,6 +1,6 @@
 # Queue-health dashboard
 
-Generated 2026-09-05 by `scripts/sla-dashboard.py`
+Generated 2026-09-06 by `scripts/sla-dashboard.py`
 (`.github/workflows/sla-dashboard.yml`, nightly). Metrics defined in
 [PR_QUEUE_POLICY.md](PR_QUEUE_POLICY.md) / [TRIAGE_SLA.md](TRIAGE_SLA.md).
 
