@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 402 open PRs scanned. 105 PR→open-issue closing-references found, across 104 distinct PRs and 100 distinct issues.
+Snapshot: 401 open PRs scanned. 104 PR→open-issue closing-references found, across 103 distinct PRs and 100 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -53,7 +53,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch halfword reversal semantics | @DORA-B | +6/-10 | 2026-07-30 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9436](https://github.com/NationalSecurityAgency/ghidra/pull/9436) #9434 Fix LoongArch scalar rotate semantics | @DORA-B | +8/-8 | 2026-07-30 |
 | 0 | [#9467](https://github.com/NationalSecurityAgency/ghidra/issues/9467) fix(test): make unitTestReport expose failed tests in its process status | [#9506](https://github.com/NationalSecurityAgency/ghidra/pull/9506) Make unitTestReport fail after aggregate test failures | @sylvesterkaczmarek | +17/-0 | 2026-08-16 |
-| 0 | [#6988](https://github.com/NationalSecurityAgency/ghidra/issues/6988) Looks like search-and-replace mistake making a paragraph of the Sleigh documentation difficult to understand | [#9643](https://github.com/NationalSecurityAgency/ghidra/pull/9643) Repair garbled paragraph in SLEIGH Branching Statements documentation | @SurefireStudios | +6/-12 | 2026-09-16 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
 | 0 | [#6988](https://github.com/NationalSecurityAgency/ghidra/issues/6988) Looks like search-and-replace mistake making a paragraph of the Sleigh documentation difficult to understand | [#9553](https://github.com/NationalSecurityAgency/ghidra/pull/9553) Fix Sleigh CBRANCH documentation wording | @juliosuas | +9/-10 | 2026-08-26 |
 | 0 | [#9445](https://github.com/NationalSecurityAgency/ghidra/issues/9445) Decompiler emits a wider memory access for mixed-width loads through an inferred pointer | [#9446](https://github.com/NationalSecurityAgency/ghidra/pull/9446) #9445 Preserve inferred mixed-width load sizes | @nokitoino | +23/-1 | 2026-08-02 |
