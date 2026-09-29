@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 402 open PRs scanned. 108 PR→open-issue closing-references found, across 106 distinct PRs and 104 distinct issues.
+Snapshot: 403 open PRs scanned. 109 PR→open-issue closing-references found, across 107 distinct PRs and 105 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -45,6 +45,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9613](https://github.com/NationalSecurityAgency/ghidra/issues/9613) Decompile fails with "Decompiler process died" | [#9621](https://github.com/NationalSecurityAgency/ghidra/pull/9621) Guard calcNZMask against p-code ops with a null input | @xop01 | +6/-0 | 2026-09-13 |
 | 0 | [#9584](https://github.com/NationalSecurityAgency/ghidra/issues/9584) Support for x86 TSX-NI Suspend Load Address Tracking | [#9585](https://github.com/NationalSecurityAgency/ghidra/pull/9585) x86: Add TSXLDTRK instructions | @CUB3D | +6/-0 | 2026-09-04 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9435](https://github.com/NationalSecurityAgency/ghidra/pull/9435) #9434 Fix LoongArch immediate doubleword shift masks | @DORA-B | +3/-3 | 2026-07-30 |
+| 0 | [#9684](https://github.com/NationalSecurityAgency/ghidra/issues/9684) Question: Why are build timestamps embedded in generated JavaHelp files? | [#9690](https://github.com/NationalSecurityAgency/ghidra/pull/9690) Help: remove timestamps from generated JavaHelp files | @kaayzouee | +3/-4 | 2026-09-29 |
 | 0 | [#6205](https://github.com/NationalSecurityAgency/ghidra/issues/6205) Possible misinterpretation of DIV instructions on MCS96 | [#9573](https://github.com/NationalSecurityAgency/ghidra/pull/9573) [MCS96] Put the MCS-96 division quotient in the low word | @qatcod | +4/-4 | 2026-09-02 |
 | 0 | [#8948](https://github.com/NationalSecurityAgency/ghidra/issues/8948) CompareExecutablesScript Could not locate vector because ID is 0 | [#8949](https://github.com/NationalSecurityAgency/ghidra/pull/8949) #8948 skip missing vectors in ExecutableComparison | @jordanjohnson56 | +8/-1 | 2026-02-09 |
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
