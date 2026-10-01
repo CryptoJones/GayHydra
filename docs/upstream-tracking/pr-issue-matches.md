@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 403 open PRs scanned. 108 PR→open-issue closing-references found, across 106 distinct PRs and 104 distinct issues.
+Snapshot: 404 open PRs scanned. 108 PR→open-issue closing-references found, across 106 distinct PRs and 104 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -107,8 +107,8 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#8963](https://github.com/NationalSecurityAgency/ghidra/issues/8963) [PowerPC] Switch table analysis fails for MSVC-generated code patterns | [#8964](https://github.com/NationalSecurityAgency/ghidra/pull/8964) #8963 Fix PowerPC switch table analysis for MSVC-generated code | @freeqaz | +327/-14 | 2026-02-12 |
 | 0 | [#8627](https://github.com/NationalSecurityAgency/ghidra/issues/8627) x86_linux_syscall_numbers is incomplete/outdated | [#8815](https://github.com/NationalSecurityAgency/ghidra/pull/8815) Update Linux syscall numbers | @xiaoyinl | +382/-50 | 2025-12-21 |
 | 0 | [#9498](https://github.com/NationalSecurityAgency/ghidra/issues/9498) Incorrect implementation of x86 BSF/BSR | [#9499](https://github.com/NationalSecurityAgency/ghidra/pull/9499) Fix implementation of x86 BSF/BSR and make constructors O(1) | @ashduino101 | +306/-183 | 2026-08-13 |
-| 0 | [#5314](https://github.com/NationalSecurityAgency/ghidra/issues/5314) DecompilerPanel.tryGoToVarnode navigates to wrong address space on Harvard architectures | [#9667](https://github.com/NationalSecurityAgency/ghidra/pull/9667) Resolve decompiler global references in the data space on Harvard architectures | @retu2libc | +485/-20 | 2026-09-22 |
-| 0 | [#8148](https://github.com/NationalSecurityAgency/ghidra/issues/8148) References to globals have incorrect addresses in decompiler window for word-addressed systems | [#9667](https://github.com/NationalSecurityAgency/ghidra/pull/9667) Resolve decompiler global references in the data space on Harvard architectures | @retu2libc | +485/-20 | 2026-09-22 |
+| 0 | [#5314](https://github.com/NationalSecurityAgency/ghidra/issues/5314) DecompilerPanel.tryGoToVarnode navigates to wrong address space on Harvard architectures | [#9667](https://github.com/NationalSecurityAgency/ghidra/pull/9667) Resolve decompiler global references in the data space on Harvard architectures | @retu2libc | +484/-20 | 2026-09-22 |
+| 0 | [#8148](https://github.com/NationalSecurityAgency/ghidra/issues/8148) References to globals have incorrect addresses in decompiler window for word-addressed systems | [#9667](https://github.com/NationalSecurityAgency/ghidra/pull/9667) Resolve decompiler global references in the data space on Harvard architectures | @retu2libc | +484/-20 | 2026-09-22 |
 | 0 | [#6863](https://github.com/NationalSecurityAgency/ghidra/issues/6863) power PC VLE (EVX?) MPC5746R missing instructions | [#9036](https://github.com/NationalSecurityAgency/ghidra/pull/9036) Add e200 VLE PowerPC language support | @Scottcjn | +478/-92 | 2026-03-10 |
 | 0 | [#9677](https://github.com/NationalSecurityAgency/ghidra/issues/9677) x86-16 emulation: no segment user op, and far returns and indirect far branches lose CS | [#9678](https://github.com/NationalSecurityAgency/ghidra/pull/9678) x86: Emulate 16-bit segmented code [DRAFT] | @kibertoad | +695/-23 | 2026-09-26 |
 | 0 | [#9106](https://github.com/NationalSecurityAgency/ghidra/issues/9106) Add correlator-independent similarity score to Version Tracking match table | [#9107](https://github.com/NationalSecurityAgency/ghidra/pull/9107) #9106: Add PDiff similarity score to Version Tracking | @clearbluejar | +847/-13 | 2026-04-07 |
