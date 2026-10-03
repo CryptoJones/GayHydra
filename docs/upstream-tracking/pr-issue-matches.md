@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 406 open PRs scanned. 109 PR→open-issue closing-references found, across 107 distinct PRs and 105 distinct issues.
+Snapshot: 409 open PRs scanned. 110 PR→open-issue closing-references found, across 108 distinct PRs and 106 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -106,6 +106,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9450](https://github.com/NationalSecurityAgency/ghidra/issues/9450) Decompiler cannot recover far pointers split across multiple call-site stack arguments (paged/banked architectures) | [#9522](https://github.com/NationalSecurityAgency/ghidra/pull/9522) #9450: Add cspec-driven mechanism for fusing split call-argument pairs into one far pointer | @professor-jonny | +286/-4 | 2026-08-19 |
 | 0 | [#8728](https://github.com/NationalSecurityAgency/ghidra/issues/8728) API to modify the username field of label history and comment history | [#8729](https://github.com/NationalSecurityAgency/ghidra/pull/8729) Add API to change/anonymize the username field of comment history and label history | @mattp-zetier | +299/-0 | 2025-12-03 |
 | 0 | [#8963](https://github.com/NationalSecurityAgency/ghidra/issues/8963) [PowerPC] Switch table analysis fails for MSVC-generated code patterns | [#8964](https://github.com/NationalSecurityAgency/ghidra/pull/8964) #8963 Fix PowerPC switch table analysis for MSVC-generated code | @freeqaz | +327/-14 | 2026-02-12 |
+| 0 | [#9697](https://github.com/NationalSecurityAgency/ghidra/issues/9697) Debugger: Mark the current PC in the Decompiler List View | [#9705](https://github.com/NationalSecurityAgency/ghidra/pull/9705) Debugger: Mark the current PC in the Decompiler | @retu2libc | +349/-0 | 2026-10-02 |
 | 0 | [#8627](https://github.com/NationalSecurityAgency/ghidra/issues/8627) x86_linux_syscall_numbers is incomplete/outdated | [#8815](https://github.com/NationalSecurityAgency/ghidra/pull/8815) Update Linux syscall numbers | @xiaoyinl | +382/-50 | 2025-12-21 |
 | 0 | [#9498](https://github.com/NationalSecurityAgency/ghidra/issues/9498) Incorrect implementation of x86 BSF/BSR | [#9499](https://github.com/NationalSecurityAgency/ghidra/pull/9499) Fix implementation of x86 BSF/BSR and make constructors O(1) | @ashduino101 | +306/-183 | 2026-08-13 |
 | 0 | [#5314](https://github.com/NationalSecurityAgency/ghidra/issues/5314) DecompilerPanel.tryGoToVarnode navigates to wrong address space on Harvard architectures | [#9667](https://github.com/NationalSecurityAgency/ghidra/pull/9667) Resolve decompiler global references in the data space on Harvard architectures | @retu2libc | +484/-20 | 2026-09-22 |
