@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 422 open PRs scanned. 108 PR→open-issue closing-references found, across 106 distinct PRs and 104 distinct issues.
+Snapshot: 427 open PRs scanned. 108 PR→open-issue closing-references found, across 106 distinct PRs and 104 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
