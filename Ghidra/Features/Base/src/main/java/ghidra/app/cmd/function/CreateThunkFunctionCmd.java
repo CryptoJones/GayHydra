@@ -32,6 +32,8 @@ import ghidra.program.model.lang.RegisterValue;
 import ghidra.program.model.listing.*;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
+import ghidra.program.model.reloc.Relocation;
+import ghidra.program.model.reloc.RelocationTable;
 import ghidra.program.model.symbol.*;
 import ghidra.program.util.*;
 import ghidra.util.Msg;
@@ -966,6 +968,31 @@ public class CreateThunkFunctionCmd extends BackgroundCommand<Program> {
 					(referencesFrom[0].getReferenceType() == RefType.DATA ||
 						referencesFrom[0].isExternalReference())) {
 					return referencesFrom[0].getToAddress();
+				}
+				// If no reference from toAddr, check if toAddr is a relocatable GOT slot
+				RelocationTable relocTable = program.getRelocationTable();
+				List<Relocation> relocs = relocTable.getRelocations(toAddr);
+				if (relocs != null && !relocs.isEmpty()) {
+					String symName = relocs.get(0).getSymbolName();
+					if (symName != null && !symName.isEmpty()) {
+						int atIdx = symName.indexOf('@');
+						String baseName = (atIdx > 0) ? symName.substring(0, atIdx) : symName;
+						ExternalLocation extLoc =
+							program.getExternalManager().getUniqueExternalLocation(Library.UNKNOWN, baseName);
+						if (extLoc != null) {
+							return extLoc.getAddress();
+						}
+						try {
+							extLoc = program.getExternalManager().addExtFunction(Library.UNKNOWN, baseName, null,
+								SourceType.IMPORTED);
+							if (extLoc != null) {
+								return extLoc.getAddress();
+							}
+						}
+						catch (Exception e) {
+							// ignore
+						}
+					}
 				}
 				return null; // can't use indirection in single 
 			}

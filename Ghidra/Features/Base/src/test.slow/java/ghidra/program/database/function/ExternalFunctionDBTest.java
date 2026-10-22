@@ -251,6 +251,47 @@ public class ExternalFunctionDBTest extends AbstractGhidraHeadedIntegrationTest 
 		assertEquals(SymbolType.LABEL, externalLocation.getSymbol().getSymbolType());
 	}
 
+	@Test
+	public void testThunkToExternalNoReturnPropagation() throws Exception {
+		Function extFunc = createExternalFunction("puts");
+		assertFalse(extFunc.hasNoReturn());
+
+		Function thunk = functionManager.createFunction("thunk_puts", addr(0x500),
+			new AddressSet(addr(0x500), addr(0x510)), SourceType.USER_DEFINED);
+		thunk.setThunkedFunction(extFunc);
+		assertTrue(thunk.isThunk());
+		assertEquals(extFunc, thunk.getThunkedFunction(true));
+		assertFalse(thunk.hasNoReturn());
+		assertFalse(extFunc.hasNoReturn());
+
+		// Setting no-return on the thunk must NOT propagate hasNoReturn to the external function (Issue #476)
+		thunk.setNoReturn(true);
+		assertFalse(thunk.hasNoReturn());
+		assertFalse(extFunc.hasNoReturn());
+
+		// Setting no-return directly on the external function (e.g., exit/abort) still works and reflects on the thunk
+		extFunc.setNoReturn(true);
+		assertTrue(extFunc.hasNoReturn());
+		assertTrue(thunk.hasNoReturn());
+	}
+
+	@Test
+	public void testSetThunkToReturningExternalClearsNoReturn() throws Exception {
+		Function extFunc = createExternalFunction("free");
+		assertFalse(extFunc.hasNoReturn());
+
+		Function stub = functionManager.createFunction("stub_free", addr(0x600),
+			new AddressSet(addr(0x600), addr(0x610)), SourceType.USER_DEFINED);
+		stub.setNoReturn(true);
+		assertTrue(stub.hasNoReturn());
+
+		// Making it a thunk to returning external function should clear noReturn flag (Issue #476)
+		stub.setThunkedFunction(extFunc);
+		assertTrue(stub.isThunk());
+		assertFalse(stub.hasNoReturn());
+		assertFalse(extFunc.hasNoReturn());
+	}
+
 	private Address addr(long offset) {
 		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
 	}
