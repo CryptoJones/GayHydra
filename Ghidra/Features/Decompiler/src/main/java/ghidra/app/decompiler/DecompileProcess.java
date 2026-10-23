@@ -167,6 +167,16 @@ public class DecompileProcess {
 		};
 		stringDecoder = new StringIngest();
 	}
+
+	/**
+	 * The executable this process spawns, as given to the constructor. Package-private
+	 * for the factory's tests.
+	 * 
+	 * @return the executable path, or {@code null} when the factory found none
+	 */
+	String getExecutable() {
+		return exepath == null || exepath.length == 0 ? null : exepath[0];
+	}
 	
 	private static synchronized boolean getAndSetErrorDisplayed() {
 		boolean b = errorDisplayed;
