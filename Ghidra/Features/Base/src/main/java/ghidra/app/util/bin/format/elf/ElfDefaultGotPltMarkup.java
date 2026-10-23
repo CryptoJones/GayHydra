@@ -572,8 +572,11 @@ public class ElfDefaultGotPltMarkup {
 			if (addr.compareTo(maxAddress) > 0) {
 				break;
 			}
-			Function f = functionManager.getFunctionAt(addr);
-			if (f != null && f.isThunk()) {
+			Function existing = functionManager.getFunctionAt(addr);
+			if (existing == null && stubEntry != null) {
+				existing = functionManager.getFunctionAt(stubEntry);
+			}
+			if (existing != null && existing.isThunk()) {
 				stubEntry = null;
 				continue;
 			}
@@ -590,6 +593,28 @@ public class ElfDefaultGotPltMarkup {
 			if (flowType.isJump()) {
 				if (stubEntry == null) {
 					stubEntry = addr;
+				}
+
+				// Check if this stub range already contains a thunk or function
+				existing = functionManager.getFunctionAt(stubEntry);
+				if (existing == null) {
+					FunctionIterator fit =
+						functionManager.getFunctions(new AddressSet(stubEntry, instr.getMaxAddress()), true);
+					if (fit.hasNext()) {
+						existing = fit.next();
+					}
+				}
+				if (existing != null) {
+					if (existing.isThunk()) {
+						try {
+							existing.setBody(new AddressSet(existing.getEntryPoint(), instr.getMaxAddress()));
+						}
+						catch (Exception e) {
+							// ignore
+						}
+					}
+					stubEntry = null;
+					continue;
 				}
 
 				Address gotAddr = null;

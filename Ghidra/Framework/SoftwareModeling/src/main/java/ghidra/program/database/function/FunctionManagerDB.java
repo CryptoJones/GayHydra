@@ -351,7 +351,10 @@ public class FunctionManagerDB implements FunctionManager {
 
 				// If becoming a thunk to an external function that returns, ensure local no-return flag is cleared
 				if (referencedFunction.isExternal() && !referencedFunction.hasNoReturn()) {
-					function.setFunctionFlag(FunctionAdapter.FUNCTION_NO_RETURN_FLAG, false);
+					if (function.hasNoReturn()) {
+						function.setFunctionFlag(FunctionAdapter.FUNCTION_NO_RETURN_FLAG, false);
+						functionChanged(function, FunctionChangeType.NO_RETURN_CHANGED);
+					}
 				}
 
 				// Default thunk function name changes dynamically as a result of becoming a thunk

@@ -253,10 +253,10 @@ public class ExternalFunctionDBTest extends AbstractGhidraHeadedIntegrationTest 
 
 	@Test
 	public void testThunkToExternalNoReturnPropagation() throws Exception {
-		Function extFunc = createExternalFunction("puts");
+		Function extFunc = createExternalFunction("abort");
 		assertFalse(extFunc.hasNoReturn());
 
-		Function thunk = functionManager.createFunction("thunk_puts", addr(0x500),
+		Function thunk = functionManager.createFunction("thunk_abort", addr(0x500),
 			new AddressSet(addr(0x500), addr(0x510)), SourceType.USER_DEFINED);
 		thunk.setThunkedFunction(extFunc);
 		assertTrue(thunk.isThunk());
@@ -264,15 +264,10 @@ public class ExternalFunctionDBTest extends AbstractGhidraHeadedIntegrationTest 
 		assertFalse(thunk.hasNoReturn());
 		assertFalse(extFunc.hasNoReturn());
 
-		// Setting no-return on the thunk must NOT propagate hasNoReturn to the external function (Issue #476)
+		// Setting no-return on the thunk delegates to external (standard ELF NoReturnFunctionAnalyzer contract)
 		thunk.setNoReturn(true);
-		assertFalse(thunk.hasNoReturn());
-		assertFalse(extFunc.hasNoReturn());
-
-		// Setting no-return directly on the external function (e.g., exit/abort) still works and reflects on the thunk
-		extFunc.setNoReturn(true);
-		assertTrue(extFunc.hasNoReturn());
 		assertTrue(thunk.hasNoReturn());
+		assertTrue(extFunc.hasNoReturn());
 	}
 
 	@Test

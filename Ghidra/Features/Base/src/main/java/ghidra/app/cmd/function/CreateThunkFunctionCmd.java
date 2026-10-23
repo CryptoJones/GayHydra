@@ -982,16 +982,6 @@ public class CreateThunkFunctionCmd extends BackgroundCommand<Program> {
 						if (extLoc != null) {
 							return extLoc.getAddress();
 						}
-						try {
-							extLoc = program.getExternalManager().addExtFunction(Library.UNKNOWN, baseName, null,
-								SourceType.IMPORTED);
-							if (extLoc != null) {
-								return extLoc.getAddress();
-							}
-						}
-						catch (Exception e) {
-							// ignore
-						}
 					}
 				}
 				return null; // can't use indirection in single 

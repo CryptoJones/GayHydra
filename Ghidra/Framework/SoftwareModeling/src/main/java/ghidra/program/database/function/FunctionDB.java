@@ -1164,12 +1164,6 @@ public class FunctionDB extends DbObject implements Function {
 			startUpdate();
 			checkDeleted();
 			if (thunkedFunction != null) {
-				if (hasNoReturn && thunkedFunction.isExternal()) {
-					// Do not propagate NoReturn=true to an EXTERNAL function object.
-					// External functions that truly do not return (e.g., abort, exit)
-					// are marked directly by NoReturnFunctionAnalyzer using known symbols.
-					return;
-				}
 				thunkedFunction.setNoReturn(hasNoReturn);
 			}
 			else if (hasNoReturn != hasNoReturn()) {

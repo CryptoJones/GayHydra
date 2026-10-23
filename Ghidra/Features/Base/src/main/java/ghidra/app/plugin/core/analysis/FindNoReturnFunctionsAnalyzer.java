@@ -234,8 +234,18 @@ public class FindNoReturnFunctionsAnalyzer extends AbstractAnalyzer {
 			return true;
 		}
 		Function func = cp.getFunctionManager().getFunctionAt(target);
-		if (func != null && (func.isExternal() || func.isThunk())) {
-			return true;
+		if (func != null) {
+			if (func.isExternal()) {
+				return true;
+			}
+			if (func.isThunk()) {
+				Function thunked = func.getThunkedFunction(true);
+				if (thunked != null && (thunked.isExternal() ||
+					cp.getMemory().isExternalBlockAddress(thunked.getEntryPoint()) ||
+					isTargetIgnoredForNoReturn(cp, thunked.getEntryPoint()))) {
+					return true;
+				}
+			}
 		}
 		MemoryBlock block = cp.getMemory().getBlock(target);
 		if (block != null && isPltOrLinkageBlock(block)) {
@@ -249,7 +259,8 @@ public class FindNoReturnFunctionsAnalyzer extends AbstractAnalyzer {
 
 	private boolean isPltOrLinkageBlock(MemoryBlock block) {
 		String name = block.getName().toLowerCase();
-		return name.startsWith(".plt") || name.equals(".got.plt") || name.contains("plt") ||
+		return name.startsWith(".plt") || name.equals(".got.plt") ||
+			name.startsWith("__stubs") || name.startsWith("__auth_stubs") ||
 			name.startsWith(".linkage");
 	}
 
