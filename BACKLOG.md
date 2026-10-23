@@ -2,7 +2,7 @@
 
 One list, two views: this file and the [GitHub Issues tab](https://github.com/CryptoJones/GayHydra/issues) are kept in sync. Every open item here has an issue and every open issue has a line here; adding an item means filing the issue and linking it, closing an issue means checking the box. Lanes follow the `lane:*` labels; `ignore:1y` marks a test that is `@Ignore`'d with a one-year review clock. Sprint-level planning stays in [SprintPlanning.md](SprintPlanning.md); the *why* lives in [DesignDecisions.md](DesignDecisions.md).
 
-Seeded 2026-09-06 from the 23 open issues.
+Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 
 ## engine correctness (found by Scylla's A/B parity harness)
 
@@ -11,6 +11,8 @@ Seeded 2026-09-06 from the 23 open issues.
 
 ## framework
 
+- [ ] DecompileProcessFactory: add a supported seam for choosing the decompiler executable — [#478](https://github.com/CryptoJones/GayHydra/issues/478)
+- [ ] Document and script the kuna_ghidra headless backend swap as a third REA parity lane — [#479](https://github.com/CryptoJones/GayHydra/issues/479)
 - [ ] SymbolPathParser detailed-processing — better-results test owner needed — [#57](https://github.com/CryptoJones/GayHydra/issues/57) _(`ignore:1y`)_
 - [ ] JitJvmTypeUtilsTest tightly bound to Java version — manual-tool — [#62](https://github.com/CryptoJones/GayHydra/issues/62) _(`ignore:1y`)_
 - [ ] AbstractToyJitCodeGenerator undefined-cases — edge-case JIT codegen — [#63](https://github.com/CryptoJones/GayHydra/issues/63) _(`ignore:1y`)_
@@ -36,6 +38,7 @@ Seeded 2026-09-06 from the 23 open issues.
 
 ## decomp-correctness
 
+- [ ] Backport kuna's option-gated fixes for still-open upstream decompiler issues, with their datatests — [#477](https://github.com/CryptoJones/GayHydra/issues/477)
 - [ ] misc cluster — cross-feature @Ignore'd tests — [#68](https://github.com/CryptoJones/GayHydra/issues/68) _(`ignore:1y`)_
 
 ## papercuts
