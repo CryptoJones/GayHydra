@@ -14,6 +14,76 @@ generated from the GitHub Releases UI at sprint close.
 
 ---
 
+## [v26.4.0] — 2026-10-24
+
+Minor release of everything merged since v26.3.4. Headlines: fourteen
+decompiler options ported from [kuna](https://github.com/Noelo-Lab/kuna),
+each default-off and covered by a datatest, and a supported
+seam for running an alternate decompiler core. The rest of the ~300
+commits are the automated SLA, upstream-crossref and drift reports.
+
+### Security
+
+- **Decompiler: cap consecutive empty v1 frames** ([PR #459](https://github.com/CryptoJones/GayHydra/pull/459)) —
+  `FrameInStreambuf::underflow()` looped forever on a run of zero-length frames
+  (a CPU-spin DoS); after 16 in a row the stream now ends with
+  `TOO_MANY_EMPTY_FRAMES`.
+
+### Decompiler
+
+- **kuna ports, each a default-off option** ([#477](https://github.com/CryptoJones/GayHydra/issues/477)):
+  `compareform` ([PR #483](https://github.com/CryptoJones/GayHydra/pull/483));
+  `arraynotation`, `inferfuncentry`, `arraystride`, `inputvarnodeadjust`,
+  `dynamichashmax`, `condexeplace`, `booleanmask`, `flagcompare`,
+  `memsetrecover`, `returnpair`, `addcarrychain`, `stackalias`
+  ([PR #506](https://github.com/CryptoJones/GayHydra/pull/506));
+  `ovlesssimplify` for the V850 S/OV-flag signed-less-than idiom
+  ([PR #515](https://github.com/CryptoJones/GayHydra/pull/515)).
+- Regression datatests with no code change needed: GH-2786 double negation
+  ([PR #482](https://github.com/CryptoJones/GayHydra/pull/482)) and GH-8817
+  V850 `jmp [reg]` switch recovery ([PR #514](https://github.com/CryptoJones/GayHydra/pull/514)).
+- **Alternate decompiler cores** — `DecompileProcessFactory` picks the executable
+  from `setExecutable()`, `-Dghidra.decompiler.exe` or `GHIDRA_DECOMPILER_EXE`
+  ([PR #481](https://github.com/CryptoJones/GayHydra/pull/481));
+  `scripts/kuna-backend.sh` wires in kuna's core as a third REA parity lane
+  ([PR #495](https://github.com/CryptoJones/GayHydra/pull/495)).
+
+### Fixed
+
+- Auto framing no longer hangs against a v0-only core: the v1 greeting wait is
+  bounded (500 ms default) and falls back to v0 ([PR #511](https://github.com/CryptoJones/GayHydra/pull/511)).
+- `PcodeBlock` treats `edgelabel` as optional when decoding a block edge, so
+  stock-protocol cores no longer fail every function with control flow
+  ([PR #499](https://github.com/CryptoJones/GayHydra/pull/499)).
+- V850 compiler spec spells the CALLT base pointer `CTBP`, which the
+  case-sensitive standalone decompiler needs to initialise V850 at all
+  ([PR #513](https://github.com/CryptoJones/GayHydra/pull/513)).
+- Removed the deprecated `finalize()` from `ItemDeserializer`
+  ([PR #458](https://github.com/CryptoJones/GayHydra/pull/458)), a duplicate
+  `GradleVersion` import ([PR #457](https://github.com/CryptoJones/GayHydra/pull/457)),
+  and simplified `generateRandomDebugPort()` ([PR #462](https://github.com/CryptoJones/GayHydra/pull/462)).
+
+### CI
+
+- Fetch Dependencies retries 3× to stop the flaky macOS download failing the
+  build ([PR #472](https://github.com/CryptoJones/GayHydra/pull/472)).
+
+### Docs
+
+- New [BACKLOG.md](BACKLOG.md) seeded from the open issues
+  ([PR #475](https://github.com/CryptoJones/GayHydra/pull/475)).
+- MAINTAINERS.md names the fork lead and triage contributor
+  ([PR #464](https://github.com/CryptoJones/GayHydra/pull/464)); OSS_FUZZ.md
+  records the upstream rejection ([PR #463](https://github.com/CryptoJones/GayHydra/pull/463));
+  SBOM.md, ERRORPRONE.md and release.yml comments synced with reality
+  ([PR #460](https://github.com/CryptoJones/GayHydra/pull/460), [PR #461](https://github.com/CryptoJones/GayHydra/pull/461)).
+- README: architecture diagram replaces the logo ([PR #471](https://github.com/CryptoJones/GayHydra/pull/471)),
+  sibling-project links ([PR #519](https://github.com/CryptoJones/GayHydra/pull/519)),
+  GitHub as the sole home ([PR #520](https://github.com/CryptoJones/GayHydra/pull/520)),
+  and a social-preview image ([PR #521](https://github.com/CryptoJones/GayHydra/pull/521)).
+
+---
+
 ## [v26.3.4] — 2026-06-20
 
 Patch release shipping the release-pipeline fix and verifying it end-to-end.
