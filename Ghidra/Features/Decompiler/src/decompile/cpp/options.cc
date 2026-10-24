@@ -41,6 +41,7 @@ ElementId ELEM_INDENTINCREMENT = ElementId("indentincrement",189);
 ElementId ELEM_INFERCONSTPTR = ElementId("inferconstptr",190);
 ElementId ELEM_INLINE = ElementId("inline",191);
 ElementId ELEM_INPLACEOPS = ElementId("inplaceops",192);
+ElementId ELEM_INPUTVARNODEADJUST = ElementId("inputvarnodeadjust",4005);	// GH-9218 (kuna option id range)
 ElementId ELEM_INTEGERFORMAT = ElementId("integerformat",193);
 ElementId ELEM_JUMPLOAD = ElementId("jumpload",194);
 ElementId ELEM_MAXINSTRUCTION = ElementId("maxinstruction",195);
@@ -118,6 +119,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionCompareForm>().release());
   registerOption(make_unique<OptionArrayNotation>().release());
   registerOption(make_unique<OptionArrayStride>().release());
+  registerOption(make_unique<OptionInputVarnodeAdjust>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -497,6 +499,23 @@ string OptionArrayStride::apply(Architecture *glb,const string &p1,const string 
   glb->recover_array_stride = onOrOff(p1);
 
   string res = "Array stride recovery is " + p1;
+  return res;
+}
+
+/// \class OptionInputVarnodeAdjust
+/// \brief Toggle symmetric widening of an unjustified input parameter container (GH-9218)
+///
+/// Setting the first parameter to "on" makes ActionUnjustifiedParams also absorb an input Varnode
+/// that overlaps the justified container and extends ABOVE its end (e.g. two overlapping mc68k stack
+/// parameters read through a link/unlk frame).  Stock code only widens over inputs that extend below
+/// the container start, so the remaining overlap makes Funcdata::adjustInputVarnodes throw
+/// "Cannot properly adjust input varnodes" and the whole function is abandoned.  Off by default.
+string OptionInputVarnodeAdjust::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  glb->input_varnode_adjust = onOrOff(p1);
+
+  string res = "Input varnode adjustment widening is " + p1;
   return res;
 }
 

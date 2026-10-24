@@ -5049,6 +5049,22 @@ int4 ActionUnjustifiedParams::apply(Funcdata &data)
 	  vdata.size = endpoint - vdata.offset;
 	}
       }
+      if (data.getArch()->input_varnode_adjust) {
+	// (GH-9218) Symmetric scan: an input overlapping the container and extending ABOVE its end
+	// also widens the container, so adjustInputVarnodes only ever sees fully contained inputs
+	iter2 = begiter;
+	while(iter2 != enditer) {
+	  vn = *iter2++;
+	  if (vn->getSpace() != vdata.space) continue;
+	  uintb endpoint = vdata.offset + vdata.size;	// First offset past the container
+	  if (vn->getOffset() >= endpoint) break;	// Inputs are address ordered, nothing further can overlap
+	  uintb offset = vn->getOffset() + vn->getSize()-1; // Last offset in varnode
+	  if ((offset >= endpoint)&&(vn->getOffset() >= vdata.offset)) { // Overlap that extends above the container
+	    overlaps = true;
+	    vdata.size = offset + 1 - vdata.offset;
+	  }
+	}
+      }
       if (!overlaps) break;	// Found no additional overlaps, go with current justified container
       // If there were overlaps, container may no longer be justified
       newcontainer = proto.unjustifiedInputParam(vdata.getAddr(),vdata.size,vdata);
