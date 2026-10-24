@@ -1431,6 +1431,7 @@ void Architecture::resetDefaultsInternal(void)
   dynamic_hash_maxdup_high = false;	// Stock budget of 8 (option dynamichashmax, kuna GH-8467)
   condexe_block_placement = false;	// GH-9203: off by default (stock behaviour); "option condexeplace on" enables
   fold_boolean_mask = false;	// GH-1282: off by default (stock output); "option booleanmask on" enables
+  fold_flag_compare = false;	// GH-1276: off by default (stock output); "option flagcompare on" enables
   readonlypropagate = false;
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default

@@ -75,6 +75,7 @@ extern ElementId ELEM_COMPAREFORM;		///< Marshaling element \<compareform>
 extern ElementId ELEM_ARRAYNOTATION;		///< Marshaling element \<arraynotation>
 extern ElementId ELEM_INFERFUNCENTRY;		///< Marshaling element \<inferfuncentry>
 extern ElementId ELEM_CONDEXEPLACE;		///< Marshaling element \<condexeplace>
+extern ElementId ELEM_FLAGCOMPARE;		///< Marshaling element \<flagcompare>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -229,6 +230,12 @@ public:
 class OptionBooleanMask : public ArchOption {
 public:
   OptionBooleanMask(void) { name = "booleanmask"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionFlagCompare : public ArchOption {
+public:
+  OptionFlagCompare(void) { name = "flagcompare"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

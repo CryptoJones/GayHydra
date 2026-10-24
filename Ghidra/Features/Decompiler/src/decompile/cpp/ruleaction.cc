@@ -3477,6 +3477,47 @@ int4 RuleSborrow::applyOp(PcodeOp *op,Funcdata &data)
   return 0;
 }
 
+/// \class RuleBoolSignLess
+/// \brief Fold a boolean shifted into the sign bit and tested for sign:  `(b << k) s< 0  =>  b != 0`
+///
+/// (GH-1276, ported from kuna's RuleBoolSignLess; gated by "option flagcompare on".)  Architectures
+/// that model condition flags as the high bit of a byte (the 8051 SUBB borrow / CY flag) lower a
+/// boolean condition into a sign test by shifting it into bit 7 and signed-comparing against zero.
+/// The rule fires only when the shifted operand's non-zero mask is exactly the single bit that the
+/// shift lands in the sign position, so the rewrite is an identity.
+void RuleBoolSignLess::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_SLESS);
+}
+
+int4 RuleBoolSignLess::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->fold_flag_compare) return 0;
+  Varnode *zero = op->getIn(1);
+  if (!zero->isConstant() || zero->getOffset() != 0) return 0;
+  Varnode *shiftout = op->getIn(0);
+  if (!shiftout->isWritten()) return 0;
+  PcodeOp *leftshift = shiftout->getDef();
+  if (leftshift->code() != CPUI_INT_LEFT) return 0;
+  Varnode *savn = leftshift->getIn(1);
+  if (!savn->isConstant()) return 0;
+  uintb sa = savn->getOffset();
+  if (sa == 0) return 0;
+  Varnode *boolvn = leftshift->getIn(0);
+  int4 width = boolvn->getSize();
+  if ((uintb)width * 8 <= sa) return 0;
+  int4 signbitpos = width * 8 - 1 - (int4)sa;
+  uintb relevant = ((uintb)1) << signbitpos;
+  if (boolvn->getNZMask() != relevant) return 0;	// Exactly the one bit that reaches the sign position
+
+  data.opSetOpcode(op,CPUI_INT_NOTEQUAL);
+  data.opSetInput(op,boolvn,0);
+  data.opSetInput(op,data.newConstant(width,0),1);
+  return 1;
+}
+
 /// \class RuleScarry
 /// \brief Simplify signed comparisons using INT_SCARRY
 ///

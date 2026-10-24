@@ -185,6 +185,7 @@ public:
   bool dynamic_hash_maxdup_high;	///< True if DynamicHash::uniqueHash uses the wide (16) same-address collision budget (kuna GH-8467)
   bool condexe_block_placement;	///< (GH-9203) True if ActionConditionalConst declines to place a constant COPY in a loop block
   bool fold_boolean_mask;	///< (GH-1282) True if RuleBoolSignShift folds the `(b << k) s>> k` boolean sign-mask idiom
+  bool fold_flag_compare;	///< (GH-1276) True if a boolean shifted into the sign bit and tested s< 0 folds to b != 0
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable
