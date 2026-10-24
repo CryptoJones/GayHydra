@@ -69,6 +69,7 @@ ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
 ElementId ELEM_CONDEXEPLACE = ElementId("condexeplace",4007);	// GH-9203 (kuna option id range)
 ElementId ELEM_FLAGCOMPARE = ElementId("flagcompare",4009);	// GH-1276/8777 (kuna option id range)
+ElementId ELEM_ADDCARRYCHAIN = ElementId("addcarrychain",4013);	// GH-8913 (kuna option id range)
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
@@ -132,6 +133,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionFlagCompare>().release());
   registerOption(make_unique<OptionMemsetRecover>().release());
   registerOption(make_unique<OptionReturnPair>().release());
+  registerOption(make_unique<OptionAddCarryChain>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -645,6 +647,24 @@ string OptionReturnPair::apply(Architecture *glb,const string &p1,const string &
     throw ParseError("Must specify pair or single");
   glb->return_single = single;
   return "Return-register pairing set to " + p1 + " form";
+}
+
+/// \class OptionAddCarryChain
+/// \brief Toggle recovery of an 8-bit carry-chained add pair into a single wide add (GH-8913)
+///
+/// 8-bit processors (6502 and friends) build a 16-bit sum with two instructions: ADC on the low
+/// byte, then ADC #0 on the high byte to propagate the page-cross carry.  Setting the first
+/// parameter to "on" enables RuleAddCarryChain, which rewrites the reassembling PIECE of such a
+/// pair into one wide INT_ADD so the result reads as `base + zext(index)` instead of
+/// `CONCAT11(hi + CARRY1(lo,x), lo + x)`.  Off by default (stock output).
+string OptionAddCarryChain::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->add_carry_chain = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Carry-chain wide-add recovery turned "+prop;
 }
 
 /// \class OptionConventionPrinting

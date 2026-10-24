@@ -5934,6 +5934,7 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleSubCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleConcatCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleConcatZext>("analysis").release());
+	actprop->addRule(make_unique<RuleAddCarryChain>("analysis").release());	// GH-8913 (option addcarrychain)
 	actprop->addRule(make_unique<RuleZextCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleZextShiftZext>("analysis").release());
 	actprop->addRule(make_unique<RuleShiftAnd>("analysis").release());

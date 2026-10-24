@@ -188,6 +188,7 @@ public:
   bool fold_flag_compare;	///< (GH-1276) True if a boolean shifted into the sign bit and tested s< 0 folds to b != 0
   bool memset_recover;		///< True if constant-fill COPY runs are collapsed into \b builtin_memset (GH-9230/GH-1537, #477)
   bool return_single;		///< (GH-6990) True if ActionReturnRecovery keeps only the first register of a multi-register return
+  bool add_carry_chain;		///< (GH-8913) True if RuleAddCarryChain fuses 8-bit carry-chained add pairs into one wide add
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable
