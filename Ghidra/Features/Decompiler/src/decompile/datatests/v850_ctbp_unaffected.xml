@@ -1,0 +1,32 @@
+<decompilertest>
+<binaryimage arch="V850:LE:32:default">
+<!--
+    GayHydra #509: the V850 compiler spec names the CALLT base pointer in its
+    unaffected-register list.  The register is defined as CTBP
+    (Helpers/Register.sinc) and the standalone decompiler looks registers up
+    case-sensitively, so the former lowercase spelling "ctbp" made every V850
+    architecture fail to initialise ("Unknown register name: ctbp") before any
+    function could be loaded.  The Java side maps register names
+    case-insensitively, which is why the GUI never noticed.
+
+    The function is one CALLT followed by a return through lp:
+        0x1000: 03 02      callt 0x3
+        0x1002: 7f 00      jmp [lp]
+    CALLT reads CTBP twice (the table slot and the target base), so the
+    decompile only succeeds once the architecture initialises, and the register
+    prints with the unaff_ prefix only because the cspec marks it unaffected.
+-->
+<bytechunk space="ram" offset="0x1000">
+03027f00
+</bytechunk>
+<symbol space="ram" offset="0x1000" name="tcallt"/>
+</binaryimage>
+<script>
+  <com>lo fu tcallt</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="V850 ctbp #1: the architecture initialises and CTBP resolves as an unaffected register" min="1" max="1">int4 unaff_CTBP;</stringmatch>
+<stringmatch name="V850 ctbp #2: the callt dispatch reads the table through CTBP" min="1" max="1">\(\*\(code \*\)\(unaff_CTBP \+ \(uint4\)\*\(uint2 \*\)\(unaff_CTBP \+ 6\)\)\)\(\);</stringmatch>
+</decompilertest>
