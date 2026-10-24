@@ -1,0 +1,62 @@
+<decompilertest>
+<binaryimage arch="68000:BE:32:default">
+<!--
+    GH-9218: "Low-level ERROR: Cannot properly adjust input varnodes" aborts a
+    whole mc68k function with a link/unlk frame.
+    https://github.com/NationalSecurityAgency/ghidra/issues/9218
+    Ported from kuna's gh9218-inputvarnodeadjust stage testcase (GayHydra #477).
+
+    Source:  a small mc68k function with a standard link/unlk frame that reads
+             two OVERLAPPING stack parameters:
+               link.w  A6,#0
+               movea.l (0xa,A6),A1     ; reads a 4-byte stack long  (stack:6 size 4)
+               cmpi.w  #1,(0x8,A6)     ; reads a 2-byte stack word  (stack:4 size 2)
+               ble.b .. ; movea.l (0x4,A1),A0 ; move.b (1,A0),D0 ; cmp.b (A5),D0
+               beq.b .. ; bcs.b .. ; unlk A6 ; rts
+
+    Default output (bug):  the decompile ABORTS with
+        Low-level ERROR: Cannot properly adjust input varnodes
+        Unable to proceed with function: FUN_0
+      thrown from Funcdata::adjustInputVarnodes (funcdata_varnode.cc).
+
+    Root cause: ActionUnjustifiedParams (coreaction.cc) re-justifies the 2-byte
+    word at stack:4 into the model's 4-byte int container [stack:4, stack:7].
+    Its overlap-widening loop only absorbs input Varnodes that overlap and extend
+    BELOW the container start; the 4-byte long at stack:6 (spanning [6,9])
+    overlaps the container and extends ABOVE its end (9 > 7) and is never
+    absorbed.  adjustInputVarnodes then sees an input sticking out of the
+    container and throws, abandoning the whole function.
+
+    "option inputvarnodeadjust on|off" (default off = stock behaviour, including
+    the abort) makes the widening loop symmetric: an input overlapping the
+    container and extending above its end widens the container to enclose it, so
+    adjustInputVarnodes pulls every intersecting input out as a SUBPIECE of one
+    new 6-byte input and the function decompiles:
+        void FUN_0(xunknown8 param_1)  ...  param_1._0_2_  ...  param_1._2_4_
+
+    Harness shape: the default-pipeline failure is an ABORT.  The test console
+    runs with errorIsDone set, so once a command fails the console stays in the
+    error state and FunctionTestCollection::runTests applies NO assertions for
+    the file (a following "option inputvarnodeadjust on" pass still executes but
+    its output is never checked).  The default half therefore cannot be asserted
+    in a passing file.  This testcase asserts the FIX directly under
+    "option inputvarnodeadjust on" and proves the abort token absent; dropping
+    the option line (or setting it off) reproduces the bug, failing the file with
+    "Cannot properly adjust input varnodes" / "Did not apply tests".
+-->
+<bytechunk space="ram" offset="0x0">
+4e560000226e000a0c6e000100086f0e2069000410280001b015670265ea4e5e4e75
+</bytechunk>
+<symbol space="ram" offset="0x0" name="FUN_0"/>
+</binaryimage>
+<script>
+  <com>option inputvarnodeadjust on</com>
+  <com>lo fu FUN_0</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH9218 #1: inputvarnodeadjust on recovers a single merged input parameter (no abort)" min="1" max="1">void FUN_0\(\w+ param_1\)</stringmatch>
+<stringmatch name="GH9218 #2: overlapping stack inputs become SUBPIECEs of the new input (param_1._2_4_)" min="1" max="1">param_1\._2_4_</stringmatch>
+<stringmatch name="GH9218 #3: the low-level abort no longer fires under the fix" min="0" max="0">Cannot properly adjust input varnodes</stringmatch>
+</decompilertest>

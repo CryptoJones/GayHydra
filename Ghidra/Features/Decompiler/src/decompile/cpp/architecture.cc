@@ -1427,6 +1427,7 @@ void Architecture::resetDefaultsInternal(void)
   analyze_for_loops = true;
   present_lessequal = false;	// Stock behavior: keep the analysis-canonical compare form (option compareform canonical)
   recover_array_stride = false;	// GH-8724: off by default (stock output); "option arraystride on" enables
+  input_varnode_adjust = false;	// GH-9218: off by default (stock behaviour); "option inputvarnodeadjust on" enables
   readonlypropagate = false;
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default
