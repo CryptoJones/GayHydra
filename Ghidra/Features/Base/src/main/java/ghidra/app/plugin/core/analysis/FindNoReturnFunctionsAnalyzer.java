@@ -18,6 +18,7 @@ package ghidra.app.plugin.core.analysis;
 import java.util.*;
 
 import ghidra.app.cmd.function.CreateFunctionCmd;
+import ghidra.app.cmd.function.CreateThunkFunctionCmd;
 import ghidra.app.plugin.core.clear.ClearFlowAndRepairCmd;
 import ghidra.app.services.*;
 import ghidra.app.tablechooser.AddressableRowObject;
@@ -27,6 +28,7 @@ import ghidra.program.model.address.*;
 import ghidra.program.model.block.*;
 import ghidra.program.model.lang.*;
 import ghidra.program.model.listing.*;
+import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.*;
@@ -196,6 +198,9 @@ public class FindNoReturnFunctionsAnalyzer extends AbstractAnalyzer {
 	 * @param entry function entry to change to non-returning
 	 */
 	private void setFunctionNonReturning(Program cp, Address entry) {
+		if (isTargetIgnoredForNoReturn(cp, entry)) {
+			return;
+		}
 		Function func = cp.getFunctionManager().getFunctionAt(entry);
 		if (func == null) {
 			CreateFunctionCmd createFunctionCmd = new CreateFunctionCmd(entry);
@@ -207,6 +212,82 @@ public class FindNoReturnFunctionsAnalyzer extends AbstractAnalyzer {
 		}
 		// if func is null, create one at entry
 		func.setNoReturn(true);
+	}
+
+	/**
+	 * Determines whether the given target address should be excluded from heuristic
+	 * non-returning function discovery. External functions, thunk functions, and PLT/linkage
+	 * stubs must never be marked non-returning by callsite flow heuristics.
+	 *
+	 * @param cp current program
+	 * @param target address of the potential noreturn function
+	 * @return true if target should be ignored
+	 */
+	private boolean isTargetIgnoredForNoReturn(Program cp, Address target) {
+		if (target == null) {
+			return true;
+		}
+		if (target.isExternalAddress()) {
+			return true;
+		}
+		if (cp.getMemory().isExternalBlockAddress(target)) {
+			return true;
+		}
+		Function func = cp.getFunctionManager().getFunctionAt(target);
+		if (func != null) {
+			if (func.isExternal()) {
+				return true;
+			}
+			if (func.isThunk()) {
+				Function thunked = func.getThunkedFunction(true);
+				if (thunked != null && (thunked.isExternal() ||
+					cp.getMemory().isExternalBlockAddress(thunked.getEntryPoint()) ||
+					isTargetIgnoredForNoReturn(cp, thunked.getEntryPoint()))) {
+					return true;
+				}
+			}
+		}
+		MemoryBlock block = cp.getMemory().getBlock(target);
+		if (block != null && isPltOrLinkageBlock(block)) {
+			return true;
+		}
+		if (isPltOrExternalTrampoline(cp, target)) {
+			return true;
+		}
+		return false;
+	}
+
+	private boolean isPltOrLinkageBlock(MemoryBlock block) {
+		String name = block.getName().toLowerCase();
+		return name.startsWith(".plt") || name.equals(".got.plt") ||
+			name.startsWith("__stubs") || name.startsWith("__auth_stubs") ||
+			name.startsWith(".linkage");
+	}
+
+	private boolean isPltOrExternalTrampoline(Program cp, Address target) {
+		Address thunkedAddr = CreateThunkFunctionCmd.getThunkedAddr(cp, target, false);
+		if (thunkedAddr != null) {
+			if (thunkedAddr.isExternalAddress() || cp.getMemory().isExternalBlockAddress(thunkedAddr)) {
+				return true;
+			}
+			Function targetFunc = cp.getFunctionManager().getFunctionAt(thunkedAddr);
+			if (targetFunc != null && targetFunc.isExternal()) {
+				return true;
+			}
+		}
+		Instruction instr = cp.getListing().getInstructionAt(target);
+		if (instr != null && instr.getFlowType().isJump()) {
+			for (Reference ref : instr.getReferencesFrom()) {
+				Address toAddr = ref.getToAddress();
+				if (toAddr != null && toAddr.isMemoryAddress()) {
+					MemoryBlock b = cp.getMemory().getBlock(toAddr);
+					if (b != null && (b.getName().contains("got") || !b.isExecute())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -372,6 +453,12 @@ public class FindNoReturnFunctionsAnalyzer extends AbstractAnalyzer {
 				continue;
 			}
 			for (Address target : flows) {
+
+				// Skip targets that should never be heuristically marked non-returning
+				// (e.g. external functions, thunks, PLT / linkage stubs).
+				if (isTargetIgnoredForNoReturn(cp, target)) {
+					continue;
+				}
 
 				// Skip targets that have a callfixup with fall-through semantics.
 				// A fall-through callfixup explicitly models the function's return

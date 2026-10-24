@@ -38,6 +38,9 @@ public class ElfSectionHeaderConstants {
 	public static final String dot_line = ".line";
 	public static final String dot_note = ".note";
 	public static final String dot_plt = ".plt";
+	public static final String dot_plt_got = ".plt.got";
+	public static final String dot_plt_sec = ".plt.sec";
+	public static final String dot_plt_bnd = ".plt.bnd";
 	public static final String dot_rodata = ".rodata";
 	public static final String dot_rodata1 = ".rodata1";
 	public static final String dot_shstrtab = ".shstrtab";

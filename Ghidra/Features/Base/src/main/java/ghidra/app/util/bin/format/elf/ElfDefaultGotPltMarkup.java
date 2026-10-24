@@ -25,6 +25,8 @@ import ghidra.program.model.data.*;
 import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.reloc.Relocation;
+import ghidra.program.model.reloc.RelocationTable;
 import ghidra.program.model.symbol.*;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
@@ -436,34 +438,39 @@ public class ElfDefaultGotPltMarkup {
 
 	private void processPLTSection(TaskMonitor monitor) throws CancelledException {
 
-		// TODO: May want to consider using analysis to fully disassemble PLT, we only 
-		// really need to migrate external symbols contained within the PLT
-
-		// FIXME: Code needs help ... bad assumption about PLT head size (e.g., 16)
 		int assumedPltHeadSize = 16;
 
 		if (elf.isRelocatable()) {
 			return; //relocatable files do not have .PLT sections
 		}
 
-		MemoryBlock pltBlock = memory.getBlock(ElfSectionHeaderConstants.dot_plt);
-		// TODO: This is a band-aid since there are many PLT implementations and this assumes only one.
-		if (pltBlock == null || !pltBlock.isExecute() || !pltBlock.isInitialized() ||
-			pltBlock.getSize() <= assumedPltHeadSize) {
-			return;
+		for (MemoryBlock block : memory.getBlocks()) {
+			monitor.checkCancelled();
+			String name = block.getName();
+			if (!block.isExecute() || !block.isInitialized()) {
+				continue;
+			}
+			if (name.equals(ElfSectionHeaderConstants.dot_plt)) {
+				if (block.getSize() <= assumedPltHeadSize) {
+					continue;
+				}
+				int skipPointers = assumedPltHeadSize;
+				if (elf.e_machine() == ElfConstants.EM_ARM || elf.e_machine() == ElfConstants.EM_AARCH64) {
+					skipPointers = 0; // disassemble entire PLT
+				}
+				Address minAddress = block.getStart().add(skipPointers);
+				Address maxAddress = block.getEnd();
+				processLinkageTable(name, minAddress, maxAddress, monitor);
+			}
+			else if (name.equals(ElfSectionHeaderConstants.dot_plt_got) ||
+				name.equals(ElfSectionHeaderConstants.dot_plt_sec) ||
+				name.equals(ElfSectionHeaderConstants.dot_plt_bnd) ||
+				(name.startsWith(".plt.") && !name.contains(".got.plt"))) {
+				Address minAddress = block.getStart();
+				Address maxAddress = block.getEnd();
+				processLinkageTable(name, minAddress, maxAddress, monitor);
+			}
 		}
-
-		int skipPointers = assumedPltHeadSize;
-
-		// ARM, AARCH64 and others may not store pointers at start of .plt
-		if (elf.e_machine() == ElfConstants.EM_ARM || elf.e_machine() == ElfConstants.EM_AARCH64) {
-			skipPointers = 0; // disassemble entire PLT
-		}
-
-		// Process PLT section
-		Address minAddress = pltBlock.getStart().add(skipPointers);
-		Address maxAddress = pltBlock.getEnd();
-		processLinkageTable(ElfSectionHeaderConstants.dot_plt, minAddress, maxAddress, monitor);
 	}
 
 	/**
@@ -491,6 +498,11 @@ public class ElfDefaultGotPltMarkup {
 			// Any symbols in the linkage section should be converted to External function thunks 
 			// This can be seen with ARM Android examples.
 			int count = convertSymbolsToExternalFunctions(minAddress, maxAddress);
+
+			// For stripped binaries or sections where individual symbols are absent (.plt.sec, .plt.got),
+			// convert PLT stub jump instructions to external thunks using the GOT relocations.
+			count += convertStubsToExternalFunctions(minAddress, maxAddress);
+
 			if (count > 0) {
 				log("Converted " + count + " " + pltName + " section symbols to external thunks");
 			}
@@ -535,6 +547,136 @@ public class ElfDefaultGotPltMarkup {
 			elfLoadHelper.createExternalFunctionLinkage(s.getName(), addr, null);
 		}
 		return (int) set.getNumAddresses();
+	}
+
+	/**
+	 * Convert PLT stub jump instructions within the specified range to external function thunks
+	 * based on relocations / symbols at the associated GOT slot. This is particularly important
+	 * for stripped binaries where no labels exist in the PLT sections.
+	 * @param minAddress range minimum address
+	 * @param maxAddress range maximum address (inclusive)
+	 * @return number of stubs converted
+	 */
+	private int convertStubsToExternalFunctions(Address minAddress, Address maxAddress) {
+		int count = 0;
+		FunctionManager functionManager = program.getFunctionManager();
+		RelocationTable relocationTable = program.getRelocationTable();
+		ReferenceManager refManager = program.getReferenceManager();
+		InstructionIterator instructions =
+			listing.getInstructions(new AddressSet(minAddress, maxAddress), true);
+
+		Address stubEntry = null;
+		while (instructions.hasNext()) {
+			Instruction instr = instructions.next();
+			Address addr = instr.getAddress();
+			if (addr.compareTo(maxAddress) > 0) {
+				break;
+			}
+			Function existing = functionManager.getFunctionAt(addr);
+			if (existing == null && stubEntry != null) {
+				existing = functionManager.getFunctionAt(stubEntry);
+			}
+			if (existing != null && existing.isThunk()) {
+				stubEntry = null;
+				continue;
+			}
+
+			String mnemonic = instr.getMnemonicString();
+			if (mnemonic.startsWith("ENDBR") || mnemonic.equals("BND")) {
+				if (stubEntry == null) {
+					stubEntry = addr;
+				}
+				continue;
+			}
+
+			FlowType flowType = instr.getFlowType();
+			if (flowType.isJump()) {
+				if (stubEntry == null) {
+					stubEntry = addr;
+				}
+
+				// Check if this stub range already contains a thunk or function
+				existing = functionManager.getFunctionAt(stubEntry);
+				if (existing == null) {
+					FunctionIterator fit =
+						functionManager.getFunctions(new AddressSet(stubEntry, instr.getMaxAddress()), true);
+					if (fit.hasNext()) {
+						existing = fit.next();
+					}
+				}
+				if (existing != null) {
+					if (existing.isThunk()) {
+						try {
+							existing.setBody(new AddressSet(existing.getEntryPoint(), instr.getMaxAddress()));
+						}
+						catch (Exception e) {
+							// ignore
+						}
+					}
+					stubEntry = null;
+					continue;
+				}
+
+				Address gotAddr = null;
+				for (Reference ref : instr.getReferencesFrom()) {
+					Address toAddr = ref.getToAddress();
+					if (toAddr != null && toAddr.isMemoryAddress()) {
+						MemoryBlock b = memory.getBlock(toAddr);
+						if (b != null && (b.getName().contains("got") || b.getName().equals(".dynamic") || !b.isExecute())) {
+							gotAddr = toAddr;
+							break;
+						}
+					}
+				}
+
+				if (gotAddr != null) {
+					String symbolName = null;
+					List<Relocation> relocs = relocationTable.getRelocations(gotAddr);
+					if (relocs != null && !relocs.isEmpty()) {
+						symbolName = relocs.get(0).getSymbolName();
+					}
+					if (symbolName == null || symbolName.isEmpty()) {
+						Symbol s = program.getSymbolTable().getPrimarySymbol(gotAddr);
+						if (s != null && s.getSource() != SourceType.DEFAULT) {
+							symbolName = s.getName();
+						}
+					}
+					if (symbolName == null || symbolName.isEmpty()) {
+						for (Reference r : refManager.getReferencesFrom(gotAddr)) {
+							if (r.isExternalReference()) {
+								Symbol extSym =
+									program.getSymbolTable().getPrimarySymbol(r.getToAddress());
+								if (extSym != null) {
+									symbolName = extSym.getName();
+									break;
+								}
+							}
+						}
+					}
+
+					if (symbolName != null && !symbolName.isEmpty()) {
+						int atIndex = symbolName.indexOf('@');
+						String baseName = (atIndex > 0) ? symbolName.substring(0, atIndex) : symbolName;
+						Function thunk =
+							elfLoadHelper.createExternalFunctionLinkage(baseName, stubEntry, null);
+						if (thunk != null) {
+							try {
+								thunk.setBody(new AddressSet(stubEntry, instr.getMaxAddress()));
+							}
+							catch (Exception e) {
+								// ignore if overlapping
+							}
+							count++;
+						}
+					}
+				}
+				stubEntry = null;
+			}
+			else if (flowType.isTerminal() || !flowType.hasFallthrough()) {
+				stubEntry = null;
+			}
+		}
+		return count;
 	}
 
 	private void disassemble(Address start, Address end, Program prog, TaskMonitor monitor)
