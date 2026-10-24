@@ -12,7 +12,7 @@ Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 ## framework
 
 - [x] DecompileProcessFactory: add a supported seam for choosing the decompiler executable — [#478](https://github.com/CryptoJones/GayHydra/issues/478)
-- [ ] Document and script the kuna_ghidra headless backend swap as a third REA parity lane — [#479](https://github.com/CryptoJones/GayHydra/issues/479)
+- [x] Document and script the kuna_ghidra headless backend swap as a third REA parity lane — [#479](https://github.com/CryptoJones/GayHydra/issues/479)
 - [ ] Decompiler options: OptionDecompileBudgetPass has no ElementId, so every unknown option name dispatches to it — [#489](https://github.com/CryptoJones/GayHydra/issues/489)
 - [ ] IPC framing auto mode hangs forever against a v0-only decompiler core instead of falling back — [#491](https://github.com/CryptoJones/GayHydra/issues/491)
 - [ ] PcodeBlock.BlockEdge.decode requires the edgelabel attribute, so a stock-protocol core fails on every function with control flow — [#497](https://github.com/CryptoJones/GayHydra/issues/497)
