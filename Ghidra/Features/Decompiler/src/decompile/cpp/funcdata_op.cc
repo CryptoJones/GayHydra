@@ -1065,6 +1065,7 @@ bool Funcdata::replaceLessequal(PcodeOp *op)
   Varnode *newvn = newConstant(vn->getSize(),res);
   newvn->copySymbol(vn);	// Preserve data-type (and any Symbol info)
   opSetInput(op,newvn,i);
+  op->setCanonicalLessequal();	// Record provenance so ActionPresentCompareForm can restore the source form
   return true;
 }
 

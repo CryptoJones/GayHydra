@@ -1,0 +1,40 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    GH-558: "Don't change conditions to equivalent expressions during decompilation"
+    https://github.com/NationalSecurityAgency/ghidra/issues/558
+
+    Source:         int gh558(int x) { if (x <= 8) return 1; return 0; }
+    Compiled (as):  cmp $8,%edi ; jg +6 ; mov $1,%eax ; ret ; xor %eax,%eax ; ret
+    Stock output:   if (x < 9) ...   RuleIntLessEqual (via Funcdata::replaceLessequal)
+                    canonicalizes `x <= 8` into `x < 9` for analysis, and the
+                    analysis-canonical form leaks into the rendered C.
+
+    Fix (ported from kuna, GayHydra #477): replaceLessequal marks the rewritten op
+    (PcodeOp::canonical_lessequal) and ActionPresentCompareForm, running after the
+    last structuring flip, inverts every still-marked op back to the source `<=`
+    form.  The action is gated by `option compareform canonical|original`; the fork
+    keeps the stock `canonical` form as default and `original` is opt-in.
+
+    Pass 1 (default) proves the stock form; pass 2 (option compareform original)
+    proves the restored source form.  Both `print C` dumps land in one stream, so
+    each form must appear exactly once.
+-->
+<bytechunk space="ram" offset="0x100000" readonly="true">
+83ff087f06b801000000c331c0c3
+</bytechunk>
+<symbol space="ram" offset="0x100000" name="gh558"/>
+</binaryimage>
+<script>
+  <com>parse line extern int4 gh558(int4 x);</com>
+  <com>lo fu gh558</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option compareform original</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH558 #1: default keeps the analysis-canonical form x &lt; 9" min="1" max="1">if \(x &lt; 9\)</stringmatch>
+<stringmatch name="GH558 #2: compareform original restores the source form x &lt;= 8" min="1" max="1">if \(x &lt;= 8\)</stringmatch>
+</decompilertest>
