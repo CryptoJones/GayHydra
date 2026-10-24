@@ -64,6 +64,7 @@ ElementId ELEM_TOGGLERULE = ElementId("togglerule",209);
 ElementId ELEM_WARNING = ElementId("warning",210);
 ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
+ElementId ELEM_CONDEXEPLACE = ElementId("condexeplace",4007);	// GH-9203 (kuna option id range)
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
@@ -122,6 +123,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionArrayStride>().release());
   registerOption(make_unique<OptionInputVarnodeAdjust>().release());
   registerOption(make_unique<OptionDynamicHashMax>().release());
+  registerOption(make_unique<OptionCondExePlace>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -536,6 +538,25 @@ string OptionDynamicHashMax::apply(Architecture *glb,const string &p1,const stri
   string prop;
   prop = val ? "on" : "off";
   return "DynamicHash wide collision budget turned "+prop;
+}
+
+/// \class OptionCondExePlace
+/// \brief Toggle whether ActionConditionalConst may place a constant COPY in a loop block (GH-9203)
+///
+/// When a conditionally constant value reaches a MULTIEQUAL on a disconnected incoming edge,
+/// ActionConditionalConst::handlePhiNodes materializes the constant as a COPY at the bottom of that
+/// edge's predecessor block.  If the predecessor is the bottom of a loop, the COPY lands inside the
+/// loop body and is re-executed every iteration (a spurious "x = 0;" inside a do/while).  Setting the
+/// first parameter to "on" makes handlePhiNodes decline the placement when the predecessor block has a
+/// looping in-edge, leaving the MULTIEQUAL input intact.  Off by default (stock behaviour).
+string OptionCondExePlace::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->condexe_block_placement = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Conditional-constant loop-block placement guard turned "+prop;
 }
 
 /// \class OptionConventionPrinting

@@ -73,6 +73,7 @@ extern ElementId ELEM_NANIGNORE;		///< Marshaling element \<nanignore>
 extern ElementId ELEM_COMPAREFORM;		///< Marshaling element \<compareform>
 extern ElementId ELEM_ARRAYNOTATION;		///< Marshaling element \<arraynotation>
 extern ElementId ELEM_INFERFUNCENTRY;		///< Marshaling element \<inferfuncentry>
+extern ElementId ELEM_CONDEXEPLACE;		///< Marshaling element \<condexeplace>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -215,6 +216,12 @@ public:
 class OptionDynamicHashMax : public ArchOption {
 public:
   OptionDynamicHashMax(void) { name = "dynamichashmax"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionCondExePlace : public ArchOption {
+public:
+  OptionCondExePlace(void) { name = "condexeplace"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 
