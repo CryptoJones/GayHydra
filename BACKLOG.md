@@ -42,7 +42,7 @@ Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 
 ## decomp-correctness
 
-- [ ] Backport kuna's option-gated fixes for still-open upstream decompiler issues, with their datatests — [#477](https://github.com/CryptoJones/GayHydra/issues/477)
+- [x] Backport kuna's option-gated fixes for still-open upstream decompiler issues, with their datatests — [#477](https://github.com/CryptoJones/GayHydra/issues/477)
 - [ ] misc cluster — cross-feature @Ignore'd tests — [#68](https://github.com/CryptoJones/GayHydra/issues/68) _(`ignore:1y`)_
 
 ## papercuts
