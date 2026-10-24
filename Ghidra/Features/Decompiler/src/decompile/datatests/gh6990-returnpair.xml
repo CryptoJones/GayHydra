@@ -1,0 +1,55 @@
+<decompilertest>
+<binaryimage arch="sparc:BE:32:default:default">
+<!--
+    GH-6990: "Sparc 32 defaulting to returning undefined8 for void"
+    https://github.com/NationalSecurityAgency/ghidra/issues/6990
+
+    Source:   main is a void no-op function:
+                  save %sp,-0xb8,%sp ; nop ; restore ; retl ; nop
+              (real `main` at 0x32148 of the issue's SPARC32 BE GCC -O0 build;
+               bytes verbatim below)
+
+    The bug (stock output, first decompile):
+              xunknown8 main(xunknown4 param_1, xunknown4 param_2)
+              { return CONCAT44(param_2, param_1); }
+
+    Root cause: SparcV9_32.cspec <output> joins o0:o1 via
+    <rule><datatype name="any" maxsize="8"/><join storage="general"/></rule>.
+    On-the-fly return recovery (ActionReturnRecovery) marks BOTH o0 and o1
+    output trials active because their prologue values pass through the
+    save/restore window to the RETURN: realistic, but passive, ancestry.
+    buildReturnOutput then emits CONCAT44(o1,o0) as an 8-byte return.
+
+    The fix is gated behind "option returnpair pair|single" (default pair =
+    stock output).  With "single", ActionReturnRecovery::buildReturnOutput
+    (coreaction.cc) refuses to join a multi-register return and keeps only the
+    first (least-significant) register, so the second decompile prints
+              xunknown4 main(xunknown4 param_1) { return param_1; }
+    It is a destructive per-function opt-in: it cannot tell a passively-live
+    pair from a genuine two-register return, hence not a default flip.
+
+    Ported from kuna's tests/stages/gh6990-returnpair.xml (GayHydra #477).
+    kuna also carries a default-on repair that drops the passive half without
+    the option; this fork does not, so the default half asserts the stock bug
+    and the option half asserts the fix.  Type and parameter names in the
+    regexes are loosened to \w+ because they are incidental.
+-->
+<bytechunk space="ram" offset="0x32148" readonly="true">
+9de3bf480100000081e8000081c3e008010000009de3bfa00100000081e80000
+</bytechunk>
+<symbol space="ram" offset="0x32148" name="main"/>
+</binaryimage>
+<script>
+  <com>lo fu main</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option returnpair single</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH6990 #1: default (pair) still joins o0:o1 into a two-parameter 8-byte return" min="1" max="1">\w+8 main\(\w+4 \w+, \w+4 \w+\)</stringmatch>
+<stringmatch name="GH6990 #2: default (pair) returns the CONCAT44 join exactly once" min="1" max="1">return CONCAT44\(\w+, \w+\);</stringmatch>
+<stringmatch name="GH6990 #3: returnpair single recovers a single 4-byte return and one parameter" min="1" max="1">\w+4 main\(\w+4 \w+\)</stringmatch>
+<stringmatch name="GH6990 #4: returnpair single returns the first register alone" min="1" max="1">return \w+;</stringmatch>
+</decompilertest>

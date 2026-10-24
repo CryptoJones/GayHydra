@@ -1964,6 +1964,8 @@ void ActionReturnRecovery::buildReturnOutput(ParamActive *active,PcodeOp *retop,
     if (curtrial.getSlot() >= retop->numInput()) break;
     newparam.push_back(retop->getIn(curtrial.getSlot()));
   }
+  if (data.getArch()->return_single && newparam.size() > 2)	// GH-6990: refuse to join a multi-register return
+    newparam.resize(2);						//   keep only the first (least-significant) register
   if (newparam.size()<=2)	// Easy zero or one return varnode case
     data.opSetAllInput(retop,newparam);
   else if (newparam.size()==3) { // Two piece concatenation case

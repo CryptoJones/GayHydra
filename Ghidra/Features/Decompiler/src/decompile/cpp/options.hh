@@ -64,6 +64,7 @@ extern ElementId ELEM_PARAM1;			///< Marshaling element \<param1>
 extern ElementId ELEM_PARAM2;			///< Marshaling element \<param2>
 extern ElementId ELEM_PARAM3;			///< Marshaling element \<param3>
 extern ElementId ELEM_PROTOEVAL;		///< Marshaling element \<protoeval>
+extern ElementId ELEM_RETURNPAIR;		///< Marshaling element \<returnpair>
 extern ElementId ELEM_SETACTION;		///< Marshaling element \<setaction>
 extern ElementId ELEM_SETLANGUAGE;		///< Marshaling element \<setlanguage>
 extern ElementId ELEM_SPLITDATATYPE;		///< Marshaling element \<splitdatatype>
@@ -243,6 +244,12 @@ public:
 class OptionMemsetRecover : public ArchOption {
 public:
   OptionMemsetRecover(void) { name = "memsetrecover"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionReturnPair : public ArchOption {
+public:
+  OptionReturnPair(void) { name = "returnpair"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 
