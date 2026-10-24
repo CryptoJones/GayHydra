@@ -1,0 +1,50 @@
+<decompilertest>
+<binaryimage arch="V850:LE:32:default">
+<!--
+    GH-8817: V850 "jmp [reg]" switch dispatch not recovered as a jumptable.
+    https://github.com/NationalSecurityAgency/ghidra/issues/8817
+    (GayHydra #477; kuna tests/stages/gh8817-v850indbranch.xml)
+
+    Upstream's V850 SLEIGH lifted "jmp [reg]" (reg != lp) to "call [reg]"
+    (CPUI_CALLIND).  Jump-table recovery only runs on CPUI_BRANCHIND, so a
+    bounded compiler switch dispatch
+        cmp 2,r10 ; bh default
+        mov table,r11 ; shl 2,r10 ; add r11,r10 ; ld.w 0[r10],r10
+        add r11,r10 ; jmp [r10]
+    rendered as a computed call through a function pointer.  kuna fixes this
+    in the decompiler with the default-off option v850indirectbranch, which
+    reclassifies that CALLIND to BRANCHIND at flow time.
+
+    The fork does not need the option: its V850 spec already lifts
+    "jmp [reg]" to "goto [R0004]" (Instructions/Special.sinc, since the port
+    of upstream PR 8996 in GayHydra PR 146), so the dispatch is a BRANCHIND
+    and the stock pipeline recovers the switch.  kuna's option line is
+    therefore dropped and the assertions pin the recovered switch and the
+    absence of the computed call.  The test can only run once the cspec
+    spells the CTBP register correctly (GayHydra #509).
+
+    The 3-entry jump table lives at 0x2200 (4-byte LE entries, each an offset
+    added to the 0x2200 table base):
+        0x2200: 0xFFFFFF1E, case 0 stub at 0x211e (mov 1,r10 ; jmp [lp])
+        0x2204: 0xFFFFFF22, case 1 stub at 0x2122 (mov 2,r10 ; jmp [lp])
+        0x2208: 0xFFFFFF26, case 2 stub at 0x2126 (mov 3,r10 ; jmp [lp])
+    with the default stub at 0x211a (mov 9,r10 ; jmp [lp]).
+-->
+<bytechunk space="ram" offset="0x2104">
+6252AB0D2b0600220000c252cb512a570100cb516a0009527f0001527f0002527f0003527f00
+</bytechunk>
+<bytechunk space="ram" offset="0x2200">
+1EFFFFFF22FFFFFF26FFFFFF
+</bytechunk>
+<symbol space="ram" offset="0x2104" name="tjmp"/>
+</binaryimage>
+<script>
+  <com>lo fu tjmp</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH8817 #1: the V850 jmp [reg] dispatch is recovered as a switch by the stock pipeline" min="1" max="1">switch\(in_r10\) \{</stringmatch>
+<stringmatch name="GH8817 #2: no computed call through a function pointer survives" min="0" max="0">\(\*\(code \*\)</stringmatch>
+<stringmatch name="GH8817 #3: the three cases and the default are all present" min="1" max="1">case 2:</stringmatch>
+</decompilertest>
