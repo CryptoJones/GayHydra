@@ -43,6 +43,7 @@ ElementId ELEM_INLINE = ElementId("inline",191);
 ElementId ELEM_INPLACEOPS = ElementId("inplaceops",192);
 ElementId ELEM_INPUTVARNODEADJUST = ElementId("inputvarnodeadjust",4005);	// GH-9218 (kuna option id range)
 ElementId ELEM_DYNAMICHASHMAX = ElementId("dynamichashmax",4006);
+ElementId ELEM_BOOLEANMASK = ElementId("booleanmask",4008);	// GH-1282 (kuna option id range)
 ElementId ELEM_INTEGERFORMAT = ElementId("integerformat",193);
 ElementId ELEM_JUMPLOAD = ElementId("jumpload",194);
 ElementId ELEM_MAXINSTRUCTION = ElementId("maxinstruction",195);
@@ -124,6 +125,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionInputVarnodeAdjust>().release());
   registerOption(make_unique<OptionDynamicHashMax>().release());
   registerOption(make_unique<OptionCondExePlace>().release());
+  registerOption(make_unique<OptionBooleanMask>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -557,6 +559,26 @@ string OptionCondExePlace::apply(Architecture *glb,const string &p1,const string
   string prop;
   prop = val ? "on" : "off";
   return "Conditional-constant loop-block placement guard turned "+prop;
+}
+
+/// \class OptionBooleanMask
+/// \brief Toggle whether the `(b << k) s>> k` boolean sign-extension-mask idiom is folded (GH-1282)
+///
+/// Processors that model a flag as the high bit of a register (the 8051 carry in PSW bit 7)
+/// lower a boolean test `b` to `(b << k) s>> k`, smearing the bit into a 0/-1 mask.  The stock
+/// RuleLeftRight only cancels the shift pair when \b k is a multiple of 8, so the shift noise
+/// survives into the output as `((x < 0x80) << 7) >> 7`.  Setting the first parameter to "on"
+/// enables RuleBoolSignShift, which rewrites the pair as `0 - b` (INT_2COMP) whenever the
+/// pre-shift value's non-zero mask fits below the shifted-out bits; the surrounding compare rules
+/// then clean the result to a plain boolean.  Off by default (stock behaviour).
+string OptionBooleanMask::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->fold_boolean_mask = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Boolean sign-mask folding turned "+prop;
 }
 
 /// \class OptionConventionPrinting
