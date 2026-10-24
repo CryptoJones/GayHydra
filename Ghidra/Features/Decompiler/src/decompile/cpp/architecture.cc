@@ -1435,6 +1435,7 @@ void Architecture::resetDefaultsInternal(void)
   memset_recover = false;	// Off = stock output; "option memsetrecover on" enables RuleMemsetCopy (GH-9230/GH-1537, #477)
   return_single = false;	// GH-6990: "pair" by default (stock behaviour); "option returnpair single" truncates
   readonlypropagate = false;
+  add_carry_chain = false;	// GH-8913: off by default (stock output); "option addcarrychain on" enables
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default
   alias_block_level = 2;	// Block structs and arrays by default, but not more primitive data-types

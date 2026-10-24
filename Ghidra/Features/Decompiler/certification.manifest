@@ -61,6 +61,7 @@ src/decompile/datatests/gh1276-flagcompare-boolsign.xml||GHIDRA||||END|
 src/decompile/datatests/gh8777-flagcompare-sborrow.xml||GHIDRA||||END|
 src/decompile/datatests/gh9230-memsetseq.xml||GHIDRA||||END|
 src/decompile/datatests/gh6990-returnpair.xml||GHIDRA||||END|
+src/decompile/datatests/gh8913-addcarrychain.xml||GHIDRA||||END|
 src/decompile/datatests/gp.xml||GHIDRA||||END|
 src/decompile/datatests/heapmemset.xml||GHIDRA||||END|
 src/decompile/datatests/heapstring.xml||GHIDRA||||END|

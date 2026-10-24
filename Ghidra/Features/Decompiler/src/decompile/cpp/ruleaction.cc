@@ -4931,6 +4931,151 @@ int4 RuleConcatZext::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \class RuleAddCarryChain
+/// \brief Fuse an 8-bit carry-chained add pair into one wide add:  `concat(H + carry(a,b), a + b)  =>  concat(H,b) + zext(a)`
+///
+/// (GH-8913, ported from kuna's RuleAddCarryChain; gated by "option addcarrychain on".)  8-bit
+/// processors build a 16-bit sum with the two-instruction ADC idiom: ADC on the low byte, then
+/// ADC #0 on the high byte to propagate the page-cross carry.  The reassembling PIECE of such a
+/// pair is rewritten into a single INT_ADD so the value reads as `base + zext(index)` instead of
+/// `CONCAT11(H + CARRY1(a,b), a + b)`.  The carry is matched either as a raw INT_CARRY or in the
+/// form RuleCarryElim leaves behind when \b b is a constant, `(-b) & mask <= a`.
+void RuleAddCarryChain::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_PIECE);
+}
+
+/// \param vn is the given Varnode
+/// \return the Varnode underneath any CAST or COPY wrappers
+Varnode *RuleAddCarryChain::stripCast(Varnode *vn)
+
+{
+  while(vn->isWritten()) {
+    PcodeOp *def = vn->getDef();
+    OpCode opc = def->code();
+    if (opc != CPUI_CAST && opc != CPUI_COPY) break;
+    vn = def->getIn(0);
+  }
+  return vn;
+}
+
+/// \param a is the first Varnode
+/// \param b is the second Varnode
+/// \return \b true if both name the same value or the same constant
+bool RuleAddCarryChain::sameValue(Varnode *a,Varnode *b)
+
+{
+  a = stripCast(a);
+  b = stripCast(b);
+  if (a == b) return true;
+  if (a->isConstant() && b->isConstant())
+    return (a->getOffset() == b->getOffset() && a->getSize() == b->getSize());
+  return false;
+}
+
+/// The carry is accepted as a raw INT_CARRY of (\b a, \b b) in either order, or as the
+/// RuleCarryElim form `(-c) & mask <= V` where \b c is the constant operand of the low add
+/// and \b V is its other operand (or its RuleLessEqual successor `((-c) & mask) - 1 < V`).
+/// \param carryvn is the candidate carry Varnode
+/// \param a is the first operand of the low add
+/// \param b is the second operand of the low add
+/// \return \b true if \b carryvn is the carry out of \b a + \b b
+bool RuleAddCarryChain::isCarryOf(Varnode *carryvn,Varnode *a,Varnode *b)
+
+{
+  if (!carryvn->isWritten()) return false;
+  PcodeOp *cop = carryvn->getDef();
+  OpCode opc = cop->code();
+  if (opc == CPUI_INT_CARRY) {
+    Varnode *c0 = cop->getIn(0);
+    Varnode *c1 = cop->getIn(1);
+    if (sameValue(c0,a) && sameValue(c1,b)) return true;
+    if (sameValue(c0,b) && sameValue(c1,a)) return true;
+    return false;
+  }
+  if (opc == CPUI_INT_LESSEQUAL || opc == CPUI_INT_LESS) {
+    Varnode *cst = cop->getIn(0);
+    Varnode *val = cop->getIn(1);
+    if (!cst->isConstant()) return false;
+    Varnode *cadd,*vadd;
+    if (a->isConstant() && !b->isConstant()) {
+      cadd = a;
+      vadd = b;
+    }
+    else if (b->isConstant() && !a->isConstant()) {
+      cadd = b;
+      vadd = a;
+    }
+    else
+      return false;
+    if (!sameValue(val,vadd)) return false;
+    uintb negc = (-cadd->getOffset()) & calc_mask(val->getSize());
+    if (opc == CPUI_INT_LESS) {		// RuleLessEqual has already turned  (-c) <= V  into  (-c)-1 < V
+      if (negc == 0) return false;
+      negc -= 1;
+    }
+    return (cst->getOffset() == negc);
+  }
+  return false;
+}
+
+int4 RuleAddCarryChain::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->add_carry_chain) return 0;
+  Varnode *hivn = op->getIn(0);
+  Varnode *lovn = op->getIn(1);
+  if (!hivn->isWritten() || !lovn->isWritten()) return 0;
+  if (hivn->getSize() != 1 || lovn->getSize() != 1) return 0;
+
+  PcodeOp *loadd = lovn->getDef();
+  if (loadd->code() != CPUI_INT_ADD) return 0;
+  Varnode *a = loadd->getIn(0);
+  Varnode *b = loadd->getIn(1);
+
+  PcodeOp *hiadd = hivn->getDef();
+  if (hiadd->code() != CPUI_INT_ADD) return 0;
+  Varnode *hi0 = hiadd->getIn(0);
+  Varnode *hi1 = hiadd->getIn(1);
+  Varnode *hipart;		// One input of the high add is the carry, the other the base high byte
+  if (isCarryOf(hi1,a,b))
+    hipart = hi0;
+  else if (isCarryOf(hi0,a,b))
+    hipart = hi1;
+  else
+    return 0;
+  if (hipart->getSize() != 1) return 0;
+  if (hipart->isFree() && !hipart->isConstant()) return 0;	// Constants are free but fine as inputs
+  if (a->isFree() && !a->isConstant()) return 0;
+  if (b->isFree() && !b->isConstant()) return 0;
+
+  Varnode *indexvn = a;		// The operand that gets zero-extended
+  Varnode *baselo = b;		// The operand that stays the low byte of the wide base
+  int4 outsize = op->getOut()->getSize();
+
+  // Build  concat(hipart,baselo)  -- the wide base
+  PcodeOp *baseop = data.newOp(2,op->getAddr());
+  data.opSetOpcode(baseop,CPUI_PIECE);
+  Varnode *basevn = data.newUniqueOut(hipart->getSize()+baselo->getSize(),baseop);
+  data.opSetInput(baseop,hipart,0);
+  data.opSetInput(baseop,baselo,1);
+  data.opInsertBefore(baseop,op);
+
+  // Build  zext(index)  to the output width
+  PcodeOp *zextop = data.newOp(1,op->getAddr());
+  data.opSetOpcode(zextop,CPUI_INT_ZEXT);
+  Varnode *zextvn = data.newUniqueOut(outsize,zextop);
+  data.opSetInput(zextop,indexvn,0);
+  data.opInsertBefore(zextop,op);
+
+  // Rewrite the PIECE itself into the wide add:  out = base + zext(index)
+  data.opSetOpcode(op,CPUI_INT_ADD);
+  data.opSetInput(op,basevn,0);
+  data.opSetInput(op,zextvn,1);
+  return 1;
+}
+
 /// \class RuleZextCommute
 /// \brief Commute INT_ZEXT with INT_RIGHT: `zext(V) >> W  =>  zext(V >> W)`
 void RuleZextCommute::getOpList(vector<uint4> &oplist) const
