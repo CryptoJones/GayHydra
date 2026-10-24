@@ -21,6 +21,7 @@ import static ghidra.program.model.pcode.ElementId.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 
 import ghidra.app.decompiler.ipc.CommandRequestCodec;
@@ -96,14 +97,37 @@ public class DecompileProcess {
 	private final static int FRAME_MAX_PAYLOAD_LEN = 16 * 1024 * 1024;
 	private final static String CLIENT_IDENT = "GayHydra-Ghidra (v1 framing)";
 
+	// #491: how long "auto" mode waits for the peer's GREETING reply before
+	// treating the peer as v0-only. A v1 peer answers the greeting as the
+	// very first thing it does, so on a local pipe the reply is normally
+	// in hand within a few milliseconds (setup() has already given the
+	// process 200 ms to load); a v0-only peer (a stock-protocol core such
+	// as kuna_ghidra) never answers at all. Without this bound the Java
+	// side blocked forever on the reply. Override with the
+	// decompiler.framing.greetingTimeoutMs system property.
+	static final long GREETING_TIMEOUT_MS_DEFAULT = 500L;
+	static final String GREETING_TIMEOUT_PROPERTY = "decompiler.framing.greetingTimeoutMs";
+	private static final long GREETING_POLL_INTERVAL_MS = 5L;
+	// The two framing outcomes are each logged at INFO once per JVM (the
+	// parallel decompiler spawns many processes; one line is the signal,
+	// repeats are noise and go to debug).
+	private static final AtomicBoolean v0FallbackLogged = new AtomicBoolean(false);
+	private static final AtomicBoolean v1NegotiatedLogged = new AtomicBoolean(false);
+
 	// Configured framing preference: "auto" (send greeting, fall back to
-	// v0 if the peer does not reply v1), "v1" (send greeting), or "v0"
-	// (legacy: emit no greeting). Set by DecompInterface before each
+	// v0 if the peer does not reply v1 within the greeting timeout), "v1"
+	// (send greeting, wait for the reply without bound), or "v0" (legacy:
+	// emit no greeting). Set by DecompInterface before each
 	// registerProgram. Default matches DD-0005's flip of GayHydra clients
 	// to v1-by-default.
 	private volatile String framingMode = "auto";
 	// True once a v1 greeting handshake has completed with the peer.
 	private volatile boolean channelV1 = false;
+	// True when "auto" mode gave up waiting for the peer's greeting reply
+	// and dropped this process to v0 framing (#491). Test observable.
+	private volatile boolean greetingTimedOut = false;
+	// The peer greeting's IDENT string, or null while the channel is v0.
+	private volatile String peerIdent = null;
 	// The peer greeting's CAPABS bitmask, recorded by the v1 handshake
 	// (#34-10a); 0 while the channel is v0. The payload-v1 go-live
 	// slices key off this: requests go v1 only when the worker
@@ -405,6 +429,41 @@ public class DecompileProcess {
 	}
 
 	/**
+	 * {@return true if "auto" framing gave up waiting for the peer's greeting
+	 * reply and fell back to v0 framing for this process (#491).}
+	 * Package-private test observable.
+	 */
+	boolean isGreetingTimedOut() {
+		return greetingTimedOut;
+	}
+
+	/**
+	 * Attach the peer streams directly instead of spawning the executable.
+	 * Package-private for the fast framing tests, which drive
+	 * {@link #negotiateFramingV1()} against a fake peer.
+	 * @param in bytes from the peer
+	 * @param out bytes to the peer
+	 */
+	void attachPeerStreams(InputStream in, OutputStream out) {
+		nativeIn = in;
+		nativeOut = out;
+	}
+
+	/**
+	 * The bound on the "auto"-mode wait for the peer's greeting reply:
+	 * the {@value #GREETING_TIMEOUT_PROPERTY} system property when it is a
+	 * positive integer, else {@link #GREETING_TIMEOUT_MS_DEFAULT}.
+	 * @return the wait bound in milliseconds
+	 */
+	static long resolveGreetingTimeoutMs() {
+		Long configured = Long.getLong(GREETING_TIMEOUT_PROPERTY);
+		if (configured == null || configured <= 0) {
+			return GREETING_TIMEOUT_MS_DEFAULT;
+		}
+		return configured;
+	}
+
+	/**
 	 * {@return the peer greeting's CAPABS bitmask, or 0 while the channel
 	 * is v0 (a v0 channel has no capability concept).}
 	 */
@@ -493,11 +552,27 @@ public class DecompileProcess {
 	 * loop's default) leaves no reply path: a v0-mode client emits nothing
 	 * and the peer's non-consuming peek keeps the stream byte-identical for
 	 * the legacy reader.
+	 * <p>
+	 * In "auto" mode the wait for the reply is bounded (#491). A v0-only
+	 * peer never answers, so once {@link #resolveGreetingTimeoutMs()} has
+	 * elapsed with nothing readable, this process drops to v0 framing in
+	 * place. That is safe without a respawn: the greeting bytes already on
+	 * the pipe are harmless to a v0 server, whose {@code readToAnyBurst}
+	 * skips every byte that is not a {@code \0\0\1\NN} marker and whose
+	 * command loop discards any marker other than command-start, so it
+	 * resyncs on the first real v0 command. The peer's input is never
+	 * consumed while waiting, so the v0 path below starts on an intact
+	 * stream. "v1" mode keeps the unbounded wait.
+	 * <p>
+	 * Package-private so the fast tests can drive it against a fake peer
+	 * attached with {@link #attachPeerStreams}.
 	 */
-	private void negotiateFramingV1() throws IOException {
+	void negotiateFramingV1() throws IOException {
 		channelV1 = false;
 		peerCapabilities = 0;
+		peerIdent = null;
 		frameOut = null;
+		greetingTimedOut = false;
 		if ("v0".equals(framingMode)) {
 			return;
 		}
@@ -505,8 +580,23 @@ public class DecompileProcess {
 		if (nativeOut != null) {
 			nativeOut.flush();
 		}
+		if ("auto".equals(framingMode)) {
+			long timeoutMs = resolveGreetingTimeoutMs();
+			if (!awaitGreetingReply(timeoutMs)) {
+				greetingTimedOut = true;
+				logOnce(v0FallbackLogged, "Decompiler peer " + describeExecutable() +
+					" did not negotiate v1 IPC framing within " + timeoutMs +
+					" ms; using legacy v0 framing for this process (set -D" +
+					GREETING_TIMEOUT_PROPERTY + " to adjust the wait, or " +
+					"-Ddecompiler.framing=v0 to skip the greeting)");
+				return;
+			}
+		}
 		channelV1 = readGreetingReplyV1();
 		if (channelV1) {
+			logOnce(v1NegotiatedLogged, "Decompiler peer " + describeExecutable() +
+				" negotiated v1 IPC framing (ident=\"" + peerIdent + "\", capabs=0x" +
+				Integer.toHexString(peerCapabilities) + ")");
 			// Channel negotiated v1: tunnel the legacy command-loop bytes
 			// through v1 frames. Each flush of nativeOut emits one COMMAND
 			// frame; each refill of nativeIn unwraps one inbound frame. The
@@ -518,6 +608,58 @@ public class DecompileProcess {
 			frameOut = new FrameOutputStream(nativeOut, FRAME_TYPE_COMMAND);
 			nativeOut = frameOut;
 			nativeIn = new FrameInputStream(nativeIn);
+		}
+	}
+
+	/**
+	 * Wait, without consuming anything, until the peer has written at least
+	 * one byte of its greeting reply, the peer has exited, or the bound
+	 * elapses (#491). Polls {@link InputStream#available()}, which the
+	 * process pipe streams support on every platform Ghidra runs on.
+	 * @param timeoutMs the bound in milliseconds
+	 * @return true if the reply (or EOF) can now be read without blocking
+	 *         forever; false if the bound elapsed with nothing readable
+	 */
+	private boolean awaitGreetingReply(long timeoutMs) throws IOException {
+		if (nativeIn == null) {
+			return true; // readGreetingReplyV1 reports false, as before
+		}
+		long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+		for (;;) {
+			if (nativeIn.available() > 0) {
+				return true;
+			}
+			Process proc = nativeProcess;
+			if (proc != null && !proc.isAlive()) {
+				return true; // EOF: let the reply path fail as it does today
+			}
+			long remaining = deadline - System.nanoTime();
+			if (remaining <= 0) {
+				return false;
+			}
+			try {
+				Thread.sleep(Math.min(GREETING_POLL_INTERVAL_MS,
+					Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remaining))));
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return false; // give up the wait; the v0 path still works
+			}
+		}
+	}
+
+	private String describeExecutable() {
+		String exe = getExecutable();
+		return exe == null ? "(unknown executable)" : exe;
+	}
+
+	/** Log at INFO the first time per JVM a framing outcome occurs, debug after. */
+	private void logOnce(AtomicBoolean logged, String message) {
+		if (logged.compareAndSet(false, true)) {
+			Msg.info(this, message);
+		}
+		else {
+			Msg.debug(this, message);
 		}
 	}
 
@@ -579,6 +721,7 @@ public class DecompileProcess {
 		// Record the peer's capabilities (#34-10a) — the payload-v1
 		// go-live slices key off these bits.
 		peerCapabilities = parseGreetingPayloadCapabs(payload);
+		peerIdent = new String(payload, 6, payload.length - 6, StandardCharsets.UTF_8);
 		return true;
 	}
 
