@@ -11026,4 +11026,127 @@ int4 RuleExpandLoad::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \class RuleArrayStride
+/// \brief Recover a strength-reduced array index (GH-8724):  `acc = MULTIEQUAL(0, acc + STRIDE)  =>  cnt * STRIDE`
+///
+/// A compiler lowers `base[i]` in a counted loop into a loop-carried offset accumulator stepped by
+/// sizeof(base[i]) in lock-step with the unit-step counter `i`, so the multiply `i * sizeof` never
+/// appears and RulePtrArith has nothing to form a PTRADD from.  When the accumulator and counter
+/// are sibling MULTIEQUALs of the same block, both starting at 0 and lining up edge-for-edge, then
+/// `acc == cnt * STRIDE` exactly; every read of \b acc is redirected to a fresh `INT_MULT(cnt,STRIDE)`
+/// and the dead accumulator (phi and back-edge add) is removed.
+/// Gated by Architecture::recover_array_stride ("option arraystride on"); off by default.
+void RuleArrayStride::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_MULTIEQUAL);
+}
+
+/// \brief Does \b vn carry the constant 0, directly or through a single COPY
+///
+/// \param vn is the given Varnode
+/// \return \b true if the Varnode is a zero initializer
+bool RuleArrayStride::isZeroInit(Varnode *vn)
+
+{
+  if (vn->isConstant())
+    return (vn->getOffset() == 0);
+  if (vn->isWritten()) {
+    PcodeOp *def = vn->getDef();
+    if (def->code() == CPUI_COPY) {
+      Varnode *src = def->getIn(0);
+      if (src->isConstant())
+	return (src->getOffset() == 0);
+    }
+  }
+  return false;
+}
+
+/// \brief Is \b phi a 2-input loop-header `MULTIEQUAL(0, self + C)` with C a non-zero constant
+///
+/// \param phi is the MULTIEQUAL to test
+/// \param requireLoneAdd is \b true if the back-edge INT_ADD must feed only \b phi
+/// \param initIdx will hold the input slot carrying the zero initializer
+/// \param backIdx will hold the input slot carrying the back-edge add
+/// \param step will hold the constant step
+/// \param addOp will hold the back-edge INT_ADD
+/// \return \b true if the pattern matches
+bool RuleArrayStride::isInductionPhi(PcodeOp *phi,bool requireLoneAdd,int4 &initIdx,int4 &backIdx,uintb &step,PcodeOp *&addOp)
+
+{
+  if (phi->numInput() != 2) return false;
+  Varnode *out = phi->getOut();
+  initIdx = -1;
+  backIdx = -1;
+  for(int4 i=0;i<2;++i) {
+    Varnode *vn = phi->getIn(i);
+    if (isZeroInit(vn)) {
+      initIdx = i;
+    }
+    else if (vn->isWritten()) {
+      PcodeOp *def = vn->getDef();
+      if (def->code() != CPUI_INT_ADD) continue;
+      if (requireLoneAdd && vn->loneDescend() != phi) continue;
+      Varnode *cst;
+      if (def->getIn(0) == out)
+	cst = def->getIn(1);
+      else if (def->getIn(1) == out)
+	cst = def->getIn(0);
+      else
+	continue;
+      if (!cst->isConstant() || cst->getOffset() == 0) continue;
+      backIdx = i;
+      addOp = def;
+      step = cst->getOffset();
+    }
+  }
+  return (initIdx >= 0 && backIdx >= 0 && initIdx != backIdx);
+}
+
+int4 RuleArrayStride::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->recover_array_stride) return 0;
+
+  int4 initIdx,backIdx;
+  uintb stride;
+  PcodeOp *accAdd;
+  if (!isInductionPhi(op,true,initIdx,backIdx,stride,accAdd)) return 0;
+  if (stride == 1) return 0;		// A unit step is a counter itself
+
+  Varnode *accOut = op->getOut();
+  BlockBasic *bl = op->getParent();
+
+  // Find the sibling unit-step counter  cnt = MULTIEQUAL(0, cnt + 1)  in the same block
+  Varnode *cntOut = (Varnode *)0;
+  list<PcodeOp *>::iterator iter;
+  for(iter=bl->beginOp();iter!=bl->endOp();++iter) {
+    PcodeOp *cand = *iter;
+    if (cand->code() != CPUI_MULTIEQUAL) break;	// MULTIEQUALs are all first in the block
+    if (cand == op) continue;
+    int4 ci,cb;
+    uintb cstep;
+    PcodeOp *cadd;
+    if (!isInductionPhi(cand,false,ci,cb,cstep,cadd)) continue;
+    if (cstep != 1) continue;
+    if (ci != initIdx || cb != backIdx) continue;	// Must line up edge-for-edge
+    cntOut = cand->getOut();
+    break;
+  }
+  if (cntOut == (Varnode *)0) return 0;
+  if (cntOut->getSize() != accOut->getSize()) return 0;
+
+  PcodeOp *multOp = data.newOp(2,op->getAddr());
+  data.opSetOpcode(multOp,CPUI_INT_MULT);
+  Varnode *multOut = data.newUniqueOut(accOut->getSize(),multOp);
+  data.opSetInput(multOp,cntOut,0);
+  data.opSetInput(multOp,data.newConstant(accOut->getSize(),stride),1);
+  data.opInsertBegin(multOp,bl);
+
+  data.totalReplace(accOut,multOut);	// Every read of acc now reads cnt * stride
+  data.opDestroy(op);			// The dead accumulator phi
+  data.opDestroy(accAdd);		// ... and its now-dead back-edge add
+  return 1;
+}
+
 } // End namespace ghidra

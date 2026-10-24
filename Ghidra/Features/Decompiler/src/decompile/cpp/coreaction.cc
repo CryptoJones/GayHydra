@@ -5891,6 +5891,7 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleThreeWayCompare>("analysis").release());
 	actprop->addRule(make_unique<RuleXorCollapse>("analysis").release());
 	actprop->addRule(make_unique<RuleAddMultCollapse>("analysis").release());
+	actprop->addRule(make_unique<RuleArrayStride>("analysis").release());	// GH-8724, gated by option arraystride
 	actprop->addRule(make_unique<RuleCollapseConstants>("analysis").release());
 	actprop->addRule(make_unique<RuleTransformCpool>("analysis").release());
 	actprop->addRule(make_unique<RulePropagateCopy>("analysis").release());

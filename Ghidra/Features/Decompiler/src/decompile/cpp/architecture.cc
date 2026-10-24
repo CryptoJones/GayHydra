@@ -1426,6 +1426,7 @@ void Architecture::resetDefaultsInternal(void)
   infer_funcentry = false;	// Stock behavior: single-bit constants are never pointers (option inferfuncentry off)
   analyze_for_loops = true;
   present_lessequal = false;	// Stock behavior: keep the analysis-canonical compare form (option compareform canonical)
+  recover_array_stride = false;	// GH-8724: off by default (stock output); "option arraystride on" enables
   readonlypropagate = false;
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default

@@ -29,6 +29,7 @@ class Architecture;
 extern ElementId ELEM_ALIASBLOCK;		///< Marshaling element \<aliasblock>
 extern ElementId ELEM_ALLOWCONTEXTSET;		///< Marshaling element \<allowcontextset>
 extern ElementId ELEM_ANALYZEFORLOOPS;		///< Marshaling element \<analyzeforloops>
+extern ElementId ELEM_ARRAYSTRIDE;		///< Marshaling element \<arraystride>
 extern ElementId ELEM_COMMENTHEADER;		///< Marshaling element \<commentheader>
 extern ElementId ELEM_COMMENTINDENT;		///< Marshaling element \<commentindent>
 extern ElementId ELEM_COMMENTINSTRUCTION;	///< Marshaling element \<commentinstruction>
@@ -194,6 +195,12 @@ public:
 class OptionArrayNotation : public ArchOption {
 public:
   OptionArrayNotation(void) { name = "arraynotation"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionArrayStride : public ArchOption {
+public:
+  OptionArrayStride(void) { name = "arraystride"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

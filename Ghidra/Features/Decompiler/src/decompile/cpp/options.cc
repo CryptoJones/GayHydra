@@ -23,6 +23,7 @@ namespace ghidra {
 ElementId ELEM_ALIASBLOCK = ElementId("aliasblock",174);
 ElementId ELEM_ALLOWCONTEXTSET = ElementId("allowcontextset",175);
 ElementId ELEM_ANALYZEFORLOOPS = ElementId("analyzeforloops",176);
+ElementId ELEM_ARRAYSTRIDE = ElementId("arraystride",4004);	// GH-8724 (kuna option id range)
 ElementId ELEM_COMMENTHEADER = ElementId("commentheader",177);
 ElementId ELEM_COMMENTINDENT = ElementId("commentindent",178);
 ElementId ELEM_COMMENTINSTRUCTION = ElementId("commentinstruction",179);
@@ -116,6 +117,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionInPlaceOps>().release());
   registerOption(make_unique<OptionCompareForm>().release());
   registerOption(make_unique<OptionArrayNotation>().release());
+  registerOption(make_unique<OptionArrayStride>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -480,6 +482,22 @@ string OptionArrayNotation::apply(Architecture *glb,const string &p1,const strin
   string prop;
   prop = val ? "on" : "off";
   return "Array notation for pointer arithmetic turned "+prop;
+}
+
+/// \class OptionArrayStride
+/// \brief Toggle recovery of a strength-reduced array index (GH-8724)
+///
+/// Setting the first parameter to "on" enables RuleArrayStride, which rewrites a loop-header
+/// offset accumulator `acc = MULTIEQUAL(0, acc + STRIDE)` as `counter * STRIDE` when a sibling
+/// unit-step counter `cnt = MULTIEQUAL(0, cnt + 1)` exists in the same block, re-exposing the
+/// array index.  Off by default (upstream output).
+string OptionArrayStride::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  glb->recover_array_stride = onOrOff(p1);
+
+  string res = "Array stride recovery is " + p1;
+  return res;
 }
 
 /// \class OptionConventionPrinting
