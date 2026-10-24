@@ -1605,5 +1605,18 @@ public:
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
 
+class RuleArrayStride : public Rule {
+  static bool isZeroInit(Varnode *vn);
+  static bool isInductionPhi(PcodeOp *phi,bool requireLoneAdd,int4 &initIdx,int4 &backIdx,uintb &step,PcodeOp *&addOp);
+public:
+  RuleArrayStride(const string &g) : Rule( g, 0, "arraystride") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleArrayStride>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+
 } // End namespace ghidra
 #endif

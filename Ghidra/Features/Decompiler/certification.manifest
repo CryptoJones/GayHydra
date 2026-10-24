@@ -52,6 +52,7 @@ src/decompile/datatests/gh2786-unaryspacing.xml||GHIDRA||||END|
 src/decompile/datatests/gh558-compareform.xml||GHIDRA||||END|
 src/decompile/datatests/gh558-arraynotation.xml||GHIDRA||||END|
 src/decompile/datatests/gh6930-inferfuncentry.xml||GHIDRA||||END|
+src/decompile/datatests/gh8724-arraystride.xml||GHIDRA||||END|
 src/decompile/datatests/gp.xml||GHIDRA||||END|
 src/decompile/datatests/heapmemset.xml||GHIDRA||||END|
 src/decompile/datatests/heapstring.xml||GHIDRA||||END|

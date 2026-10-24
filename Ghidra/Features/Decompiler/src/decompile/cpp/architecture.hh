@@ -180,6 +180,7 @@ public:
   bool infer_funcentry;		///< True if a single-bit constant that is exactly a function entry is still inferred as a pointer (GH-6930)
   bool analyze_for_loops;	///< True if we should attempt conversion of \e whiledo loops to \e for loops
   bool present_lessequal;	///< True if canonicalized comparisons (V < c+1) are restored to their source form (V <= c) for presentation (GH-558)
+  bool recover_array_stride;	///< (GH-8724) True if a strided loop offset accumulator is rewritten as counter*stride
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable
