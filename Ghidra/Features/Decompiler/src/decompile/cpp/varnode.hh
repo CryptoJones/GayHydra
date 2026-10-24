@@ -129,7 +129,8 @@ public:
     spacebase_placeholder = 0x400, ///< This varnode is inserted artificially to track a register
 				///< value at a specific point in the code
     stop_uppropagation = 0x800,	///< Data-types do not propagate from an output into \b this
-    has_implied_field = 0x1000	///< The varnode is implied but also has a data-type that needs resolution
+    has_implied_field = 0x1000,	///< The varnode is implied but also has a data-type that needs resolution
+    stackalias_hold = 0x2000	///< (kuna GH-8500) Dead-code hold placed by the \e stackalias policy
   };
 private:
   mutable uint4 flags;		///< The collection of boolean attributes for this Varnode
@@ -264,6 +265,7 @@ public:
   bool isMark(void) const { return ((flags&Varnode::mark)!=0); } ///< Has \b this been visited by the current algorithm?
   bool isActiveHeritage(void) const { return ((addlflags&Varnode::activeheritage)!=0); } ///< Is \b this currently being traced by the Heritage algorithm?
   bool isStackStore(void) const { return ((addlflags&Varnode::stack_store)!=0); } ///< Was this originally produced by an explicit STORE
+  bool isStackAliasHold(void) const { return ((addlflags&Varnode::stackalias_hold)!=0); } ///< Is the dead-code hold owned by the \e stackalias policy
   bool isLockedInput(void) const { return ((addlflags&Varnode::locked_input)!=0); }	///< Is always an input, even if unused
   bool stopsUpPropagation(void) const { return ((addlflags&Varnode::stop_uppropagation)!=0); }	///< Is data-type propagation stopped
   bool hasImpliedField(void) const { return ((addlflags&Varnode::has_implied_field)!=0); }	///< Does \b this have an implied field
@@ -337,6 +339,8 @@ public:
   bool updateType(Datatype *ct);	///< Set the Datatype if not locked
   bool updateType(Datatype *ct,bool lock,bool over); ///< (Possibly) set the Datatype given various restrictions
   void setStackStore(void) { addlflags |= Varnode::stack_store; } ///< Mark as produced by explicit CPUI_STORE
+  void setStackAliasHold(void) { addlflags |= Varnode::stackalias_hold; } ///< Mark the dead-code hold as owned by the \e stackalias policy
+  void clearStackAliasHold(void) { addlflags &= ~Varnode::stackalias_hold; } ///< Release the \e stackalias policy's claim on the hold
   void setLockedInput(void) { addlflags |= Varnode::locked_input; }	///< Mark as existing input, even if unused
   void copySymbol(const Varnode *vn); ///< Copy symbol info from \b vn
   void copySymbolIfValid(const Varnode *vn);	///< Copy symbol info from \b vn if constant value matches

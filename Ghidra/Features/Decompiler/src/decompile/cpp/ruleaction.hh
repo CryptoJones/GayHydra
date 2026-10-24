@@ -447,6 +447,16 @@ public:
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
+class RuleBoolSignShift : public Rule {
+public:
+  RuleBoolSignShift(const string &g) : Rule(g, 0, "boolsignshift") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleBoolSignShift>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
 class RuleShiftCompare : public Rule {
 public:
   RuleShiftCompare(const string &g) : Rule(g, 0, "shiftcompare") {}	///< Constructor
@@ -625,6 +635,16 @@ public:
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
     return make_unique<RuleSborrow>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+class RuleBoolSignLess : public Rule {
+public:
+  RuleBoolSignLess(const string &g) : Rule(g, 0, "boolsignless") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleBoolSignLess>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -872,6 +892,19 @@ public:
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
     return make_unique<RuleConcatZext>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+class RuleAddCarryChain : public Rule {
+  static Varnode *stripCast(Varnode *vn);	///< Strip CAST/COPY wrappers from a Varnode
+  static bool sameValue(Varnode *a,Varnode *b);	///< Are the two Varnodes the same value, modulo CAST/COPY
+  static bool isCarryOf(Varnode *carryvn,Varnode *a,Varnode *b);	///< Is the Varnode the carry out of \b a + \b b
+public:
+  RuleAddCarryChain(const string &g) : Rule(g, 0, "addcarrychain") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleAddCarryChain>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
@@ -1600,6 +1633,19 @@ public:
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
     return make_unique<RuleExpandLoad>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+
+class RuleArrayStride : public Rule {
+  static bool isZeroInit(Varnode *vn);
+  static bool isInductionPhi(PcodeOp *phi,bool requireLoneAdd,int4 &initIdx,int4 &backIdx,uintb &step,PcodeOp *&addOp);
+public:
+  RuleArrayStride(const string &g) : Rule( g, 0, "arraystride") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleArrayStride>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

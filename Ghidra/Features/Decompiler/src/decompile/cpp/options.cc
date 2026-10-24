@@ -23,6 +23,7 @@ namespace ghidra {
 ElementId ELEM_ALIASBLOCK = ElementId("aliasblock",174);
 ElementId ELEM_ALLOWCONTEXTSET = ElementId("allowcontextset",175);
 ElementId ELEM_ANALYZEFORLOOPS = ElementId("analyzeforloops",176);
+ElementId ELEM_ARRAYSTRIDE = ElementId("arraystride",4004);	// GH-8724 (kuna option id range)
 ElementId ELEM_COMMENTHEADER = ElementId("commentheader",177);
 ElementId ELEM_COMMENTINDENT = ElementId("commentindent",178);
 ElementId ELEM_COMMENTINSTRUCTION = ElementId("commentinstruction",179);
@@ -40,6 +41,10 @@ ElementId ELEM_INDENTINCREMENT = ElementId("indentincrement",189);
 ElementId ELEM_INFERCONSTPTR = ElementId("inferconstptr",190);
 ElementId ELEM_INLINE = ElementId("inline",191);
 ElementId ELEM_INPLACEOPS = ElementId("inplaceops",192);
+ElementId ELEM_INPUTVARNODEADJUST = ElementId("inputvarnodeadjust",4005);	// GH-9218 (kuna option id range)
+ElementId ELEM_DYNAMICHASHMAX = ElementId("dynamichashmax",4006);
+ElementId ELEM_BOOLEANMASK = ElementId("booleanmask",4008);	// GH-1282 (kuna option id range)
+ElementId ELEM_MEMSETRECOVER = ElementId("memsetrecover",4010);	// GH-9230/GH-1537 (#477): id in kuna's 4000+ option range
 ElementId ELEM_INTEGERFORMAT = ElementId("integerformat",193);
 ElementId ELEM_JUMPLOAD = ElementId("jumpload",194);
 ElementId ELEM_MAXINSTRUCTION = ElementId("maxinstruction",195);
@@ -53,6 +58,7 @@ ElementId ELEM_PARAM1 = ElementId("param1",202);
 ElementId ELEM_PARAM2 = ElementId("param2",203);
 ElementId ELEM_PARAM3 = ElementId("param3",204);
 ElementId ELEM_PROTOEVAL = ElementId("protoeval",205);
+ElementId ELEM_RETURNPAIR = ElementId("returnpair",4011);	// GH-6990 (kuna option id range)
 ElementId ELEM_SETACTION = ElementId("setaction",206);
 ElementId ELEM_SETLANGUAGE = ElementId("setlanguage",207);
 ElementId ELEM_SPLITDATATYPE = ElementId("splitdatatype",270);
@@ -61,8 +67,14 @@ ElementId ELEM_TOGGLERULE = ElementId("togglerule",209);
 ElementId ELEM_WARNING = ElementId("warning",210);
 ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
+ElementId ELEM_CONDEXEPLACE = ElementId("condexeplace",4007);	// GH-9203 (kuna option id range)
+ElementId ELEM_FLAGCOMPARE = ElementId("flagcompare",4009);	// GH-1276/8777 (kuna option id range)
+ElementId ELEM_ADDCARRYCHAIN = ElementId("addcarrychain",4013);	// GH-8913 (kuna option id range)
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
+ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
+ElementId ELEM_INFERFUNCENTRY = ElementId("inferfuncentry",4003);	// GH-6930 (kuna 4000+ range)
+ElementId ELEM_STACKALIAS = ElementId("stackalias",4014);	// (kuna GH-8500) id in kuna's 4000+ range, GayHydra #477
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -104,6 +116,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionErrorTooManyInstructions>().release());
   registerOption(make_unique<OptionDefaultPrototype>().release());
   registerOption(make_unique<OptionInferConstPtr>().release());
+  registerOption(make_unique<OptionInferFuncEntry>().release());
   registerOption(make_unique<OptionForLoops>().release());
   registerOption(make_unique<OptionInline>().release());
   registerOption(make_unique<OptionNoReturn>().release());
@@ -112,6 +125,17 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionNullPrinting>().release());
   registerOption(make_unique<OptionInPlaceOps>().release());
   registerOption(make_unique<OptionCompareForm>().release());
+  registerOption(make_unique<OptionArrayNotation>().release());
+  registerOption(make_unique<OptionArrayStride>().release());
+  registerOption(make_unique<OptionInputVarnodeAdjust>().release());
+  registerOption(make_unique<OptionDynamicHashMax>().release());
+  registerOption(make_unique<OptionCondExePlace>().release());
+  registerOption(make_unique<OptionBooleanMask>().release());
+  registerOption(make_unique<OptionFlagCompare>().release());
+  registerOption(make_unique<OptionMemsetRecover>().release());
+  registerOption(make_unique<OptionReturnPair>().release());
+  registerOption(make_unique<OptionAddCarryChain>().release());
+  registerOption(make_unique<OptionStackAlias>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -300,6 +324,24 @@ string OptionInferConstPtr::apply(Architecture *glb,const string &p1,const strin
   return res;
 }
 
+/// \class OptionInferFuncEntry
+/// \brief Toggle whether a single-bit constant that is exactly a function entry is inferred as a pointer (GH-6930)
+///
+/// ActionConstantPtr rejects any constant with fewer than three bit transitions before it consults
+/// the symbol table, to keep integer flags and masks out of it.  A function placed at a power-of-two
+/// image base (0x100000) is such a value, so it printed as a bare literal when passed as a callback.
+/// Setting the first parameter to "on" lets that constant through when it resolves exactly to a known
+/// function entry and the function never reads the same value as a number.
+string OptionInferFuncEntry::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->infer_funcentry = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Function-entry constant-pointer inference turned "+prop;
+}
+
 /// \class OptionForLoops
 /// \brief Toggle whether the decompiler attempts to recover \e for-loop variables
 ///
@@ -439,6 +481,210 @@ string OptionCompareForm::apply(Architecture *glb,const string &p1,const string 
   else
     throw ParseError("Must specify compareform as 'canonical' or 'original'");
   return "Comparison presentation set to " + p1 + " form";
+}
+
+/// \class OptionArrayNotation
+/// \brief Toggle array notation for standalone pointer arithmetic (GH-558)
+///
+/// A PTRADD under a LOAD/STORE always prints as `base[index]`.  With this option \b on, a
+/// \e standalone PTRADD (the address value itself) prints as `&base[index]` instead of the
+/// stock `base + index`.
+string OptionArrayNotation::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  if (glb->print->getName() != "c-language")
+    return "Can only set array notation for C language";
+  PrintC *lng = (PrintC *)glb->print;
+  lng->setArrayNotation(val);
+  string prop;
+  prop = val ? "on" : "off";
+  return "Array notation for pointer arithmetic turned "+prop;
+}
+
+/// \class OptionArrayStride
+/// \brief Toggle recovery of a strength-reduced array index (GH-8724)
+///
+/// Setting the first parameter to "on" enables RuleArrayStride, which rewrites a loop-header
+/// offset accumulator `acc = MULTIEQUAL(0, acc + STRIDE)` as `counter * STRIDE` when a sibling
+/// unit-step counter `cnt = MULTIEQUAL(0, cnt + 1)` exists in the same block, re-exposing the
+/// array index.  Off by default (upstream output).
+string OptionArrayStride::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  glb->recover_array_stride = onOrOff(p1);
+
+  string res = "Array stride recovery is " + p1;
+  return res;
+}
+
+/// \class OptionInputVarnodeAdjust
+/// \brief Toggle symmetric widening of an unjustified input parameter container (GH-9218)
+///
+/// Setting the first parameter to "on" makes ActionUnjustifiedParams also absorb an input Varnode
+/// that overlaps the justified container and extends ABOVE its end (e.g. two overlapping mc68k stack
+/// parameters read through a link/unlk frame).  Stock code only widens over inputs that extend below
+/// the container start, so the remaining overlap makes Funcdata::adjustInputVarnodes throw
+/// "Cannot properly adjust input varnodes" and the whole function is abandoned.  Off by default.
+string OptionInputVarnodeAdjust::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  glb->input_varnode_adjust = onOrOff(p1);
+
+  string res = "Input varnode adjustment widening is " + p1;
+  return res;
+}
+
+/// \class OptionDynamicHashMax
+/// \brief Toggle the wide same-address collision budget in DynamicHash::uniqueHash (kuna GH-8467)
+///
+/// Upstream hard-codes the budget at 8.  Dense, fully unrolled code (AArch64/Go NEON byte-search loops)
+/// carries more than 8 structurally identical Varnodes per address whose hashes collide under every
+/// method, so Funcdata::buildDynamicSymbol throws "Unable to find unique hash for varnode" and the whole
+/// function aborts.  "on" raises the budget to 16; "off" (the default) keeps the upstream budget.
+string OptionDynamicHashMax::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->dynamic_hash_maxdup_high = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "DynamicHash wide collision budget turned "+prop;
+}
+
+/// \class OptionCondExePlace
+/// \brief Toggle whether ActionConditionalConst may place a constant COPY in a loop block (GH-9203)
+///
+/// When a conditionally constant value reaches a MULTIEQUAL on a disconnected incoming edge,
+/// ActionConditionalConst::handlePhiNodes materializes the constant as a COPY at the bottom of that
+/// edge's predecessor block.  If the predecessor is the bottom of a loop, the COPY lands inside the
+/// loop body and is re-executed every iteration (a spurious "x = 0;" inside a do/while).  Setting the
+/// first parameter to "on" makes handlePhiNodes decline the placement when the predecessor block has a
+/// looping in-edge, leaving the MULTIEQUAL input intact.  Off by default (stock behaviour).
+string OptionCondExePlace::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->condexe_block_placement = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Conditional-constant loop-block placement guard turned "+prop;
+}
+
+/// \class OptionBooleanMask
+/// \brief Toggle whether the `(b << k) s>> k` boolean sign-extension-mask idiom is folded (GH-1282)
+///
+/// Processors that model a flag as the high bit of a register (the 8051 carry in PSW bit 7)
+/// lower a boolean test `b` to `(b << k) s>> k`, smearing the bit into a 0/-1 mask.  The stock
+/// RuleLeftRight only cancels the shift pair when \b k is a multiple of 8, so the shift noise
+/// survives into the output as `((x < 0x80) << 7) >> 7`.  Setting the first parameter to "on"
+/// enables RuleBoolSignShift, which rewrites the pair as `0 - b` (INT_2COMP) whenever the
+/// pre-shift value's non-zero mask fits below the shifted-out bits; the surrounding compare rules
+/// then clean the result to a plain boolean.  Off by default (stock behaviour).
+string OptionBooleanMask::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->fold_boolean_mask = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Boolean sign-mask folding turned "+prop;
+}
+
+/// \class OptionFlagCompare
+/// \brief Toggle folding of flag-modelled comparison idioms into clean comparisons (GH-1276 / GH-8777)
+///
+/// Architectures that model condition flags as explicit bits (8051 CY/borrow, PIC24 N/OV) lower a
+/// boolean condition \b b into a sign test by shifting it into the sign bit: `(b << k) s< 0`.  Setting
+/// the first parameter to "on" enables RuleBoolSignLess, which rewrites that form to `b != 0` when the
+/// operand's non-zero mask is exactly the single bit landing in the sign position.  Off by default
+/// (stock output).  The GH-8777 half of kuna's option (the `N == V` SBORROW idiom) is already clean on
+/// this fork because the PIC24 spec carries upstream PR #8778 and stock RuleSborrow folds it.
+string OptionFlagCompare::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->fold_flag_compare = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Flag-modelled comparison folding turned "+prop;
+}
+
+/// \class OptionMemsetRecover
+/// \brief Toggle whether a run of constant COPYs filling a character array with one repeated byte
+/// (an inlined or SIMD-unrolled \b memset / \b bzero) is collapsed into a single \b builtin_memset call
+///
+/// Ported from kuna's \e memsetrecover option for upstream GH-9230 / GH-1537 (#477).  Default \b off
+/// keeps the stock per-element output; \b on enables RuleMemsetCopy.
+string OptionMemsetRecover::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->memset_recover = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Constant-fill (memset) recovery turned "+prop;
+}
+
+/// \class OptionReturnPair
+/// \brief Select whether a multi-register return value is joined (\b pair) or truncated to its first register (\b single) (GH-6990)
+///
+/// On an ABI whose output list joins a register pair (SPARC o0:o1 and relatives), a void or
+/// single-register function can passively keep its second output register alive: a prologue value
+/// rides the save/restore window to the RETURN untouched, its trial passes ancestor realism and
+/// ActionReturnRecovery::buildReturnOutput joins both registers into a spurious double-width return
+/// (`return CONCAT44(param_2,param_1)`).  Setting the first parameter to "single" makes
+/// buildReturnOutput keep only the first (least-significant) return register instead of joining.
+/// This is a destructive per-function opt-in: it cannot tell a passively-live pair from a genuine
+/// two-register return.  Default is "pair" (stock behaviour).
+string OptionReturnPair::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool single;
+  if (p1 == "single")
+    single = true;
+  else if (p1 == "pair")
+    single = false;
+  else
+    throw ParseError("Must specify pair or single");
+  glb->return_single = single;
+  return "Return-register pairing set to " + p1 + " form";
+}
+
+/// \class OptionAddCarryChain
+/// \brief Toggle recovery of an 8-bit carry-chained add pair into a single wide add (GH-8913)
+///
+/// 8-bit processors (6502 and friends) build a 16-bit sum with two instructions: ADC on the low
+/// byte, then ADC #0 on the high byte to propagate the page-cross carry.  Setting the first
+/// parameter to "on" enables RuleAddCarryChain, which rewrites the reassembling PIECE of such a
+/// pair into one wide INT_ADD so the result reads as `base + zext(index)` instead of
+/// `CONCAT11(hi + CARRY1(lo,x), lo + x)`.  Off by default (stock output).
+string OptionAddCarryChain::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->add_carry_chain = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Carry-chain wide-add recovery turned "+prop;
+}
+
+/// \class OptionStackAlias
+/// \brief Toggle whether aliased physical stack stores are held live across dead-code removal
+///
+/// (kuna GH-8500, GayHydra #477) With the option \b on, ActionDeadCode keeps a stack Varnode created
+/// from an explicit STORE alive while a pointer into the stack could still observe it, so an
+/// aliasing LOAD that resolves a main-loop iteration later still finds its reaching definition
+/// (`int *p = &x; *p = x; return *p;`).  Default \b off: the policy is conservative and can retain
+/// legitimately dead frame writes, so it is a per-function tool rather than a global default.
+string OptionStackAlias::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->stack_alias_deadstore = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Stack-alias dead-store preservation turned "+prop;
 }
 
 /// \class OptionConventionPrinting

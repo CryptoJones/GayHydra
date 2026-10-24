@@ -1423,11 +1423,22 @@ void Architecture::resetDefaultsInternal(void)
   flowoptions = FlowInfo::error_toomanyinstructions;
   max_instructions = 100000;
   infer_pointers = true;
+  infer_funcentry = false;	// Stock behavior: single-bit constants are never pointers (option inferfuncentry off)
   analyze_for_loops = true;
   present_lessequal = false;	// Stock behavior: keep the analysis-canonical compare form (option compareform canonical)
+  recover_array_stride = false;	// GH-8724: off by default (stock output); "option arraystride on" enables
+  input_varnode_adjust = false;	// GH-9218: off by default (stock behaviour); "option inputvarnodeadjust on" enables
+  dynamic_hash_maxdup_high = false;	// Stock budget of 8 (option dynamichashmax, kuna GH-8467)
+  condexe_block_placement = false;	// GH-9203: off by default (stock behaviour); "option condexeplace on" enables
+  fold_boolean_mask = false;	// GH-1282: off by default (stock output); "option booleanmask on" enables
+  fold_flag_compare = false;	// GH-1276: off by default (stock output); "option flagcompare on" enables
+  memset_recover = false;	// Off = stock output; "option memsetrecover on" enables RuleMemsetCopy (GH-9230/GH-1537, #477)
+  return_single = false;	// GH-6990: "pair" by default (stock behaviour); "option returnpair single" truncates
   readonlypropagate = false;
+  add_carry_chain = false;	// GH-8913: off by default (stock output); "option addcarrychain on" enables
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default
+  stack_alias_deadstore = false;	// (kuna GH-8500) default off: stock output byte-identical
   alias_block_level = 2;	// Block structs and arrays by default, but not more primitive data-types
   split_datatype_config = OptionSplitDatatypes::option_struct | OptionSplitDatatypes::option_array
       | OptionSplitDatatypes::option_pointer;

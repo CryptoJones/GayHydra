@@ -1,0 +1,59 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    GH-9230: "Expand builtin function recovery to memset / bzero"
+    https://github.com/NationalSecurityAgency/ghidra/issues/9230
+
+    Source (foo1, clang-18 -O3):
+        void foo1() { unsigned char foo[100]; bzero(foo,100); printf(foo); }
+    Compiled: inlined bzero = 6x movaps xmm0(=0),N(rsp) + 1x movl 0,0x60(rsp).
+
+    Stock output: the 100-byte zero fill is emitted as 100 individual char-array
+    element stores acStack_68[0xNN] = NUL instead of a single builtin_memset.
+    The existing constseq recovery (RuleStringCopy/StringSequence, cleanup group
+    constsequence) collapses constant CHARACTER copies into builtin_strncpy, but
+    StringSequence rejects a root COPY of zero (a string cannot start with its
+    terminator) and formByteArray treats the first zero byte as a null
+    terminator, so an all-zero fill never forms a sequence.  The fork's RuleMemset
+    (Rec 39) only sees STORE-through-pointer fills, not COPYs into a stack array.
+
+    Fix (GayHydra #477, ported from kuna's memsetrecover / kuna_memsetsequence):
+    RuleMemsetCopy builds the StringSequence in fill mode (a repeated single byte
+    over a contiguous region, minimum 16-byte footprint) and emits
+    builtin_memset(dst,val,len).  Gated by option memsetrecover (fork default
+    off = stock output; kuna ships it on, so kuna's script toggled it off for its
+    second pass and this script toggles it on instead).
+
+    Pass 1 (default, off): assertion 1 proves the bug reproduces (element stores).
+    Pass 2 (option memsetrecover on): assertion 2 asserts the fix emits a single
+    builtin_memset call covering the whole 100-byte region.
+
+    Note: parse line extern void printf(char *) is load-bearing; it types the rsp
+    buffer as char acStack_68[104], yielding the issue's indexed-store form. The
+    printf stub at 0x1000f0 is the target of the relative call in foo1's bytes.
+    kuna names the buffer v1; the fork prints acStack_68, so the regexes use \w+,
+    and the fork prints a space after each call argument comma (kuna prints none).
+-->
+<bytechunk space="ram" offset="0x1000f0">
+c3
+</bytechunk>
+<bytechunk space="ram" offset="0x100200">
+4883ec680f57c00f294424500f294424400f294424300f294424200f294424100f290424c7442460000000004889e731c0e8bafeffff4883c468c30f1f440000
+</bytechunk>
+<symbol space="ram" offset="0x1000f0" name="printf"/>
+<symbol space="ram" offset="0x100200" name="foo1"/>
+</binaryimage>
+<script>
+  <com>parse line extern void printf(char *);</com>
+  <com>lo fu foo1</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option memsetrecover on</com>
+  <com>lo fu foo1</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH9230 #1: default (memsetrecover off) keeps the element-store form (stock behavior)" min="1" max="1">\w+\[0x50\] = '\\0';</stringmatch>
+<stringmatch name="GH9230 #2: memsetrecover on collapses the zero-fill into builtin_memset" min="1" max="1">builtin_memset\(\w+, 0, 100\);</stringmatch>
+</decompilertest>

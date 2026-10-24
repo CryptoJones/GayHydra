@@ -1054,6 +1054,94 @@ bool ActionConstantPtr::checkCopy(PcodeOp *op,Funcdata &data)
   return data.getArch()->infer_pointers;
 }
 
+/// \brief Does the given op-code order its constant operand against something? (GH-6930)
+///
+/// An ordering comparison pins a bound, and the strict/non-strict rewrite moves the literal
+/// by one on the way here, so a bound counts for its own value and for one below it.
+/// \param opc is the given op-code
+/// \return \b true if the op-code is an ordering comparison
+bool ActionConstantPtr::ordersItsConstant(OpCode opc)
+
+{
+  switch(opc) {
+  case CPUI_INT_LESS:
+  case CPUI_INT_LESSEQUAL:
+  case CPUI_INT_SLESS:
+  case CPUI_INT_SLESSEQUAL:
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+/// \brief Does the given op-code read its constant operand as a number? (GH-6930)
+///
+/// An ordering comparison, a multiply, a divide, a remainder or a shift is arithmetic on the
+/// value; C has none of them between a function pointer and anything else.
+/// \param opc is the given op-code
+/// \return \b true if the op-code treats its constant as an integer
+bool ActionConstantPtr::readsAsInteger(OpCode opc)
+
+{
+  if (ordersItsConstant(opc)) return true;
+  switch(opc) {
+  case CPUI_INT_MULT:
+  case CPUI_INT_DIV:
+  case CPUI_INT_SDIV:
+  case CPUI_INT_REM:
+  case CPUI_INT_SREM:
+  case CPUI_INT_LEFT:
+  case CPUI_INT_RIGHT:
+  case CPUI_INT_SRIGHT:
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+/// \brief Is the given single-bit constant exactly the entry of a known function? (GH-6930)
+///
+/// The \e bit_transitions test in isPointer() is the only guard that keeps integer flags, masks
+/// and round sizes out of the symbol table, so it is suspended only when the constant is
+/// used as a code address: the option \b inferfuncentry is on, the reading op does not treat
+/// its operand as a number, no other op in the function reads the same value as a number,
+/// and the constant resolves exactly to the entry address of a function in the global scope.
+/// \param spc is the address space being pointed to
+/// \param vn is the constant Varnode
+/// \param op is the lone descendant of the Varnode
+/// \param data is the function being analyzed
+/// \return \b true if the constant should be allowed through as a pointer
+bool ActionConstantPtr::isFunctionEntry(AddrSpace *spc,Varnode *vn,PcodeOp *op,Funcdata &data)
+
+{
+  Architecture *glb = data.getArch();
+  if (!glb->infer_funcentry) return false;
+  if (readsAsInteger(op->code())) return false;
+  uintb val = vn->getOffset();
+  AddrSpace *cspc = glb->getConstantSpace();
+  VarnodeLocSet::const_iterator iter = data.beginLoc(cspc);
+  VarnodeLocSet::const_iterator enditer = data.endLoc(cspc);
+  while(iter != enditer) {
+    Varnode *cvn = *iter++;
+    if (!cvn->isConstant()) break;
+    PcodeOp *cop = cvn->loneDescend();
+    if (cop == (PcodeOp *)0) continue;
+    OpCode copc = cop->code();
+    if (!readsAsInteger(copc)) continue;
+    uintb coff = cvn->getOffset();
+    if (coff == val) return false;		// The same value is read as a number elsewhere
+    if (ordersItsConstant(copc) && coff - 1 == val) return false;
+  }
+  uintb fullEncoding;
+  Address rampoint = glb->resolveConstant(spc,val,vn->getSize(),op->getAddr(),fullEncoding);
+  if (rampoint.isInvalid()) return false;
+  Funcdata *fd = data.getScopeLocal()->getParent()->queryFunction(rampoint);
+  if (fd == (Funcdata *)0) return false;
+  return (fd->getAddress() == rampoint);
+}
+
 /// \brief Determine if given Varnode might be a pointer constant.
 ///
 /// If it is a pointer, return the symbol it points to, or NULL otherwise. If it is determined
@@ -1141,8 +1229,10 @@ SymbolEntry *ActionConstantPtr::isPointer(AddrSpace *spc,Varnode *vn,PcodeOp *op
     if (spc->getPointerUpperBound() < vn->getOffset())
       return (SymbolEntry *)0;
     // Check if the constant looks like a single bit or mask
-    if (bit_transitions(vn->getOffset(),vn->getSize()) < 3)
-      return (SymbolEntry *)0;
+    if (bit_transitions(vn->getOffset(),vn->getSize()) < 3) {
+      if (!isFunctionEntry(spc,vn,op,data))	// GH-6930: unless it is exactly a known function entry
+	return (SymbolEntry *)0;
+    }
     rampoint = glb->resolveConstant(spc,vn->getOffset(),vn->getSize(),op->getAddr(),fullEncoding);
   }
 
@@ -1312,6 +1402,8 @@ int4 ActionVarnodeProps::apply(Funcdata &data)
 	    }
 	  }
 	}
+	if (glb->stack_alias_deadstore && vn->isStackAliasHold())
+	  continue;		// (kuna GH-8500) ActionDeadCode owns this hold and re-evaluates it every pass
 	vn->clearAutoLiveHold();
 	count += 1;
       }
@@ -1874,6 +1966,8 @@ void ActionReturnRecovery::buildReturnOutput(ParamActive *active,PcodeOp *retop,
     if (curtrial.getSlot() >= retop->numInput()) break;
     newparam.push_back(retop->getIn(curtrial.getSlot()));
   }
+  if (data.getArch()->return_single && newparam.size() > 2)	// GH-6990: refuse to join a multi-register return
+    newparam.resize(2);						//   keep only the first (least-significant) register
   if (newparam.size()<=2)	// Easy zero or one return varnode case
     data.opSetAllInput(retop,newparam);
   else if (newparam.size()==3) { // Two piece concatenation case
@@ -4067,6 +4161,191 @@ bool ActionDeadCode::lastChanceLoad(Funcdata &data,vector<Varnode *> &worklist)
   return res;
 }
 
+/// \brief Mask of the bytes of a frame range [start,start+size) that a write/read at [at,at+width) touches
+///
+/// Part of the (kuna GH-8500) \e stackalias policy.  Bit i of the result is set when byte start+i
+/// lies inside the second range.
+/// \param start is the offset of the held store
+/// \param size is the size of the held store (at most 16)
+/// \param at is the offset of the other access
+/// \param width is the size of the other access
+/// \return the byte mask
+uint4 ActionDeadCode::stackAliasByteMask(uintb start,int4 size,uintb at,int4 width)
+
+{
+  uint4 mask = 0;
+  for(int4 byte=0;byte<size;++byte) {
+    if ((start + byte - at) < (uintb)width)
+      mask |= 1 << byte;
+  }
+  return mask;
+}
+
+/// \brief Strip from \b wanted the bytes of a held stack store that \b op overwrites, or report that \b op observes them
+///
+/// Part of the (kuna GH-8500) \e stackalias policy (kuna_stackalias.rs \e unobserved_bytes).  Any op that
+/// could read the frame through memory (CALL, CALLIND, CALLOTHER, LOAD, STORE, RETURN) is an observer.
+/// A direct read of a frame Varnode overlapping the still-wanted bytes is an observer.  A later explicit
+/// STORE to the frame removes the bytes it covers.  kuna consults callee memory summaries for CALL; the
+/// fork has none, so a CALL is always a barrier (kuna's documented fallback when summaries are missing).
+/// \param op is the op to examine
+/// \param start is the offset of the held store
+/// \param size is its size
+/// \param wanted is the mask of bytes still potentially observable (updated)
+/// \param spc is the frame space
+/// \return \b false if \b op observes the held bytes
+bool ActionDeadCode::stackAliasUnobserved(PcodeOp *op,uintb start,int4 size,uint4 &wanted,AddrSpace *spc)
+
+{
+  switch(op->code()) {
+    case CPUI_CALL:
+    case CPUI_CALLIND:
+    case CPUI_CALLOTHER:
+    case CPUI_RETURN:
+    case CPUI_LOAD:
+    case CPUI_STORE:
+      return false;
+    default:
+      break;
+  }
+  for(int4 slot=0;slot<op->numInput();++slot) {
+    Varnode *vn = op->getIn(slot);
+    if (vn->getSpace() != spc) continue;
+    uintb at;
+    int4 width;
+    if (slot == 0 && op->code() == CPUI_SUBPIECE) {
+      Varnode *cvn = op->getIn(1);
+      Varnode *outvn = op->getOut();
+      if (!cvn->isConstant() || outvn == (Varnode *)0) return false;
+      uintb relative = cvn->getOffset();
+      if (vn->getAddr().isBigEndian()) {
+	uintb total = vn->getSize() - outvn->getSize();
+	if (relative > total) return false;
+	relative = total - relative;
+      }
+      at = vn->getOffset() + relative;
+      width = outvn->getSize();
+    }
+    else {
+      at = vn->getOffset();
+      width = vn->getSize();
+    }
+    if ((stackAliasByteMask(start,size,at,width) & wanted) != 0)
+      return false;
+  }
+  Varnode *outvn = op->getOut();
+  if (outvn != (Varnode *)0 && outvn->isStackStore() && outvn->getSpace() == spc)
+    wanted &= ~stackAliasByteMask(start,size,outvn->getOffset(),outvn->getSize());
+  return true;
+}
+
+/// \brief Is every potentially aliased byte of a held stack store overwritten on every path before anything can observe it?
+///
+/// Part of the (kuna GH-8500) \e stackalias policy (kuna_stackalias.rs \e shadowed).  A bounded forward
+/// search follows every successor with the bytes that still belong to the old write; states are keyed by
+/// block, position, and remaining mask.  Reaching an observer, a block with no successors, or the budget
+/// means the store is NOT shadowed and must stay held.
+/// \param def is the op defining the held store
+/// \param start is the offset of the held store
+/// \param size is its size
+/// \param wanted is the mask of potentially aliased bytes
+/// \param spc is the frame space
+/// \return \b true if the held bytes are provably overwritten before any observer
+bool ActionDeadCode::stackAliasShadowed(PcodeOp *def,uintb start,int4 size,uint4 wanted,AddrSpace *spc)
+
+{
+  BlockBasic *parent = def->getParent();
+  if (parent == (BlockBasic *)0) return false;
+  typedef pair<pair<int4,PcodeOp *>,uint4> State;
+  vector<pair<pair<BlockBasic *,list<PcodeOp *>::iterator>,uint4> > work;
+  set<State> visited;
+  int4 budget = 4096;
+  list<PcodeOp *>::iterator startIter = def->getBasicIter();
+  ++startIter;
+  work.push_back(make_pair(make_pair(parent,startIter),wanted));
+  while(!work.empty()) {
+    BlockBasic *block = work.back().first.first;
+    list<PcodeOp *>::iterator iter = work.back().first.second;
+    uint4 remain = work.back().second;
+    work.pop_back();
+    PcodeOp *posOp = (iter == block->endOp()) ? (PcodeOp *)0 : *iter;
+    if (!visited.insert(State(make_pair(block->getIndex(),posOp),remain)).second)
+      continue;
+    if (budget == 0) return false;
+    budget -= 1;
+    while(iter != block->endOp()) {
+      if (budget == 0) return false;
+      budget -= 1;
+      PcodeOp *op = *iter;
+      ++iter;
+      if (op->isMarker()) continue;
+      if (!stackAliasUnobserved(op,start,size,remain,spc))
+	return false;
+      if (remain == 0) break;
+    }
+    if (remain == 0) continue;
+    if (block->sizeOut() == 0) return false;
+    for(int4 i=0;i<block->sizeOut();++i) {
+      BlockBasic *target = (BlockBasic *)block->getOut(i);
+      work.push_back(make_pair(make_pair(target,target->beginOp()),remain));
+    }
+  }
+  return true;
+}
+
+/// \brief (kuna GH-8500) \e stackalias policy: hold potentially aliased explicit stack stores live across dead-code removal
+///
+/// Port of kuna_stackalias.rs \e prepare / \e holds_store (GayHydra #477), active only under
+/// `option stackalias on`.  A Varnode created from an explicit STORE into the local frame space
+/// (Varnode::stack_store) whose bytes a stack pointer could still observe is given an \e autolive_hold
+/// before the consume walk, so that an aliasing LOAD which resolves one main-loop iteration later still
+/// finds its reaching definition (upstream GH-8500: `int *p = &x; *p = x; return *p;` otherwise returns an
+/// uninitialized xStack local).  Proved un-aliased stores (Varnode::nolocalalias) and stores whose aliased
+/// bytes are fully overwritten before any observer are excluded.  Holds are recomputed on every pass; a
+/// store that stops qualifying loses its hold again.  Without the option this is a no-op and stock
+/// behaviour is byte-identical.  kuna additionally consults its stackviews / parameter-view machinery and
+/// callee memory summaries; the fork has none of those, so the policy is the self-contained
+/// AliasChecker-based slice (CALL always observes).
+/// \param data is the function being analyzed
+void ActionDeadCode::stackAliasPrepare(Funcdata &data)
+
+{
+  if (!data.getArch()->stack_alias_deadstore) return;
+  ScopeLocal *scope = data.getScopeLocal();
+  if (scope == (ScopeLocal *)0) return;
+  AddrSpace *spc = scope->getSpaceId();
+  AliasChecker checker;
+  checker.gather(&data,spc,true);
+  VarnodeLocSet::const_iterator viter = data.beginLoc(spc);
+  VarnodeLocSet::const_iterator endviter = data.endLoc(spc);
+  while(viter != endviter) {
+    Varnode *vn = *viter++;
+    bool hold = false;
+    if (vn->isStackStore() && !vn->hasNoLocalAlias()) {
+      int4 size = vn->getSize();
+      if (size <= 0 || size > 16 || !spc->stackGrowsNegative())
+	hold = true;
+      else {
+	uint4 wanted = 0;
+	for(int4 byte=0;byte<size;++byte) {
+	  if (checker.hasLocalAlias(spc,vn->getOffset() + byte))
+	    wanted |= 1 << byte;
+	}
+	if (wanted != 0)
+	  hold = !(vn->isWritten() && stackAliasShadowed(vn->getDef(),vn->getOffset(),size,wanted,spc));
+      }
+    }
+    if (hold) {
+      vn->setStackAliasHold();
+      vn->setAutoLiveHold();
+    }
+    else if (vn->isStackAliasHold()) {
+      vn->clearStackAliasHold();
+      vn->clearAutoLiveHold();
+    }
+  }
+}
+
 int4 ActionDeadCode::apply(Funcdata &data)
 
 {
@@ -4079,6 +4358,8 @@ int4 ActionDeadCode::apply(Funcdata &data)
   VarnodeLocSet::const_iterator viter,endviter;
   const AddrSpaceManager *manage = data.getArch();
   AddrSpace *spc;
+
+  stackAliasPrepare(data);	// (kuna GH-8500) option stackalias: hold aliased explicit stack stores
 
 				// Clear consume flags
   for(viter=data.beginLoc();viter!=data.endLoc();++viter) {
@@ -4471,6 +4752,12 @@ void ActionConditionalConst::handlePhiNodes(Varnode *varVn,Varnode *constVn,vect
     PcodeOp *op = phiNodeEdges[i].op;
     int4 slot = phiNodeEdges[i].slot;
     BlockBasic *bl = (BlockBasic *)op->getParent()->getIn(slot);
+    if (data.getArch()->condexe_block_placement && bl->hasLoopIn()) {
+      // (GH-9203) The predecessor is the bottom of a loop: a COPY placed there would execute every
+      // iteration.  Decline the placement and leave the MULTIEQUAL input as is.
+      results[i] = 0;
+      continue;
+    }
     Varnode *outVn = placeCopy(op, bl, constVn, data);
     data.opSetInput(op,outVn,slot);
     count += 1;
@@ -4957,6 +5244,22 @@ int4 ActionUnjustifiedParams::apply(Funcdata &data)
 	  uintb endpoint = vdata.offset + vdata.size;
 	  vdata.offset = vn->getOffset();
 	  vdata.size = endpoint - vdata.offset;
+	}
+      }
+      if (data.getArch()->input_varnode_adjust) {
+	// (GH-9218) Symmetric scan: an input overlapping the container and extending ABOVE its end
+	// also widens the container, so adjustInputVarnodes only ever sees fully contained inputs
+	iter2 = begiter;
+	while(iter2 != enditer) {
+	  vn = *iter2++;
+	  if (vn->getSpace() != vdata.space) continue;
+	  uintb endpoint = vdata.offset + vdata.size;	// First offset past the container
+	  if (vn->getOffset() >= endpoint) break;	// Inputs are address ordered, nothing further can overlap
+	  uintb offset = vn->getOffset() + vn->getSize()-1; // Last offset in varnode
+	  if ((offset >= endpoint)&&(vn->getOffset() >= vdata.offset)) { // Overlap that extends above the container
+	    overlaps = true;
+	    vdata.size = offset + 1 - vdata.offset;
+	  }
 	}
       }
       if (!overlaps) break;	// Found no additional overlaps, go with current justified container
@@ -5784,6 +6087,8 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleDoubleArithShift>("analysis").release());
 	actprop->addRule(make_unique<RuleConcatShift>("analysis").release());
 	actprop->addRule(make_unique<RuleLeftRight>("analysis").release());
+	actprop->addRule(make_unique<RuleBoolSignShift>("analysis").release());	// GH-1282, gated by fold_boolean_mask
+	actprop->addRule(make_unique<RuleBoolSignLess>("analysis").release());	// GH-1276 (option flagcompare)
 	actprop->addRule(make_unique<RuleShiftCompare>("analysis").release());
 	actprop->addRule(make_unique<RuleShift2Mult>("analysis").release());
 	actprop->addRule(make_unique<RuleShiftPiece>("analysis").release());
@@ -5801,6 +6106,7 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleThreeWayCompare>("analysis").release());
 	actprop->addRule(make_unique<RuleXorCollapse>("analysis").release());
 	actprop->addRule(make_unique<RuleAddMultCollapse>("analysis").release());
+	actprop->addRule(make_unique<RuleArrayStride>("analysis").release());	// GH-8724, gated by option arraystride
 	actprop->addRule(make_unique<RuleCollapseConstants>("analysis").release());
 	actprop->addRule(make_unique<RuleTransformCpool>("analysis").release());
 	actprop->addRule(make_unique<RulePropagateCopy>("analysis").release());
@@ -5817,6 +6123,7 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleSubCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleConcatCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleConcatZext>("analysis").release());
+	actprop->addRule(make_unique<RuleAddCarryChain>("analysis").release());	// GH-8913 (option addcarrychain)
 	actprop->addRule(make_unique<RuleZextCommute>("analysis").release());
 	actprop->addRule(make_unique<RuleZextShiftZext>("analysis").release());
 	actprop->addRule(make_unique<RuleShiftAnd>("analysis").release());
@@ -5949,6 +6256,7 @@ void ActionDatabase::universalAction(Architecture *conf)
     actcleanup->addRule(make_unique<RuleStringCopy>("constsequence").release());
     actcleanup->addRule(make_unique<RuleStringStore>("constsequence").release());
     actcleanup->addRule(make_unique<RuleMemset>("constsequence").release());	// Rec 39 (#39-4a): after RuleStringStore so strings keep their rendering
+    actcleanup->addRule(make_unique<RuleMemsetCopy>("constsequence").release());	// GH-9230/GH-1537 (#477): COPY-side fill, after RuleStringCopy; gated by memsetrecover
     actcleanup->addRule(make_unique<RulePopcount>("constsequence").release());	// Rec 39 (#39-4b): fold SWAR popcount idiom into POPCOUNT
     actcleanup->addRule(make_unique<RuleBitFieldStore>("bitfields").release());
     actcleanup->addRule(make_unique<RuleBitFieldOut>("bitfields").release());

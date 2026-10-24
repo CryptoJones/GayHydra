@@ -1,0 +1,58 @@
+<decompilertest>
+<binaryimage arch="RISCV:LE:64:default">
+<!--
+    GH-9203: a late conditional-branch simplification inserts a MULTIEQUAL input
+    p-code op into the wrong (loop) block, manifesting as a malformed do/while
+    whose body holds a spurious constant assignment.
+    https://github.com/NationalSecurityAgency/ghidra/issues/9203
+    Ported from kuna's gh9203-condexe-loopcopy stage testcase (GayHydra #477).
+
+    ActionConditionalConst (coreaction.cc) propagates a value known-constant along
+    a conditional out-edge.  When the value reaches a MULTIEQUAL on a disconnected
+    incoming edge, handlePhiNodes() materializes the constant as a fresh COPY op
+    placed at the BOTTOM of that edge's predecessor block and rewires the MULTIEQUAL
+    input to it.  Here the predecessor is the bottom of a LOOP, so the (tmp = 0) COPY
+    lands inside the loop body and is re-executed every iteration:
+
+      iVar1 = 7L;
+      do {
+        iVar1 = iVar1 - 1L;
+        xVar2 = 0L;            out-of-place: belongs outside the loop
+      } while (iVar1 != 0L);
+
+    "option condexeplace on|off" (default off = stock behaviour) makes
+    handlePhiNodes() decline the placement when the MULTIEQUAL edge's predecessor
+    block has a looping in-edge (bl->hasLoopIn()) and leave the MULTIEQUAL input
+    intact, so the constant is assigned outside the loop body.
+
+    Pass 1 (default pipeline, option off) reproduces the bug: the do/while body
+    carries the out-of-place (xVar2 = 0L;).
+    Pass 2 (after option condexeplace on) shows the loop body no longer carries
+    a bare "= 0L;" assignment.
+
+    Assert #1 keys on "= 0L;" with min=max=1: it must appear exactly once across
+    both passes (present in pass 1, gone in pass 2), proving both the bug and the
+    fix at once.  Assert #2 keys on "do {" with min=max=2: the loop structure
+    itself is preserved in both passes (we did not destroy control flow).
+
+    kuna's original script also pins "option returndup off"; the fork has no
+    returndup transform (the shared epilogue is never split), so that line is dropped.
+-->
+<bytechunk space="ram" offset="0x0">
+397106fc4af022f826f42e8411492400ef0030602a8909ed414585471d471d8f7dff4274a274e2704a85027921618280130910fafdb7
+</bytechunk>
+<symbol space="ram" offset="0x0" name="FUN_0"/>
+</binaryimage>
+<script>
+  <com>option condexeplace off</com>
+  <com>lo fu FUN_0</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option condexeplace on</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH9203 #1: const COPY in loop body (= 0L; present in default, gone after condexeplace on)" min="1" max="1">= 0L;</stringmatch>
+<stringmatch name="GH9203 #2: loop structure preserved in both passes" min="2" max="2">do \{</stringmatch>
+</decompilertest>

@@ -2059,6 +2059,54 @@ int4 RuleLeftRight::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \class RuleBoolSignShift
+/// \brief Fold the boolean sign-extension-mask idiom:  `(b << c) s>> c  =>  0 - b`   (GH-1282)
+///
+/// Processors that model a flag as the high bit of a register (the 8051 carry in PSW bit 7)
+/// lower a boolean test \b b to `(b << c) s>> c`, smearing the single bit into a 0/-1 mask.
+/// RuleLeftRight only cancels the pair when \b c is a multiple of 8; this rule handles the
+/// remaining case, provided the non-zero mask of \b b fits below the shifted-out bits, i.e. the
+/// shift loses no information.  The result `INT_2COMP(b)` is the same 0/-1 mask, which the
+/// surrounding compare rules then clean to a plain boolean test.
+///
+/// Gated by Architecture::fold_boolean_mask (option \b booleanmask), off by default.
+void RuleBoolSignShift::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_SRIGHT);
+}
+
+int4 RuleBoolSignShift::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->fold_boolean_mask) return 0;
+  if (!op->getIn(1)->isConstant()) return 0;
+  uintb sa = op->getIn(1)->getOffset();
+  if (sa == 0) return 0;
+
+  Varnode *shiftin = op->getIn(0);
+  if (!shiftin->isWritten()) return 0;
+  PcodeOp *leftshift = shiftin->getDef();
+  if (leftshift->code() != CPUI_INT_LEFT) return 0;
+  if (!leftshift->getIn(1)->isConstant()) return 0;
+  if (leftshift->getIn(1)->getOffset() != sa) return 0;	// Left shift must be by same amount
+
+  if ((sa & 7) == 0) return 0;	// RuleLeftRight already handles the byte-aligned case
+
+  Varnode *boolvn = leftshift->getIn(0);
+  int4 width = boolvn->getSize();
+  if ((uintb)width * 8 <= sa) return 0;
+  uintb tophalf = (((uintb)1) << ((uintb)width * 8 - sa)) - 1;	// Bits that survive the left shift
+  if ((boolvn->getNZMask() & ~tophalf) != 0) return 0;	// The value must occupy only the low bits
+
+  if (shiftin->loneDescend() != op) return 0;
+
+  data.opSetOpcode(op,CPUI_INT_2COMP);
+  data.opSetInput(op,boolvn,0);
+  data.opRemoveInput(op,1);	// Remove the right-shift constant
+  return 1;
+}
+
 /// \class RuleShiftCompare
 /// \brief Transform shifts in comparisons:  `V >> c == d  =>  V == (d << c)`
 ///
@@ -3427,6 +3475,47 @@ int4 RuleSborrow::applyOp(PcodeOp *op,Funcdata &data)
     return 1;
   }
   return 0;
+}
+
+/// \class RuleBoolSignLess
+/// \brief Fold a boolean shifted into the sign bit and tested for sign:  `(b << k) s< 0  =>  b != 0`
+///
+/// (GH-1276, ported from kuna's RuleBoolSignLess; gated by "option flagcompare on".)  Architectures
+/// that model condition flags as the high bit of a byte (the 8051 SUBB borrow / CY flag) lower a
+/// boolean condition into a sign test by shifting it into bit 7 and signed-comparing against zero.
+/// The rule fires only when the shifted operand's non-zero mask is exactly the single bit that the
+/// shift lands in the sign position, so the rewrite is an identity.
+void RuleBoolSignLess::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_SLESS);
+}
+
+int4 RuleBoolSignLess::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->fold_flag_compare) return 0;
+  Varnode *zero = op->getIn(1);
+  if (!zero->isConstant() || zero->getOffset() != 0) return 0;
+  Varnode *shiftout = op->getIn(0);
+  if (!shiftout->isWritten()) return 0;
+  PcodeOp *leftshift = shiftout->getDef();
+  if (leftshift->code() != CPUI_INT_LEFT) return 0;
+  Varnode *savn = leftshift->getIn(1);
+  if (!savn->isConstant()) return 0;
+  uintb sa = savn->getOffset();
+  if (sa == 0) return 0;
+  Varnode *boolvn = leftshift->getIn(0);
+  int4 width = boolvn->getSize();
+  if ((uintb)width * 8 <= sa) return 0;
+  int4 signbitpos = width * 8 - 1 - (int4)sa;
+  uintb relevant = ((uintb)1) << signbitpos;
+  if (boolvn->getNZMask() != relevant) return 0;	// Exactly the one bit that reaches the sign position
+
+  data.opSetOpcode(op,CPUI_INT_NOTEQUAL);
+  data.opSetInput(op,boolvn,0);
+  data.opSetInput(op,data.newConstant(width,0),1);
+  return 1;
 }
 
 /// \class RuleScarry
@@ -4839,6 +4928,151 @@ int4 RuleConcatZext::applyOp(PcodeOp *op,Funcdata &data)
   data.opRemoveInput(op,1);
   data.opSetInput(op,newvn,0);
   data.opSetOpcode(op,CPUI_INT_ZEXT);
+  return 1;
+}
+
+/// \class RuleAddCarryChain
+/// \brief Fuse an 8-bit carry-chained add pair into one wide add:  `concat(H + carry(a,b), a + b)  =>  concat(H,b) + zext(a)`
+///
+/// (GH-8913, ported from kuna's RuleAddCarryChain; gated by "option addcarrychain on".)  8-bit
+/// processors build a 16-bit sum with the two-instruction ADC idiom: ADC on the low byte, then
+/// ADC #0 on the high byte to propagate the page-cross carry.  The reassembling PIECE of such a
+/// pair is rewritten into a single INT_ADD so the value reads as `base + zext(index)` instead of
+/// `CONCAT11(H + CARRY1(a,b), a + b)`.  The carry is matched either as a raw INT_CARRY or in the
+/// form RuleCarryElim leaves behind when \b b is a constant, `(-b) & mask <= a`.
+void RuleAddCarryChain::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_PIECE);
+}
+
+/// \param vn is the given Varnode
+/// \return the Varnode underneath any CAST or COPY wrappers
+Varnode *RuleAddCarryChain::stripCast(Varnode *vn)
+
+{
+  while(vn->isWritten()) {
+    PcodeOp *def = vn->getDef();
+    OpCode opc = def->code();
+    if (opc != CPUI_CAST && opc != CPUI_COPY) break;
+    vn = def->getIn(0);
+  }
+  return vn;
+}
+
+/// \param a is the first Varnode
+/// \param b is the second Varnode
+/// \return \b true if both name the same value or the same constant
+bool RuleAddCarryChain::sameValue(Varnode *a,Varnode *b)
+
+{
+  a = stripCast(a);
+  b = stripCast(b);
+  if (a == b) return true;
+  if (a->isConstant() && b->isConstant())
+    return (a->getOffset() == b->getOffset() && a->getSize() == b->getSize());
+  return false;
+}
+
+/// The carry is accepted as a raw INT_CARRY of (\b a, \b b) in either order, or as the
+/// RuleCarryElim form `(-c) & mask <= V` where \b c is the constant operand of the low add
+/// and \b V is its other operand (or its RuleLessEqual successor `((-c) & mask) - 1 < V`).
+/// \param carryvn is the candidate carry Varnode
+/// \param a is the first operand of the low add
+/// \param b is the second operand of the low add
+/// \return \b true if \b carryvn is the carry out of \b a + \b b
+bool RuleAddCarryChain::isCarryOf(Varnode *carryvn,Varnode *a,Varnode *b)
+
+{
+  if (!carryvn->isWritten()) return false;
+  PcodeOp *cop = carryvn->getDef();
+  OpCode opc = cop->code();
+  if (opc == CPUI_INT_CARRY) {
+    Varnode *c0 = cop->getIn(0);
+    Varnode *c1 = cop->getIn(1);
+    if (sameValue(c0,a) && sameValue(c1,b)) return true;
+    if (sameValue(c0,b) && sameValue(c1,a)) return true;
+    return false;
+  }
+  if (opc == CPUI_INT_LESSEQUAL || opc == CPUI_INT_LESS) {
+    Varnode *cst = cop->getIn(0);
+    Varnode *val = cop->getIn(1);
+    if (!cst->isConstant()) return false;
+    Varnode *cadd,*vadd;
+    if (a->isConstant() && !b->isConstant()) {
+      cadd = a;
+      vadd = b;
+    }
+    else if (b->isConstant() && !a->isConstant()) {
+      cadd = b;
+      vadd = a;
+    }
+    else
+      return false;
+    if (!sameValue(val,vadd)) return false;
+    uintb negc = (-cadd->getOffset()) & calc_mask(val->getSize());
+    if (opc == CPUI_INT_LESS) {		// RuleLessEqual has already turned  (-c) <= V  into  (-c)-1 < V
+      if (negc == 0) return false;
+      negc -= 1;
+    }
+    return (cst->getOffset() == negc);
+  }
+  return false;
+}
+
+int4 RuleAddCarryChain::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->add_carry_chain) return 0;
+  Varnode *hivn = op->getIn(0);
+  Varnode *lovn = op->getIn(1);
+  if (!hivn->isWritten() || !lovn->isWritten()) return 0;
+  if (hivn->getSize() != 1 || lovn->getSize() != 1) return 0;
+
+  PcodeOp *loadd = lovn->getDef();
+  if (loadd->code() != CPUI_INT_ADD) return 0;
+  Varnode *a = loadd->getIn(0);
+  Varnode *b = loadd->getIn(1);
+
+  PcodeOp *hiadd = hivn->getDef();
+  if (hiadd->code() != CPUI_INT_ADD) return 0;
+  Varnode *hi0 = hiadd->getIn(0);
+  Varnode *hi1 = hiadd->getIn(1);
+  Varnode *hipart;		// One input of the high add is the carry, the other the base high byte
+  if (isCarryOf(hi1,a,b))
+    hipart = hi0;
+  else if (isCarryOf(hi0,a,b))
+    hipart = hi1;
+  else
+    return 0;
+  if (hipart->getSize() != 1) return 0;
+  if (hipart->isFree() && !hipart->isConstant()) return 0;	// Constants are free but fine as inputs
+  if (a->isFree() && !a->isConstant()) return 0;
+  if (b->isFree() && !b->isConstant()) return 0;
+
+  Varnode *indexvn = a;		// The operand that gets zero-extended
+  Varnode *baselo = b;		// The operand that stays the low byte of the wide base
+  int4 outsize = op->getOut()->getSize();
+
+  // Build  concat(hipart,baselo)  -- the wide base
+  PcodeOp *baseop = data.newOp(2,op->getAddr());
+  data.opSetOpcode(baseop,CPUI_PIECE);
+  Varnode *basevn = data.newUniqueOut(hipart->getSize()+baselo->getSize(),baseop);
+  data.opSetInput(baseop,hipart,0);
+  data.opSetInput(baseop,baselo,1);
+  data.opInsertBefore(baseop,op);
+
+  // Build  zext(index)  to the output width
+  PcodeOp *zextop = data.newOp(1,op->getAddr());
+  data.opSetOpcode(zextop,CPUI_INT_ZEXT);
+  Varnode *zextvn = data.newUniqueOut(outsize,zextop);
+  data.opSetInput(zextop,indexvn,0);
+  data.opInsertBefore(zextop,op);
+
+  // Rewrite the PIECE itself into the wide add:  out = base + zext(index)
+  data.opSetOpcode(op,CPUI_INT_ADD);
+  data.opSetInput(op,basevn,0);
+  data.opSetInput(op,zextvn,1);
   return 1;
 }
 
@@ -11023,6 +11257,129 @@ int4 RuleExpandLoad::applyOp(PcodeOp *op,Funcdata &data)
     data.opSetOutput(subOp, outVn);		// Original LOAD output is now defined by SUBPIECE
     data.opInsertAfter(subOp, op);
   }
+  return 1;
+}
+
+/// \class RuleArrayStride
+/// \brief Recover a strength-reduced array index (GH-8724):  `acc = MULTIEQUAL(0, acc + STRIDE)  =>  cnt * STRIDE`
+///
+/// A compiler lowers `base[i]` in a counted loop into a loop-carried offset accumulator stepped by
+/// sizeof(base[i]) in lock-step with the unit-step counter `i`, so the multiply `i * sizeof` never
+/// appears and RulePtrArith has nothing to form a PTRADD from.  When the accumulator and counter
+/// are sibling MULTIEQUALs of the same block, both starting at 0 and lining up edge-for-edge, then
+/// `acc == cnt * STRIDE` exactly; every read of \b acc is redirected to a fresh `INT_MULT(cnt,STRIDE)`
+/// and the dead accumulator (phi and back-edge add) is removed.
+/// Gated by Architecture::recover_array_stride ("option arraystride on"); off by default.
+void RuleArrayStride::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_MULTIEQUAL);
+}
+
+/// \brief Does \b vn carry the constant 0, directly or through a single COPY
+///
+/// \param vn is the given Varnode
+/// \return \b true if the Varnode is a zero initializer
+bool RuleArrayStride::isZeroInit(Varnode *vn)
+
+{
+  if (vn->isConstant())
+    return (vn->getOffset() == 0);
+  if (vn->isWritten()) {
+    PcodeOp *def = vn->getDef();
+    if (def->code() == CPUI_COPY) {
+      Varnode *src = def->getIn(0);
+      if (src->isConstant())
+	return (src->getOffset() == 0);
+    }
+  }
+  return false;
+}
+
+/// \brief Is \b phi a 2-input loop-header `MULTIEQUAL(0, self + C)` with C a non-zero constant
+///
+/// \param phi is the MULTIEQUAL to test
+/// \param requireLoneAdd is \b true if the back-edge INT_ADD must feed only \b phi
+/// \param initIdx will hold the input slot carrying the zero initializer
+/// \param backIdx will hold the input slot carrying the back-edge add
+/// \param step will hold the constant step
+/// \param addOp will hold the back-edge INT_ADD
+/// \return \b true if the pattern matches
+bool RuleArrayStride::isInductionPhi(PcodeOp *phi,bool requireLoneAdd,int4 &initIdx,int4 &backIdx,uintb &step,PcodeOp *&addOp)
+
+{
+  if (phi->numInput() != 2) return false;
+  Varnode *out = phi->getOut();
+  initIdx = -1;
+  backIdx = -1;
+  for(int4 i=0;i<2;++i) {
+    Varnode *vn = phi->getIn(i);
+    if (isZeroInit(vn)) {
+      initIdx = i;
+    }
+    else if (vn->isWritten()) {
+      PcodeOp *def = vn->getDef();
+      if (def->code() != CPUI_INT_ADD) continue;
+      if (requireLoneAdd && vn->loneDescend() != phi) continue;
+      Varnode *cst;
+      if (def->getIn(0) == out)
+	cst = def->getIn(1);
+      else if (def->getIn(1) == out)
+	cst = def->getIn(0);
+      else
+	continue;
+      if (!cst->isConstant() || cst->getOffset() == 0) continue;
+      backIdx = i;
+      addOp = def;
+      step = cst->getOffset();
+    }
+  }
+  return (initIdx >= 0 && backIdx >= 0 && initIdx != backIdx);
+}
+
+int4 RuleArrayStride::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->recover_array_stride) return 0;
+
+  int4 initIdx,backIdx;
+  uintb stride;
+  PcodeOp *accAdd;
+  if (!isInductionPhi(op,true,initIdx,backIdx,stride,accAdd)) return 0;
+  if (stride == 1) return 0;		// A unit step is a counter itself
+
+  Varnode *accOut = op->getOut();
+  BlockBasic *bl = op->getParent();
+
+  // Find the sibling unit-step counter  cnt = MULTIEQUAL(0, cnt + 1)  in the same block
+  Varnode *cntOut = (Varnode *)0;
+  list<PcodeOp *>::iterator iter;
+  for(iter=bl->beginOp();iter!=bl->endOp();++iter) {
+    PcodeOp *cand = *iter;
+    if (cand->code() != CPUI_MULTIEQUAL) break;	// MULTIEQUALs are all first in the block
+    if (cand == op) continue;
+    int4 ci,cb;
+    uintb cstep;
+    PcodeOp *cadd;
+    if (!isInductionPhi(cand,false,ci,cb,cstep,cadd)) continue;
+    if (cstep != 1) continue;
+    if (ci != initIdx || cb != backIdx) continue;	// Must line up edge-for-edge
+    cntOut = cand->getOut();
+    break;
+  }
+  if (cntOut == (Varnode *)0) return 0;
+  if (cntOut->getSize() != accOut->getSize()) return 0;
+
+  PcodeOp *multOp = data.newOp(2,op->getAddr());
+  data.opSetOpcode(multOp,CPUI_INT_MULT);
+  Varnode *multOut = data.newUniqueOut(accOut->getSize(),multOp);
+  data.opSetInput(multOp,cntOut,0);
+  data.opSetInput(multOp,data.newConstant(accOut->getSize(),stride),1);
+  data.opInsertBegin(multOp,bl);
+
+  data.totalReplace(accOut,multOut);	// Every read of acc now reads cnt * stride
+  data.opDestroy(op);			// The dead accumulator phi
+  data.opDestroy(accAdd);		// ... and its now-dead back-edge add
   return 1;
 }
 

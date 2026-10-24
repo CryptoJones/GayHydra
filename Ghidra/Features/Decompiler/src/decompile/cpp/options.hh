@@ -29,6 +29,7 @@ class Architecture;
 extern ElementId ELEM_ALIASBLOCK;		///< Marshaling element \<aliasblock>
 extern ElementId ELEM_ALLOWCONTEXTSET;		///< Marshaling element \<allowcontextset>
 extern ElementId ELEM_ANALYZEFORLOOPS;		///< Marshaling element \<analyzeforloops>
+extern ElementId ELEM_ARRAYSTRIDE;		///< Marshaling element \<arraystride>
 extern ElementId ELEM_COMMENTHEADER;		///< Marshaling element \<commentheader>
 extern ElementId ELEM_COMMENTINDENT;		///< Marshaling element \<commentindent>
 extern ElementId ELEM_COMMENTINSTRUCTION;	///< Marshaling element \<commentinstruction>
@@ -46,6 +47,10 @@ extern ElementId ELEM_INDENTINCREMENT;		///< Marshaling element \<indentincremen
 extern ElementId ELEM_INFERCONSTPTR;		///< Marshaling element \<inferconstptr>
 extern ElementId ELEM_INLINE;			///< Marshaling element \<inline>
 extern ElementId ELEM_INPLACEOPS;		///< Marshaling element \<inplaceops>
+extern ElementId ELEM_INPUTVARNODEADJUST;	///< Marshaling element \<inputvarnodeadjust>
+extern ElementId ELEM_DYNAMICHASHMAX;		///< Marshaling element \<dynamichashmax>
+extern ElementId ELEM_BOOLEANMASK;		///< Marshaling element \<booleanmask>
+extern ElementId ELEM_MEMSETRECOVER;		///< Marshaling element \<memsetrecover> (GH-9230/GH-1537, #477)
 extern ElementId ELEM_INTEGERFORMAT;		///< Marshaling element \<integerformat>
 extern ElementId ELEM_JUMPLOAD;			///< Marshaling element \<jumpload>
 extern ElementId ELEM_MAXINSTRUCTION;		///< Marshaling element \<maxinstruction>
@@ -59,6 +64,7 @@ extern ElementId ELEM_PARAM1;			///< Marshaling element \<param1>
 extern ElementId ELEM_PARAM2;			///< Marshaling element \<param2>
 extern ElementId ELEM_PARAM3;			///< Marshaling element \<param3>
 extern ElementId ELEM_PROTOEVAL;		///< Marshaling element \<protoeval>
+extern ElementId ELEM_RETURNPAIR;		///< Marshaling element \<returnpair>
 extern ElementId ELEM_SETACTION;		///< Marshaling element \<setaction>
 extern ElementId ELEM_SETLANGUAGE;		///< Marshaling element \<setlanguage>
 extern ElementId ELEM_SPLITDATATYPE;		///< Marshaling element \<splitdatatype>
@@ -68,6 +74,12 @@ extern ElementId ELEM_WARNING;			///< Marshaling element \<warning>
 extern ElementId ELEM_JUMPTABLEMAX;		///< Marshaling element \<jumptablemax>
 extern ElementId ELEM_NANIGNORE;		///< Marshaling element \<nanignore>
 extern ElementId ELEM_COMPAREFORM;		///< Marshaling element \<compareform>
+extern ElementId ELEM_ARRAYNOTATION;		///< Marshaling element \<arraynotation>
+extern ElementId ELEM_INFERFUNCENTRY;		///< Marshaling element \<inferfuncentry>
+extern ElementId ELEM_CONDEXEPLACE;		///< Marshaling element \<condexeplace>
+extern ElementId ELEM_FLAGCOMPARE;		///< Marshaling element \<flagcompare>
+extern ElementId ELEM_ADDCARRYCHAIN;		///< Marshaling element \<addcarrychain>
+extern ElementId ELEM_STACKALIAS;		///< Marshaling element \<stackalias>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -141,6 +153,12 @@ public:
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 
+class OptionInferFuncEntry : public ArchOption {
+public:
+  OptionInferFuncEntry(void) { name = "inferfuncentry"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
 class OptionForLoops : public ArchOption {
 public:
   OptionForLoops(void) { name = "analyzeforloops"; }	///< Constructor
@@ -180,6 +198,72 @@ public:
 class OptionCompareForm : public ArchOption {
 public:
   OptionCompareForm(void) { name = "compareform"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionArrayNotation : public ArchOption {
+public:
+  OptionArrayNotation(void) { name = "arraynotation"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionArrayStride : public ArchOption {
+public:
+  OptionArrayStride(void) { name = "arraystride"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionInputVarnodeAdjust : public ArchOption {
+public:
+  OptionInputVarnodeAdjust(void) { name = "inputvarnodeadjust"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionDynamicHashMax : public ArchOption {
+public:
+  OptionDynamicHashMax(void) { name = "dynamichashmax"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionCondExePlace : public ArchOption {
+public:
+  OptionCondExePlace(void) { name = "condexeplace"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionBooleanMask : public ArchOption {
+public:
+  OptionBooleanMask(void) { name = "booleanmask"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionFlagCompare : public ArchOption {
+public:
+  OptionFlagCompare(void) { name = "flagcompare"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionMemsetRecover : public ArchOption {
+public:
+  OptionMemsetRecover(void) { name = "memsetrecover"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionReturnPair : public ArchOption {
+public:
+  OptionReturnPair(void) { name = "returnpair"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionAddCarryChain : public ArchOption {
+public:
+  OptionAddCarryChain(void) { name = "addcarrychain"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionStackAlias : public ArchOption {
+public:
+  OptionStackAlias(void) { name = "stackalias"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

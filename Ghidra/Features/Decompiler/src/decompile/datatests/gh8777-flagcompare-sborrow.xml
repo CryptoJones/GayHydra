@@ -1,0 +1,61 @@
+<decompilertest>
+<binaryimage arch="PIC-24F:LE:24:default:default">
+<!--
+    GH-8777: "PIC24: signed branch lifts to a raw SBORROW flag idiom."
+    https://github.com/NationalSecurityAgency/ghidra/issues/8777
+    Ported from kuna's gh8777-flagcompare-sborrow stage testcase (GayHydra #477).
+
+    In the upstream spec at the time of the issue, "bra ge" was modelled as the
+    expanded condition-flag identity
+        cond = (SRL_N && SRL_OV) || (!SRL_N && !SRL_OV)        (XNOR(N,V))
+    with N = sign of (V - K) and V = INT_SBORROW(V, K).  Upstream has no rule for
+    that XNOR tree, so the raw flag algebra survives into the loop condition:
+
+      for (iVar1 = 0; bVar2 = 0 <= iVar1 + -7,
+          (bVar2 || !SBORROW2(iVar1,7)) && (!bVar2 || SBORROW2(iVar1,7));
+          iVar1 = iVar1 + 1) { ... }
+
+    kuna folds that tree with RuleSborrowGe under "option flagcompare on".
+
+    This fork does NOT reproduce the bug: its PIC24 spec already carries the
+    slaspec half of upstream PR #8778 (GayHydra #275), which models "bra ge" as
+    the plain  SRL_N == SRL_OV , and the stock RuleSborrow folds that equality
+    into the clean signed compare.  Both passes therefore print
+
+      for (iVar1 = 0; iVar1 < 7; iVar1 = iVar1 + 1) {
+
+    RuleSborrowGe is not ported (it would be unreachable here); the option
+    "flagcompare" still exists (GH-1276 half) and is toggled as in kuna's script
+    so the testcase keeps kuna's shape.  Assert #1: the clean loop header appears
+    in both passes.  Assert #2: no SBORROW2 token in either pass.  The stock
+    repro of the kuna "bug reproduces" half is recorded above for reference.
+
+    Disassembly:
+      0x000000 mov.w #0x0,W2
+      0x000002 mov.w #0x7,W3
+      0x000004 sub.w W2,W3,W12
+      0x000006 bra   ge,0x10
+      0x000008 mov.w #0x0,W0
+      0x00000a mov.w W0,0x80
+      0x00000c add.w W2,#0x1,W2
+      0x00000e bra   0x4
+      0x000010 return
+-->
+<bytechunk space="rom" offset="0x0">
+02002000730020000306510004003d00000020000004880061014100faff370000000600
+</bytechunk>
+<symbol space="rom" offset="0x0" name="FUN_0"/>
+</binaryimage>
+<script>
+  <com>option flagcompare off</com>
+  <com>lo fu FUN_0</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option flagcompare on</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH8777 #1: clean signed loop compare in both passes (fork already folds the N==V idiom)" min="2" max="2">for \((\w+) = 0; \1 &lt; 7; \1 = \1 \+ 1\)</stringmatch>
+<stringmatch name="GH8777 #2: no raw SBORROW2 flag idiom in either pass" min="0" max="0">SBORROW2</stringmatch>
+</decompilertest>

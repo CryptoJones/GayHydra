@@ -177,10 +177,21 @@ public:
   bool aggressive_ext_trim;	///< Aggressively trim inputs that look like they are sign extended
   bool readonlypropagate;	///< true if readonly values should be treated as constants
   bool infer_pointers;		///< True if we should infer pointers from constants that are likely addresses
+  bool infer_funcentry;		///< True if a single-bit constant that is exactly a function entry is still inferred as a pointer (GH-6930)
   bool analyze_for_loops;	///< True if we should attempt conversion of \e whiledo loops to \e for loops
   bool present_lessequal;	///< True if canonicalized comparisons (V < c+1) are restored to their source form (V <= c) for presentation (GH-558)
+  bool recover_array_stride;	///< (GH-8724) True if a strided loop offset accumulator is rewritten as counter*stride
+  bool input_varnode_adjust;	///< (GH-9218) True if an unjustified input container also absorbs inputs overlapping its high end
+  bool dynamic_hash_maxdup_high;	///< True if DynamicHash::uniqueHash uses the wide (16) same-address collision budget (kuna GH-8467)
+  bool condexe_block_placement;	///< (GH-9203) True if ActionConditionalConst declines to place a constant COPY in a loop block
+  bool fold_boolean_mask;	///< (GH-1282) True if RuleBoolSignShift folds the `(b << k) s>> k` boolean sign-mask idiom
+  bool fold_flag_compare;	///< (GH-1276) True if a boolean shifted into the sign bit and tested s< 0 folds to b != 0
+  bool memset_recover;		///< True if constant-fill COPY runs are collapsed into \b builtin_memset (GH-9230/GH-1537, #477)
+  bool return_single;		///< (GH-6990) True if ActionReturnRecovery keeps only the first register of a multi-register return
+  bool add_carry_chain;		///< (GH-8913) True if RuleAddCarryChain fuses 8-bit carry-chained add pairs into one wide add
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
+  bool stack_alias_deadstore;	///< (kuna GH-8500) True if aliased stack stores are held live across dead-code removal
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable
   int4 funcptr_align;		///< How many bits of alignment a function ptr has
   uint4 flowoptions;            ///< options passed to flow following engine
