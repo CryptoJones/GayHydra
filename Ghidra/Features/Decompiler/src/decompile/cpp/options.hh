@@ -49,6 +49,7 @@ extern ElementId ELEM_INLINE;			///< Marshaling element \<inline>
 extern ElementId ELEM_INPLACEOPS;		///< Marshaling element \<inplaceops>
 extern ElementId ELEM_INPUTVARNODEADJUST;	///< Marshaling element \<inputvarnodeadjust>
 extern ElementId ELEM_DYNAMICHASHMAX;		///< Marshaling element \<dynamichashmax>
+extern ElementId ELEM_BOOLEANMASK;		///< Marshaling element \<booleanmask>
 extern ElementId ELEM_INTEGERFORMAT;		///< Marshaling element \<integerformat>
 extern ElementId ELEM_JUMPLOAD;			///< Marshaling element \<jumpload>
 extern ElementId ELEM_MAXINSTRUCTION;		///< Marshaling element \<maxinstruction>
@@ -222,6 +223,12 @@ public:
 class OptionCondExePlace : public ArchOption {
 public:
   OptionCondExePlace(void) { name = "condexeplace"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionBooleanMask : public ArchOption {
+public:
+  OptionBooleanMask(void) { name = "booleanmask"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

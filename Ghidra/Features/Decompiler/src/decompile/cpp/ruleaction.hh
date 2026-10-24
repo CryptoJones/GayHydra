@@ -447,6 +447,16 @@ public:
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
+class RuleBoolSignShift : public Rule {
+public:
+  RuleBoolSignShift(const string &g) : Rule(g, 0, "boolsignshift") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleBoolSignShift>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
 class RuleShiftCompare : public Rule {
 public:
   RuleShiftCompare(const string &g) : Rule(g, 0, "shiftcompare") {}	///< Constructor

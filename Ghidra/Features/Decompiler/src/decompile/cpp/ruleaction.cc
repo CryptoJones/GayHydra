@@ -2059,6 +2059,54 @@ int4 RuleLeftRight::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \class RuleBoolSignShift
+/// \brief Fold the boolean sign-extension-mask idiom:  `(b << c) s>> c  =>  0 - b`   (GH-1282)
+///
+/// Processors that model a flag as the high bit of a register (the 8051 carry in PSW bit 7)
+/// lower a boolean test \b b to `(b << c) s>> c`, smearing the single bit into a 0/-1 mask.
+/// RuleLeftRight only cancels the pair when \b c is a multiple of 8; this rule handles the
+/// remaining case, provided the non-zero mask of \b b fits below the shifted-out bits, i.e. the
+/// shift loses no information.  The result `INT_2COMP(b)` is the same 0/-1 mask, which the
+/// surrounding compare rules then clean to a plain boolean test.
+///
+/// Gated by Architecture::fold_boolean_mask (option \b booleanmask), off by default.
+void RuleBoolSignShift::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_SRIGHT);
+}
+
+int4 RuleBoolSignShift::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->fold_boolean_mask) return 0;
+  if (!op->getIn(1)->isConstant()) return 0;
+  uintb sa = op->getIn(1)->getOffset();
+  if (sa == 0) return 0;
+
+  Varnode *shiftin = op->getIn(0);
+  if (!shiftin->isWritten()) return 0;
+  PcodeOp *leftshift = shiftin->getDef();
+  if (leftshift->code() != CPUI_INT_LEFT) return 0;
+  if (!leftshift->getIn(1)->isConstant()) return 0;
+  if (leftshift->getIn(1)->getOffset() != sa) return 0;	// Left shift must be by same amount
+
+  if ((sa & 7) == 0) return 0;	// RuleLeftRight already handles the byte-aligned case
+
+  Varnode *boolvn = leftshift->getIn(0);
+  int4 width = boolvn->getSize();
+  if ((uintb)width * 8 <= sa) return 0;
+  uintb tophalf = (((uintb)1) << ((uintb)width * 8 - sa)) - 1;	// Bits that survive the left shift
+  if ((boolvn->getNZMask() & ~tophalf) != 0) return 0;	// The value must occupy only the low bits
+
+  if (shiftin->loneDescend() != op) return 0;
+
+  data.opSetOpcode(op,CPUI_INT_2COMP);
+  data.opSetInput(op,boolvn,0);
+  data.opRemoveInput(op,1);	// Remove the right-shift constant
+  return 1;
+}
+
 /// \class RuleShiftCompare
 /// \brief Transform shifts in comparisons:  `V >> c == d  =>  V == (d << c)`
 ///
