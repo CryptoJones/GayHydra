@@ -13,6 +13,7 @@ Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 
 - [x] DecompileProcessFactory: add a supported seam for choosing the decompiler executable — [#478](https://github.com/CryptoJones/GayHydra/issues/478)
 - [ ] Document and script the kuna_ghidra headless backend swap as a third REA parity lane — [#479](https://github.com/CryptoJones/GayHydra/issues/479)
+- [ ] Decompiler options: OptionDecompileBudgetPass has no ElementId, so every unknown option name dispatches to it — [#489](https://github.com/CryptoJones/GayHydra/issues/489)
 - [ ] SymbolPathParser detailed-processing — better-results test owner needed — [#57](https://github.com/CryptoJones/GayHydra/issues/57) _(`ignore:1y`)_
 - [ ] JitJvmTypeUtilsTest tightly bound to Java version — manual-tool — [#62](https://github.com/CryptoJones/GayHydra/issues/62) _(`ignore:1y`)_
 - [ ] AbstractToyJitCodeGenerator undefined-cases — edge-case JIT codegen — [#63](https://github.com/CryptoJones/GayHydra/issues/63) _(`ignore:1y`)_
