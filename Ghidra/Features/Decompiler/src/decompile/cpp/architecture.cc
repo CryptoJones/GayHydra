@@ -1423,6 +1423,7 @@ void Architecture::resetDefaultsInternal(void)
   flowoptions = FlowInfo::error_toomanyinstructions;
   max_instructions = 100000;
   infer_pointers = true;
+  infer_funcentry = false;	// Stock behavior: single-bit constants are never pointers (option inferfuncentry off)
   analyze_for_loops = true;
   present_lessequal = false;	// Stock behavior: keep the analysis-canonical compare form (option compareform canonical)
   readonlypropagate = false;

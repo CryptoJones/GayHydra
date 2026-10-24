@@ -177,6 +177,7 @@ public:
   bool aggressive_ext_trim;	///< Aggressively trim inputs that look like they are sign extended
   bool readonlypropagate;	///< true if readonly values should be treated as constants
   bool infer_pointers;		///< True if we should infer pointers from constants that are likely addresses
+  bool infer_funcentry;		///< True if a single-bit constant that is exactly a function entry is still inferred as a pointer (GH-6930)
   bool analyze_for_loops;	///< True if we should attempt conversion of \e whiledo loops to \e for loops
   bool present_lessequal;	///< True if canonicalized comparisons (V < c+1) are restored to their source form (V <= c) for presentation (GH-558)
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false

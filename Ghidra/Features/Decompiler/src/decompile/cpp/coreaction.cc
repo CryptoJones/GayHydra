@@ -1054,6 +1054,94 @@ bool ActionConstantPtr::checkCopy(PcodeOp *op,Funcdata &data)
   return data.getArch()->infer_pointers;
 }
 
+/// \brief Does the given op-code order its constant operand against something? (GH-6930)
+///
+/// An ordering comparison pins a bound, and the strict/non-strict rewrite moves the literal
+/// by one on the way here, so a bound counts for its own value and for one below it.
+/// \param opc is the given op-code
+/// \return \b true if the op-code is an ordering comparison
+bool ActionConstantPtr::ordersItsConstant(OpCode opc)
+
+{
+  switch(opc) {
+  case CPUI_INT_LESS:
+  case CPUI_INT_LESSEQUAL:
+  case CPUI_INT_SLESS:
+  case CPUI_INT_SLESSEQUAL:
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+/// \brief Does the given op-code read its constant operand as a number? (GH-6930)
+///
+/// An ordering comparison, a multiply, a divide, a remainder or a shift is arithmetic on the
+/// value; C has none of them between a function pointer and anything else.
+/// \param opc is the given op-code
+/// \return \b true if the op-code treats its constant as an integer
+bool ActionConstantPtr::readsAsInteger(OpCode opc)
+
+{
+  if (ordersItsConstant(opc)) return true;
+  switch(opc) {
+  case CPUI_INT_MULT:
+  case CPUI_INT_DIV:
+  case CPUI_INT_SDIV:
+  case CPUI_INT_REM:
+  case CPUI_INT_SREM:
+  case CPUI_INT_LEFT:
+  case CPUI_INT_RIGHT:
+  case CPUI_INT_SRIGHT:
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+/// \brief Is the given single-bit constant exactly the entry of a known function? (GH-6930)
+///
+/// The \e bit_transitions test in isPointer() is the only guard that keeps integer flags, masks
+/// and round sizes out of the symbol table, so it is suspended only when the constant is
+/// used as a code address: the option \b inferfuncentry is on, the reading op does not treat
+/// its operand as a number, no other op in the function reads the same value as a number,
+/// and the constant resolves exactly to the entry address of a function in the global scope.
+/// \param spc is the address space being pointed to
+/// \param vn is the constant Varnode
+/// \param op is the lone descendant of the Varnode
+/// \param data is the function being analyzed
+/// \return \b true if the constant should be allowed through as a pointer
+bool ActionConstantPtr::isFunctionEntry(AddrSpace *spc,Varnode *vn,PcodeOp *op,Funcdata &data)
+
+{
+  Architecture *glb = data.getArch();
+  if (!glb->infer_funcentry) return false;
+  if (readsAsInteger(op->code())) return false;
+  uintb val = vn->getOffset();
+  AddrSpace *cspc = glb->getConstantSpace();
+  VarnodeLocSet::const_iterator iter = data.beginLoc(cspc);
+  VarnodeLocSet::const_iterator enditer = data.endLoc(cspc);
+  while(iter != enditer) {
+    Varnode *cvn = *iter++;
+    if (!cvn->isConstant()) break;
+    PcodeOp *cop = cvn->loneDescend();
+    if (cop == (PcodeOp *)0) continue;
+    OpCode copc = cop->code();
+    if (!readsAsInteger(copc)) continue;
+    uintb coff = cvn->getOffset();
+    if (coff == val) return false;		// The same value is read as a number elsewhere
+    if (ordersItsConstant(copc) && coff - 1 == val) return false;
+  }
+  uintb fullEncoding;
+  Address rampoint = glb->resolveConstant(spc,val,vn->getSize(),op->getAddr(),fullEncoding);
+  if (rampoint.isInvalid()) return false;
+  Funcdata *fd = data.getScopeLocal()->getParent()->queryFunction(rampoint);
+  if (fd == (Funcdata *)0) return false;
+  return (fd->getAddress() == rampoint);
+}
+
 /// \brief Determine if given Varnode might be a pointer constant.
 ///
 /// If it is a pointer, return the symbol it points to, or NULL otherwise. If it is determined
@@ -1141,8 +1229,10 @@ SymbolEntry *ActionConstantPtr::isPointer(AddrSpace *spc,Varnode *vn,PcodeOp *op
     if (spc->getPointerUpperBound() < vn->getOffset())
       return (SymbolEntry *)0;
     // Check if the constant looks like a single bit or mask
-    if (bit_transitions(vn->getOffset(),vn->getSize()) < 3)
-      return (SymbolEntry *)0;
+    if (bit_transitions(vn->getOffset(),vn->getSize()) < 3) {
+      if (!isFunctionEntry(spc,vn,op,data))	// GH-6930: unless it is exactly a known function entry
+	return (SymbolEntry *)0;
+    }
     rampoint = glb->resolveConstant(spc,vn->getOffset(),vn->getSize(),op->getAddr(),fullEncoding);
   }
 
