@@ -1433,6 +1433,7 @@ void Architecture::resetDefaultsInternal(void)
   fold_boolean_mask = false;	// GH-1282: off by default (stock output); "option booleanmask on" enables
   fold_flag_compare = false;	// GH-1276: off by default (stock output); "option flagcompare on" enables
   memset_recover = false;	// Off = stock output; "option memsetrecover on" enables RuleMemsetCopy (GH-9230/GH-1537, #477)
+  return_single = false;	// GH-6990: "pair" by default (stock behaviour); "option returnpair single" truncates
   readonlypropagate = false;
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default

@@ -58,6 +58,7 @@ ElementId ELEM_PARAM1 = ElementId("param1",202);
 ElementId ELEM_PARAM2 = ElementId("param2",203);
 ElementId ELEM_PARAM3 = ElementId("param3",204);
 ElementId ELEM_PROTOEVAL = ElementId("protoeval",205);
+ElementId ELEM_RETURNPAIR = ElementId("returnpair",4011);	// GH-6990 (kuna option id range)
 ElementId ELEM_SETACTION = ElementId("setaction",206);
 ElementId ELEM_SETLANGUAGE = ElementId("setlanguage",207);
 ElementId ELEM_SPLITDATATYPE = ElementId("splitdatatype",270);
@@ -130,6 +131,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionBooleanMask>().release());
   registerOption(make_unique<OptionFlagCompare>().release());
   registerOption(make_unique<OptionMemsetRecover>().release());
+  registerOption(make_unique<OptionReturnPair>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -618,6 +620,31 @@ string OptionMemsetRecover::apply(Architecture *glb,const string &p1,const strin
   string prop;
   prop = val ? "on" : "off";
   return "Constant-fill (memset) recovery turned "+prop;
+}
+
+/// \class OptionReturnPair
+/// \brief Select whether a multi-register return value is joined (\b pair) or truncated to its first register (\b single) (GH-6990)
+///
+/// On an ABI whose output list joins a register pair (SPARC o0:o1 and relatives), a void or
+/// single-register function can passively keep its second output register alive: a prologue value
+/// rides the save/restore window to the RETURN untouched, its trial passes ancestor realism and
+/// ActionReturnRecovery::buildReturnOutput joins both registers into a spurious double-width return
+/// (`return CONCAT44(param_2,param_1)`).  Setting the first parameter to "single" makes
+/// buildReturnOutput keep only the first (least-significant) return register instead of joining.
+/// This is a destructive per-function opt-in: it cannot tell a passively-live pair from a genuine
+/// two-register return.  Default is "pair" (stock behaviour).
+string OptionReturnPair::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool single;
+  if (p1 == "single")
+    single = true;
+  else if (p1 == "pair")
+    single = false;
+  else
+    throw ParseError("Must specify pair or single");
+  glb->return_single = single;
+  return "Return-register pairing set to " + p1 + " form";
 }
 
 /// \class OptionConventionPrinting
