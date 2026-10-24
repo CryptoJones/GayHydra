@@ -79,6 +79,7 @@ extern ElementId ELEM_INFERFUNCENTRY;		///< Marshaling element \<inferfuncentry>
 extern ElementId ELEM_CONDEXEPLACE;		///< Marshaling element \<condexeplace>
 extern ElementId ELEM_FLAGCOMPARE;		///< Marshaling element \<flagcompare>
 extern ElementId ELEM_ADDCARRYCHAIN;		///< Marshaling element \<addcarrychain>
+extern ElementId ELEM_STACKALIAS;		///< Marshaling element \<stackalias>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -257,6 +258,12 @@ public:
 class OptionAddCarryChain : public ArchOption {
 public:
   OptionAddCarryChain(void) { name = "addcarrychain"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionStackAlias : public ArchOption {
+public:
+  OptionStackAlias(void) { name = "stackalias"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

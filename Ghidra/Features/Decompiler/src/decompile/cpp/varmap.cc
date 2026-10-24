@@ -712,15 +712,26 @@ bool AliasChecker::hasLocalAlias(Varnode *vn) const
 
 {
   if (vn == (Varnode *)0) return false;
+  return hasLocalAlias(vn->getSpace(),vn->getOffset());
+}
+
+/// The same rough test as hasLocalAlias(Varnode *) applied to a single byte address, so a
+/// caller can ask about each byte of a Varnode separately (kuna GH-8500 \e stackalias policy).
+/// \param spc is the address space of the byte
+/// \param offset is the byte offset within the space
+/// \return \b true if the byte might have a pointer alias
+bool AliasChecker::hasLocalAlias(AddrSpace *spc,uintb offset) const
+
+{
   if (!calculated)
     gatherInternal();
-  if (vn->getSpace() != space) return false;
+  if (spc != space) return false;
   // For positive stack growth, this is not a good test because values being queued on the
   // stack to be passed to a subfunction always have offsets a little bit bigger than ALL
   // local variables on the stack
   if (direction == -1)
     return false;
-  return (vn->getOffset() >= aliasBoundary);
+  return (offset >= aliasBoundary);
 }
 
 void AliasChecker::sortAlias(void) const

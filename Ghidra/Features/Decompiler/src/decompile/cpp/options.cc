@@ -74,6 +74,7 @@ ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_INFERFUNCENTRY = ElementId("inferfuncentry",4003);	// GH-6930 (kuna 4000+ range)
+ElementId ELEM_STACKALIAS = ElementId("stackalias",4014);	// (kuna GH-8500) id in kuna's 4000+ range, GayHydra #477
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -134,6 +135,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionMemsetRecover>().release());
   registerOption(make_unique<OptionReturnPair>().release());
   registerOption(make_unique<OptionAddCarryChain>().release());
+  registerOption(make_unique<OptionStackAlias>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -665,6 +667,24 @@ string OptionAddCarryChain::apply(Architecture *glb,const string &p1,const strin
   string prop;
   prop = val ? "on" : "off";
   return "Carry-chain wide-add recovery turned "+prop;
+}
+
+/// \class OptionStackAlias
+/// \brief Toggle whether aliased physical stack stores are held live across dead-code removal
+///
+/// (kuna GH-8500, GayHydra #477) With the option \b on, ActionDeadCode keeps a stack Varnode created
+/// from an explicit STORE alive while a pointer into the stack could still observe it, so an
+/// aliasing LOAD that resolves a main-loop iteration later still finds its reaching definition
+/// (`int *p = &x; *p = x; return *p;`).  Default \b off: the policy is conservative and can retain
+/// legitimately dead frame writes, so it is a per-function tool rather than a global default.
+string OptionStackAlias::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->stack_alias_deadstore = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Stack-alias dead-store preservation turned "+prop;
 }
 
 /// \class OptionConventionPrinting
