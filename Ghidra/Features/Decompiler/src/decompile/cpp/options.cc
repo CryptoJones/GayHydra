@@ -63,6 +63,7 @@ ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
+ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -112,6 +113,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionNullPrinting>().release());
   registerOption(make_unique<OptionInPlaceOps>().release());
   registerOption(make_unique<OptionCompareForm>().release());
+  registerOption(make_unique<OptionArrayNotation>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -439,6 +441,25 @@ string OptionCompareForm::apply(Architecture *glb,const string &p1,const string 
   else
     throw ParseError("Must specify compareform as 'canonical' or 'original'");
   return "Comparison presentation set to " + p1 + " form";
+}
+
+/// \class OptionArrayNotation
+/// \brief Toggle array notation for standalone pointer arithmetic (GH-558)
+///
+/// A PTRADD under a LOAD/STORE always prints as `base[index]`.  With this option \b on, a
+/// \e standalone PTRADD (the address value itself) prints as `&base[index]` instead of the
+/// stock `base + index`.
+string OptionArrayNotation::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  if (glb->print->getName() != "c-language")
+    return "Can only set array notation for C language";
+  PrintC *lng = (PrintC *)glb->print;
+  lng->setArrayNotation(val);
+  string prop;
+  prop = val ? "on" : "off";
+  return "Array notation for pointer arithmetic turned "+prop;
 }
 
 /// \class OptionConventionPrinting
