@@ -649,6 +649,19 @@ public:
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
+class RuleOvLessSimplify : public Rule {
+public:
+  RuleOvLessSimplify(const string &g) : Rule(g, 0, "ovlesssimplify") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleOvLessSimplify>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+private:
+  static bool matchAddConst(Varnode *vn,Varnode *&base,uintb &koff);	///< Is \b vn defined as `V + #K`
+  static bool isSignTest(Varnode *vn);					///< Is \b vn defined as `x s< #0`
+};
 class RuleScarry : public Rule {
 public:
   RuleScarry(const string &g) : Rule(g, 0, "scarry") {}	///< Constructor

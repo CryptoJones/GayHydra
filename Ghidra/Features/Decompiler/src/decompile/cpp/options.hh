@@ -80,6 +80,7 @@ extern ElementId ELEM_CONDEXEPLACE;		///< Marshaling element \<condexeplace>
 extern ElementId ELEM_FLAGCOMPARE;		///< Marshaling element \<flagcompare>
 extern ElementId ELEM_ADDCARRYCHAIN;		///< Marshaling element \<addcarrychain>
 extern ElementId ELEM_STACKALIAS;		///< Marshaling element \<stackalias>
+extern ElementId ELEM_OVLESSSIMPLIFY;		///< Marshaling element \<ovlesssimplify>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -258,6 +259,12 @@ public:
 class OptionAddCarryChain : public ArchOption {
 public:
   OptionAddCarryChain(void) { name = "addcarrychain"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionOvLessSimplify : public ArchOption {
+public:
+  OptionOvLessSimplify(void) { name = "ovlesssimplify"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

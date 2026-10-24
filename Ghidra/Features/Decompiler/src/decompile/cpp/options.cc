@@ -75,6 +75,7 @@ ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_INFERFUNCENTRY = ElementId("inferfuncentry",4003);	// GH-6930 (kuna 4000+ range)
 ElementId ELEM_STACKALIAS = ElementId("stackalias",4014);	// (kuna GH-8500) id in kuna's 4000+ range, GayHydra #477
+ElementId ELEM_OVLESSSIMPLIFY = ElementId("ovlesssimplify",4015);	// GH-7190 (kuna option id range)
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -136,6 +137,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionReturnPair>().release());
   registerOption(make_unique<OptionAddCarryChain>().release());
   registerOption(make_unique<OptionStackAlias>().release());
+  registerOption(make_unique<OptionOvLessSimplify>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -667,6 +669,25 @@ string OptionAddCarryChain::apply(Architecture *glb,const string &p1,const strin
   string prop;
   prop = val ? "on" : "off";
   return "Carry-chain wide-add recovery turned "+prop;
+}
+
+/// \class OptionOvLessSimplify
+/// \brief Toggle whether the explicit S/OV-flag signed-less-than idiom is collapsed (GH-7190)
+///
+/// The V850 SLEIGH models the OV flag of a compare through a sub-register sign shift rather than
+/// INT_SCARRY, so a `cmp; blt` sequence lifts to `S != OV` with S = `V+#K s< 0` and OV an AND of
+/// the sign test of V with `-1 s< V+#K`.  RuleScarry never sees an INT_SCARRY there, and the whole
+/// boolean leaks into the output as `x - 8 < 0 != (c >> 7 < '\0' && -1 < x - 8)`.  Setting the
+/// first parameter to "on" enables RuleOvLessSimplify, which rewrites the idiom as the single
+/// signed compare `V s< -#K`.  Off by default (stock output).
+string OptionOvLessSimplify::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->ov_less_simplify = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Overflow-flag signed-compare simplification turned "+prop;
 }
 
 /// \class OptionStackAlias

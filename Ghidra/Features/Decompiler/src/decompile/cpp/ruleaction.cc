@@ -3518,6 +3518,128 @@ int4 RuleBoolSignLess::applyOp(PcodeOp *op,Funcdata &data)
   return 1;
 }
 
+/// \class RuleOvLessSimplify
+/// \brief Collapse the explicit S/OV-flag signed-less-than idiom:  `(V+#K s< 0) != (x s< 0 && -1 s< V+#K)  =>  V s< -#K`
+///
+/// The two `V+#K` operands may be distinct Varnodes (the V850 lift computes the difference twice);
+/// they only need the same base Varnode and the same constant.
+///
+/// (GH-7190, ported from kuna's RuleOvLessSimplify; gated by "option ovlesssimplify on".)  The V850
+/// SLEIGH models the OV flag of a compare through a sub-register sign shift (set_OV_neg) rather than
+/// INT_SCARRY, so the `blt` condition `S != OV` lifts to an INT_NOTEQUAL of `V+#K s< 0` with a
+/// BOOL_AND of the sign test of V and `-1 s< V+#K`.  RuleScarry never sees an INT_SCARRY here, so
+/// the whole boolean leaks into the output.  With B = -#K the lifted OV is exactly the overflow of
+/// `V - B`, and `S != OV` is exactly `V s< B`, so the rewrite is an identity for that idiom.  The
+/// rule requires both compares to see the same `V+#K` varnode (same base, same constant, same
+/// size) and the remaining AND limb to be a sign test `x s< #0`; it does not otherwise verify that
+/// limb, which is why the rule stays opt-in.
+void RuleOvLessSimplify::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_INT_NOTEQUAL);
+}
+
+/// The V850 compare still reads `V - #B` (INT_SUB) when this rule first sees it, so both the
+/// INT_ADD form and the INT_SUB form with a constant second input are accepted; \b koff is always
+/// the constant that is \e added to \b base.
+/// \param vn is the Varnode to test
+/// \param base will hold the non-constant input
+/// \param koff will hold the (added) constant, masked to the size of \b vn
+/// \return \b true if \b vn is defined as `V + #K` or `V - #B`
+bool RuleOvLessSimplify::matchAddConst(Varnode *vn,Varnode *&base,uintb &koff)
+
+{
+  if (!vn->isWritten()) return false;
+  PcodeOp *addop = vn->getDef();
+  Varnode *a = addop->getIn(0);
+  Varnode *b = addop->getIn(1);
+  uintb mask = calc_mask(vn->getSize());
+  if (addop->code() == CPUI_INT_ADD) {
+    if (b->isConstant() && !a->isConstant()) {
+      base = a;
+      koff = b->getOffset() & mask;
+      return true;
+    }
+    if (a->isConstant() && !b->isConstant()) {
+      base = b;
+      koff = a->getOffset() & mask;
+      return true;
+    }
+    return false;
+  }
+  if (addop->code() == CPUI_INT_SUB) {
+    if (b->isConstant() && !a->isConstant()) {
+      base = a;
+      koff = (-b->getOffset()) & mask;
+      return true;
+    }
+  }
+  return false;
+}
+
+/// \param vn is the Varnode to test
+/// \return \b true if \b vn is defined by INT_SLESS against the constant zero
+bool RuleOvLessSimplify::isSignTest(Varnode *vn)
+
+{
+  if (!vn->isWritten()) return false;
+  PcodeOp *slessop = vn->getDef();
+  if (slessop->code() != CPUI_INT_SLESS) return false;
+  Varnode *zero = slessop->getIn(1);
+  return (zero->isConstant() && zero->getOffset() == 0);
+}
+
+int4 RuleOvLessSimplify::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->ov_less_simplify) return 0;
+  Varnode *svn = op->getIn(0);		// Expect the S limb:  V+#K s< 0
+  Varnode *andvn = op->getIn(1);	// Expect the OV limb:  signtest && -1 s< V+#K
+  if (!isSignTest(svn)) {		// INT_NOTEQUAL is commutative, try the other order
+    Varnode *tmp = svn;
+    svn = andvn;
+    andvn = tmp;
+    if (!isSignTest(svn)) return 0;
+  }
+  Varnode *r1 = svn->getDef()->getIn(0);
+  if (!andvn->isWritten()) return 0;
+  PcodeOp *andop = andvn->getDef();
+  if (andop->code() != CPUI_BOOL_AND) return 0;
+
+  // Locate the  -1 s< V+#K  limb of the AND; the other limb must be a sign test
+  Varnode *r2 = (Varnode *)0;
+  for(int4 i=0;i<2;++i) {
+    Varnode *limb = andop->getIn(i);
+    if (!limb->isWritten()) continue;
+    PcodeOp *cand = limb->getDef();
+    if (cand->code() != CPUI_INT_SLESS) continue;
+    Varnode *mone = cand->getIn(0);
+    if (!mone->isConstant()) continue;
+    if (mone->getOffset() != calc_mask(mone->getSize())) continue;	// Must be -1
+    if (!isSignTest(andop->getIn(1-i))) continue;
+    r2 = cand->getIn(1);
+    break;
+  }
+  if (r2 == (Varnode *)0) return 0;
+
+  // Both compares must see the same  V + #K
+  Varnode *base1,*base2;
+  uintb k1,k2;
+  if (!matchAddConst(r1,base1,k1)) return 0;
+  if (!matchAddConst(r2,base2,k2)) return 0;
+  if (base1 != base2) return 0;
+  if (k1 != k2) return 0;
+  int4 sz = base1->getSize();
+  if (r1->getSize() != sz || r2->getSize() != sz) return 0;
+
+  // Collapse to  V s< -#K  (the negation taken in the width of V)
+  uintb negk = (-sign_extend(k1,sz*8-1)) & calc_mask(sz);
+  data.opSetOpcode(op,CPUI_INT_SLESS);
+  data.opSetInput(op,base1,0);
+  data.opSetInput(op,data.newConstant(sz,negk),1);
+  return 1;
+}
+
 /// \class RuleScarry
 /// \brief Simplify signed comparisons using INT_SCARRY
 ///
