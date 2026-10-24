@@ -9,10 +9,9 @@
 [![Decompiler C++ Tests](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-cpp-tests.yml)
 [![Decompiler ASan/UBSan](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml/badge.svg?branch=master)](https://github.com/CryptoJones/GayHydra/actions/workflows/decompiler-sanitizers.yml)
 [![Release](https://img.shields.io/github/v/release/CryptoJones/GayHydra?include_prereleases&label=release&logo=github)](https://github.com/CryptoJones/GayHydra/releases)
-[![Codeberg](https://img.shields.io/badge/Codeberg-CryptoJones%2FGayHydra-2185D0?logo=codeberg&logoColor=white)](https://codeberg.org/CryptoJones/GayHydra)
 [![GitHub](https://img.shields.io/badge/GitHub-CryptoJones%2FGayHydra-181717?logo=github&logoColor=white)](https://github.com/CryptoJones/GayHydra)
 
-> **Canonical home is [Codeberg](https://codeberg.org/CryptoJones/GayHydra).** The repo is also mirrored on GitHub for CI (Actions), Sigstore OIDC signing, and the GHSA security-advisory CNA path. Both forges carry the same commits.
+> **GayHydra lives on [GitHub](https://github.com/CryptoJones/GayHydra)**, where its CI (Actions), Sigstore OIDC signing and the GHSA security-advisory CNA path run. The old Codeberg mirror is retired.
 
 # GayHydra
 
@@ -22,7 +21,6 @@
 > durable **Rust core** behind disposable adapter **heads** (MCP first), with the RE domain
 > model as a stable, zero-copy artifact: the system's **"narrow waist."**
 > **GayHydra is the hardened, proven engine; Scylla is the new platform built around it.**
-> (Codeberg mirror: [CryptoJones/Scylla](https://codeberg.org/CryptoJones/Scylla).)
 
 * Previously "Ghidra: Top 42 Principal-Architect Recommendations"
 * ("GT42PAR" didn't have the panache "GayHydra" does! 🏳️‍🌈)
@@ -31,7 +29,7 @@
 
 Findings drawn from: 1,553 open issues, 335 open PRs, ~15.5k Java files, 187k LOC C++ decompiler, 39 processor specs, and the actual CI workflows.
 
-Each rec is filed as a GitHub issue ([#1–#42](https://codeberg.org/CryptoJones/GayHydra/issues?q=is%3Aissue+label%3Aaudit-2026-05)). PRs that address a rec close the issue with `closes #N` and tick the checkbox below.
+Each rec was first filed as issue #1–#42 on the project's old Codeberg home; those numbers do not match GitHub's. Open work is now tracked in [GitHub Issues](https://github.com/CryptoJones/GayHydra/issues) and [`BACKLOG.md`](BACKLOG.md), and a PR that addresses a rec ticks its checkbox below.
 
 ---
 
@@ -146,7 +144,7 @@ If you do nothing else from this list, do **#1, #2, #11, #13, and #22**:
 
 Everything else is downstream of those five.
 
-Issue tracking: filed as #1–#42 at https://codeberg.org/CryptoJones/GayHydra/issues.
+Issue tracking: open work is in [GitHub Issues](https://github.com/CryptoJones/GayHydra/issues) and [`BACKLOG.md`](BACKLOG.md).
 
 ---
 
@@ -205,13 +203,13 @@ To create the latest development build for your platform from this source reposi
   - C++ ATL
 
 ##### Download and extract the source:
-[Download from Codeberg][master]
+[Download from GitHub][master]
 ```
-unzip master.zip
-cd gayhydra
+unzip GayHydra-master.zip
+cd GayHydra-master
 ```
 **NOTE:** Instead of downloading the compressed source, you may instead want to clone the
-canonical Codeberg repository: `git clone https://codeberg.org/CryptoJones/GayHydra.git`
+GitHub repository: `git clone https://github.com/CryptoJones/GayHydra.git`
 
 ##### Download additional build dependencies into source repository:
 **NOTE:** If an Internet connection is available and you did not install Gradle, the 
@@ -316,7 +314,7 @@ up with.
 [vs]: https://visualstudio.microsoft.com/vs/community/
 [vcbuildtools]: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 [eclipse]: https://www.eclipse.org/downloads/packages/
-[master]: https://codeberg.org/CryptoJones/GayHydra/archive/master.zip
+[master]: https://github.com/CryptoJones/GayHydra/archive/refs/heads/master.zip
 [security]: SECURITY.md
 [ghidradev]: GhidraBuild/EclipsePlugins/GhidraDev/GhidraDevPlugin/README.md
 [pyghidra]: Ghidra/Features/PyGhidra/README.md
