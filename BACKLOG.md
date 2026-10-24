@@ -14,7 +14,7 @@ Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 - [x] DecompileProcessFactory: add a supported seam for choosing the decompiler executable — [#478](https://github.com/CryptoJones/GayHydra/issues/478)
 - [x] Document and script the kuna_ghidra headless backend swap as a third REA parity lane — [#479](https://github.com/CryptoJones/GayHydra/issues/479)
 - [ ] Decompiler options: OptionDecompileBudgetPass has no ElementId, so every unknown option name dispatches to it — [#489](https://github.com/CryptoJones/GayHydra/issues/489)
-- [ ] IPC framing auto mode hangs forever against a v0-only decompiler core instead of falling back — [#491](https://github.com/CryptoJones/GayHydra/issues/491)
+- [x] IPC framing auto mode hangs forever against a v0-only decompiler core instead of falling back — [#491](https://github.com/CryptoJones/GayHydra/issues/491)
 - [x] PcodeBlock.BlockEdge.decode requires the edgelabel attribute, so a stock-protocol core fails on every function with control flow — [#497](https://github.com/CryptoJones/GayHydra/issues/497)
 - [ ] V850 spec: define the ctbp register, so the two remaining kuna testcases of #477 can run — [#509](https://github.com/CryptoJones/GayHydra/issues/509)
 - [ ] SymbolPathParser detailed-processing — better-results test owner needed — [#57](https://github.com/CryptoJones/GayHydra/issues/57) _(`ignore:1y`)_
