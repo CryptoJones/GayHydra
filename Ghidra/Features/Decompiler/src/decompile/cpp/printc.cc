@@ -903,6 +903,10 @@ void PrintC::opPtradd(const PcodeOp *op)
   uint4 m = mods & ~(print_load_value|print_store_value);
   if (printval)			// Use array notation if we need value
     pushOp(&subscript,op);
+  else if (option_arraynotation) {	// EMIT  &base[index]  (GH-558, option arraynotation)
+    pushOp(&addressof,op);
+    pushOp(&subscript,op);
+  }
   else				// just a '+'
     pushOp(&binary_plus,op);
   // implied vn's pushed on in reverse order for efficiency
@@ -1646,6 +1650,7 @@ void PrintC::resetDefaultsPrintC(void)
 {
   option_convention = true;
   option_hide_exts = true;
+  option_arraynotation = false;	// Stock behavior: standalone PTRADD prints as base + index
   option_inplace_ops = false;
   option_nocasts = false;
   option_NULL = false;

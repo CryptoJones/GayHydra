@@ -68,6 +68,7 @@ extern ElementId ELEM_WARNING;			///< Marshaling element \<warning>
 extern ElementId ELEM_JUMPTABLEMAX;		///< Marshaling element \<jumptablemax>
 extern ElementId ELEM_NANIGNORE;		///< Marshaling element \<nanignore>
 extern ElementId ELEM_COMPAREFORM;		///< Marshaling element \<compareform>
+extern ElementId ELEM_ARRAYNOTATION;		///< Marshaling element \<arraynotation>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -180,6 +181,12 @@ public:
 class OptionCompareForm : public ArchOption {
 public:
   OptionCompareForm(void) { name = "compareform"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionArrayNotation : public ArchOption {
+public:
+  OptionArrayNotation(void) { name = "arraynotation"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 
