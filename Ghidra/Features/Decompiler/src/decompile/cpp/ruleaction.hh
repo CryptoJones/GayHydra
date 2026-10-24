@@ -639,6 +639,16 @@ public:
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
 };
+class RuleBoolSignLess : public Rule {
+public:
+  RuleBoolSignLess(const string &g) : Rule(g, 0, "boolsignless") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleBoolSignLess>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
 class RuleScarry : public Rule {
 public:
   RuleScarry(const string &g) : Rule(g, 0, "scarry") {}	///< Constructor

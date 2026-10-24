@@ -5897,6 +5897,7 @@ void ActionDatabase::universalAction(Architecture *conf)
 	actprop->addRule(make_unique<RuleConcatShift>("analysis").release());
 	actprop->addRule(make_unique<RuleLeftRight>("analysis").release());
 	actprop->addRule(make_unique<RuleBoolSignShift>("analysis").release());	// GH-1282, gated by fold_boolean_mask
+	actprop->addRule(make_unique<RuleBoolSignLess>("analysis").release());	// GH-1276 (option flagcompare)
 	actprop->addRule(make_unique<RuleShiftCompare>("analysis").release());
 	actprop->addRule(make_unique<RuleShift2Mult>("analysis").release());
 	actprop->addRule(make_unique<RuleShiftPiece>("analysis").release());

@@ -66,6 +66,7 @@ ElementId ELEM_WARNING = ElementId("warning",210);
 ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
 ElementId ELEM_CONDEXEPLACE = ElementId("condexeplace",4007);	// GH-9203 (kuna option id range)
+ElementId ELEM_FLAGCOMPARE = ElementId("flagcompare",4009);	// GH-1276/8777 (kuna option id range)
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
@@ -126,6 +127,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionDynamicHashMax>().release());
   registerOption(make_unique<OptionCondExePlace>().release());
   registerOption(make_unique<OptionBooleanMask>().release());
+  registerOption(make_unique<OptionFlagCompare>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -579,6 +581,25 @@ string OptionBooleanMask::apply(Architecture *glb,const string &p1,const string 
   string prop;
   prop = val ? "on" : "off";
   return "Boolean sign-mask folding turned "+prop;
+}
+
+/// \class OptionFlagCompare
+/// \brief Toggle folding of flag-modelled comparison idioms into clean comparisons (GH-1276 / GH-8777)
+///
+/// Architectures that model condition flags as explicit bits (8051 CY/borrow, PIC24 N/OV) lower a
+/// boolean condition \b b into a sign test by shifting it into the sign bit: `(b << k) s< 0`.  Setting
+/// the first parameter to "on" enables RuleBoolSignLess, which rewrites that form to `b != 0` when the
+/// operand's non-zero mask is exactly the single bit landing in the sign position.  Off by default
+/// (stock output).  The GH-8777 half of kuna's option (the `N == V` SBORROW idiom) is already clean on
+/// this fork because the PIC24 spec carries upstream PR #8778 and stock RuleSborrow folds it.
+string OptionFlagCompare::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->fold_flag_compare = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Flag-modelled comparison folding turned "+prop;
 }
 
 /// \class OptionConventionPrinting
