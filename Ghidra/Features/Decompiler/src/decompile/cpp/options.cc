@@ -64,6 +64,7 @@ ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
 ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 ElementId ELEM_ARRAYNOTATION = ElementId("arraynotation",4001);	// GH-558 (kuna 4000+ range)
+ElementId ELEM_INFERFUNCENTRY = ElementId("inferfuncentry",4003);	// GH-6930 (kuna 4000+ range)
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -105,6 +106,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionErrorTooManyInstructions>().release());
   registerOption(make_unique<OptionDefaultPrototype>().release());
   registerOption(make_unique<OptionInferConstPtr>().release());
+  registerOption(make_unique<OptionInferFuncEntry>().release());
   registerOption(make_unique<OptionForLoops>().release());
   registerOption(make_unique<OptionInline>().release());
   registerOption(make_unique<OptionNoReturn>().release());
@@ -300,6 +302,24 @@ string OptionInferConstPtr::apply(Architecture *glb,const string &p1,const strin
     glb->infer_pointers = false;
   }
   return res;
+}
+
+/// \class OptionInferFuncEntry
+/// \brief Toggle whether a single-bit constant that is exactly a function entry is inferred as a pointer (GH-6930)
+///
+/// ActionConstantPtr rejects any constant with fewer than three bit transitions before it consults
+/// the symbol table, to keep integer flags and masks out of it.  A function placed at a power-of-two
+/// image base (0x100000) is such a value, so it printed as a bare literal when passed as a callback.
+/// Setting the first parameter to "on" lets that constant through when it resolves exactly to a known
+/// function entry and the function never reads the same value as a number.
+string OptionInferFuncEntry::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->infer_funcentry = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Function-entry constant-pointer inference turned "+prop;
 }
 
 /// \class OptionForLoops
