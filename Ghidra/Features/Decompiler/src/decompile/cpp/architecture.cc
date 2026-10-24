@@ -1429,6 +1429,7 @@ void Architecture::resetDefaultsInternal(void)
   recover_array_stride = false;	// GH-8724: off by default (stock output); "option arraystride on" enables
   input_varnode_adjust = false;	// GH-9218: off by default (stock behaviour); "option inputvarnodeadjust on" enables
   dynamic_hash_maxdup_high = false;	// Stock budget of 8 (option dynamichashmax, kuna GH-8467)
+  condexe_block_placement = false;	// GH-9203: off by default (stock behaviour); "option condexeplace on" enables
   readonlypropagate = false;
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default

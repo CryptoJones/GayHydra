@@ -4561,6 +4561,12 @@ void ActionConditionalConst::handlePhiNodes(Varnode *varVn,Varnode *constVn,vect
     PcodeOp *op = phiNodeEdges[i].op;
     int4 slot = phiNodeEdges[i].slot;
     BlockBasic *bl = (BlockBasic *)op->getParent()->getIn(slot);
+    if (data.getArch()->condexe_block_placement && bl->hasLoopIn()) {
+      // (GH-9203) The predecessor is the bottom of a loop: a COPY placed there would execute every
+      // iteration.  Decline the placement and leave the MULTIEQUAL input as is.
+      results[i] = 0;
+      continue;
+    }
     Varnode *outVn = placeCopy(op, bl, constVn, data);
     data.opSetInput(op,outVn,slot);
     count += 1;
