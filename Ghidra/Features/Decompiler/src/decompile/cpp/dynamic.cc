@@ -430,7 +430,10 @@ void DynamicHash::uniqueHash(const Varnode *root,Funcdata *fd)
   uint4 method;
   uint8 tmphash;
   Address tmpaddr;
-  uint4 maxduplicates = 8;
+  // (kuna GH-8467) The same-address collision budget is 8 upstream; dense unrolled code (AArch64/Go NEON
+  // loops) overflows it for every hash method, the champion stays empty and the caller aborts with
+  // "Unable to find unique hash for varnode".  "option dynamichashmax on" widens the budget to 16.
+  uint4 maxduplicates = fd->getArch()->dynamic_hash_maxdup_high ? 16 : 8;
 
   for(method=0;method<4;++method) {
     clear();
@@ -491,7 +494,10 @@ void DynamicHash::uniqueHash(const PcodeOp *op,int4 slot,Funcdata *fd)
   uint4 method;
   uint8 tmphash;
   Address tmpaddr;
-  uint4 maxduplicates = 8;
+  // (kuna GH-8467) The same-address collision budget is 8 upstream; dense unrolled code (AArch64/Go NEON
+  // loops) overflows it for every hash method, the champion stays empty and the caller aborts with
+  // "Unable to find unique hash for varnode".  "option dynamichashmax on" widens the budget to 16.
+  uint4 maxduplicates = fd->getArch()->dynamic_hash_maxdup_high ? 16 : 8;
 
   moveOffSkip(op, slot);
   if (op == (const PcodeOp *)0) {

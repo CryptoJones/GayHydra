@@ -42,6 +42,7 @@ ElementId ELEM_INFERCONSTPTR = ElementId("inferconstptr",190);
 ElementId ELEM_INLINE = ElementId("inline",191);
 ElementId ELEM_INPLACEOPS = ElementId("inplaceops",192);
 ElementId ELEM_INPUTVARNODEADJUST = ElementId("inputvarnodeadjust",4005);	// GH-9218 (kuna option id range)
+ElementId ELEM_DYNAMICHASHMAX = ElementId("dynamichashmax",4006);
 ElementId ELEM_INTEGERFORMAT = ElementId("integerformat",193);
 ElementId ELEM_JUMPLOAD = ElementId("jumpload",194);
 ElementId ELEM_MAXINSTRUCTION = ElementId("maxinstruction",195);
@@ -120,6 +121,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionArrayNotation>().release());
   registerOption(make_unique<OptionArrayStride>().release());
   registerOption(make_unique<OptionInputVarnodeAdjust>().release());
+  registerOption(make_unique<OptionDynamicHashMax>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -517,6 +519,23 @@ string OptionInputVarnodeAdjust::apply(Architecture *glb,const string &p1,const 
 
   string res = "Input varnode adjustment widening is " + p1;
   return res;
+}
+
+/// \class OptionDynamicHashMax
+/// \brief Toggle the wide same-address collision budget in DynamicHash::uniqueHash (kuna GH-8467)
+///
+/// Upstream hard-codes the budget at 8.  Dense, fully unrolled code (AArch64/Go NEON byte-search loops)
+/// carries more than 8 structurally identical Varnodes per address whose hashes collide under every
+/// method, so Funcdata::buildDynamicSymbol throws "Unable to find unique hash for varnode" and the whole
+/// function aborts.  "on" raises the budget to 16; "off" (the default) keeps the upstream budget.
+string OptionDynamicHashMax::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->dynamic_hash_maxdup_high = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "DynamicHash wide collision budget turned "+prop;
 }
 
 /// \class OptionConventionPrinting
