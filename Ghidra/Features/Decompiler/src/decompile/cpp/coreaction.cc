@@ -5028,6 +5028,72 @@ int4 ActionDynamicSymbols::apply(Funcdata &data)
   return 0;
 }
 
+/// \brief Invert one canonicalized comparison back to its LESSEQUAL form
+///
+/// Exact inverse of Funcdata::replaceLessequal:
+///   - `c-1 < V`  back to  `c <= V`   OR
+///   - `V < c+1`  back to  `V <= c`
+///
+/// The PcodeOp::canonical_lessequal mark only asserts provenance; the op shape and the
+/// overflow guards are re-validated here, so an op reshaped by a later transform is left alone.
+/// \param op is the marked INT_LESS or INT_SLESS
+/// \param data is the function being modified
+/// \return \b true if the LESSEQUAL form was restored
+static bool restoreLessequal(PcodeOp *op,Funcdata &data)
+
+{
+  Varnode *vn;
+  int4 i;
+  uintb val;
+  intb diff;
+
+  if ((vn=op->getIn(0))->isConstant()) {
+    diff = 1;			// c-1 < V came from c <= V
+    i = 0;
+  }
+  else if ((vn=op->getIn(1))->isConstant()) {
+    diff = -1;			// V < c+1 came from V <= c
+    i = 1;
+  }
+  else
+    return false;		// Shape changed since canonicalization
+
+  val = vn->getOffset();
+  if (op->code() == CPUI_INT_SLESS) {
+    // Mirror replaceLessequal's signed overflow guards in the inverse direction
+    if ((diff == -1) && (val == calc_int_min(vn->getSize()))) return false;
+    if ((diff ==  1) && (val == calc_int_max(vn->getSize()))) return false;
+    data.opSetOpcode(op,CPUI_INT_SLESSEQUAL);
+  }
+  else {			// Unsigned overflow guards
+    if ((diff == -1) && (val == 0)) return false;
+    if ((diff ==  1) && (val == calc_uint_max(vn->getSize()))) return false;
+    data.opSetOpcode(op,CPUI_INT_LESSEQUAL);
+  }
+  uintb res = (val+diff) & calc_mask(vn->getSize());
+  Varnode *newvn = data.newConstant(vn->getSize(),res);
+  newvn->copySymbol(vn);	// Preserve data-type (and any Symbol info)
+  data.opSetInput(op,newvn,i);
+  op->clearCanonicalLessequal();
+  return true;
+}
+
+int4 ActionPresentCompareForm::apply(Funcdata &data)
+
+{
+  if (!data.getArch()->present_lessequal) return 0;
+  list<PcodeOp *>::const_iterator iter;
+  for(iter=data.beginOpAlive();iter!=data.endOpAlive();++iter) {
+    PcodeOp *op = *iter;
+    OpCode opc = op->code();
+    if ((opc != CPUI_INT_LESS)&&(opc != CPUI_INT_SLESS)) continue;
+    if (!op->isCanonicalLessequal()) continue;
+    if (restoreLessequal(op,data))
+      count += 1;
+  }
+  return 0;
+}
+
 int4 ActionPrototypeWarnings::apply(Funcdata &data)
 
 {
@@ -5601,7 +5667,7 @@ void ActionDatabase::buildDefaultGroups(void)
 			    "fixateglobals", "fixateproto", "constsequence", "bitfields",
 			    "segment", "returnsplit", "nodejoin", "doubleload", "doubleprecis",
 			    "unreachable", "subvar", "floatprecision",
-			    "conditionalexe", "" };
+			    "conditionalexe", "presentcompare", "" };
   setGroup("decompile",members);
 
   const char *jumptab[] = { "base", "noproto", "localrecovery", "deadcode", "stackptrflow",
@@ -5913,6 +5979,7 @@ void ActionDatabase::universalAction(Architecture *conf)
   act->addAction(make_unique<ActionBlockStructure>("blockrecovery").release());
   act->addAction(make_unique<ActionPreferComplement>("blockrecovery", false).release());		// Don't allow mods
   act->addAction(make_unique<ActionStructureTransform>("blockrecovery", false).release());	// Don't allow mods
+  act->addAction(make_unique<ActionPresentCompareForm>("presentcompare").release());	// After the last structuring flip, before prototype/cast fixation
   act->addAction(make_unique<ActionOutputPrototype>("localrecovery").release());
   act->addAction(make_unique<ActionInputPrototype>("fixateproto").release());
   act->addAction(make_unique<ActionMapGlobals>("fixateglobals").release());

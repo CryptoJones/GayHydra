@@ -1066,6 +1066,22 @@ public:
   virtual int4 apply(Funcdata &data);
 };
 
+/// \brief Restore canonicalized comparisons to their source LESSEQUAL form for presentation (GH-558)
+///
+/// Analysis canonicalizes `V <= c` into `V < c+1` (Funcdata::replaceLessequal), which marks the
+/// rewritten op with PcodeOp::canonical_lessequal.  When Architecture::present_lessequal is set
+/// (option \b compareform \b original), this action runs after the last structuring flip and
+/// inverts every still-marked INT_LESS/INT_SLESS back to the `<=` form the source used.
+class ActionPresentCompareForm : public Action {
+public:
+  ActionPresentCompareForm(const string &g) : Action(0,"presentcompareform",g) {}	///< Constructor
+  virtual Action *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Action *)0;
+    return make_unique<ActionPresentCompareForm>(getGroup()).release();
+  }
+  virtual int4 apply(Funcdata &data);
+};
+
 /// \brief Check for constants getting written to the stack from \e internal \e storage registers
 ///
 /// The constant is internal to the compiler and its storage location on the stack should not be addressable.

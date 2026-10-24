@@ -178,6 +178,7 @@ public:
   bool readonlypropagate;	///< true if readonly values should be treated as constants
   bool infer_pointers;		///< True if we should infer pointers from constants that are likely addresses
   bool analyze_for_loops;	///< True if we should attempt conversion of \e whiledo loops to \e for loops
+  bool present_lessequal;	///< True if canonicalized comparisons (V < c+1) are restored to their source form (V <= c) for presentation (GH-558)
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable

@@ -62,6 +62,7 @@ ElementId ELEM_WARNING = ElementId("warning",210);
 ElementId ELEM_JUMPTABLEMAX = ElementId("jumptablemax",271);
 ElementId ELEM_NANIGNORE = ElementId("nanignore",272);
 ElementId ELEM_BRACEFORMAT = ElementId("braceformat",284);
+ElementId ELEM_COMPAREFORM = ElementId("compareform",4002);	// GH-558 (kuna 4000+ range)
 
 /// If the parameter is "on" return \b true, if "off" return \b false.
 /// Any other value causes an exception.
@@ -110,6 +111,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionWarning>().release());
   registerOption(make_unique<OptionNullPrinting>().release());
   registerOption(make_unique<OptionInPlaceOps>().release());
+  registerOption(make_unique<OptionCompareForm>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -419,6 +421,24 @@ string OptionInPlaceOps::apply(Architecture *glb,const string &p1,const string &
   string prop;
   prop = val ? "on" : "off";
   return "Inplace operators turned "+prop;
+}
+
+/// \class OptionCompareForm
+/// \brief Choose how canonicalized comparisons are presented (GH-558)
+///
+/// Analysis rewrites `V <= c` into `V < c+1`.  With the first parameter \b original, the
+/// decompiler restores the source `<=` form before printing (ActionPresentCompareForm);
+/// with \b canonical (the default) the analysis form is printed as upstream Ghidra does.
+string OptionCompareForm::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  if (p1 == "original")
+    glb->present_lessequal = true;
+  else if (p1 == "canonical")
+    glb->present_lessequal = false;
+  else
+    throw ParseError("Must specify compareform as 'canonical' or 'original'");
+  return "Comparison presentation set to " + p1 + " form";
 }
 
 /// \class OptionConventionPrinting

@@ -67,6 +67,7 @@ extern ElementId ELEM_TOGGLERULE;		///< Marshaling element \<togglerule>
 extern ElementId ELEM_WARNING;			///< Marshaling element \<warning>
 extern ElementId ELEM_JUMPTABLEMAX;		///< Marshaling element \<jumptablemax>
 extern ElementId ELEM_NANIGNORE;		///< Marshaling element \<nanignore>
+extern ElementId ELEM_COMPAREFORM;		///< Marshaling element \<compareform>
 
 /// \brief Base class for options classes that affect the configuration of the Architecture object
 ///
@@ -173,6 +174,12 @@ public:
 class OptionInPlaceOps : public ArchOption {
 public:
   OptionInPlaceOps(void) { name = "inplaceops"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionCompareForm : public ArchOption {
+public:
+  OptionCompareForm(void) { name = "compareform"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 
