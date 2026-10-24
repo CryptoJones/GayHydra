@@ -572,6 +572,10 @@ class ActionDeadCode : public Action {
   static void markConsumedParameters(FuncCallSpecs *fc,vector<Varnode *> &worklist);
   static uintb gatherConsumedReturn(Funcdata &data);
   static bool lastChanceLoad(Funcdata &data,vector<Varnode *> &worklist);
+  static uint4 stackAliasByteMask(uintb start,int4 size,uintb at,int4 width);
+  static bool stackAliasUnobserved(PcodeOp *op,uintb start,int4 size,uint4 &wanted,AddrSpace *spc);
+  static bool stackAliasShadowed(PcodeOp *def,uintb start,int4 size,uint4 wanted,AddrSpace *spc);
+  static void stackAliasPrepare(Funcdata &data);
 public:
   ActionDeadCode(const string &g) : Action(0,"deadcode",g) {}	///< Constructor
   virtual Action *clone(const ActionGroupList &grouplist) const {

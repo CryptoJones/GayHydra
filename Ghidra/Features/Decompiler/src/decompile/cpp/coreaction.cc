@@ -1402,6 +1402,8 @@ int4 ActionVarnodeProps::apply(Funcdata &data)
 	    }
 	  }
 	}
+	if (glb->stack_alias_deadstore && vn->isStackAliasHold())
+	  continue;		// (kuna GH-8500) ActionDeadCode owns this hold and re-evaluates it every pass
 	vn->clearAutoLiveHold();
 	count += 1;
       }
@@ -4159,6 +4161,191 @@ bool ActionDeadCode::lastChanceLoad(Funcdata &data,vector<Varnode *> &worklist)
   return res;
 }
 
+/// \brief Mask of the bytes of a frame range [start,start+size) that a write/read at [at,at+width) touches
+///
+/// Part of the (kuna GH-8500) \e stackalias policy.  Bit i of the result is set when byte start+i
+/// lies inside the second range.
+/// \param start is the offset of the held store
+/// \param size is the size of the held store (at most 16)
+/// \param at is the offset of the other access
+/// \param width is the size of the other access
+/// \return the byte mask
+uint4 ActionDeadCode::stackAliasByteMask(uintb start,int4 size,uintb at,int4 width)
+
+{
+  uint4 mask = 0;
+  for(int4 byte=0;byte<size;++byte) {
+    if ((start + byte - at) < (uintb)width)
+      mask |= 1 << byte;
+  }
+  return mask;
+}
+
+/// \brief Strip from \b wanted the bytes of a held stack store that \b op overwrites, or report that \b op observes them
+///
+/// Part of the (kuna GH-8500) \e stackalias policy (kuna_stackalias.rs \e unobserved_bytes).  Any op that
+/// could read the frame through memory (CALL, CALLIND, CALLOTHER, LOAD, STORE, RETURN) is an observer.
+/// A direct read of a frame Varnode overlapping the still-wanted bytes is an observer.  A later explicit
+/// STORE to the frame removes the bytes it covers.  kuna consults callee memory summaries for CALL; the
+/// fork has none, so a CALL is always a barrier (kuna's documented fallback when summaries are missing).
+/// \param op is the op to examine
+/// \param start is the offset of the held store
+/// \param size is its size
+/// \param wanted is the mask of bytes still potentially observable (updated)
+/// \param spc is the frame space
+/// \return \b false if \b op observes the held bytes
+bool ActionDeadCode::stackAliasUnobserved(PcodeOp *op,uintb start,int4 size,uint4 &wanted,AddrSpace *spc)
+
+{
+  switch(op->code()) {
+    case CPUI_CALL:
+    case CPUI_CALLIND:
+    case CPUI_CALLOTHER:
+    case CPUI_RETURN:
+    case CPUI_LOAD:
+    case CPUI_STORE:
+      return false;
+    default:
+      break;
+  }
+  for(int4 slot=0;slot<op->numInput();++slot) {
+    Varnode *vn = op->getIn(slot);
+    if (vn->getSpace() != spc) continue;
+    uintb at;
+    int4 width;
+    if (slot == 0 && op->code() == CPUI_SUBPIECE) {
+      Varnode *cvn = op->getIn(1);
+      Varnode *outvn = op->getOut();
+      if (!cvn->isConstant() || outvn == (Varnode *)0) return false;
+      uintb relative = cvn->getOffset();
+      if (vn->getAddr().isBigEndian()) {
+	uintb total = vn->getSize() - outvn->getSize();
+	if (relative > total) return false;
+	relative = total - relative;
+      }
+      at = vn->getOffset() + relative;
+      width = outvn->getSize();
+    }
+    else {
+      at = vn->getOffset();
+      width = vn->getSize();
+    }
+    if ((stackAliasByteMask(start,size,at,width) & wanted) != 0)
+      return false;
+  }
+  Varnode *outvn = op->getOut();
+  if (outvn != (Varnode *)0 && outvn->isStackStore() && outvn->getSpace() == spc)
+    wanted &= ~stackAliasByteMask(start,size,outvn->getOffset(),outvn->getSize());
+  return true;
+}
+
+/// \brief Is every potentially aliased byte of a held stack store overwritten on every path before anything can observe it?
+///
+/// Part of the (kuna GH-8500) \e stackalias policy (kuna_stackalias.rs \e shadowed).  A bounded forward
+/// search follows every successor with the bytes that still belong to the old write; states are keyed by
+/// block, position, and remaining mask.  Reaching an observer, a block with no successors, or the budget
+/// means the store is NOT shadowed and must stay held.
+/// \param def is the op defining the held store
+/// \param start is the offset of the held store
+/// \param size is its size
+/// \param wanted is the mask of potentially aliased bytes
+/// \param spc is the frame space
+/// \return \b true if the held bytes are provably overwritten before any observer
+bool ActionDeadCode::stackAliasShadowed(PcodeOp *def,uintb start,int4 size,uint4 wanted,AddrSpace *spc)
+
+{
+  BlockBasic *parent = def->getParent();
+  if (parent == (BlockBasic *)0) return false;
+  typedef pair<pair<int4,PcodeOp *>,uint4> State;
+  vector<pair<pair<BlockBasic *,list<PcodeOp *>::iterator>,uint4> > work;
+  set<State> visited;
+  int4 budget = 4096;
+  list<PcodeOp *>::iterator startIter = def->getBasicIter();
+  ++startIter;
+  work.push_back(make_pair(make_pair(parent,startIter),wanted));
+  while(!work.empty()) {
+    BlockBasic *block = work.back().first.first;
+    list<PcodeOp *>::iterator iter = work.back().first.second;
+    uint4 remain = work.back().second;
+    work.pop_back();
+    PcodeOp *posOp = (iter == block->endOp()) ? (PcodeOp *)0 : *iter;
+    if (!visited.insert(State(make_pair(block->getIndex(),posOp),remain)).second)
+      continue;
+    if (budget == 0) return false;
+    budget -= 1;
+    while(iter != block->endOp()) {
+      if (budget == 0) return false;
+      budget -= 1;
+      PcodeOp *op = *iter;
+      ++iter;
+      if (op->isMarker()) continue;
+      if (!stackAliasUnobserved(op,start,size,remain,spc))
+	return false;
+      if (remain == 0) break;
+    }
+    if (remain == 0) continue;
+    if (block->sizeOut() == 0) return false;
+    for(int4 i=0;i<block->sizeOut();++i) {
+      BlockBasic *target = (BlockBasic *)block->getOut(i);
+      work.push_back(make_pair(make_pair(target,target->beginOp()),remain));
+    }
+  }
+  return true;
+}
+
+/// \brief (kuna GH-8500) \e stackalias policy: hold potentially aliased explicit stack stores live across dead-code removal
+///
+/// Port of kuna_stackalias.rs \e prepare / \e holds_store (GayHydra #477), active only under
+/// `option stackalias on`.  A Varnode created from an explicit STORE into the local frame space
+/// (Varnode::stack_store) whose bytes a stack pointer could still observe is given an \e autolive_hold
+/// before the consume walk, so that an aliasing LOAD which resolves one main-loop iteration later still
+/// finds its reaching definition (upstream GH-8500: `int *p = &x; *p = x; return *p;` otherwise returns an
+/// uninitialized xStack local).  Proved un-aliased stores (Varnode::nolocalalias) and stores whose aliased
+/// bytes are fully overwritten before any observer are excluded.  Holds are recomputed on every pass; a
+/// store that stops qualifying loses its hold again.  Without the option this is a no-op and stock
+/// behaviour is byte-identical.  kuna additionally consults its stackviews / parameter-view machinery and
+/// callee memory summaries; the fork has none of those, so the policy is the self-contained
+/// AliasChecker-based slice (CALL always observes).
+/// \param data is the function being analyzed
+void ActionDeadCode::stackAliasPrepare(Funcdata &data)
+
+{
+  if (!data.getArch()->stack_alias_deadstore) return;
+  ScopeLocal *scope = data.getScopeLocal();
+  if (scope == (ScopeLocal *)0) return;
+  AddrSpace *spc = scope->getSpaceId();
+  AliasChecker checker;
+  checker.gather(&data,spc,true);
+  VarnodeLocSet::const_iterator viter = data.beginLoc(spc);
+  VarnodeLocSet::const_iterator endviter = data.endLoc(spc);
+  while(viter != endviter) {
+    Varnode *vn = *viter++;
+    bool hold = false;
+    if (vn->isStackStore() && !vn->hasNoLocalAlias()) {
+      int4 size = vn->getSize();
+      if (size <= 0 || size > 16 || !spc->stackGrowsNegative())
+	hold = true;
+      else {
+	uint4 wanted = 0;
+	for(int4 byte=0;byte<size;++byte) {
+	  if (checker.hasLocalAlias(spc,vn->getOffset() + byte))
+	    wanted |= 1 << byte;
+	}
+	if (wanted != 0)
+	  hold = !(vn->isWritten() && stackAliasShadowed(vn->getDef(),vn->getOffset(),size,wanted,spc));
+      }
+    }
+    if (hold) {
+      vn->setStackAliasHold();
+      vn->setAutoLiveHold();
+    }
+    else if (vn->isStackAliasHold()) {
+      vn->clearStackAliasHold();
+      vn->clearAutoLiveHold();
+    }
+  }
+}
+
 int4 ActionDeadCode::apply(Funcdata &data)
 
 {
@@ -4171,6 +4358,8 @@ int4 ActionDeadCode::apply(Funcdata &data)
   VarnodeLocSet::const_iterator viter,endviter;
   const AddrSpaceManager *manage = data.getArch();
   AddrSpace *spc;
+
+  stackAliasPrepare(data);	// (kuna GH-8500) option stackalias: hold aliased explicit stack stores
 
 				// Clear consume flags
   for(viter=data.beginLoc();viter!=data.endLoc();++viter) {

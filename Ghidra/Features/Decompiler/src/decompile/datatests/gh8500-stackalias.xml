@@ -1,0 +1,87 @@
+<decompilertest>
+<binaryimage arch="x86:LE:64:default:gcc">
+<!--
+    GH-8500: "stack address taken, stored, then dereferenced is mis-analysed."
+    https://github.com/NationalSecurityAgency/ghidra/issues/8500
+
+    Source (gcc -O0):
+      int identity(int x) {
+        int *p = &x;     // take the address of the (stack-resident) parameter
+        *p = x;          // store THROUGH the pointer back into the stack slot
+        return *p;       // read THROUGH the pointer
+      }
+
+    The address of the parameter's stack slot (s-0x1c) is spilled to another
+    stack slot (s-0x10 = p).  The value is then stored through p (*p = x) and
+    re-read through p (return *p).  RuleStoreVarnode turns the store into a
+    stack COPY (Varnode::stack_store) one main-loop iteration before
+    RuleLoadVarnode turns the aliasing LOAD into a read of s-0x1c; dead-code
+    removal takes the unread store in between, heritage then finds the new
+    read with no reaching definition ("Heritage AFTER dead removal"), the
+    deadcode-delay restart does not close the gap, and the stock decompiler
+    prints an uninitialized local:
+
+        xunknown4 identity(void)
+        {
+          xunknown4 xStack_1c;
+          return xStack_1c;
+        }
+
+    Port of kuna's option stackalias (kuna_stackalias.rs prepare/holds_store;
+    GayHydra #477).  ActionDeadCode::stackAliasPrepare gives every explicit
+    stack store in the local frame that a stack pointer could still observe
+    (AliasChecker, not Varnode::nolocalalias, not provably overwritten before
+    an observer) an autolive hold before the consume walk, and
+    ActionVarnodeProps leaves that hold alone, so the store survives until the
+    LOAD resolves to it.  Default off, as in kuna: the policy is conservative
+    and retains dead frame writes.  With the option on the fork prints
+
+        xunknown4 identity(xunknown4 param_1)
+        {
+          xunknown4 axStack_1c [3];
+          xunknown4 *pxStack_10;
+          pxStack_10 = axStack_1c;
+          axStack_1c[0] = param_1;
+          return param_1;
+        }
+
+    i.e. the parameter is recovered and returned; the two retained stores are
+    the held (correct but dead) frame writes.
+
+    Assertions follow kuna's testcase.  kuna's heritage already fixed its own
+    copy of this bug, so kuna expects both halves to return the parameter; the
+    fork reproduces the bug by default, so the first half asserts the stock
+    symptom (one "return <type>Stack_NN;") and the second half asserts the
+    fixed form.  kuna's register name a0 is the fork's param_1.
+
+    Disassembly (identity @ 0x1139):
+      1139 55              PUSH RBP
+      113a 4889e5          MOV  RBP,RSP
+      113d 897dec          MOV  dword ptr [RBP + -0x14],EDI
+      1140 488d45ec        LEA  RAX,[RBP + -0x14]
+      1144 488945f8        MOV  qword ptr [RBP + -0x8],RAX
+      1148 8b55ec          MOV  EDX,dword ptr [RBP + -0x14]
+      114b 488b45f8        MOV  RAX,qword ptr [RBP + -0x8]
+      114f 8910            MOV  dword ptr [RAX],EDX
+      1151 488b45f8        MOV  RAX,qword ptr [RBP + -0x8]
+      1155 8b00            MOV  EAX,dword ptr [RAX]
+      1157 5d              POP  RBP
+      1158 c3              RET
+-->
+<bytechunk space="ram" offset="0x1139" readonly="true">
+554889e5897dec488d45ec488945f88b55ec488b45f88910488b45f88b005dc3
+</bytechunk>
+<symbol space="ram" offset="0x1139" name="identity"/>
+</binaryimage>
+<script>
+  <com>lo fu identity</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>option stackalias on</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH8500 #1: stock output returns the uninitialized stack local (bug reproduces, default off)" min="1" max="1">return \w*Stack_\w+;</stringmatch>
+<stringmatch name="GH8500 #2: option stackalias on holds the store-through-pointer live and returns the parameter" min="1" max="1">return param_1;</stringmatch>
+</decompilertest>

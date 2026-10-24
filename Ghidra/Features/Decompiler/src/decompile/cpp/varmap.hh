@@ -158,6 +158,7 @@ public:
   AliasChecker() { fd = (const Funcdata *)0; space = (AddrSpace *)0; calculated=false; }	///< Constructor
   void gather(const Funcdata *f,AddrSpace *spc,bool defer);		///< Gather Varnodes that point on the stack
   bool hasLocalAlias(Varnode *vn) const;	///< Return \b true if it looks like the given Varnode is aliased by a pointer
+  bool hasLocalAlias(AddrSpace *spc,uintb offset) const;	///< Return \b true if the given byte could be aliased by a pointer
   void sortAlias(void) const;			///< Sort the alias starting offsets
   const vector<AddBase> &getAddBase(void) const { return addBase; }	///< Get the collection of pointer Varnodes
   const vector<uintb> &getAlias(void) const { return alias; }		///< Get the list of alias starting offsets

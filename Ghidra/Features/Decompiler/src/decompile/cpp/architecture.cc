@@ -1438,6 +1438,7 @@ void Architecture::resetDefaultsInternal(void)
   add_carry_chain = false;	// GH-8913: off by default (stock output); "option addcarrychain on" enables
   nan_ignore_all = false;
   nan_ignore_compare = true;	// Ignore only NaN operations associated with floating-point comparisons by default
+  stack_alias_deadstore = false;	// (kuna GH-8500) default off: stock output byte-identical
   alias_block_level = 2;	// Block structs and arrays by default, but not more primitive data-types
   split_datatype_config = OptionSplitDatatypes::option_struct | OptionSplitDatatypes::option_array
       | OptionSplitDatatypes::option_pointer;

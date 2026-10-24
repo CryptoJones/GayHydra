@@ -191,6 +191,7 @@ public:
   bool add_carry_chain;		///< (GH-8913) True if RuleAddCarryChain fuses 8-bit carry-chained add pairs into one wide add
   bool nan_ignore_all;		///< True if we should ignore NaN operations, i.e. nan() always returns false
   bool nan_ignore_compare;	///< True if we should ignore NaN operations protecting floating-point comparisons
+  bool stack_alias_deadstore;	///< (kuna GH-8500) True if aliased stack stores are held live across dead-code removal
   vector<AddrSpace *> inferPtrSpaces;	///< Set of address spaces in which a pointer constant is inferable
   int4 funcptr_align;		///< How many bits of alignment a function ptr has
   uint4 flowoptions;            ///< options passed to flow following engine
