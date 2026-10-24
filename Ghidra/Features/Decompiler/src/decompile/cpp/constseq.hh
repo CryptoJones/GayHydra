@@ -68,15 +68,18 @@ class StringSequence : public ArraySequence {
   Address rootAddr;		///< Address within the memory region associated with the root PcodeOp
   Address startAddr;		///< Starting address of the memory region
   SymbolEntry *entry;		///< Symbol at the root Address
+  bool fillMode;		///< GH-9230/GH-1537 (#477): \b true if collecting a constant fill (memset) rather than a string
   bool collectCopyOps(int size);	///< Collect ops COPYing constants into the memory region
   PcodeOp *buildStringCopy(void);	///< Build the strncpy,wcsncpy, or memcpy function with string as input
+  PcodeOp *buildMemset(void);		///< GH-9230/GH-1537 (#477): build a memset user-op for a constant-fill sequence
   static void removeForward(const WriteNode &curNode,map<PcodeOp *,list<WriteNode>::iterator> &xref,
 			    list<WriteNode> &points,vector<WriteNode> &deadOps);
   void removeCopyOps(PcodeOp *replaceOp);	///< Remove all the COPY ops from the basic block
   Varnode *constructTypedPointer(PcodeOp *insertPoint);
 public:
-  StringSequence(Funcdata &fdata,Datatype *ct,SymbolEntry *ent,PcodeOp *root,const Address &addr);
-  bool transform(void);		///< Transform COPYs into a single memcpy user-op
+  static const int4 MINIMUM_FILL_BYTES;	///< GH-9230 (#477): minimum byte footprint of a COPY run accepted as a memset
+  StringSequence(Funcdata &fdata,Datatype *ct,SymbolEntry *ent,PcodeOp *root,const Address &addr,bool fill=false);
+  bool transform(void);		///< Transform COPYs into a single memcpy/memset user-op
 };
 
 /// \brief A sequence of STORE operations writing characters through the same string pointer
@@ -157,6 +160,26 @@ public:
   virtual Rule *clone(const ActionGroupList &grouplist) const {
     if (!grouplist.contains(getGroup())) return (Rule *)0;
     return make_unique<RuleMemset>(getGroup()).release();
+  }
+  virtual void getOpList(vector<uint4> &oplist) const;
+  virtual int4 applyOp(PcodeOp *op,Funcdata &data);
+};
+
+/// \class RuleMemsetCopy
+/// \brief Replace a run of COPY ops filling a character array with one repeated byte by a single \b memset CALLOTHER
+///
+/// Port of kuna's \e memsetrecover rule for upstream GH-9230 (inlined \b bzero of a stack buffer) and GH-1537
+/// (XMM zeroing of a global buffer), GayHydra #477.  Those fills reach the cleanup pool as per-element
+/// constant COPYs (after RuleSplitCopy) which RuleStringCopy declines: its StringSequence treats a zero
+/// root as an empty string.  This rule reuses StringSequence in \e fill mode and is gated by
+/// Architecture::memset_recover (\b option \b memsetrecover, default off).  It is the COPY-side twin of
+/// \ref RuleMemset and runs after RuleStringCopy so genuine strings keep their strncpy rendering.
+class RuleMemsetCopy : public Rule {
+public:
+  RuleMemsetCopy(const string &g) : Rule( g, 0, "memsetcopy") {}	///< Constructor
+  virtual Rule *clone(const ActionGroupList &grouplist) const {
+    if (!grouplist.contains(getGroup())) return (Rule *)0;
+    return make_unique<RuleMemsetCopy>(getGroup()).release();
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);

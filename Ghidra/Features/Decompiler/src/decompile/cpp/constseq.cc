@@ -20,6 +20,7 @@ namespace ghidra {
 
 const int4 ArraySequence::MINIMUM_SEQUENCE_LENGTH = 4;
 const int4 ArraySequence::MAXIMUM_SEQUENCE_LENGTH = 0x20000;
+const int4 StringSequence::MINIMUM_FILL_BYTES = 16;	// GH-9230 (#477): one SIMD store; keeps a short string's NUL run from being claimed
 
 /// Initialize the sequence with the \b root operation which writes the earliest character in the memory region.
 /// \param fdata is the function containing the sequence
@@ -210,18 +211,27 @@ uint4 ArraySequence::selectStringCopyFunction(int4 &index)
 /// \param ent is the given Symbol
 /// \param root is the COPY holding the constant
 /// \param addr is the Address being COPYed into
-StringSequence::StringSequence(Funcdata &fdata,Datatype *ct,SymbolEntry *ent,PcodeOp *root,const Address &addr)
+/// \param fill is \b true to collect a constant fill (memset) rather than a string (GH-9230/GH-1537, #477)
+StringSequence::StringSequence(Funcdata &fdata,Datatype *ct,SymbolEntry *ent,PcodeOp *root,const Address &addr,bool fill)
   : ArraySequence(fdata,ct,root)
 {
   rootAddr = addr;
   entry = ent;
+  fillMode = fill;
+  fillValue = 0;
   if (entry->getAddr().getSpace() != addr.getSpace())
     return;
   int8 off = rootAddr.getOffset() - entry->getFirst();
   if (off >= entry->getSize())
     return;
-  if (rootOp->getIn(0)->getOffset() == 0)
-    return;
+  if (fillMode) {
+    // GH-9230 (#477): memset is a byte-granular contiguous fill, so only attempt it on element types
+    // with no inter-element padding (mirrors HeapSequence's fill-mode precondition).
+    if (charType->getSize() != charType->getAlignSize())
+      return;
+  }
+  else if (rootOp->getIn(0)->getOffset() == 0)
+    return;			// A string cannot start with its terminator (a fill of zero can)
   Datatype *parentType = entry->getSymbol()->getType();
   Datatype *arrayType = (Datatype *)0;
   int8 lastOff = 0;
@@ -246,7 +256,9 @@ StringSequence::StringSequence(Funcdata &fdata,Datatype *ct,SymbolEntry *ent,Pco
   if (!checkInterference())
     return;
   int4 arrSize = arrayType->getSize() - (int4)(rootAddr.getOffset() - startAddr.getOffset());
-  numElements = formByteArray(arrSize,0,rootAddr.getOffset(),rootAddr.isBigEndian());
+  numElements = formByteArray(arrSize,0,rootAddr.getOffset(),rootAddr.isBigEndian(),fillMode);
+  if (fillMode && numElements * charType->getSize() < MINIMUM_FILL_BYTES)
+    numElements = 0;		// GH-9230 (#477): too small a footprint to be a memset
 }
 
 /// The COPYs must be in the same basic block.
@@ -418,6 +430,36 @@ PcodeOp *StringSequence::buildStringCopy(void)
   return copyOp;
 }
 
+/// GH-9230/GH-1537 (#477): build a \b builtin_memset CALLOTHER for a constant-fill COPY sequence.  The
+/// destination is a typed pointer into the array (as for buildStringCopy); the value is the single repeated
+/// byte (\b fillValue); the length is the byte size of the contiguous region.  The user-op is inserted just
+/// before the earliest COPY.  No source string is created.
+/// \return the constructed PcodeOp representing the \b memset
+PcodeOp *StringSequence::buildMemset(void)
+
+{
+  PcodeOp *insertPoint = moveOps[0].op;		// Earliest COPY in the block
+  Architecture *glb = data.getArch();
+  uint4 builtInId = UserPcodeOp::BUILTIN_MEMSET;
+  glb->userops.registerBuiltin(builtInId);
+  PcodeOp *setOp = data.newOp(4,insertPoint->getAddr());
+  data.opSetOpcode(setOp, CPUI_CALLOTHER);
+  data.opSetInput(setOp, data.newConstant(4, builtInId), 0);
+  Varnode *destPtr = constructTypedPointer(insertPoint);
+  data.opSetInput(setOp, destPtr, 1);
+  if (destPtr->getType()->needsResolution())
+    data.inheritUnionFieldPtr(destPtr->getType(), setOp, 1, insertPoint, -1);
+  Varnode *valVn = data.newConstant(4, (uint8)fillValue);	// The repeated fill byte
+  valVn->updateType(setOp->inputTypeLocal(2));
+  data.opSetInput(setOp, valVn, 2);
+  int4 numBytes = numElements * charType->getSize();
+  Varnode *lenVn = data.newConstant(4, numBytes);
+  lenVn->updateType(setOp->inputTypeLocal(3));
+  data.opSetInput(setOp, lenVn, 3);
+  data.opInsertBefore(setOp, insertPoint);
+  return setOp;
+}
+
 /// \brief Analyze output descendants of the given PcodeOp being removed
 ///
 /// Record any \b points where the output is being read, for later replacement.
@@ -500,7 +542,7 @@ void StringSequence::removeCopyOps(PcodeOp *replaceOp)
 bool StringSequence::transform(void)
 
 {
-  PcodeOp *memCpyOp = buildStringCopy();
+  PcodeOp *memCpyOp = fillMode ? buildMemset() : buildStringCopy();	// GH-9230/GH-1537 (#477)
   if (memCpyOp == (PcodeOp *)0)
     return false;
   removeCopyOps(memCpyOp);
@@ -1097,6 +1139,41 @@ int4 RuleStringStore::applyOp(PcodeOp *op,Funcdata &data)
   if (!ct->isCharPrint()) return 0;			// Copied to a "char" data-type Varnode
   if (ct->isOpaqueString()) return 0;
   HeapSequence sequence(data,ct,op);
+  if (!sequence.isValid())
+    return 0;
+  if (!sequence.transform())
+    return 0;
+  return 1;
+}
+
+void RuleMemsetCopy::getOpList(vector<uint4> &oplist) const
+
+{
+  oplist.push_back(CPUI_COPY);
+}
+
+/// \class RuleMemsetCopy
+/// \brief Replace a run of COPY ops writing one repeated constant byte into a character array with a single \b memset
+///
+/// GH-9230/GH-1537 (#477), ported from kuna's \e memsetrecover.  Same entry guards as RuleStringCopy (constant
+/// source, address-tied character destination inside a Symbol), but the StringSequence is built in \e fill
+/// mode: a zero root is allowed, every byte of the contiguous region must equal the fill byte, and the run must
+/// cover at least StringSequence::MINIMUM_FILL_BYTES.  The run is replaced by \b builtin_memset(dest,value,count).
+/// The rule is a no-op unless \b option \b memsetrecover is on (Architecture::memset_recover).
+int4 RuleMemsetCopy::applyOp(PcodeOp *op,Funcdata &data)
+
+{
+  if (!data.getArch()->memset_recover) return 0;	// Opt-in (default off = stock output)
+  if (!op->getIn(0)->isConstant()) return 0;		// Constant
+  Varnode *outvn = op->getOut();
+  Datatype *ct = outvn->getTypeDefFacing();
+  if (!ct->isCharPrint()) return 0;			// Copied to a "char" data-type Varnode
+  if (ct->isOpaqueString()) return 0;
+  if (!outvn->isAddrTied()) return 0;
+  SymbolEntry *entry = data.getScopeLocal()->queryContainer(outvn->getAddr(), outvn->getSize(), op->getAddr());
+  if (entry == (SymbolEntry *)0)
+    return 0;
+  StringSequence sequence(data,ct,entry,op,outvn->getAddr(),true);	// fill mode
   if (!sequence.isValid())
     return 0;
   if (!sequence.transform())

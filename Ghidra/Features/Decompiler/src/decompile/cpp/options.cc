@@ -44,6 +44,7 @@ ElementId ELEM_INPLACEOPS = ElementId("inplaceops",192);
 ElementId ELEM_INPUTVARNODEADJUST = ElementId("inputvarnodeadjust",4005);	// GH-9218 (kuna option id range)
 ElementId ELEM_DYNAMICHASHMAX = ElementId("dynamichashmax",4006);
 ElementId ELEM_BOOLEANMASK = ElementId("booleanmask",4008);	// GH-1282 (kuna option id range)
+ElementId ELEM_MEMSETRECOVER = ElementId("memsetrecover",4010);	// GH-9230/GH-1537 (#477): id in kuna's 4000+ option range
 ElementId ELEM_INTEGERFORMAT = ElementId("integerformat",193);
 ElementId ELEM_JUMPLOAD = ElementId("jumpload",194);
 ElementId ELEM_MAXINSTRUCTION = ElementId("maxinstruction",195);
@@ -128,6 +129,7 @@ OptionDatabase::OptionDatabase(Architecture *g)
   registerOption(make_unique<OptionCondExePlace>().release());
   registerOption(make_unique<OptionBooleanMask>().release());
   registerOption(make_unique<OptionFlagCompare>().release());
+  registerOption(make_unique<OptionMemsetRecover>().release());
   registerOption(make_unique<OptionConventionPrinting>().release());
   registerOption(make_unique<OptionNoCastPrinting>().release());
   registerOption(make_unique<OptionMaxLineWidth>().release());
@@ -600,6 +602,22 @@ string OptionFlagCompare::apply(Architecture *glb,const string &p1,const string 
   string prop;
   prop = val ? "on" : "off";
   return "Flag-modelled comparison folding turned "+prop;
+}
+
+/// \class OptionMemsetRecover
+/// \brief Toggle whether a run of constant COPYs filling a character array with one repeated byte
+/// (an inlined or SIMD-unrolled \b memset / \b bzero) is collapsed into a single \b builtin_memset call
+///
+/// Ported from kuna's \e memsetrecover option for upstream GH-9230 / GH-1537 (#477).  Default \b off
+/// keeps the stock per-element output; \b on enables RuleMemsetCopy.
+string OptionMemsetRecover::apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const
+
+{
+  bool val = onOrOff(p1);
+  glb->memset_recover = val;
+  string prop;
+  prop = val ? "on" : "off";
+  return "Constant-fill (memset) recovery turned "+prop;
 }
 
 /// \class OptionConventionPrinting

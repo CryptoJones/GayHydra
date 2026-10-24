@@ -50,6 +50,7 @@ extern ElementId ELEM_INPLACEOPS;		///< Marshaling element \<inplaceops>
 extern ElementId ELEM_INPUTVARNODEADJUST;	///< Marshaling element \<inputvarnodeadjust>
 extern ElementId ELEM_DYNAMICHASHMAX;		///< Marshaling element \<dynamichashmax>
 extern ElementId ELEM_BOOLEANMASK;		///< Marshaling element \<booleanmask>
+extern ElementId ELEM_MEMSETRECOVER;		///< Marshaling element \<memsetrecover> (GH-9230/GH-1537, #477)
 extern ElementId ELEM_INTEGERFORMAT;		///< Marshaling element \<integerformat>
 extern ElementId ELEM_JUMPLOAD;			///< Marshaling element \<jumpload>
 extern ElementId ELEM_MAXINSTRUCTION;		///< Marshaling element \<maxinstruction>
@@ -236,6 +237,12 @@ public:
 class OptionFlagCompare : public ArchOption {
 public:
   OptionFlagCompare(void) { name = "flagcompare"; }	///< Constructor
+  virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
+};
+
+class OptionMemsetRecover : public ArchOption {
+public:
+  OptionMemsetRecover(void) { name = "memsetrecover"; }	///< Constructor
   virtual string apply(Architecture *glb,const string &p1,const string &p2,const string &p3) const;
 };
 

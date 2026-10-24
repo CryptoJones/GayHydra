@@ -6064,6 +6064,7 @@ void ActionDatabase::universalAction(Architecture *conf)
     actcleanup->addRule(make_unique<RuleStringCopy>("constsequence").release());
     actcleanup->addRule(make_unique<RuleStringStore>("constsequence").release());
     actcleanup->addRule(make_unique<RuleMemset>("constsequence").release());	// Rec 39 (#39-4a): after RuleStringStore so strings keep their rendering
+    actcleanup->addRule(make_unique<RuleMemsetCopy>("constsequence").release());	// GH-9230/GH-1537 (#477): COPY-side fill, after RuleStringCopy; gated by memsetrecover
     actcleanup->addRule(make_unique<RulePopcount>("constsequence").release());	// Rec 39 (#39-4b): fold SWAR popcount idiom into POPCOUNT
     actcleanup->addRule(make_unique<RuleBitFieldStore>("bitfields").release());
     actcleanup->addRule(make_unique<RuleBitFieldOut>("bitfields").release());
