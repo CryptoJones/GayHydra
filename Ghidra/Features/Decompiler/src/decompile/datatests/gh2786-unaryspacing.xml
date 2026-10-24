@@ -1,0 +1,40 @@
+<decompilertest>
+<binaryimage arch="MIPS:BE:32:default">
+<!--
+    GH-2786: "Decompiler produces incorrect syntax with double negation"
+    https://github.com/NationalSecurityAgency/ghidra/issues/2786
+
+    Two nested float negations (FLOAT_NEG of FLOAT_NEG, deliberately NOT folded
+    by analysis for NaN/sign correctness) must render as -(-x).  The pre-fix
+    upstream decompiler emitted the adjacent token pair "minus minus x" (no parentheses), which C re-parses
+    as the pre-decrement operator: wrong semantics from valid-looking source.
+
+    The fix lives in PrintLanguage::parentheses (printlanguage.cc), unary_prefix
+    case: a unary prefix token nested directly inside the same unary prefix
+    token always gets parentheses.  This fork already carries that fix, so
+    there is no option to toggle; this datatest is the regression guard ported
+    from kuna's tests/stages/gh2786-unaryspacing.xml (GayHydra #477).
+    Assertion #1 proves the fixed form; assertion #2 proves the mis-parsing
+    token never appears.
+
+    Bytes: the issue's MIPS:BE:32 function (LukeSerne's attachment) with a
+    trailing "jr ra; nop" appended so flow analysis terminates in the image.
+-->
+<bytechunk space="ram" offset="0x0" readonly="true">
+c7a2007c460004874406a00046009207
+46001087440540004407100027ae00dc
+27af00d827b900d4e7a00078afb90018
+afaf0014afae0010e7a200480c0053b4
+27a4008403e0000800000000
+</bytechunk>
+<symbol space="ram" offset="0x0" name="FUN_00000000"/>
+</binaryimage>
+<script>
+  <com>lo fu FUN_00000000</com>
+  <com>decompile</com>
+  <com>print C</com>
+  <com>quit</com>
+</script>
+<stringmatch name="GH2786 #1: nested float negation is parenthesized" min="1" max="1">-\(-\w+\)</stringmatch>
+<stringmatch name="GH2786 #2: the mis-parsing predecrement token is gone" min="0" max="0">--\w</stringmatch>
+</decompilertest>
