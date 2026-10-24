@@ -16,7 +16,7 @@ Seeded 2026-09-06 from the 23 open issues; kuna-derived items added 2026-10-23.
 - [ ] Decompiler options: OptionDecompileBudgetPass has no ElementId, so every unknown option name dispatches to it — [#489](https://github.com/CryptoJones/GayHydra/issues/489)
 - [x] IPC framing auto mode hangs forever against a v0-only decompiler core instead of falling back — [#491](https://github.com/CryptoJones/GayHydra/issues/491)
 - [x] PcodeBlock.BlockEdge.decode requires the edgelabel attribute, so a stock-protocol core fails on every function with control flow — [#497](https://github.com/CryptoJones/GayHydra/issues/497)
-- [ ] V850 spec: define the ctbp register, so the two remaining kuna testcases of #477 can run — [#509](https://github.com/CryptoJones/GayHydra/issues/509)
+- [x] V850 spec: define the ctbp register, so the two remaining kuna testcases of #477 can run — [#509](https://github.com/CryptoJones/GayHydra/issues/509)
 - [ ] SymbolPathParser detailed-processing — better-results test owner needed — [#57](https://github.com/CryptoJones/GayHydra/issues/57) _(`ignore:1y`)_
 - [ ] JitJvmTypeUtilsTest tightly bound to Java version — manual-tool — [#62](https://github.com/CryptoJones/GayHydra/issues/62) _(`ignore:1y`)_
 - [ ] AbstractToyJitCodeGenerator undefined-cases — edge-case JIT codegen — [#63](https://github.com/CryptoJones/GayHydra/issues/63) _(`ignore:1y`)_
