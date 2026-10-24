@@ -177,7 +177,7 @@ public class PcodeBlock {
 				throw new DecoderException("Bad serialized edge in block graph");
 			}
 			reverse_index = (int) decoder.readSignedInteger(ATTRIB_REV);
-			label = (int) decoder.readUnsignedInteger(ATTRIB_EDGE_LABEL);
+			label = decodeLabel(decoder);
 			decoder.closeElement(el);
 		}
 
@@ -190,8 +190,30 @@ public class PcodeBlock {
 				throw new DecoderException("Bad serialized edge in block list");
 			}
 			reverse_index = (int) decoder.readSignedInteger(ATTRIB_REV);
-			label = (int) decoder.readUnsignedInteger(ATTRIB_EDGE_LABEL);
+			label = decodeLabel(decoder);
 			decoder.closeElement(el);
+		}
+
+		/**
+		 * Read the optional edge label. The fork's native decompiler always writes
+		 * {@code edgelabel} (#163), but stock Ghidra's protocol has no such attribute,
+		 * so a core that speaks the stock protocol (kuna's {@code kuna_ghidra}, #497)
+		 * omits it. An absent label means 0, no label, as in the stock protocol.
+		 * @param decoder is the stream decoder, positioned inside the edge element
+		 * @return the edge label, or 0 when the element carries none
+		 * @throws DecoderException for invalid encodings
+		 */
+		private static int decodeLabel(Decoder decoder) throws DecoderException {
+			decoder.rewindAttributes();
+			for (;;) {
+				int attribId = decoder.getNextAttributeId();
+				if (attribId == 0) {
+					return 0;
+				}
+				if (attribId == ATTRIB_EDGE_LABEL.id()) {
+					return (int) decoder.readUnsignedInteger();
+				}
+			}
 		}
 
 		@Override
