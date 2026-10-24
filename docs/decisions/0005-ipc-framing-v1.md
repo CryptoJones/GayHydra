@@ -126,7 +126,7 @@ v0 fallback active behavior the audit asked for.
 | Server (decompiler) speaks | Client (Ghidra) speaks | Result |
 |---|---|---|
 | v0 only | v0 | works (today) |
-| v0 only | v1 | client first-bytes are v1 magic → server's `readToAnyBurst` sees `\0\0\1\NN`-not-matching and exits-1, just like today. **No regression**. |
+| v0 only | v1 | client first-bytes are v1 magic → server's `readToAnyBurst` skips them (it discards every byte that is not a `\0\0\1\NN` marker, and `readCommand` discards every marker but command-start) and keeps waiting for a command; it never exits. The client must therefore not wait forever for a reply — see the bounded-wait addendum below. *(Corrected 2026-10-24, #491: this row originally claimed the server "exits-1"; it does not, which is exactly why both ends hung.)* |
 | v1 + v0 fallback | v0 | server sees first-bytes are not v1 magic → drops to v0 reader. **Works**. |
 | v1 + v0 fallback | v1 | both send greeting, both verify CRC. **Native v1**. |
 
@@ -301,6 +301,29 @@ flip in an attended session with live end-to-end verification; or
 **(c)** keep the greeting-only-v1 state shipped in v26.1.16 as the
 terminal design for the v26.1.x line. The v0 command path is the
 safety net either way.
+
+## Addendum (2026-10-24, #491): bounded greeting wait in `auto` mode
+
+`decompiler.framing=auto` sends the v1 greeting and then waits for the
+peer's reply — and, as shipped, waited **forever** against a v0-only
+core: a stock-protocol decompiler (e.g. kuna's `kuna_ghidra`) never
+answers a greeting, and its `readToAnyBurst` loop silently skips the
+greeting bytes while waiting for a `\0\0\1\2` command marker, so
+neither side ever moved (`analyzeHeadless` with
+`GHIDRA_DECOMPILER_EXE=kuna_ghidra` sat for 45 minutes; `-Ddecompiler.framing=v0`
+finished in under a minute). `DecompileProcess.negotiateFramingV1()` now
+bounds that wait in `auto` mode only: it polls the pipe for the first
+reply byte (consuming nothing) for `GREETING_TIMEOUT_MS_DEFAULT`
+(500 ms — `setup()` has already given the process 200 ms to load, and a
+v1 peer replies as its very first act), overridable through the
+`decompiler.framing.greetingTimeoutMs` system property, then drops that
+process to v0 framing in place and logs once per JVM at INFO that the
+peer did not negotiate v1 (a successful v1 handshake is likewise logged
+once). No respawn is needed: the greeting already on the pipe is inert
+to a v0 server for the reason above, and the client's input stream is
+untouched when the v0 command loop starts. `v1` mode keeps the unbounded
+wait and `v0` mode is unchanged. Tests: `DecompileProcessFramingFallbackTest`
+(fast `test` sourceset, fake peers).
 
 ## Open questions deferred to the implementation PRs
 
