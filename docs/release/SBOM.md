@@ -7,7 +7,7 @@
 Every release publishes **two** copies of the SBOM:
 
 1. **Inside the release zip** at `support/sbom/bom.json` — written by the upstream NSA SBOM generator at `gradle/support/sbom.gradle` as part of the distribution-assembly step.
-2. **As a standalone signed release asset** at `<release_zip_basename>-bom.json` — extracted from the zip by `.github/workflows/release.yml`, Cosign-signed (keyless OIDC) the same way the zip is signed, and uploaded to the GitHub Release alongside `.sig` + `.crt`. PR [#230](https://github.com/CryptoJones/GayHydra/pull/230).
+2. **As a standalone signed release asset** at `<release_zip_basename>-bom.json` — extracted from the zip by `.github/workflows/release.yml`, Cosign-signed (keyless OIDC) the same way the zip is signed, and uploaded to the GitHub Release with its Sigstore bundle (`.cosign.bundle`; releases up to v26.4.0 used a `.sig` + `.crt` pair). PR [#230](https://github.com/CryptoJones/GayHydra/pull/230).
 
 Both copies are byte-identical; the standalone asset just saves downstream supply-chain scanners the round-trip of pulling the full distribution to read 50 KB of JSON.
 
@@ -41,17 +41,17 @@ For a downloaded standalone SBOM asset (`<base>-bom.json`):
 
 ```sh
 # 1. Cosign-verify the SBOM signature
-cosign verify-blob \
-  --certificate <base>-bom.json.crt \
-  --signature   <base>-bom.json.sig \
-  --certificate-identity-regexp 'https://github.com/CryptoJones/GayHydra/' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  <base>-bom.json
+cosign verify-blob <base>-bom.json \
+  --bundle <base>-bom.json.cosign.bundle \
+  --certificate-identity-regexp '^https://github.com/CryptoJones/GayHydra/\.github/workflows/release\.yml@' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 
 # 2. Inspect components
 jq '.components | length' <base>-bom.json
 jq '.components[] | .name' <base>-bom.json
 ```
+
+Releases up to and including v26.4.0 ship a separate `.sig` and `.crt` per file instead of a bundle; verify those with `--signature <file>.sig --certificate <file>.crt` in place of `--bundle`.
 
 Or fall back to the in-zip copy if the standalone asset hasn't been generated yet (releases pre-#230):
 

@@ -49,25 +49,23 @@ they sign.
 # https://docs.sigstore.dev/cosign/system_config/installation/
 
 # Verify the release zip
-cosign verify-blob \
+cosign verify-blob ghidra_<version>.zip \
+    --bundle ghidra_<version>.zip.cosign.bundle \
     --certificate-identity-regexp \
-        'https://github.com/CryptoJones/GayHydra/.github/workflows/release\.yml@.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-    --signature ghidra_<version>.zip.sig \
-    --certificate ghidra_<version>.zip.crt \
-    ghidra_<version>.zip
+        '^https://github.com/CryptoJones/GayHydra/\.github/workflows/release\.yml@' \
+    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 
 # Verify the bundled CycloneDX SBOM (extracted as a separate asset
 # alongside the zip — see release.yml's "Locate release zip + extract
 # bundled SBOM" step)
-cosign verify-blob \
+cosign verify-blob ghidra_<version>-bom.json \
+    --bundle ghidra_<version>-bom.json.cosign.bundle \
     --certificate-identity-regexp \
-        'https://github.com/CryptoJones/GayHydra/.github/workflows/release\.yml@.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-    --signature ghidra_<version>-bom.json.sig \
-    --certificate ghidra_<version>-bom.json.crt \
-    ghidra_<version>-bom.json
+        '^https://github.com/CryptoJones/GayHydra/\.github/workflows/release\.yml@' \
+    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 ```
+
+Releases up to and including v26.4.0 ship a separate `.sig` and `.crt` per file instead of a bundle; verify those with `--signature <file>.sig --certificate <file>.crt` in place of `--bundle`.
 
 A green `Verified OK` line tells the user the artifact was signed by
 an identity registered as our release workflow. The
@@ -75,8 +73,7 @@ an identity registered as our release workflow. The
 this repo); changing CI to sign from a different workflow would fail
 this check. **The identity URL must stay
 `github.com/CryptoJones/GayHydra/...`** — that's the OIDC identity
-GitHub Actions provides to Sigstore at sign time; mirroring the repo
-to Codeberg doesn't change it.
+GitHub Actions provides to Sigstore at sign time.
 
 The same flow verifies the native binaries individually. The release
 notes link to this doc and embed the exact commands pre-filled with
@@ -137,7 +134,7 @@ OSS ecosystem.
 ## Rollout
 
 1. **PR 1 (shipped in v26.1):** This doc. No CI changes yet.
-2. **PR 2 (#17-2, shipped):** [`.github/workflows/release.yml`](../../.github/workflows/release.yml). Triggers on tag push or workflow_dispatch; builds Ghidra (so the release zip + SBOM are produced fresh), signs the zip + SBOM with cosign keyless using the GitHub Actions OIDC identity, and uploads zip + .sig + .crt + SBOM + SBOM .sig + SBOM .crt to the GitHub release.
+2. **PR 2 (#17-2, shipped):** [`.github/workflows/release.yml`](../../.github/workflows/release.yml). Triggers on tag push or workflow_dispatch; builds Ghidra (so the release zip + SBOM are produced fresh), signs the zip + SBOM with cosign keyless using the GitHub Actions OIDC identity, and uploads zip + SBOM, each with its signature, to the GitHub release. From the release after v26.4.0 the signature is a single Sigstore bundle (`.cosign.bundle`, cosign v3); earlier releases carry a `.sig` + `.crt` pair.
 3. **PR 3 (follow-up):** Verification commands in the release-notes template.
 4. **PR 4 (follow-up):** Wire SLSA Level 3 attestations (`slsa-framework/slsa-github-generator`) for build provenance.
 
