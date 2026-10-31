@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 560 open PRs scanned. 148 PR→open-issue closing-references found, across 146 distinct PRs and 143 distinct issues.
+Snapshot: 557 open PRs scanned. 147 PR→open-issue closing-references found, across 145 distinct PRs and 142 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -128,7 +128,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#7283](https://github.com/NationalSecurityAgency/ghidra/issues/7283) Inplace assignment doesn't work in this specific case | [#8635](https://github.com/NationalSecurityAgency/ghidra/pull/8635) Decompiler: Improve support of in-place C operations | @LukeSerne | +159/-3 | 2025-11-16 |
 | 0 | [#9004](https://github.com/NationalSecurityAgency/ghidra/issues/9004) Catastrophic recursive conflict resolution in Structure Editor | [#9555](https://github.com/NationalSecurityAgency/ghidra/pull/9555) Speed up Structure Editor Apply on cross-referenced type graphs | @axd1x8a | +180/-25 | 2026-08-28 |
 | 0 | [#9064](https://github.com/NationalSecurityAgency/ghidra/issues/9064) [8051] Set the N and Z result flags macro only applies to 80251 | [#9572](https://github.com/NationalSecurityAgency/ghidra/pull/9572) [8051] Set the N and Z result flags only on the MCS-251 | @qatcod | +124/-112 | 2026-09-02 |
-| 0 | [#9963](https://github.com/NationalSecurityAgency/ghidra/issues/9963) A detached Memory Map window goes behind the CodeBrowser window after doing Delete Block | [#9993](https://github.com/NationalSecurityAgency/ghidra/pull/9993) Parent dialogs to the tool's last active window when no window is active | @lzandman | +240/-4 | 2026-10-22 |
 | 0 | [#6385](https://github.com/NationalSecurityAgency/ghidra/issues/6385) RISC-V: Support for WCH/QingKe XW extension | [#6390](https://github.com/NationalSecurityAgency/ghidra/pull/6390) RISC-V: Add WCH/QingKe XW extension | @ArcaneNibble | +245/-0 | 2024-04-07 |
 | 0 | [#8995](https://github.com/NationalSecurityAgency/ghidra/issues/8995) V850: 26 SLEIGH semantic bugs causing incorrect decompilation and disassembly | [#8996](https://github.com/NationalSecurityAgency/ghidra/pull/8996) V850: Fix 26 SLEIGH semantic bugs | @mmmorks | +194/-86 | 2026-02-22 |
 | 0 | [#496](https://github.com/NationalSecurityAgency/ghidra/issues/496) Is pacal calling convention supported? | [#9921](https://github.com/NationalSecurityAgency/ghidra/pull/9921) GP-0: Add x86-16 Pascal calling conventions | @egore | +278/-3 | 2026-10-15 |
