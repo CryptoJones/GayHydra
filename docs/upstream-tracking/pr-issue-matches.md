@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 557 open PRs scanned. 147 PR→open-issue closing-references found, across 145 distinct PRs and 142 distinct issues.
+Snapshot: 559 open PRs scanned. 148 PR→open-issue closing-references found, across 146 distinct PRs and 142 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -69,6 +69,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch halfword reversal semantics | @DORA-B | +6/-10 | 2026-07-30 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9436](https://github.com/NationalSecurityAgency/ghidra/pull/9436) #9434 Fix LoongArch scalar rotate semantics | @DORA-B | +8/-8 | 2026-07-30 |
 | 0 | [#9467](https://github.com/NationalSecurityAgency/ghidra/issues/9467) fix(test): make unitTestReport expose failed tests in its process status | [#9506](https://github.com/NationalSecurityAgency/ghidra/pull/9506) Make unitTestReport fail after aggregate test failures | @sylvesterkaczmarek | +17/-0 | 2026-08-16 |
+| 0 | [#3688](https://github.com/NationalSecurityAgency/ghidra/issues/3688) ARM: Old Exception return is misinterpreted (SUBS PC, LR, #<const>) | [#10077](https://github.com/NationalSecurityAgency/ghidra/pull/10077) ARM: treat SUBS PC, LR, #imm as exception return | @JoelPasapera | +17/-1 | 2026-11-01 |
 | 0 | [#6929](https://github.com/NationalSecurityAgency/ghidra/issues/6929) PPC4xx Processor Missing instructions | [#9932](https://github.com/NationalSecurityAgency/ghidra/pull/9932) PowerPC: Move isel instruction from quicciii.sinc to ppc_instructions.sinc | @RBND | +9/-9 | 2026-10-17 |
 | 0 | [#7321](https://github.com/NationalSecurityAgency/ghidra/issues/7321) Unlimited recursion at `ghidra::Heritage::renameRecurse` causing decompiler crash | [#8626](https://github.com/NationalSecurityAgency/ghidra/pull/8626) fix unbounded recursion in Varnode::eraseDescend | @qkaiser | +12/-6 | 2025-11-14 |
 | 0 | [#6988](https://github.com/NationalSecurityAgency/ghidra/issues/6988) Looks like search-and-replace mistake making a paragraph of the Sleigh documentation difficult to understand | [#9553](https://github.com/NationalSecurityAgency/ghidra/pull/9553) Fix Sleigh CBRANCH documentation wording | @juliosuas | +9/-10 | 2026-08-26 |
