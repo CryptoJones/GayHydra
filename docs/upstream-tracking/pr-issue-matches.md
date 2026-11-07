@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 576 open PRs scanned. 155 PR→open-issue closing-references found, across 152 distinct PRs and 149 distinct issues.
+Snapshot: 579 open PRs scanned. 156 PR→open-issue closing-references found, across 153 distinct PRs and 150 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -69,6 +69,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#5821](https://github.com/NationalSecurityAgency/ghidra/issues/5821) Decompiler: sleighexample.cc Outdated Build Instructions | [#9619](https://github.com/NationalSecurityAgency/ghidra/pull/9619) Document how to build sleighexample from the Ghidra tree | @xop01 | +15/-1 | 2026-09-13 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9438](https://github.com/NationalSecurityAgency/ghidra/pull/9438) #9434 Fix LoongArch halfword reversal semantics | @DORA-B | +6/-10 | 2026-07-30 |
 | 0 | [#9434](https://github.com/NationalSecurityAgency/ghidra/issues/9434) LoongArch SLEIGH scalar shifts, rotates, bit-field inserts, and reversals have incorrect semantics | [#9436](https://github.com/NationalSecurityAgency/ghidra/pull/9436) #9434 Fix LoongArch scalar rotate semantics | @DORA-B | +8/-8 | 2026-07-30 |
+| 0 | [#4472](https://github.com/NationalSecurityAgency/ghidra/issues/4472) Ghidra does not respect CFLAGS / LDFLAGS | [#10152](https://github.com/NationalSecurityAgency/ghidra/pull/10152) Honor CFLAGS, CXXFLAGS and LDFLAGS in native builds [DRAFT] | @theyottaboy | +17/-0 | 2026-11-07 |
 | 0 | [#9994](https://github.com/NationalSecurityAgency/ghidra/issues/9994) Cannot move parameters in function signature editor | [#10099](https://github.com/NationalSecurityAgency/ghidra/pull/10099) Function editor: rename parameters in two passes so names can move between parameters | @FlashHit | +15/-2 | 2026-11-02 |
 | 0 | [#9467](https://github.com/NationalSecurityAgency/ghidra/issues/9467) fix(test): make unitTestReport expose failed tests in its process status | [#9506](https://github.com/NationalSecurityAgency/ghidra/pull/9506) Make unitTestReport fail after aggregate test failures | @sylvesterkaczmarek | +17/-0 | 2026-08-16 |
 | 0 | [#3688](https://github.com/NationalSecurityAgency/ghidra/issues/3688) ARM: Old Exception return is misinterpreted (SUBS PC, LR, #<const>) | [#10077](https://github.com/NationalSecurityAgency/ghidra/pull/10077) ARM: treat SUBS PC, LR, #imm as exception return | @JoelPasapera | +17/-1 | 2026-11-01 |
