@@ -62,6 +62,7 @@ subprojects {
                     // High-EV checks at WARNING, expressed as raw javac args
                     // so we don't need to import CheckSeverity in this script.
                     errorproneArgs.addAll([
+                        '-Xep:JUnitIncompatibleType:OFF',
                         '-Xep:ImmutableEnumChecker:WARN',
                         '-Xep:MissingOverride:WARN',
                         '-Xep:MutableConstantField:WARN',
