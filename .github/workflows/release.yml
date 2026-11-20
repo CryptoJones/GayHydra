@@ -8,7 +8,7 @@ name: Release (build + sign + publish)
 # release zip (which bundles the upstream SBOM at the top of the
 # zip-prefix directory as bom.json via gradle/support/sbom.gradle),
 # signs the zip with cosign keyless using the workflow's OIDC identity,
-# and uploads zip + .sig + .crt to the GitHub release. The SBOM shipped
+# and uploads the zip and its Sigstore bundle (.cosign.bundle) to the GitHub release. The SBOM shipped
 # as a standalone signed asset is the in-zip one from the upstream
 # generator (extracted below). Rec 21's CycloneDX-plugin path
 # (org.cyclonedx.bom) was reverted in Sprint 7 and re-added in Sprint 8
@@ -69,7 +69,7 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
         with:
-          cosign-release: 'v2.4.0'
+          cosign-release: 'v3.1.4'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -178,21 +178,15 @@ jobs:
           fi
 
       - name: Sign release zip (cosign keyless)
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           cosign sign-blob --yes \
-            --output-signature ${{ steps.artifacts.outputs.ZIP }}.sig \
-            --output-certificate ${{ steps.artifacts.outputs.ZIP }}.crt \
+            --bundle ${{ steps.artifacts.outputs.ZIP }}.cosign.bundle \
             ${{ steps.artifacts.outputs.ZIP }}
 
       - name: Sign extracted SBOM (cosign keyless)
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           cosign sign-blob --yes \
-            --output-signature ${{ steps.artifacts.outputs.SBOM }}.sig \
-            --output-certificate ${{ steps.artifacts.outputs.SBOM }}.crt \
+            --bundle ${{ steps.artifacts.outputs.SBOM }}.cosign.bundle \
             ${{ steps.artifacts.outputs.SBOM }}
 
       - name: Upload signed artifacts to release
@@ -256,20 +250,16 @@ jobs:
             SBOM=${SBOM_NAME}
 
             # Verify the distribution zip
-            cosign verify-blob \\\\
-              --certificate "\$ZIP.crt" \\\\
-              --signature "\$ZIP.sig" \\\\
-              --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\\\
-              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \\\\
-              "\$ZIP"
+            cosign verify-blob "\$ZIP" \\
+              --bundle "\$ZIP.cosign.bundle" \\
+              --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\
+              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 
             # Verify the CycloneDX SBOM
-            cosign verify-blob \\\\
-              --certificate "\$SBOM.crt" \\\\
-              --signature "\$SBOM.sig" \\\\
-              --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\\\
-              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \\\\
-              "\$SBOM"
+            cosign verify-blob "\$SBOM" \\
+              --bundle "\$SBOM.cosign.bundle" \\
+              --certificate-identity-regexp '^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/release\.yml@' \\
+              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
             \`\`\`
 
             A successful verify means the bytes you downloaded match what \`release.yml\` produced on a GitHub-hosted runner from this repo's source at this tag (modulo the workflow-vs-source caveat the SprintPlanning entry notes for early v26.1.x tags).
@@ -282,73 +272,9 @@ jobs:
           fi
           gh release upload "$TAG" --clobber \
             ${{ steps.artifacts.outputs.ZIP }} \
-            ${{ steps.artifacts.outputs.ZIP }}.sig \
-            ${{ steps.artifacts.outputs.ZIP }}.crt \
+            ${{ steps.artifacts.outputs.ZIP }}.cosign.bundle \
             ${{ steps.artifacts.outputs.SBOM }} \
-            ${{ steps.artifacts.outputs.SBOM }}.sig \
-            ${{ steps.artifacts.outputs.SBOM }}.crt
-
-      - name: Mirror release to Codeberg (Gitea API)
-        # Codeberg is the canonical-source mirror (per DevGuide.md); without
-        # this step, Codeberg-only users only see tags, never prebuilts.
-        # Aaron: to enable, add a Codeberg user token to GitHub repo
-        # Settings → Secrets and variables → Actions as CB_TOKEN. Until
-        # the secret exists, this step exits 0 with a "skipped" message
-        # rather than failing the release.
-        env:
-          CB_TOKEN: ${{ secrets.CB_TOKEN }}
-          REF: ${{ github.event.inputs.tag || github.ref_name }}
-          CB_REPO: CryptoJones/GayHydra
-        run: |
-          if [ -z "${CB_TOKEN:-}" ]; then
-            echo "::warning::CB_TOKEN secret not set; skipping Codeberg release mirror. Add it to repo Settings → Secrets and variables → Actions to enable."
-            exit 0
-          fi
-          set -euxo pipefail
-          TAG=${REF#refs/tags/}
-          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
-
-          # Create the Codeberg release entry if missing (same idempotency
-          # logic as the GitHub branch above).
-          if ! curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-              "${CB_API}/releases/tags/${TAG}" >/dev/null 2>&1; then
-            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
-              -H "Content-Type: application/json" \
-              "${CB_API}/releases" \
-              -d "$(jq -nc --arg t "$TAG" \
-                '{tag_name:$t, name:$t, body:"Automated release mirrored from GitHub. Sprint notes appended at sprint close — see CHANGELOG.md.", draft:false, prerelease:false}')"
-          fi
-
-          # Fetch the release ID (needed for asset uploads on Gitea API).
-          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
-          test -n "$REL_ID" && test "$REL_ID" != "null" || { echo "::error::Codeberg release id lookup failed for $TAG"; exit 1; }
-
-          # Upload each asset; delete pre-existing asset of the same name
-          # first (Gitea's POST /assets has no --clobber equivalent).
-          upload() {
-            local file="$1"
-            local name
-            name="$(basename "$file")"
-            local existing
-            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-              "${CB_API}/releases/${REL_ID}/assets" \
-              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
-            if [ -n "$existing" ]; then
-              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
-                "${CB_API}/releases/${REL_ID}/assets/${existing}"
-            fi
-            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
-              -F "attachment=@${file};filename=${name}" \
-              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
-          }
-
-          upload "${{ steps.artifacts.outputs.ZIP }}"
-          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
-          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
-          upload "${{ steps.artifacts.outputs.SBOM }}"
-          upload "${{ steps.artifacts.outputs.SBOM }}.sig"
-          upload "${{ steps.artifacts.outputs.SBOM }}.crt"
+            ${{ steps.artifacts.outputs.SBOM }}.cosign.bundle
 
   # ---------------------------------------------------------------------
   # Mac (arm64) build — runs in parallel with the Linux job. Gated on
@@ -384,7 +310,7 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
         with:
-          cosign-release: 'v2.4.0'
+          cosign-release: 'v3.1.4'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -412,12 +338,9 @@ jobs:
           echo "Built: $ZIP ($(stat -f%z "$ZIP") bytes)"
 
       - name: Sign release zip (cosign keyless)
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           cosign sign-blob --yes \
-            --output-signature ${{ steps.artifacts.outputs.ZIP }}.sig \
-            --output-certificate ${{ steps.artifacts.outputs.ZIP }}.crt \
+            --bundle ${{ steps.artifacts.outputs.ZIP }}.cosign.bundle \
             ${{ steps.artifacts.outputs.ZIP }}
 
       - name: Upload signed mac artifacts to release
@@ -431,43 +354,7 @@ jobs:
           # added in #333). This job just attaches its assets.
           gh release upload "$TAG" --clobber \
             ${{ steps.artifacts.outputs.ZIP }} \
-            ${{ steps.artifacts.outputs.ZIP }}.sig \
-            ${{ steps.artifacts.outputs.ZIP }}.crt
-
-      - name: Mirror mac artifacts to Codeberg
-        env:
-          CB_TOKEN: ${{ secrets.CB_TOKEN }}
-          REF: ${{ github.event.inputs.tag || github.ref_name }}
-          CB_REPO: CryptoJones/GayHydra
-        run: |
-          if [ -z "${CB_TOKEN:-}" ]; then
-            echo "::warning::CB_TOKEN secret not set; skipping mac Codeberg mirror."
-            exit 0
-          fi
-          set -euxo pipefail
-          TAG=${REF#refs/tags/}
-          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
-          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
-          upload() {
-            local file="$1"
-            local name
-            name="$(basename "$file")"
-            local existing
-            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-              "${CB_API}/releases/${REL_ID}/assets" \
-              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
-            if [ -n "$existing" ]; then
-              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
-                "${CB_API}/releases/${REL_ID}/assets/${existing}"
-            fi
-            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
-              -F "attachment=@${file};filename=${name}" \
-              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
-          }
-          upload "${{ steps.artifacts.outputs.ZIP }}"
-          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
-          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
+            ${{ steps.artifacts.outputs.ZIP }}.cosign.bundle
 
   # ---------------------------------------------------------------------
   # Windows (x86_64) build — runs in parallel with linux + mac. Same
@@ -501,7 +388,7 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
         with:
-          cosign-release: 'v2.4.0'
+          cosign-release: 'v3.1.4'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -542,12 +429,9 @@ jobs:
 
       - name: Sign release zip (cosign keyless)
         shell: bash
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           cosign sign-blob --yes \
-            --output-signature "${{ steps.artifacts.outputs.ZIP }}.sig" \
-            --output-certificate "${{ steps.artifacts.outputs.ZIP }}.crt" \
+            --bundle "${{ steps.artifacts.outputs.ZIP }}.cosign.bundle" \
             "${{ steps.artifacts.outputs.ZIP }}"
 
       - name: Upload signed windows artifacts to release
@@ -559,44 +443,7 @@ jobs:
           TAG=${REF#refs/tags/}
           gh release upload "$TAG" --clobber \
             "${{ steps.artifacts.outputs.ZIP }}" \
-            "${{ steps.artifacts.outputs.ZIP }}.sig" \
-            "${{ steps.artifacts.outputs.ZIP }}.crt"
-
-      - name: Mirror windows artifacts to Codeberg
-        shell: bash
-        env:
-          CB_TOKEN: ${{ secrets.CB_TOKEN }}
-          REF: ${{ github.event.inputs.tag || github.ref_name }}
-          CB_REPO: CryptoJones/GayHydra
-        run: |
-          if [ -z "${CB_TOKEN:-}" ]; then
-            echo "::warning::CB_TOKEN secret not set; skipping windows Codeberg mirror."
-            exit 0
-          fi
-          set -euxo pipefail
-          TAG=${REF#refs/tags/}
-          CB_API="https://codeberg.org/api/v1/repos/${CB_REPO}"
-          REL_ID=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-            "${CB_API}/releases/tags/${TAG}" | jq -r '.id')
-          upload() {
-            local file="$1"
-            local name
-            name="$(basename "$file")"
-            local existing
-            existing=$(curl -fsS -H "Authorization: token ${CB_TOKEN}" \
-              "${CB_API}/releases/${REL_ID}/assets" \
-              | jq -r --arg n "$name" '.[] | select(.name == $n) | .id' | head -1)
-            if [ -n "$existing" ]; then
-              curl -fsS -X DELETE -H "Authorization: token ${CB_TOKEN}" \
-                "${CB_API}/releases/${REL_ID}/assets/${existing}"
-            fi
-            curl -fsS -X POST -H "Authorization: token ${CB_TOKEN}" \
-              -F "attachment=@${file};filename=${name}" \
-              "${CB_API}/releases/${REL_ID}/assets?name=${name}"
-          }
-          upload "${{ steps.artifacts.outputs.ZIP }}"
-          upload "${{ steps.artifacts.outputs.ZIP }}.sig"
-          upload "${{ steps.artifacts.outputs.ZIP }}.crt"
+            "${{ steps.artifacts.outputs.ZIP }}.cosign.bundle"
 
   # ---------------------------------------------------------------------
   # Publish the draft release after Linux/Mac/Windows have all uploaded

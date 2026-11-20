@@ -38,28 +38,26 @@ Every release artifact in this section is signed by the GayHydra release workflo
 # Pick the release zip from the assets below.
 ZIP=ghidra_<version>_<release>_<date>.zip
 
-cosign verify-blob \
-    --certificate-identity-regexp \
-        'https://github.com/CryptoJones/GayHydra/.github/workflows/release\.yml@.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-    --signature  "$ZIP.sig" \
-    --certificate "$ZIP.crt" \
-    "$ZIP"
+cosign verify-blob "$ZIP" \
+    --bundle "$ZIP.cosign.bundle" \
+    --certificate-identity-regexp '^https://github.com/CryptoJones/GayHydra/\.github/workflows/release\.yml@' \
+    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 ```
 
-A line `Verified OK` confirms the artifact was produced and signed by this repo's release workflow at this tag. The same flow verifies the bundled CycloneDX SBOM:
+A line `Verified OK` confirms the artifact was produced and signed by this repo's release workflow at this tag. The same flow verifies the standalone CycloneDX SBOM:
 
 ```sh
-cosign verify-blob \
-    --certificate-identity-regexp \
-        'https://github.com/CryptoJones/GayHydra/.github/workflows/release\.yml@.*' \
-    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-    --signature  bom.json.sig \
-    --certificate bom.json.crt \
-    bom.json
+SBOM=${ZIP%.zip}-bom.json
+
+cosign verify-blob "$SBOM" \
+    --bundle "$SBOM.cosign.bundle" \
+    --certificate-identity-regexp '^https://github.com/CryptoJones/GayHydra/\.github/workflows/release\.yml@' \
+    --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'
 ```
 
-See [`docs/security/BINARY_SIGNING.md`](https://codeberg.org/CryptoJones/GayHydra/src/branch/vXX.Y/docs/security/BINARY_SIGNING.md) for the threat model and the rollout history.
+Releases up to and including v26.4.0 ship a separate `.sig` and `.crt` per file instead of a bundle; verify those with `--signature <file>.sig --certificate <file>.crt` in place of `--bundle`.
+
+See [`docs/security/BINARY_SIGNING.md`](https://github.com/CryptoJones/GayHydra/blob/vXX.Y/docs/security/BINARY_SIGNING.md) for the threat model and the rollout history.
 
 ## Known limitations
 
