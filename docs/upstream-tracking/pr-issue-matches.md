@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 604 open PRs scanned. 163 PR→open-issue closing-references found, across 161 distinct PRs and 157 distinct issues.
+Snapshot: 617 open PRs scanned. 164 PR→open-issue closing-references found, across 162 distinct PRs and 158 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -60,6 +60,7 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 0 | [#6477](https://github.com/NationalSecurityAgency/ghidra/issues/6477) Metatype 'int' not recognized in Compiler Specification after Ghidra version upgrade  | [#9965](https://github.com/NationalSecurityAgency/ghidra/pull/9965) Decompiler docs: list the metatype values the cspec parser accepts | @FlashHit | +4/-4 | 2026-10-19 |
 | 0 | [#6205](https://github.com/NationalSecurityAgency/ghidra/issues/6205) Possible misinterpretation of DIV instructions on MCS96 | [#9573](https://github.com/NationalSecurityAgency/ghidra/pull/9573) [MCS96] Put the MCS-96 division quotient in the low word | @qatcod | +4/-4 | 2026-09-02 |
 | 0 | [#8948](https://github.com/NationalSecurityAgency/ghidra/issues/8948) CompareExecutablesScript Could not locate vector because ID is 0 | [#8949](https://github.com/NationalSecurityAgency/ghidra/pull/8949) #8948 skip missing vectors in ExecutableComparison | @jordanjohnson56 | +8/-1 | 2026-02-09 |
+| 0 | [#10266](https://github.com/NationalSecurityAgency/ghidra/issues/10266) Swift demangler: word 0 of `String` and `Character` is typed `char *`, decompiler shows small strings as pointers | [#10275](https://github.com/NationalSecurityAgency/ghidra/pull/10275) Swift demangler: make the first field of `String` and `Character` an integer, not a pointer | @lzandman | +6/-4 | 2026-11-23 |
 | 0 | [#9095](https://github.com/NationalSecurityAgency/ghidra/issues/9095) Xtensa, added instructions SALT and SALTU, but got Error : Bad Instruction unable to resolve constructor at | [#10178](https://github.com/NationalSecurityAgency/ghidra/pull/10178) Xtensa: add SALT and SALTU instruction semantics | @varvbudi-netizen | +10/-0 | 2026-11-10 |
 | 0 | [#6682](https://github.com/NationalSecurityAgency/ghidra/issues/6682) Exception while decompiling 7e7c:0b9c: Response buffer size exceded for: st.exe | [#9966](https://github.com/NationalSecurityAgency/ghidra/pull/9966) Decompiler: name the Max-Payload option when the payload limit is exceeded | @FlashHit | +8/-2 | 2026-10-19 |
 | 0 | [#6694](https://github.com/NationalSecurityAgency/ghidra/issues/6694) Ghidra incorrectly analyzes Borland C++ generated switches | [#8521](https://github.com/NationalSecurityAgency/ghidra/pull/8521) Fix x86 real mode CS calculation | @LukeSerne | +5/-5 | 2025-09-23 |
