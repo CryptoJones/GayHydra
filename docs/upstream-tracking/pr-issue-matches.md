@@ -1,6 +1,6 @@
 # Upstream NSA/ghidra: PR ↔ Issue matches
 
-Snapshot: 603 open PRs scanned. 161 PR→open-issue closing-references found, across 159 distinct PRs and 156 distinct issues.
+Snapshot: 599 open PRs scanned. 160 PR→open-issue closing-references found, across 158 distinct PRs and 156 distinct issues.
 
 Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.github/workflows/upstream-crossref-refresh.yml`.
 
@@ -20,7 +20,6 @@ Sorted by issue upvotes (desc), then by PR size (asc). Refreshed nightly by `.gi
 | 2 | [#7032](https://github.com/NationalSecurityAgency/ghidra/issues/7032) C parser header file parsing reports lexical error handling "__has_include" | [#8891](https://github.com/NationalSecurityAgency/ghidra/pull/8891) Fix lexing of directives with quoted strings in C headers | @cyrozap | +2/-1 | 2026-01-20 |
 | 2 | [#1772](https://github.com/NationalSecurityAgency/ghidra/issues/1772) Ghidra should support MIPS Octeon-specific instructions | [#2089](https://github.com/NationalSecurityAgency/ghidra/pull/2089) Support MIPS Octeon-specific instructions | @HexRabbit | +33/-0 | 2020-07-13 |
 | 2 | [#5309](https://github.com/NationalSecurityAgency/ghidra/issues/5309) [cpp decompiler, decomp_dbg] Could not discover root of Ghidra installation | [#5312](https://github.com/NationalSecurityAgency/ghidra/pull/5312) Fix test for ghidra root path in cpp decompiler console | @Thodoris1999 | +7/-30 | 2023-05-08 |
-| 2 | [#5309](https://github.com/NationalSecurityAgency/ghidra/issues/5309) [cpp decompiler, decomp_dbg] Could not discover root of Ghidra installation | [#9294](https://github.com/NationalSecurityAgency/ghidra/pull/9294) decomp_dbg: Improve FileManage::discoverGhidraRoot | @jobermayr | +11/-39 | 2026-06-21 |
 | 2 | [#8500](https://github.com/NationalSecurityAgency/ghidra/issues/8500) Decompiler: Issue with double dereference of stack variables, likely due to aliasing problems | [#9481](https://github.com/NationalSecurityAgency/ghidra/pull/9481) #9480 Decompiler: postpone dead-code removal while late heritage ranges are still appearing | @nokitoino | +119/-4 | 2026-08-06 |
 | 2 | [#6896](https://github.com/NationalSecurityAgency/ghidra/issues/6896) BSim fails when attempting to compare with a matching function that originates from an overlay address space | [#6897](https://github.com/NationalSecurityAgency/ghidra/pull/6897) Adds an address space id field to BSim objects | @je0xffrey | +225/-120 | 2024-09-08 |
 | 1 | [#1630](https://github.com/NationalSecurityAgency/ghidra/issues/1630) Tricore mfcr/mtcr not showing in decompilation | [#1640](https://github.com/NationalSecurityAgency/ghidra/pull/1640) tricore CFSR wrong space | @mumbel | +4/-4 | 2020-03-15 |
